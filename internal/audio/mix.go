@@ -61,8 +61,9 @@ func (r *AudioRenderer) mix(samples []int) []int {
 				freqHigh := r.waveTables[waveIdx][channel.Offset[0]>>16]
 				freqLow := r.waveTables[waveIdx][channel.Offset[1]>>16]
 
-				halfAmp := channel.Amplitude[0] / 2
-				mixedSample := halfAmp * (freqHigh + freqLow)
+				// halfAmp := channel.Amplitude[0] / 2
+				// mixedSample := halfAmp * (freqHigh + freqLow)
+				mixedSample := (channel.Amplitude[0] * (freqHigh + freqLow)) >> 1
 
 				left += mixedSample
 				right += mixedSample
