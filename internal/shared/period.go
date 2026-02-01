@@ -28,6 +28,7 @@ func AdjustPeriods(last, next *t.Period) error {
 		if tr0.Type == t.TrackSilence {
 			tr0.Type = tr2.Type
 			tr0.Effect.Type = tr2.Effect.Type
+			tr0.Effect.Configuration = tr2.Effect.Configuration
 			tr0.Carrier = tr2.Carrier
 			tr0.Resonance = tr2.Resonance
 			tr0.Amplitude = 0
@@ -40,6 +41,7 @@ func AdjustPeriods(last, next *t.Period) error {
 			tr2.Carrier = tr1.Carrier
 			tr2.Resonance = tr1.Resonance
 			tr2.Intensity = tr1.Intensity
+			tr2.Effect.Configuration = tr1.Effect.Configuration
 		}
 
 		// Validate if previus period has a track on and next period turn it off or vice-versa
@@ -68,6 +70,7 @@ func AdjustPeriods(last, next *t.Period) error {
 		// Carry forward the track settings from the end of the last period to the start of the next period
 		tr1.Type = tr2.Type
 		tr1.Effect.Type = tr2.Effect.Type
+		tr1.Effect.Configuration = tr2.Effect.Configuration
 		tr1.Carrier = tr2.Carrier
 		tr1.Resonance = tr2.Resonance
 		tr1.Amplitude = tr2.Amplitude

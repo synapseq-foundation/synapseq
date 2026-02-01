@@ -77,7 +77,11 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 		trackType                     t.TrackType
 	)
 
-	effect := t.Effect{Type: t.EffectOff, Intensity: 0.0}
+	effect := t.Effect{
+		Type:          t.EffectOff,
+		Configuration: nil,
+		Intensity:     0.0,
+	}
 
 	switch first {
 	case t.KeywordTone:
@@ -143,6 +147,7 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 			return nil, fmt.Errorf("expected %q, %q or %q after background: %s", t.KeywordAmplitude, t.KeywordSpin, t.KeywordPulse, ln)
 		}
 
+		configuration := t.EffectConfiguration(nil)
 		intensity := 0.0
 
 		switch kind {
@@ -152,14 +157,16 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 			}
 		case t.KeywordSpin:
 			effect.Type = t.EffectSpin
-			if carrier, err = ctx.Line.NextFloat64Strict(); err != nil {
-				return nil, fmt.Errorf("carrier: %w", err)
+			var width, rate float64
+
+			if width, err = ctx.Line.NextFloat64Strict(); err != nil {
+				return nil, fmt.Errorf("width: %w", err)
 			}
 			if _, err := ctx.Line.NextExpectOneOf(t.KeywordRate); err != nil {
 				return nil, fmt.Errorf("expected %q after carrier: %s", t.KeywordRate, ln)
 			}
-			if resonance, err = ctx.Line.NextFloat64Strict(); err != nil {
-				return nil, fmt.Errorf("resonance: %w", err)
+			if rate, err = ctx.Line.NextFloat64Strict(); err != nil {
+				return nil, fmt.Errorf("rate: %w", err)
 			}
 			if _, err := ctx.Line.NextExpectOneOf(t.KeywordIntensity); err != nil {
 				return nil, fmt.Errorf("expected %q after resonance: %s", t.KeywordIntensity, ln)
@@ -173,10 +180,17 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 			if amplitude, err = ctx.Line.NextFloat64Strict(); err != nil {
 				return nil, fmt.Errorf("amplitude: %w", err)
 			}
+
+			configuration = t.EffectSpinConfiguration{
+				Width: width,
+				Rate:  rate,
+			}
 		case t.KeywordPulse:
 			effect.Type = t.EffectPulse
-			if resonance, err = ctx.Line.NextFloat64Strict(); err != nil {
-				return nil, fmt.Errorf("resonance: %w", err)
+			var pulse float64
+
+			if pulse, err = ctx.Line.NextFloat64Strict(); err != nil {
+				return nil, fmt.Errorf("pulse: %w", err)
 			}
 			if _, err := ctx.Line.NextExpectOneOf(t.KeywordIntensity); err != nil {
 				return nil, fmt.Errorf("expected %q after resonance: %s", t.KeywordIntensity, ln)
@@ -190,8 +204,13 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 			if amplitude, err = ctx.Line.NextFloat64Strict(); err != nil {
 				return nil, fmt.Errorf("amplitude: %w", err)
 			}
+
+			configuration = t.EffectPulseConfiguration{
+				Pulse: pulse,
+			}
 		}
 
+		effect.Configuration = configuration
 		effect.Intensity = t.IntensityPercentToRaw(intensity)
 	default:
 		return nil, fmt.Errorf("expected %q, %q, %q or %q. Received: %s", t.KeywordTone, t.KeywordNoise, t.KeywordBackground, t.KeywordTrack, first)

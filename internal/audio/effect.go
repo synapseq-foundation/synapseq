@@ -30,3 +30,55 @@ func (r *AudioRenderer) calcPulseFactor(channel *t.Channel) float64 {
 
 	return modFactor
 }
+
+// calcSpinIncrement calculates the spin effect modulation increment for a channel
+func (r *AudioRenderer) calcSpinIncrement(channel *t.Channel) float64 {
+	spinCarrierMax := 127.0 / 1e-6 / float64(r.SampleRate)
+	clampedWidth := channel.Track.Effect.Configuration.(t.EffectSpinConfiguration).Width
+
+	if clampedWidth > spinCarrierMax {
+		clampedWidth = spinCarrierMax
+	}
+	if clampedWidth < -spinCarrierMax {
+		clampedWidth = -spinCarrierMax
+	}
+
+	return clampedWidth * 1e-6 * float64(r.SampleRate) * float64(1<<24) / float64(t.WaveTableAmplitude)
+}
+
+// calcSpinPan returns a pan position in [-128..127] based on spinPos and intensity.
+// spinPos is expected to be roughly in [-128..127] as in the current code.
+func calcSpinPan(spinPos int, intensity float64) int {
+	spinGain := 0.5 + (intensity*0.7)*3.5
+
+	ampSpin := int(float64(spinPos) * spinGain)
+	if ampSpin > 127 {
+		ampSpin = 127
+	}
+	if ampSpin < -128 {
+		ampSpin = -128
+	}
+	return ampSpin
+}
+
+// applySpinCrossMix applies the same cross-mix logic you currently use.
+// Inputs must already be scaled (i.e., amplitude already applied).
+func applySpinCrossMix(inL, inR int, ampSpin int) (outL, outR int) {
+	posVal := ampSpin
+	if posVal < 0 {
+		posVal = -posVal
+	}
+	if posVal > 128 {
+		posVal = 128
+	}
+
+	if ampSpin >= 0 {
+		outL = (inL * (128 - posVal)) >> 7
+		outR = inR + ((inL * posVal) >> 7)
+	} else {
+		outL = inL + ((inR * posVal) >> 7)
+		outR = (inR * (128 - posVal)) >> 7
+	}
+
+	return outL, outR
+}

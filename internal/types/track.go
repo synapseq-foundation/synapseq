@@ -67,32 +67,6 @@ func (tr TrackType) String() string {
 	}
 }
 
-// EffectType represents the type of effect applied to a background track
-type EffectType int
-
-const (
-	// Effect is off
-	EffectOff EffectType = iota
-	// Effect is spin
-	EffectSpin
-	// Effect is pulse
-	EffectPulse
-)
-
-// String returns the string representation of the EffectType
-func (et EffectType) String() string {
-	switch et {
-	case EffectOff:
-		return KeywordOff
-	case EffectSpin:
-		return KeywordSpin
-	case EffectPulse:
-		return KeywordPulse
-	default:
-		return "unknown"
-	}
-}
-
 // Track represents a track configuration
 type Track struct {
 	// Track type
@@ -107,14 +81,6 @@ type Track struct {
 	Waveform WaveformType
 	// Effect configuration
 	Effect
-}
-
-// Effect represents a effect configuration
-type Effect struct {
-	// Effect type
-	Type EffectType
-	// Intensity (0-1.0 for 0-100%)
-	Intensity IntensityType
 }
 
 // Validate checks if the track configuration is valid
@@ -149,9 +115,11 @@ func (tr *Track) String() string {
 		// Special handling for background effects
 		switch tr.Effect.Type {
 		case EffectSpin:
-			return fmt.Sprintf("%s %s %s %s %.2f %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordBackground, KeywordSpin, tr.Carrier, KeywordRate, tr.Resonance, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+			ec := tr.Effect.Configuration.(EffectSpinConfiguration)
+			return fmt.Sprintf("%s %s %s %s %.2f %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordBackground, KeywordSpin, ec.Width, KeywordRate, ec.Rate, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
 		case EffectPulse:
-			return fmt.Sprintf("%s %s %s %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordBackground, KeywordPulse, tr.Resonance, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+			ec := tr.Effect.Configuration.(EffectPulseConfiguration)
+			return fmt.Sprintf("%s %s %s %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordBackground, KeywordPulse, ec.Pulse, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
 		default:
 			return fmt.Sprintf("%s %s %.2f", KeywordBackground, KeywordAmplitude, tr.Amplitude.ToPercent())
 		}
@@ -176,11 +144,13 @@ func (tr *Track) ShortString() string {
 		// Special handling for background effects
 		switch tr.Effect.Type {
 		case EffectSpin:
+			cfg := tr.Effect.Configuration.(EffectSpinConfiguration)
 			return fmt.Sprintf(" (%s:%s %s:%.2f %s:%.2f %s:%.2f %s:%.2f)",
-				KeywordEffect, tr.Effect.Type.String(), KeywordWidth, tr.Carrier, KeywordRate, tr.Resonance, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+				KeywordEffect, tr.Effect.Type.String(), KeywordWidth, cfg.Width, KeywordRate, cfg.Rate, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
 		case EffectPulse:
+			cfg := tr.Effect.Configuration.(EffectPulseConfiguration)
 			return fmt.Sprintf(" (%s:%s %s:%.2f %s:%.2f %s:%.2f)",
-				KeywordEffect, tr.Effect.Type.String(), KeywordPulse, tr.Resonance, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+				KeywordEffect, tr.Effect.Type.String(), KeywordPulse, cfg.Pulse, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
 		default:
 			return fmt.Sprintf(" (%s:%.2f)", KeywordAmplitude, tr.Amplitude.ToPercent())
 		}
