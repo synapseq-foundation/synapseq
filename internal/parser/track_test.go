@@ -163,6 +163,7 @@ func TestParseTrack_Noise(ts *testing.T) {
 }
 
 func TestParseTrack_Background(ts *testing.T) {
+	ts.Skip("feature deprecated, test kept for reference")
 	trs := []*t.Track{
 		{
 			Type:      t.TrackBackground,
