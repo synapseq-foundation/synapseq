@@ -120,33 +120,11 @@ func (r *AudioRenderer) mix(samples []int) []int {
 
 					spinPos := (channel.Increment[1] * r.waveTables[waveIdx][channel.Offset[0]>>16]) >> 24
 
-					effectIntensity := float64(channel.Track.Intensity) * 0.7
-					spinGain := 0.5 + effectIntensity*3.5
+					inL := bgLeft * backgroundAmplitude
+					inR := bgRight * backgroundAmplitude
 
-					ampSpin := int(float64(spinPos) * spinGain)
-					if ampSpin > 127 {
-						ampSpin = 127
-					}
-					if ampSpin < -128 {
-						ampSpin = -128
-					}
-
-					posVal := ampSpin
-					if posVal < 0 {
-						posVal = -posVal
-					}
-					if posVal > 128 {
-						posVal = 128
-					}
-
-					var spinLeft, spinRight int
-					if ampSpin >= 0 {
-						spinLeft = (bgLeft * backgroundAmplitude * (128 - posVal)) >> 7
-						spinRight = bgRight*backgroundAmplitude + ((bgLeft * backgroundAmplitude * posVal) >> 7)
-					} else {
-						spinLeft = bgLeft*backgroundAmplitude + ((bgRight * backgroundAmplitude * posVal) >> 7)
-						spinRight = (bgRight * backgroundAmplitude * (128 - posVal)) >> 7
-					}
+					ampSpin := calcSpinPan(spinPos, float64(channel.Track.Intensity))
+					spinLeft, spinRight := applySpinCrossMix(inL, inR, ampSpin)
 
 					left += spinLeft
 					right += spinRight

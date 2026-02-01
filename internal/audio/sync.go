@@ -71,6 +71,37 @@ func (r *AudioRenderer) sync(timeMs int, periodIdx int) {
 		channel.Track.Resonance = tr0.Resonance*(1-alpha) + tr1.Resonance*alpha
 		channel.Track.Waveform = tr0.Waveform
 		channel.Track.Intensity = t.IntensityType(float64(tr0.Intensity)*(1-alpha) + float64(tr1.Intensity)*alpha)
+
+		// Effects
+		if channel.Track.Effect.Type == t.EffectSpin {
+			cfg0 := tr0.Effect.Configuration.(t.EffectSpinConfiguration)
+			if tr1.Effect.Type == t.EffectSpin {
+				cfg1 := tr1.Effect.Configuration.(t.EffectSpinConfiguration)
+				channel.Track.Effect.Configuration = t.EffectSpinConfiguration{
+					Width: cfg0.Width*(1-alpha) + cfg1.Width*alpha,
+					Rate:  cfg0.Rate*(1-alpha) + cfg1.Rate*alpha,
+				}
+			} else {
+				channel.Track.Effect.Configuration = t.EffectSpinConfiguration{
+					Width: cfg0.Width,
+					Rate:  cfg0.Rate,
+				}
+			}
+		}
+		if channel.Track.Effect.Type == t.EffectPulse {
+			cfg0 := tr0.Effect.Configuration.(t.EffectPulseConfiguration)
+			if tr1.Effect.Type == t.EffectPulse {
+				cfg1 := tr1.Effect.Configuration.(t.EffectPulseConfiguration)
+				channel.Track.Effect.Configuration = t.EffectPulseConfiguration{
+					Pulse: cfg0.Pulse*(1-alpha) + cfg1.Pulse*alpha,
+				}
+			} else {
+				channel.Track.Effect.Configuration = t.EffectPulseConfiguration{
+					Pulse: cfg0.Pulse,
+				}
+			}
+		}
+
 		// Reset offsets if track type has changed
 		if channel.Type != channel.Track.Type {
 			channel.Type = channel.Track.Type
@@ -98,7 +129,12 @@ func (r *AudioRenderer) sync(timeMs int, periodIdx int) {
 		case t.TrackIsochronicBeat:
 			channel.Amplitude[0] = int(channel.Track.Amplitude)
 			channel.Increment[0] = int(channel.Track.Carrier / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)
-			channel.Increment[1] = int(channel.Track.Resonance / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)
+
+			if channel.Track.Effect.Type == t.EffectSpin {
+				channel.Increment[1] = int(r.calcSpinIncrement(channel))
+			} else {
+				channel.Increment[1] = int(channel.Track.Resonance / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)
+			}
 		case t.TrackWhiteNoise, t.TrackPinkNoise, t.TrackBrownNoise:
 			channel.Amplitude[0] = int(channel.Track.Amplitude)
 		case t.TrackBackground:
@@ -106,20 +142,12 @@ func (r *AudioRenderer) sync(timeMs int, periodIdx int) {
 
 			switch channel.Track.Effect.Type {
 			case t.EffectSpin:
-				channel.Increment[0] = int(channel.Track.Resonance / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)
-
-				spinCarrierMax := 127.0 / 1e-6 / float64(r.SampleRate)
-				clampedCarrier := channel.Track.Carrier
-
-				if clampedCarrier > spinCarrierMax {
-					clampedCarrier = spinCarrierMax
-				}
-				if clampedCarrier < -spinCarrierMax {
-					clampedCarrier = -spinCarrierMax
-				}
-				channel.Increment[1] = int(clampedCarrier * 1e-6 * float64(r.SampleRate) * float64(1<<24) / float64(t.WaveTableAmplitude))
+				rate := channel.Track.Effect.Configuration.(t.EffectSpinConfiguration).Rate
+				channel.Increment[0] = int(rate / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)
+				channel.Increment[1] = int(r.calcSpinIncrement(channel))
 			case t.EffectPulse:
-				channel.Increment[1] = int(channel.Track.Resonance / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)
+				pulse := channel.Track.Effect.Configuration.(t.EffectPulseConfiguration).Pulse
+				channel.Increment[1] = int(pulse / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)
 			}
 		}
 	}
