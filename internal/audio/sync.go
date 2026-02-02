@@ -64,6 +64,8 @@ func (r *AudioRenderer) sync(timeMs int, periodIdx int) {
 			alpha = (raw - min) / (max - min)
 		}
 
+		prevEffectType := channel.Track.Effect.Type
+
 		channel.Track.Type = tr0.Type
 		channel.Track.Effect.Type = tr0.Effect.Type
 		channel.Track.Amplitude = t.AmplitudeType(float64(tr0.Amplitude)*(1-alpha) + float64(tr1.Amplitude)*alpha)
@@ -109,6 +111,21 @@ func (r *AudioRenderer) sync(timeMs int, periodIdx int) {
 			channel.Offset[1] = 0
 		}
 
+		// Reset effect phase if effect type changed
+		if prevEffectType != channel.Track.Effect.Type {
+			channel.Effect.Offset = 0
+		}
+
+		switch channel.Track.Effect.Type {
+		case t.EffectSpin:
+			cfg := channel.Track.Effect.Configuration.(t.EffectSpinConfiguration)
+			channel.Effect.Increment = int(cfg.Rate / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)
+			channel.Effect.Params[t.EffectParamSpinWidthScalar] = int(r.calcSpinIncrement(channel))
+		case t.EffectPulse:
+			cfg := channel.Track.Effect.Configuration.(t.EffectPulseConfiguration)
+			channel.Effect.Increment = int(cfg.Pulse / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)
+		}
+
 		switch channel.Track.Type {
 		case t.TrackPureTone:
 			channel.Amplitude[0] = int(channel.Track.Amplitude)
@@ -129,26 +146,11 @@ func (r *AudioRenderer) sync(timeMs int, periodIdx int) {
 		case t.TrackIsochronicBeat:
 			channel.Amplitude[0] = int(channel.Track.Amplitude)
 			channel.Increment[0] = int(channel.Track.Carrier / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)
-
-			if channel.Track.Effect.Type == t.EffectSpin {
-				channel.Increment[1] = int(r.calcSpinIncrement(channel))
-			} else {
-				channel.Increment[1] = int(channel.Track.Resonance / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)
-			}
+			channel.Increment[1] = int(channel.Track.Resonance / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)
 		case t.TrackWhiteNoise, t.TrackPinkNoise, t.TrackBrownNoise:
 			channel.Amplitude[0] = int(channel.Track.Amplitude)
 		case t.TrackBackground:
 			channel.Amplitude[0] = int(channel.Track.Amplitude)
-
-			switch channel.Track.Effect.Type {
-			case t.EffectSpin:
-				rate := channel.Track.Effect.Configuration.(t.EffectSpinConfiguration).Rate
-				channel.Increment[0] = int(rate / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)
-				channel.Increment[1] = int(r.calcSpinIncrement(channel))
-			case t.EffectPulse:
-				pulse := channel.Track.Effect.Configuration.(t.EffectPulseConfiguration).Pulse
-				channel.Increment[1] = int(pulse / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)
-			}
 		}
 	}
 }
