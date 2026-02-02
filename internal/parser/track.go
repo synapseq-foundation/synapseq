@@ -106,15 +106,159 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 			trackType = t.TrackPureTone
 		}
 
-		if trackType != t.TrackPureTone {
+		switch trackType {
+		case t.TrackBinauralBeat:
 			if resonance, err = ctx.Line.NextFloat64Strict(); err != nil {
 				return nil, fmt.Errorf("resonance: %w", err)
 			}
-			if _, err := ctx.Line.NextExpectOneOf(t.KeywordAmplitude); err != nil {
-				return nil, fmt.Errorf("expected %q after resonance: %s", t.KeywordAmplitude, ln)
+
+			tok, err := ctx.Line.NextExpectOneOf(t.KeywordPulse, t.KeywordAmplitude)
+			if err != nil {
+				return nil, fmt.Errorf("expected %q or %q after resonance: %s", t.KeywordPulse, t.KeywordAmplitude, ln)
+			}
+
+			if tok == t.KeywordPulse {
+				effect.Type = t.EffectPulse
+
+				pulse, err := ctx.Line.NextFloat64Strict()
+				if err != nil {
+					return nil, fmt.Errorf("pulse: %w", err)
+				}
+
+				if _, err := ctx.Line.NextExpectOneOf(t.KeywordIntensity); err != nil {
+					return nil, fmt.Errorf("expected %q after pulse: %s", t.KeywordIntensity, ln)
+				}
+
+				intensity, err := ctx.Line.NextFloat64Strict()
+				if err != nil {
+					return nil, fmt.Errorf("intensity: %w", err)
+				}
+
+				if _, err := ctx.Line.NextExpectOneOf(t.KeywordAmplitude); err != nil {
+					return nil, fmt.Errorf("expected %q after intensity: %s", t.KeywordAmplitude, ln)
+				}
+
+				effect.Configuration = t.EffectPulseConfiguration{
+					Pulse: pulse,
+				}
+				effect.Intensity = t.IntensityPercentToRaw(intensity)
+			}
+		case t.TrackMonauralBeat, t.TrackIsochronicBeat:
+			if resonance, err = ctx.Line.NextFloat64Strict(); err != nil {
+				return nil, fmt.Errorf("resonance: %w", err)
+			}
+
+			tok, err := ctx.Line.NextExpectOneOf(t.KeywordSpin, t.KeywordAmplitude)
+			if err != nil {
+				return nil, fmt.Errorf("expected %q or %q after resonance: %s", t.KeywordSpin, t.KeywordAmplitude, ln)
+			}
+
+			if tok == t.KeywordSpin {
+				effect.Type = t.EffectSpin
+
+				width, err := ctx.Line.NextFloat64Strict()
+				if err != nil {
+					return nil, fmt.Errorf("width: %w", err)
+				}
+
+				if _, err := ctx.Line.NextExpectOneOf(t.KeywordRate); err != nil {
+					return nil, fmt.Errorf("expected %q after width: %s", t.KeywordRate, ln)
+				}
+
+				rate, err := ctx.Line.NextFloat64Strict()
+				if err != nil {
+					return nil, fmt.Errorf("rate: %w", err)
+				}
+
+				if _, err := ctx.Line.NextExpectOneOf(t.KeywordIntensity); err != nil {
+					return nil, fmt.Errorf("expected %q after rate: %s", t.KeywordIntensity, ln)
+				}
+
+				intensity, err := ctx.Line.NextFloat64Strict()
+				if err != nil {
+					return nil, fmt.Errorf("intensity: %w", err)
+				}
+
+				if _, err := ctx.Line.NextExpectOneOf(t.KeywordAmplitude); err != nil {
+					return nil, fmt.Errorf("expected %q after intensity: %s", t.KeywordAmplitude, ln)
+				}
+
+				effect.Configuration = t.EffectSpinConfiguration{
+					Width: width,
+					Rate:  rate,
+				}
+				effect.Intensity = t.IntensityPercentToRaw(intensity)
+			}
+		case t.TrackPureTone:
+			tok, err := ctx.Line.NextExpectOneOf(t.KeywordSpin, t.KeywordPulse, t.KeywordAmplitude)
+			if err != nil {
+				return nil, fmt.Errorf("expected %q, %q or %q after carrier: %s", t.KeywordSpin, t.KeywordPulse, t.KeywordAmplitude, ln)
+			}
+
+			if tok == t.KeywordSpin {
+				effect.Type = t.EffectSpin
+
+				width, err := ctx.Line.NextFloat64Strict()
+				if err != nil {
+					return nil, fmt.Errorf("width: %w", err)
+				}
+
+				if _, err := ctx.Line.NextExpectOneOf(t.KeywordRate); err != nil {
+					return nil, fmt.Errorf("expected %q after width: %s", t.KeywordRate, ln)
+				}
+
+				rate, err := ctx.Line.NextFloat64Strict()
+				if err != nil {
+					return nil, fmt.Errorf("rate: %w", err)
+				}
+
+				if _, err := ctx.Line.NextExpectOneOf(t.KeywordIntensity); err != nil {
+					return nil, fmt.Errorf("expected %q after rate: %s", t.KeywordIntensity, ln)
+				}
+
+				intensity, err := ctx.Line.NextFloat64Strict()
+				if err != nil {
+					return nil, fmt.Errorf("intensity: %w", err)
+				}
+
+				if _, err := ctx.Line.NextExpectOneOf(t.KeywordAmplitude); err != nil {
+					return nil, fmt.Errorf("expected %q after intensity: %s", t.KeywordAmplitude, ln)
+				}
+
+				effect.Configuration = t.EffectSpinConfiguration{
+					Width: width,
+					Rate:  rate,
+				}
+				effect.Intensity = t.IntensityPercentToRaw(intensity)
+			}
+
+			if tok == t.KeywordPulse {
+				effect.Type = t.EffectPulse
+
+				pulse, err := ctx.Line.NextFloat64Strict()
+				if err != nil {
+					return nil, fmt.Errorf("pulse: %w", err)
+				}
+
+				if _, err := ctx.Line.NextExpectOneOf(t.KeywordIntensity); err != nil {
+					return nil, fmt.Errorf("expected %q after pulse: %s", t.KeywordIntensity, ln)
+				}
+
+				intensity, err := ctx.Line.NextFloat64Strict()
+				if err != nil {
+					return nil, fmt.Errorf("intensity: %w", err)
+				}
+
+				if _, err := ctx.Line.NextExpectOneOf(t.KeywordAmplitude); err != nil {
+					return nil, fmt.Errorf("expected %q after intensity: %s", t.KeywordAmplitude, ln)
+				}
+
+				effect.Configuration = t.EffectPulseConfiguration{
+					Pulse: pulse,
+				}
+				effect.Intensity = t.IntensityPercentToRaw(intensity)
 			}
 		}
-
 		if amplitude, err = ctx.Line.NextFloat64Strict(); err != nil {
 			return nil, fmt.Errorf("amplitude: %w", err)
 		}
