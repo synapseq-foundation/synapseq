@@ -49,8 +49,23 @@ func (r *AudioRenderer) mix(samples []int) []int {
 				channel.Offset[1] += channel.Increment[1]
 				channel.Offset[1] &= (t.SineTableSize << 16) - 1
 
-				left += channel.Amplitude[0] * r.waveTables[waveIdx][channel.Offset[0]>>16]
-				right += channel.Amplitude[1] * r.waveTables[waveIdx][channel.Offset[1]>>16]
+				ll := channel.Amplitude[0] * r.waveTables[waveIdx][channel.Offset[0]>>16]
+				rr := channel.Amplitude[1] * r.waveTables[waveIdx][channel.Offset[1]>>16]
+
+				if channel.Track.Effect.Type == t.EffectPulse {
+					channel.Effect.Offset += channel.Effect.Increment
+					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
+
+					modFactor := r.calcPulseFactor(channel.Track.Waveform, channel.Effect.Offset) // 0..1
+					effectIntensity := float64(channel.Track.Intensity) * 0.7
+
+					gain := (1.0 - effectIntensity) + (effectIntensity * modFactor)
+					ll = int(float64(ll) * gain)
+					rr = int(float64(rr) * gain)
+				}
+
+				left += ll
+				right += rr
 			case t.TrackMonauralBeat:
 				channel.Offset[0] += channel.Increment[0]
 				channel.Offset[0] &= (t.SineTableSize << 16) - 1
