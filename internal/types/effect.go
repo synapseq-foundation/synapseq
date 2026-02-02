@@ -53,6 +53,26 @@ type Effect struct {
 	Intensity IntensityType
 }
 
+// EffectParamKey indexes Channel.Effect.Params.
+// Each effect defines which keys it uses.
+type EffectParamKey uint8
+
+const (
+	// Spin params
+	EffectParamSpinWidthScalar EffectParamKey = iota
+)
+
+// EffectState stores runtime (per-channel) effect state without per-effect structs/maps.
+type EffectState struct {
+	// LFO state for the currently active effect (phase + step)
+	Increment int
+	Offset    int
+
+	// Generic integer parameters for effects (precomputed in sync, consumed in mix).
+	// Convention: each effect type defines which indices it uses.
+	Params [8]int
+}
+
 // EffectSpinConfiguration represents the configuration for a spin effect
 type EffectSpinConfiguration struct {
 	Width float64

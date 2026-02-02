@@ -27,4 +27,6 @@ type Channel struct {
 	Increment [2]int
 	// Offset into waveform table (for tones, offset + increment into sine table * 65536)
 	Offset [2]int
+
+	Effect EffectState
 }

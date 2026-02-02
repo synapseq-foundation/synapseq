@@ -16,8 +16,8 @@ import (
 )
 
 // calcPulseFactor calculates the pulse effect modulation factor for a channel
-func (r *AudioRenderer) calcPulseFactor(channel *t.Channel) float64 {
-	modVal := float64(r.waveTables[int(channel.Track.Waveform)][channel.Offset[1]>>16])
+func (r *AudioRenderer) calcPulseFactor(waveform t.WaveformType, offset int) float64 {
+	modVal := float64(r.waveTables[int(waveform)][offset>>16])
 
 	threshold := 0.3 * float64(t.WaveTableAmplitude)
 	den := 0.7 * float64(t.WaveTableAmplitude)
