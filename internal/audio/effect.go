@@ -52,28 +52,33 @@ func (r *AudioRenderer) calcPulseFactor(waveform t.WaveformType, offset int) flo
 
 // applySpin applies the spin effect to the given input samples for a channel.
 func (r *AudioRenderer) applySpin(channel *t.Channel, inL, inR int) (outL, outR int) {
-	intensity := float64(channel.Track.Intensity) // 0..1
-
-	// Use a sine LFO for autopan (independent from the audio waveform)
-	lfo := r.waveTables[int(t.WaveformSine)][channel.Effect.Offset>>16] // [-A..A]
-
-	// Normalize to [-1..1] and map to pan [-128..128] with rounding (less "sticking" at center)
-	panF := (float64(lfo) / float64(t.WaveTableAmplitude)) * 128.0 * intensity
-	pan := int(math.Round(panF))
-
-	if pan < -128 {
-		pan = -128
+	// Intensity is already 0..1 (see types.IntensityType)
+	intensity := float64(channel.Track.Intensity)
+	if intensity < 0 {
+		intensity = 0
 	}
-	if pan > 128 {
-		pan = 128
+	if intensity > 1 {
+		intensity = 1
 	}
 
-	pos := pan + 128 // 0..256
-	lGain := 256 - pos
+	// Sine LFO in [-A..A] => normalize to [-1..1]
+	lfo := r.waveTables[int(t.WaveformSine)][channel.Effect.Offset>>16]
+	x := (float64(lfo) / float64(t.WaveTableAmplitude)) * intensity // [-1..1]
+
+	// High-resolution linear pan gains (0..65536), avoids 8-bit pan stepping artifacts
+	// x=-1 => left=1.0 right=0.0 ; x=+1 => left=0.0 right=1.0
+	pos := int(math.Round((x + 1.0) * 32768.0)) // 0..65536
+	if pos < 0 {
+		pos = 0
+	}
+	if pos > 65536 {
+		pos = 65536
+	}
+
+	lGain := 65536 - pos
 	rGain := pos
 
-	outL = int((int64(inL) * int64(lGain)) >> 8) // /256
-	outR = int((int64(inR) * int64(rGain)) >> 8)
-
+	outL = int((int64(inL) * int64(lGain)) >> 16)
+	outR = int((int64(inR) * int64(rGain)) >> 16)
 	return outL, outR
 }
