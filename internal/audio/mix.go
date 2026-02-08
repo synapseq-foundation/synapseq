@@ -47,10 +47,22 @@ func (r *AudioRenderer) mix(samples []int) []int {
 				left += channel.Amplitude[0] * r.waveTables[waveIdx][channel.Offset[0]>>16]
 				right += channel.Amplitude[0] * r.waveTables[waveIdx][channel.Offset[0]>>16]
 			case t.TrackBinauralBeat:
-				channel.Offset[0] += channel.Increment[0]
+				inc0 := channel.Increment[0]
+				inc1 := channel.Increment[1]
+
+				if channel.Track.Effect.Type == t.EffectDoppler {
+					channel.Effect.Offset += channel.Effect.Increment
+					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
+
+					factor := r.calcDopplerFactor(channel.Effect.Offset, channel.Track.Intensity)
+					inc0 = int(math.Round(float64(inc0) * factor))
+					inc1 = int(math.Round(float64(inc1) * factor))
+				}
+
+				channel.Offset[0] += inc0
 				channel.Offset[0] &= (t.SineTableSize << 16) - 1
 
-				channel.Offset[1] += channel.Increment[1]
+				channel.Offset[1] += inc1
 				channel.Offset[1] &= (t.SineTableSize << 16) - 1
 
 				ll := channel.Amplitude[0] * r.waveTables[waveIdx][channel.Offset[0]>>16]
@@ -71,10 +83,22 @@ func (r *AudioRenderer) mix(samples []int) []int {
 				left += ll
 				right += rr
 			case t.TrackMonauralBeat:
-				channel.Offset[0] += channel.Increment[0]
+				inc0 := channel.Increment[0]
+				inc1 := channel.Increment[1]
+
+				if channel.Track.Effect.Type == t.EffectDoppler {
+					channel.Effect.Offset += channel.Effect.Increment
+					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
+
+					factor := r.calcDopplerFactor(channel.Effect.Offset, channel.Track.Intensity)
+					inc0 = int(math.Round(float64(inc0) * factor))
+					inc1 = int(math.Round(float64(inc1) * factor))
+				}
+
+				channel.Offset[0] += inc0
 				channel.Offset[0] &= (t.SineTableSize << 16) - 1
 
-				channel.Offset[1] += channel.Increment[1]
+				channel.Offset[1] += inc1
 				channel.Offset[1] &= (t.SineTableSize << 16) - 1
 
 				freqHigh := r.waveTables[waveIdx][channel.Offset[0]>>16]
@@ -86,9 +110,7 @@ func (r *AudioRenderer) mix(samples []int) []int {
 					channel.Effect.Offset += channel.Effect.Increment
 					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
 
-					ll := mixedSample
-					rr := mixedSample
-
+					ll, rr := mixedSample, mixedSample
 					ll, rr = r.applySpin(channel, ll, rr)
 
 					left += ll
@@ -98,7 +120,17 @@ func (r *AudioRenderer) mix(samples []int) []int {
 					right += mixedSample
 				}
 			case t.TrackIsochronicBeat:
-				channel.Offset[0] += channel.Increment[0]
+				incCarrier := channel.Increment[0]
+
+				if channel.Track.Effect.Type == t.EffectDoppler {
+					channel.Effect.Offset += channel.Effect.Increment
+					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
+
+					factor := r.calcDopplerFactor(channel.Effect.Offset, channel.Track.Intensity)
+					incCarrier = int(math.Round(float64(incCarrier) * factor))
+				}
+
+				channel.Offset[0] += incCarrier
 				channel.Offset[0] &= (t.SineTableSize << 16) - 1
 
 				channel.Offset[1] += channel.Increment[1]
@@ -111,14 +143,11 @@ func (r *AudioRenderer) mix(samples []int) []int {
 
 				out := int(amp * carrier * modFactor)
 
-				// Optional Spin effect (pan/crossmix)
 				if channel.Track.Effect.Type == t.EffectSpin {
 					channel.Effect.Offset += channel.Effect.Increment
 					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
 
-					ll := out
-					rr := out
-
+					ll, rr := out, out
 					ll, rr = r.applySpin(channel, ll, rr)
 
 					left += ll

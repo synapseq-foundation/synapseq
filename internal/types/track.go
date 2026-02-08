@@ -115,6 +115,9 @@ func (tr *Track) String() string {
 		case EffectPulse:
 			cfg := tr.Effect.Configuration.(EffectPulseConfiguration)
 			return fmt.Sprintf("%s %s %s %.2f %s %2.f %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordPulse, cfg.Pulse, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+		case EffectDoppler:
+			cfg := tr.Effect.Configuration.(EffectDopplerConfiguration)
+			return fmt.Sprintf("%s %s %s %.2f %s %2.f %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordDoppler, cfg.Rate, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
 		default:
 			return fmt.Sprintf("%s %s %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordAmplitude, tr.Amplitude.ToPercent())
 		}
@@ -162,6 +165,10 @@ func (tr *Track) ShortString() string {
 			cfg := tr.Effect.Configuration.(EffectPulseConfiguration)
 			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f %s:%.2f %s:%.2f)",
 				KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordPulse, cfg.Pulse, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+		case EffectDoppler:
+			cfg := tr.Effect.Configuration.(EffectDopplerConfiguration)
+			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f %s:%.2f %s:%.2f)",
+				KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordDoppler, cfg.Rate, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
 		default:
 			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f)",
 				KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordAmplitude, tr.Amplitude.ToPercent())

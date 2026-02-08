@@ -96,6 +96,8 @@ const (
 	KeywordAs = "as"
 	// Represents a template preset
 	KeywordTemplate = "template"
+	// Represents a doppler effect
+	KeywordDoppler = "doppler"
 )
 
 // Parser defines the interface for parsing different content types

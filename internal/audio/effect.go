@@ -17,6 +17,23 @@ import (
 	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
 )
 
+// calcDopplerFactor returns a pitch multiplier in [1-depth .. 1+depth] based on a sine LFO.
+func (r *AudioRenderer) calcDopplerFactor(offset int, intensity t.IntensityType) float64 {
+	inten := float64(intensity) // expected 0..1
+	if inten < 0 {
+		inten = 0
+	}
+	if inten > 1 {
+		inten = 1
+	}
+
+	lfo := r.waveTables[int(t.WaveformSine)][offset>>16] // [-A..A]
+	lfoNorm := float64(lfo) / float64(t.WaveTableAmplitude)
+
+	depth := 0.05 * inten
+	return 1.0 + (depth * lfoNorm)
+}
+
 // calcPulseFactor calculates the pulse effect modulation factor for a channel
 func (r *AudioRenderer) calcPulseFactor(waveform t.WaveformType, offset int) float64 {
 	modVal := float64(r.waveTables[int(waveform)][offset>>16])

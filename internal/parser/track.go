@@ -112,9 +112,9 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 				return nil, fmt.Errorf("resonance: %w", err)
 			}
 
-			tok, err := ctx.Line.NextExpectOneOf(t.KeywordPulse, t.KeywordAmplitude)
+			tok, err := ctx.Line.NextExpectOneOf(t.KeywordPulse, t.KeywordDoppler, t.KeywordAmplitude)
 			if err != nil {
-				return nil, fmt.Errorf("expected %q or %q after resonance: %s", t.KeywordPulse, t.KeywordAmplitude, ln)
+				return nil, fmt.Errorf("expected %q, %q or %q after resonance: %s", t.KeywordPulse, t.KeywordDoppler, t.KeywordAmplitude, ln)
 			}
 
 			if tok == t.KeywordPulse {
@@ -143,14 +143,41 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 				}
 				effect.Intensity = t.IntensityPercentToRaw(intensity)
 			}
+
+			if tok == t.KeywordDoppler {
+				effect.Type = t.EffectDoppler
+
+				rate, err := ctx.Line.NextFloat64Strict()
+				if err != nil {
+					return nil, fmt.Errorf("rate: %w", err)
+				}
+
+				if _, err := ctx.Line.NextExpectOneOf(t.KeywordIntensity); err != nil {
+					return nil, fmt.Errorf("expected %q after rate: %s", t.KeywordIntensity, ln)
+				}
+
+				intensity, err := ctx.Line.NextFloat64Strict()
+				if err != nil {
+					return nil, fmt.Errorf("intensity: %w", err)
+				}
+
+				if _, err := ctx.Line.NextExpectOneOf(t.KeywordAmplitude); err != nil {
+					return nil, fmt.Errorf("expected %q after intensity: %s", t.KeywordAmplitude, ln)
+				}
+
+				effect.Configuration = t.EffectDopplerConfiguration{
+					Rate: rate,
+				}
+				effect.Intensity = t.IntensityPercentToRaw(intensity)
+			}
 		case t.TrackMonauralBeat, t.TrackIsochronicBeat:
 			if resonance, err = ctx.Line.NextFloat64Strict(); err != nil {
 				return nil, fmt.Errorf("resonance: %w", err)
 			}
 
-			tok, err := ctx.Line.NextExpectOneOf(t.KeywordSpin, t.KeywordAmplitude)
+			tok, err := ctx.Line.NextExpectOneOf(t.KeywordSpin, t.KeywordDoppler, t.KeywordAmplitude)
 			if err != nil {
-				return nil, fmt.Errorf("expected %q or %q after resonance: %s", t.KeywordSpin, t.KeywordAmplitude, ln)
+				return nil, fmt.Errorf("expected %q, %q or %q after resonance: %s", t.KeywordSpin, t.KeywordDoppler, t.KeywordAmplitude, ln)
 			}
 
 			if tok == t.KeywordSpin {
@@ -175,6 +202,33 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 				}
 
 				effect.Configuration = t.EffectSpinConfiguration{
+					Rate: rate,
+				}
+				effect.Intensity = t.IntensityPercentToRaw(intensity)
+			}
+
+			if tok == t.KeywordDoppler {
+				effect.Type = t.EffectDoppler
+
+				rate, err := ctx.Line.NextFloat64Strict()
+				if err != nil {
+					return nil, fmt.Errorf("rate: %w", err)
+				}
+
+				if _, err := ctx.Line.NextExpectOneOf(t.KeywordIntensity); err != nil {
+					return nil, fmt.Errorf("expected %q after rate: %s", t.KeywordIntensity, ln)
+				}
+
+				intensity, err := ctx.Line.NextFloat64Strict()
+				if err != nil {
+					return nil, fmt.Errorf("intensity: %w", err)
+				}
+
+				if _, err := ctx.Line.NextExpectOneOf(t.KeywordAmplitude); err != nil {
+					return nil, fmt.Errorf("expected %q after intensity: %s", t.KeywordAmplitude, ln)
+				}
+
+				effect.Configuration = t.EffectDopplerConfiguration{
 					Rate: rate,
 				}
 				effect.Intensity = t.IntensityPercentToRaw(intensity)

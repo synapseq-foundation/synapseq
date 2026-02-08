@@ -27,6 +27,8 @@ const (
 	EffectSpin
 	// Effect is pulse
 	EffectPulse
+	// Effect is doppler
+	EffectDoppler
 )
 
 // String returns the string representation of the EffectType
@@ -38,6 +40,8 @@ func (et EffectType) String() string {
 		return KeywordSpin
 	case EffectPulse:
 		return KeywordPulse
+	case EffectDoppler:
+		return KeywordDoppler
 	default:
 		return "unknown"
 	}
@@ -53,24 +57,11 @@ type Effect struct {
 	Intensity IntensityType
 }
 
-// EffectParamKey indexes Channel.Effect.Params.
-// Each effect defines which keys it uses.
-type EffectParamKey uint8
-
-const (
-	// Spin params
-	EffectParamSpinWidthScalar EffectParamKey = iota
-)
-
 // EffectState stores runtime (per-channel) effect state without per-effect structs/maps.
 type EffectState struct {
 	// LFO state for the currently active effect (phase + step)
 	Increment int
 	Offset    int
-
-	// Generic integer parameters for effects (precomputed in sync, consumed in mix).
-	// Convention: each effect type defines which indices it uses.
-	Params [8]int
 }
 
 // EffectSpinConfiguration represents the configuration for a spin effect
@@ -83,6 +74,12 @@ type EffectPulseConfiguration struct {
 	Pulse float64
 }
 
+// EffectDopplerConfiguration represents the configuration for a doppler effect
+type EffectDopplerConfiguration struct {
+	Rate float64
+}
+
 // Marker methods
-func (EffectSpinConfiguration) effectType() EffectType  { return EffectSpin }
-func (EffectPulseConfiguration) effectType() EffectType { return EffectPulse }
+func (EffectSpinConfiguration) effectType() EffectType    { return EffectSpin }
+func (EffectPulseConfiguration) effectType() EffectType   { return EffectPulse }
+func (EffectDopplerConfiguration) effectType() EffectType { return EffectDoppler }

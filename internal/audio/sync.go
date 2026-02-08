@@ -102,6 +102,20 @@ func (r *AudioRenderer) sync(timeMs int, periodIdx int) {
 			}
 		}
 
+		if channel.Track.Effect.Type == t.EffectDoppler {
+			cfg0 := tr0.Effect.Configuration.(t.EffectDopplerConfiguration)
+			if tr1.Effect.Type == t.EffectDoppler {
+				cfg1 := tr1.Effect.Configuration.(t.EffectDopplerConfiguration)
+				channel.Track.Effect.Configuration = t.EffectDopplerConfiguration{
+					Rate: cfg0.Rate*(1-alpha) + cfg1.Rate*alpha,
+				}
+			} else {
+				channel.Track.Effect.Configuration = t.EffectDopplerConfiguration{
+					Rate: cfg0.Rate,
+				}
+			}
+		}
+
 		// Reset offsets if track type has changed
 		if channel.Type != channel.Track.Type {
 			channel.Type = channel.Track.Type
@@ -121,6 +135,9 @@ func (r *AudioRenderer) sync(timeMs int, periodIdx int) {
 		case t.EffectPulse:
 			cfg := channel.Track.Effect.Configuration.(t.EffectPulseConfiguration)
 			channel.Effect.Increment = int(cfg.Pulse / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)
+		case t.EffectDoppler:
+			cfg := channel.Track.Effect.Configuration.(t.EffectDopplerConfiguration)
+			channel.Effect.Increment = int(cfg.Rate / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)
 		}
 
 		switch channel.Track.Type {
