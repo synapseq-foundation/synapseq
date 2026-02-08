@@ -35,6 +35,9 @@ type AudioRenderer struct {
 	noiseGenerator  *NoiseGenerator
 	backgroundAudio *BackgroundAudio
 
+	// Reusable buffer to avoid allocating every mix() call
+	backgroundSamples []int
+
 	// Embedding options
 	*AudioRendererOptions
 }

@@ -12,6 +12,8 @@
 package audio
 
 import (
+	"math"
+
 	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
 )
 
@@ -31,54 +33,30 @@ func (r *AudioRenderer) calcPulseFactor(waveform t.WaveformType, offset int) flo
 	return modFactor
 }
 
-// calcSpinIncrement calculates the spin effect modulation increment for a channel
-func (r *AudioRenderer) calcSpinIncrement(channel *t.Channel) float64 {
-	spinCarrierMax := 127.0 / 1e-6 / float64(r.SampleRate)
-	clampedWidth := channel.Track.Effect.Configuration.(t.EffectSpinConfiguration).Width
+// applySpin applies the spin effect to the given input samples for a channel.
+func (r *AudioRenderer) applySpin(channel *t.Channel, inL, inR int) (outL, outR int) {
+	intensity := float64(channel.Track.Intensity) // 0..1
 
-	if clampedWidth > spinCarrierMax {
-		clampedWidth = spinCarrierMax
-	}
-	if clampedWidth < -spinCarrierMax {
-		clampedWidth = -spinCarrierMax
-	}
+	// Use a sine LFO for autopan (independent from the audio waveform)
+	lfo := r.waveTables[int(t.WaveformSine)][channel.Effect.Offset>>16] // [-A..A]
 
-	return clampedWidth * 1e-6 * float64(r.SampleRate) * float64(1<<24) / float64(t.WaveTableAmplitude)
-}
+	// Normalize to [-1..1] and map to pan [-128..128] with rounding (less "sticking" at center)
+	panF := (float64(lfo) / float64(t.WaveTableAmplitude)) * 128.0 * intensity
+	pan := int(math.Round(panF))
 
-// calcSpinPan returns a pan position in [-128..127] based on spinPos and intensity.
-// spinPos is expected to be roughly in [-128..127] as in the current code.
-func calcSpinPan(spinPos int, intensity float64) int {
-	spinGain := 0.5 + (intensity*0.7)*3.5
-
-	ampSpin := int(float64(spinPos) * spinGain)
-	if ampSpin > 127 {
-		ampSpin = 127
+	if pan < -128 {
+		pan = -128
 	}
-	if ampSpin < -128 {
-		ampSpin = -128
-	}
-	return ampSpin
-}
-
-// applySpinCrossMix applies the same cross-mix logic you currently use.
-// Inputs must already be scaled (i.e., amplitude already applied).
-func applySpinCrossMix(inL, inR int, ampSpin int) (outL, outR int) {
-	posVal := ampSpin
-	if posVal < 0 {
-		posVal = -posVal
-	}
-	if posVal > 128 {
-		posVal = 128
+	if pan > 128 {
+		pan = 128
 	}
 
-	if ampSpin >= 0 {
-		outL = (inL * (128 - posVal)) >> 7
-		outR = inR + ((inL * posVal) >> 7)
-	} else {
-		outL = inL + ((inR * posVal) >> 7)
-		outR = (inR * (128 - posVal)) >> 7
-	}
+	pos := pan + 128 // 0..256
+	lGain := 256 - pos
+	rGain := pos
+
+	outL = int((int64(inL) * int64(lGain)) >> 8) // /256
+	outR = int((int64(inR) * int64(rGain)) >> 8)
 
 	return outL, outR
 }

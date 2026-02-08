@@ -80,13 +80,11 @@ func (r *AudioRenderer) sync(timeMs int, periodIdx int) {
 			if tr1.Effect.Type == t.EffectSpin {
 				cfg1 := tr1.Effect.Configuration.(t.EffectSpinConfiguration)
 				channel.Track.Effect.Configuration = t.EffectSpinConfiguration{
-					Width: cfg0.Width*(1-alpha) + cfg1.Width*alpha,
-					Rate:  cfg0.Rate*(1-alpha) + cfg1.Rate*alpha,
+					Rate: cfg0.Rate*(1-alpha) + cfg1.Rate*alpha,
 				}
 			} else {
 				channel.Track.Effect.Configuration = t.EffectSpinConfiguration{
-					Width: cfg0.Width,
-					Rate:  cfg0.Rate,
+					Rate: cfg0.Rate,
 				}
 			}
 		}
@@ -120,7 +118,6 @@ func (r *AudioRenderer) sync(timeMs int, periodIdx int) {
 		case t.EffectSpin:
 			cfg := channel.Track.Effect.Configuration.(t.EffectSpinConfiguration)
 			channel.Effect.Increment = int(cfg.Rate / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)
-			channel.Effect.Params[t.EffectParamSpinWidthScalar] = int(r.calcSpinIncrement(channel))
 		case t.EffectPulse:
 			cfg := channel.Track.Effect.Configuration.(t.EffectPulseConfiguration)
 			channel.Effect.Increment = int(cfg.Pulse / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)

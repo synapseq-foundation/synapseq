@@ -75,8 +75,7 @@ type EffectState struct {
 
 // EffectSpinConfiguration represents the configuration for a spin effect
 type EffectSpinConfiguration struct {
-	Width float64
-	Rate  float64
+	Rate float64
 }
 
 // EffectPulseConfiguration represents the configuration for a pulse effect

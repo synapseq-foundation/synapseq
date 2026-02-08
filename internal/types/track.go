@@ -108,15 +108,32 @@ func (tr *Track) String() string {
 	case TrackPureTone:
 		return fmt.Sprintf("%s %s %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, KeywordAmplitude, tr.Amplitude.ToPercent())
 	case TrackBinauralBeat, TrackMonauralBeat, TrackIsochronicBeat:
-		return fmt.Sprintf("%s %s %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordAmplitude, tr.Amplitude.ToPercent())
+		switch tr.Effect.Type {
+		case EffectSpin:
+			cfg := tr.Effect.Configuration.(EffectSpinConfiguration)
+			return fmt.Sprintf("%s %s %s %.2f %s %2.f %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordSpin, cfg.Rate, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+		case EffectPulse:
+			cfg := tr.Effect.Configuration.(EffectPulseConfiguration)
+			return fmt.Sprintf("%s %s %s %.2f %s %2.f %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordPulse, cfg.Pulse, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+		default:
+			return fmt.Sprintf("%s %s %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordAmplitude, tr.Amplitude.ToPercent())
+		}
 	case TrackWhiteNoise, TrackPinkNoise, TrackBrownNoise:
-		return fmt.Sprintf("%s %s %s %.2f", KeywordNoise, tr.Type.String(), KeywordAmplitude, tr.Amplitude.ToPercent())
+		switch tr.Effect.Type {
+		case EffectSpin:
+			cfg := tr.Effect.Configuration.(EffectSpinConfiguration)
+			return fmt.Sprintf("%s %s %s %.2f %s %.2f %s %.2f", KeywordNoise, tr.Type.String(), KeywordSpin, cfg.Rate, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+		case EffectPulse:
+			cfg := tr.Effect.Configuration.(EffectPulseConfiguration)
+			return fmt.Sprintf("%s %s %s %.2f %s %.2f %s %.2f", KeywordNoise, tr.Type.String(), KeywordPulse, cfg.Pulse, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+		default:
+			return fmt.Sprintf("%s %s %s %.2f", KeywordNoise, tr.Type.String(), KeywordAmplitude, tr.Amplitude.ToPercent())
+		}
 	case TrackBackground:
-		// Special handling for background effects
 		switch tr.Effect.Type {
 		case EffectSpin:
 			ec := tr.Effect.Configuration.(EffectSpinConfiguration)
-			return fmt.Sprintf("%s %s %s %s %.2f %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordBackground, KeywordSpin, ec.Width, KeywordRate, ec.Rate, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+			return fmt.Sprintf("%s %s %s %s %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordBackground, KeywordSpin, KeywordRate, ec.Rate, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
 		case EffectPulse:
 			ec := tr.Effect.Configuration.(EffectPulseConfiguration)
 			return fmt.Sprintf("%s %s %s %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordBackground, KeywordPulse, ec.Pulse, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
@@ -136,17 +153,38 @@ func (tr *Track) ShortString() string {
 	case TrackPureTone:
 		return fmt.Sprintf(" (%s:%.2f %s:%.2f)", KeywordTone, tr.Carrier, KeywordAmplitude, tr.Amplitude.ToPercent())
 	case TrackBinauralBeat, TrackMonauralBeat, TrackIsochronicBeat:
-		return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f)",
-			KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordAmplitude, tr.Amplitude.ToPercent())
-	case TrackWhiteNoise, TrackPinkNoise, TrackBrownNoise:
-		return fmt.Sprintf(" (%s:%.2f)", KeywordNoise, tr.Amplitude.ToPercent())
-	case TrackBackground:
-		// Special handling for background effects
 		switch tr.Effect.Type {
 		case EffectSpin:
 			cfg := tr.Effect.Configuration.(EffectSpinConfiguration)
-			return fmt.Sprintf(" (%s:%s %s:%.2f %s:%.2f %s:%.2f %s:%.2f)",
-				KeywordEffect, tr.Effect.Type.String(), KeywordWidth, cfg.Width, KeywordRate, cfg.Rate, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f %s:%.2f %s:%.2f)",
+				KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordSpin, cfg.Rate, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+		case EffectPulse:
+			cfg := tr.Effect.Configuration.(EffectPulseConfiguration)
+			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f %s:%.2f %s:%.2f)",
+				KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordPulse, cfg.Pulse, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+		default:
+			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f)",
+				KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordAmplitude, tr.Amplitude.ToPercent())
+		}
+	case TrackWhiteNoise, TrackPinkNoise, TrackBrownNoise:
+		switch tr.Effect.Type {
+		case EffectSpin:
+			cfg := tr.Effect.Configuration.(EffectSpinConfiguration)
+			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f)",
+				KeywordNoise, tr.Amplitude.ToPercent(), KeywordSpin, cfg.Rate, KeywordIntensity, tr.Intensity.ToPercent())
+		case EffectPulse:
+			cfg := tr.Effect.Configuration.(EffectPulseConfiguration)
+			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f)",
+				KeywordNoise, tr.Amplitude.ToPercent(), KeywordPulse, cfg.Pulse, KeywordIntensity, tr.Intensity.ToPercent())
+		default:
+			return fmt.Sprintf(" (%s:%.2f)", KeywordNoise, tr.Amplitude.ToPercent())
+		}
+	case TrackBackground:
+		switch tr.Effect.Type {
+		case EffectSpin:
+			cfg := tr.Effect.Configuration.(EffectSpinConfiguration)
+			return fmt.Sprintf(" (%s:%s %s:%.2f %s:%.2f %s:%.2f)",
+				KeywordEffect, tr.Effect.Type.String(), KeywordRate, cfg.Rate, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
 		case EffectPulse:
 			cfg := tr.Effect.Configuration.(EffectPulseConfiguration)
 			return fmt.Sprintf(" (%s:%s %s:%.2f %s:%.2f %s:%.2f)",

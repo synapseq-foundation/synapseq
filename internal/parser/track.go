@@ -156,15 +156,6 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 			if tok == t.KeywordSpin {
 				effect.Type = t.EffectSpin
 
-				width, err := ctx.Line.NextFloat64Strict()
-				if err != nil {
-					return nil, fmt.Errorf("width: %w", err)
-				}
-
-				if _, err := ctx.Line.NextExpectOneOf(t.KeywordRate); err != nil {
-					return nil, fmt.Errorf("expected %q after width: %s", t.KeywordRate, ln)
-				}
-
 				rate, err := ctx.Line.NextFloat64Strict()
 				if err != nil {
 					return nil, fmt.Errorf("rate: %w", err)
@@ -184,79 +175,14 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 				}
 
 				effect.Configuration = t.EffectSpinConfiguration{
-					Width: width,
-					Rate:  rate,
+					Rate: rate,
 				}
 				effect.Intensity = t.IntensityPercentToRaw(intensity)
 			}
 		case t.TrackPureTone:
-			tok, err := ctx.Line.NextExpectOneOf(t.KeywordSpin, t.KeywordPulse, t.KeywordAmplitude)
+			_, err := ctx.Line.NextExpectOneOf(t.KeywordAmplitude)
 			if err != nil {
-				return nil, fmt.Errorf("expected %q, %q or %q after carrier: %s", t.KeywordSpin, t.KeywordPulse, t.KeywordAmplitude, ln)
-			}
-
-			if tok == t.KeywordSpin {
-				effect.Type = t.EffectSpin
-
-				width, err := ctx.Line.NextFloat64Strict()
-				if err != nil {
-					return nil, fmt.Errorf("width: %w", err)
-				}
-
-				if _, err := ctx.Line.NextExpectOneOf(t.KeywordRate); err != nil {
-					return nil, fmt.Errorf("expected %q after width: %s", t.KeywordRate, ln)
-				}
-
-				rate, err := ctx.Line.NextFloat64Strict()
-				if err != nil {
-					return nil, fmt.Errorf("rate: %w", err)
-				}
-
-				if _, err := ctx.Line.NextExpectOneOf(t.KeywordIntensity); err != nil {
-					return nil, fmt.Errorf("expected %q after rate: %s", t.KeywordIntensity, ln)
-				}
-
-				intensity, err := ctx.Line.NextFloat64Strict()
-				if err != nil {
-					return nil, fmt.Errorf("intensity: %w", err)
-				}
-
-				if _, err := ctx.Line.NextExpectOneOf(t.KeywordAmplitude); err != nil {
-					return nil, fmt.Errorf("expected %q after intensity: %s", t.KeywordAmplitude, ln)
-				}
-
-				effect.Configuration = t.EffectSpinConfiguration{
-					Width: width,
-					Rate:  rate,
-				}
-				effect.Intensity = t.IntensityPercentToRaw(intensity)
-			}
-
-			if tok == t.KeywordPulse {
-				effect.Type = t.EffectPulse
-
-				pulse, err := ctx.Line.NextFloat64Strict()
-				if err != nil {
-					return nil, fmt.Errorf("pulse: %w", err)
-				}
-
-				if _, err := ctx.Line.NextExpectOneOf(t.KeywordIntensity); err != nil {
-					return nil, fmt.Errorf("expected %q after pulse: %s", t.KeywordIntensity, ln)
-				}
-
-				intensity, err := ctx.Line.NextFloat64Strict()
-				if err != nil {
-					return nil, fmt.Errorf("intensity: %w", err)
-				}
-
-				if _, err := ctx.Line.NextExpectOneOf(t.KeywordAmplitude); err != nil {
-					return nil, fmt.Errorf("expected %q after intensity: %s", t.KeywordAmplitude, ln)
-				}
-
-				effect.Configuration = t.EffectPulseConfiguration{
-					Pulse: pulse,
-				}
-				effect.Intensity = t.IntensityPercentToRaw(intensity)
+				return nil, fmt.Errorf("expected %q after carrier: %s", t.KeywordAmplitude, ln)
 			}
 		}
 		if amplitude, err = ctx.Line.NextFloat64Strict(); err != nil {
@@ -278,9 +204,63 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 			trackType = t.TrackBrownNoise
 		}
 
-		if _, err := ctx.Line.NextExpectOneOf(t.KeywordAmplitude); err != nil {
-			return nil, fmt.Errorf("expected %q after noise type: %s", t.KeywordAmplitude, ln)
+		tok, err := ctx.Line.NextExpectOneOf(t.KeywordSpin, t.KeywordPulse, t.KeywordAmplitude)
+		if err != nil {
+			return nil, fmt.Errorf("expected %q, %q or %q after noise type: %s", t.KeywordSpin, t.KeywordPulse, t.KeywordAmplitude, ln)
 		}
+
+		if tok == t.KeywordSpin {
+			effect.Type = t.EffectSpin
+			var rate, intensity float64
+
+			if rate, err = ctx.Line.NextFloat64Strict(); err != nil {
+				return nil, fmt.Errorf("rate: %w", err)
+			}
+
+			if _, err := ctx.Line.NextExpectOneOf(t.KeywordIntensity); err != nil {
+				return nil, fmt.Errorf("expected %q after rate: %s", t.KeywordIntensity, ln)
+			}
+
+			if intensity, err = ctx.Line.NextFloat64Strict(); err != nil {
+				return nil, fmt.Errorf("intensity: %w", err)
+			}
+
+			if _, err := ctx.Line.NextExpectOneOf(t.KeywordAmplitude); err != nil {
+				return nil, fmt.Errorf("expected %q after intensity: %s", t.KeywordAmplitude, ln)
+			}
+
+			effect.Configuration = t.EffectSpinConfiguration{
+				Rate: rate,
+			}
+			effect.Intensity = t.IntensityPercentToRaw(intensity)
+		}
+
+		if tok == t.KeywordPulse {
+			effect.Type = t.EffectPulse
+			var pulse, intensity float64
+
+			if pulse, err = ctx.Line.NextFloat64Strict(); err != nil {
+				return nil, fmt.Errorf("pulse: %w", err)
+			}
+
+			if _, err := ctx.Line.NextExpectOneOf(t.KeywordIntensity); err != nil {
+				return nil, fmt.Errorf("expected %q after pulse: %s", t.KeywordIntensity, ln)
+			}
+
+			if intensity, err = ctx.Line.NextFloat64Strict(); err != nil {
+				return nil, fmt.Errorf("intensity: %w", err)
+			}
+
+			if _, err := ctx.Line.NextExpectOneOf(t.KeywordAmplitude); err != nil {
+				return nil, fmt.Errorf("expected %q after intensity: %s", t.KeywordAmplitude, ln)
+			}
+
+			effect.Configuration = t.EffectPulseConfiguration{
+				Pulse: pulse,
+			}
+			effect.Intensity = t.IntensityPercentToRaw(intensity)
+		}
+
 		if amplitude, err = ctx.Line.NextFloat64Strict(); err != nil {
 			return nil, fmt.Errorf("amplitude: %w", err)
 		}
@@ -301,14 +281,8 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 			}
 		case t.KeywordSpin:
 			effect.Type = t.EffectSpin
-			var width, rate float64
+			var rate float64
 
-			if width, err = ctx.Line.NextFloat64Strict(); err != nil {
-				return nil, fmt.Errorf("width: %w", err)
-			}
-			if _, err := ctx.Line.NextExpectOneOf(t.KeywordRate); err != nil {
-				return nil, fmt.Errorf("expected %q after carrier: %s", t.KeywordRate, ln)
-			}
 			if rate, err = ctx.Line.NextFloat64Strict(); err != nil {
 				return nil, fmt.Errorf("rate: %w", err)
 			}
@@ -326,8 +300,7 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 			}
 
 			configuration = t.EffectSpinConfiguration{
-				Width: width,
-				Rate:  rate,
+				Rate: rate,
 			}
 		case t.KeywordPulse:
 			effect.Type = t.EffectPulse

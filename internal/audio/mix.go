@@ -22,10 +22,14 @@ func (r *AudioRenderer) mix(samples []int) []int {
 	// Read background audio samples if enabled
 	var backgroundSamples []int
 
-	if r.backgroundAudio.IsEnabled() {
-		// Buffer for background audio
-		backgroundSamples = make([]int, t.BufferSize*audioChannels) // Stereo
-		r.backgroundAudio.ReadSamples(backgroundSamples, t.BufferSize*audioChannels)
+	if r.backgroundAudio != nil && r.backgroundAudio.IsEnabled() {
+		need := t.BufferSize * audioChannels // Stereo
+		if len(r.backgroundSamples) != need {
+			r.backgroundSamples = make([]int, need)
+		}
+
+		backgroundSamples = r.backgroundSamples
+		r.backgroundAudio.ReadSamples(backgroundSamples, need)
 	}
 
 	for i := range t.BufferSize {
@@ -76,12 +80,23 @@ func (r *AudioRenderer) mix(samples []int) []int {
 				freqHigh := r.waveTables[waveIdx][channel.Offset[0]>>16]
 				freqLow := r.waveTables[waveIdx][channel.Offset[1]>>16]
 
-				// halfAmp := channel.Amplitude[0] / 2
-				// mixedSample := halfAmp * (freqHigh + freqLow)
 				mixedSample := (channel.Amplitude[0] * (freqHigh + freqLow)) >> 1
 
-				left += mixedSample
-				right += mixedSample
+				if channel.Track.Effect.Type == t.EffectSpin {
+					channel.Effect.Offset += channel.Effect.Increment
+					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
+
+					ll := mixedSample
+					rr := mixedSample
+
+					ll, rr = r.applySpin(channel, ll, rr)
+
+					left += ll
+					right += rr
+				} else {
+					left += mixedSample
+					right += mixedSample
+				}
 			case t.TrackIsochronicBeat:
 				channel.Offset[0] += channel.Increment[0]
 				channel.Offset[0] &= (t.SineTableSize << 16) - 1
@@ -96,8 +111,22 @@ func (r *AudioRenderer) mix(samples []int) []int {
 
 				out := int(amp * carrier * modFactor)
 
-				left += out
-				right += out
+				// Optional Spin effect (pan/crossmix)
+				if channel.Track.Effect.Type == t.EffectSpin {
+					channel.Effect.Offset += channel.Effect.Increment
+					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
+
+					ll := out
+					rr := out
+
+					ll, rr = r.applySpin(channel, ll, rr)
+
+					left += ll
+					right += rr
+				} else {
+					left += out
+					right += out
+				}
 			case t.TrackWhiteNoise, t.TrackPinkNoise, t.TrackBrownNoise:
 				// Use pre-generated pink noise sample for efficiency
 				noiseVal := r.noiseGenerator.Generate(t.TrackPinkNoise)
@@ -107,8 +136,36 @@ func (r *AudioRenderer) mix(samples []int) []int {
 
 				// Scale noise by amplitude
 				sampleVal := channel.Amplitude[0] * noiseVal
-				left += sampleVal
-				right += sampleVal
+
+				switch channel.Track.Effect.Type {
+				case t.EffectPulse:
+					channel.Effect.Offset += channel.Effect.Increment
+					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
+
+					modFactor := r.calcPulseFactor(channel.Track.Waveform, channel.Effect.Offset) // 0..1
+
+					// Intensity (0..100) -> 0..1
+					effectIntensity := float64(channel.Track.Intensity) * 0.7
+
+					gain := (1.0 - effectIntensity) + (effectIntensity * modFactor)
+					sampleVal = int(float64(sampleVal) * gain)
+
+					left += sampleVal
+					right += sampleVal
+				case t.EffectSpin:
+					channel.Effect.Offset += channel.Effect.Increment
+					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
+
+					ll, rr := sampleVal, sampleVal
+					ll, rr = r.applySpin(channel, ll, rr)
+
+					left += ll
+					right += rr
+
+				default:
+					left += sampleVal
+					right += sampleVal
+				}
 			case t.TrackBackground:
 				// Scale factor to match wavetable amplitude range
 				// WaveTableAmplitude (0x7FFFF = 524287) vs 16-bit samples (32768)
@@ -133,17 +190,12 @@ func (r *AudioRenderer) mix(samples []int) []int {
 					channel.Effect.Offset += channel.Effect.Increment
 					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
 
-					lfo := r.waveTables[waveIdx][channel.Effect.Offset>>16]
-					spinPos := (channel.Effect.Params[t.EffectParamSpinWidthScalar] * lfo) >> 24
-
 					inL := bgLeft * backgroundAmplitude
 					inR := bgRight * backgroundAmplitude
 
-					ampSpin := calcSpinPan(spinPos, float64(channel.Track.Intensity))
-					spinLeft, spinRight := applySpinCrossMix(inL, inR, ampSpin)
-
-					left += spinLeft
-					right += spinRight
+					outL, outR := r.applySpin(channel, inL, inR)
+					left += outL
+					right += outR
 				case t.EffectPulse:
 					// LFO for pulse modulation
 					channel.Effect.Offset += channel.Effect.Increment
