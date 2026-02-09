@@ -65,7 +65,7 @@ func TestParseTrackOverride_Success(ts *testing.T) {
 		Resonance: 5,
 		Amplitude: t.AmplitudePercentToRaw(40),
 		Waveform:  t.WaveformSine,
-		Effect:    t.Effect{Type: t.EffectSpin, Intensity: t.IntensityPercentToRaw(75)},
+		Effect:    t.Effect{Type: t.EffectPan, Intensity: t.IntensityPercentToRaw(75)},
 	}
 	templatePreset.Track[2] = t.Track{
 		Type:      t.TrackMonauralBeat,
@@ -196,14 +196,14 @@ func TestParseTrackOverride_Errors(ts *testing.T) {
 		Resonance: 5,
 		Amplitude: t.AmplitudePercentToRaw(40),
 		Waveform:  t.WaveformSine,
-		Effect:    t.Effect{Type: t.EffectSpin, Intensity: t.IntensityPercentToRaw(75)},
+		Effect:    t.Effect{Type: t.EffectPan, Intensity: t.IntensityPercentToRaw(75)},
 	}
 	templatePreset.Track[2] = t.Track{
 		Type:      t.TrackBackground,
 		Resonance: 2.5,
 		Amplitude: t.AmplitudePercentToRaw(40),
 		Waveform:  t.WaveformSine,
-		Effect:    t.Effect{Type: t.EffectPulse, Intensity: t.IntensityPercentToRaw(60)},
+		Effect:    t.Effect{Type: t.EffectModulation, Intensity: t.IntensityPercentToRaw(60)},
 	}
 
 	// Create derived preset

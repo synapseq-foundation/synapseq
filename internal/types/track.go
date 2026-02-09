@@ -124,8 +124,8 @@ func (tr *Track) Validate() error {
 		if tr.Resonance >= 2*tr.Carrier {
 			return fmt.Errorf("binaural beat must be < 2*carrier (carrier - beat/2 must be > 0). Received beat: %.2f, carrier: %.2f", tr.Resonance, tr.Carrier)
 		}
-		if tr.Effect.Type == EffectSpin {
-			return fmt.Errorf("spin is not supported for binaural beats")
+		if tr.Effect.Type == EffectPan {
+			return fmt.Errorf("pan is not supported for binaural beats")
 		}
 	case TrackMonauralBeat:
 		if tr.Carrier <= 0 {
@@ -140,8 +140,8 @@ func (tr *Track) Validate() error {
 		if tr.Resonance >= 2*tr.Carrier {
 			return fmt.Errorf("monaural beat must be < 2*carrier (carrier - beat/2 must be > 0). Received beat: %.2f, carrier: %.2f", tr.Resonance, tr.Carrier)
 		}
-		if tr.Effect.Type == EffectPulse {
-			return fmt.Errorf("pulse is not supported for monaural beats")
+		if tr.Effect.Type == EffectModulation {
+			return fmt.Errorf("modulation is not supported for monaural beats")
 		}
 	case TrackIsochronicBeat:
 		if tr.Carrier <= 0 {
@@ -153,8 +153,8 @@ func (tr *Track) Validate() error {
 		if tr.Resonance < minBeatHz {
 			return fmt.Errorf("isochronic rate must be >= %.2f Hz. Received: %.2f", minBeatHz, tr.Resonance)
 		}
-		if tr.Effect.Type == EffectPulse {
-			return fmt.Errorf("pulse is not supported for isochronic beats")
+		if tr.Effect.Type == EffectModulation {
+			return fmt.Errorf("modulation is not supported for isochronic beats")
 		}
 	}
 
@@ -176,7 +176,7 @@ func (tr *Track) String() string {
 		if tr.Effect.Type == EffectOff {
 			return fmt.Sprintf("%s %s %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordAmplitude, tr.Amplitude.ToPercent())
 		} else {
-			return fmt.Sprintf("%s %s %s %.2f %s %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+			return fmt.Sprintf("%s %s %s %.2f %s %.2f %s %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
 		}
 	case TrackWhiteNoise, TrackPinkNoise, TrackBrownNoise:
 		if tr.Effect.Type == EffectOff {

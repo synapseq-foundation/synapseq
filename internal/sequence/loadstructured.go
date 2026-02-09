@@ -250,9 +250,9 @@ func LoadStructuredSequence(filename string, format t.FileFormat) (*t.Sequence, 
 				effect.Intensity = t.IntensityPercentToRaw(seq.Track.Background.Effect.Intensity)
 
 				if seq.Track.Background.Effect.Spin != nil {
-					effect.Type = t.EffectSpin
+					effect.Type = t.EffectPan
 				} else if seq.Track.Background.Effect.Pulse != nil {
-					effect.Type = t.EffectPulse
+					effect.Type = t.EffectModulation
 				} else {
 					return nil, fmt.Errorf("invalid background effect type")
 				}
@@ -260,7 +260,7 @@ func LoadStructuredSequence(filename string, format t.FileFormat) (*t.Sequence, 
 
 			var bgTrack t.Track
 			switch effect.Type {
-			case t.EffectSpin:
+			case t.EffectPan:
 				bgTrack = t.Track{
 					Type:      t.TrackBackground,
 					Carrier:   seq.Track.Background.Effect.Spin.Width,
@@ -269,7 +269,7 @@ func LoadStructuredSequence(filename string, format t.FileFormat) (*t.Sequence, 
 					Waveform:  waveForm,
 					Effect:    effect,
 				}
-			case t.EffectPulse:
+			case t.EffectModulation:
 				bgTrack = t.Track{
 					Type:      t.TrackBackground,
 					Resonance: seq.Track.Background.Effect.Pulse.Resonance,

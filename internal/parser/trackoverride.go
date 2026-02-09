@@ -68,9 +68,9 @@ func (ctx *TextParser) ParseTrackOverride(preset *t.Preset) error {
 		t.KeywordBinaural,
 		t.KeywordMonaural,
 		t.KeywordIsochronic,
-		t.KeywordSpin,
-		t.KeywordPulse,
-		t.KeywordRate,
+		t.KeywordPan,
+		t.KeywordModulation,
+		t.KeywordDoppler,
 		t.KeywordAmplitude,
 		t.KeywordIntensity)
 	if err != nil {
@@ -80,25 +80,25 @@ func (ctx *TextParser) ParseTrackOverride(preset *t.Preset) error {
 			t.KeywordBinaural,
 			t.KeywordMonaural,
 			t.KeywordIsochronic,
-			t.KeywordSpin,
-			t.KeywordPulse,
-			t.KeywordRate,
+			t.KeywordPan,
+			t.KeywordModulation,
+			t.KeywordDoppler,
 			t.KeywordAmplitude,
 			ln)
 	}
 
 	switch kind {
-	case t.KeywordTone, t.KeywordSpin:
+	case t.KeywordTone, t.KeywordPan:
 		track := preset.Track[idx]
 
 		if kind == t.KeywordTone && track.Type == t.TrackBackground {
 			return fmt.Errorf("background track %d cannot have a tone carrier", trackIdx)
 		}
-		if kind == t.KeywordSpin && track.Type != t.TrackBackground {
-			return fmt.Errorf("track %d must be a background track to set spin width, it is %q", trackIdx, track.Type.String())
+		if kind == t.KeywordPan && track.Type != t.TrackBackground {
+			return fmt.Errorf("track %d must be a background track to set pan width, it is %q", trackIdx, track.Type.String())
 		}
-		if kind == t.KeywordSpin && track.Effect.Type != t.EffectSpin {
-			return fmt.Errorf("spin width can only be set on track %d with spin effect, it is %q", trackIdx, track.Effect.Type.String())
+		if kind == t.KeywordPan && track.Effect.Type != t.EffectPan {
+			return fmt.Errorf("pan width can only be set on track %d with pan effect, it is %q", trackIdx, track.Effect.Type.String())
 		}
 
 		carrier, err := ctx.Line.NextFloat64Strict()
@@ -107,21 +107,19 @@ func (ctx *TextParser) ParseTrackOverride(preset *t.Preset) error {
 		}
 
 		preset.Track[idx].Carrier = carrier
-	case t.KeywordBinaural, t.KeywordMonaural, t.KeywordIsochronic, t.KeywordRate, t.KeywordPulse:
+	case t.KeywordBinaural, t.KeywordMonaural, t.KeywordIsochronic, t.KeywordModulation:
 		track := preset.Track[idx]
 
 		// Validate that the track type matches the keyword being set
 		if (kind == t.KeywordBinaural && track.Type != t.TrackBinauralBeat) ||
 			(kind == t.KeywordMonaural && track.Type != t.TrackMonauralBeat) ||
 			(kind == t.KeywordIsochronic && track.Type != t.TrackIsochronicBeat) ||
-			(kind == t.KeywordRate && track.Type != t.TrackBackground) ||
-			(kind == t.KeywordPulse && track.Type != t.TrackBackground) {
+			(kind == t.KeywordModulation && track.Type != t.TrackBackground) {
 			return fmt.Errorf("cannot change track %d type to %q, it is %q", trackIdx, kind, track.Type.String())
 		}
 
 		// Validate that the effect type matches the keyword being set
-		if (kind == t.KeywordRate && track.Effect.Type != t.EffectSpin) ||
-			(kind == t.KeywordPulse && track.Effect.Type != t.EffectPulse) {
+		if kind == t.KeywordModulation && track.Effect.Type != t.EffectModulation {
 			return fmt.Errorf("cannot change track %d effect to %q, it is %q", trackIdx, kind, track.Effect.Type.String())
 		}
 
