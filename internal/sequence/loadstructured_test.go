@@ -617,14 +617,14 @@ func TestLoadStructured_JSON_WithBackground(ts *testing.T) {
 	for _, track := range res.Periods[1].TrackStart {
 		if track.Type == t.TrackBackground &&
 			track.Amplitude == t.AmplitudePercentToRaw(50) &&
-			track.Effect.Type == t.EffectPulse &&
+			track.Effect.Type == t.EffectModulation &&
 			track.Resonance == 10 {
 			found = true
 			break
 		}
 	}
 	if !found {
-		ts.Fatalf("missing expected background track with pulse effect in period[1]")
+		ts.Fatalf("missing expected background track with modulation effect in period[1]")
 	}
 }
 
@@ -632,7 +632,7 @@ func TestLoadStructured_XML_WithBackground(ts *testing.T) {
 	xml := `<?xml version="1.0" encoding="UTF-8"?>
 <SynapSeqInput>
   <description>
-    <line>Background test with spin effect</line>
+    <line>Background test with pan effect</line>
   </description>
   <options>
     <samplerate>44100</samplerate>
@@ -695,7 +695,7 @@ func TestLoadStructured_XML_WithBackground(ts *testing.T) {
 	for _, track := range res.Periods[1].TrackStart {
 		if track.Type == t.TrackBackground &&
 			track.Amplitude == t.AmplitudePercentToRaw(50) &&
-			track.Effect.Type == t.EffectSpin &&
+			track.Effect.Type == t.EffectPan &&
 			track.Carrier == 400 &&
 			track.Resonance == 10 {
 			found = true
@@ -703,7 +703,7 @@ func TestLoadStructured_XML_WithBackground(ts *testing.T) {
 		}
 	}
 	if !found {
-		ts.Fatalf("missing expected background track with spin effect in period[1]")
+		ts.Fatalf("missing expected background track with pan effect in period[1]")
 	}
 }
 
@@ -781,14 +781,14 @@ sequence:
 	for _, track := range res.Periods[1].TrackStart {
 		if track.Type == t.TrackBackground &&
 			track.Amplitude == t.AmplitudePercentToRaw(50) &&
-			track.Effect.Type == t.EffectPulse &&
+			track.Effect.Type == t.EffectModulation &&
 			track.Resonance == 10 {
 			found = true
 			break
 		}
 	}
 	if !found {
-		ts.Fatalf("missing expected background track with pulse effect in period[1]")
+		ts.Fatalf("missing expected background track with modulation effect in period[1]")
 	}
 }
 
@@ -850,7 +850,7 @@ func TestLoadStructured_JSON_BackgroundWithVaryingIntensity(ts *testing.T) {
 	found := false
 	for _, track := range res.Periods[0].TrackStart {
 		if track.Type == t.TrackBackground &&
-			track.Effect.Type == t.EffectPulse &&
+			track.Effect.Type == t.EffectModulation &&
 			track.Effect.Intensity == t.IntensityPercentToRaw(60) {
 			found = true
 			break
@@ -864,7 +864,7 @@ func TestLoadStructured_JSON_BackgroundWithVaryingIntensity(ts *testing.T) {
 	found = false
 	for _, track := range res.Periods[1].TrackStart {
 		if track.Type == t.TrackBackground &&
-			track.Effect.Type == t.EffectPulse &&
+			track.Effect.Type == t.EffectModulation &&
 			track.Effect.Intensity == t.IntensityPercentToRaw(30) {
 			found = true
 			break
@@ -981,7 +981,7 @@ sequence:
 	for _, track := range res.Periods[1].TrackStart {
 		if track.Type == t.TrackBackground &&
 			track.Waveform == t.WaveformSine &&
-			track.Effect.Type == t.EffectPulse &&
+			track.Effect.Type == t.EffectModulation &&
 			track.Effect.Intensity == t.IntensityPercentToRaw(40) &&
 			track.Amplitude > 0 {
 			foundLowIntensity = true
@@ -997,7 +997,7 @@ sequence:
 	for _, track := range res.Periods[2].TrackStart {
 		if track.Type == t.TrackBackground &&
 			track.Waveform == t.WaveformSine &&
-			track.Effect.Type == t.EffectPulse &&
+			track.Effect.Type == t.EffectModulation &&
 			track.Effect.Intensity == t.IntensityPercentToRaw(70) &&
 			track.Amplitude > 0 {
 			foundHighIntensity = true
