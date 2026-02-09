@@ -41,11 +41,44 @@ func (r *AudioRenderer) mix(samples []int) []int {
 
 			switch channel.Track.Type {
 			case t.TrackPureTone:
-				channel.Offset[0] += channel.Increment[0]
+				inc0 := channel.Increment[0]
+
+				if channel.Track.Effect.Type == t.EffectDoppler {
+					channel.Effect.Offset += channel.Effect.Increment
+					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
+
+					factor := r.calcDopplerFactor(channel.Effect.Offset, channel.Track.Effect.Intensity)
+					inc0 = int(math.Round(float64(inc0) * factor))
+				}
+
+				channel.Offset[0] += inc0
 				channel.Offset[0] &= (t.SineTableSize << 16) - 1
 
-				left += channel.Amplitude[0] * r.waveTables[waveIdx][channel.Offset[0]>>16]
-				right += channel.Amplitude[0] * r.waveTables[waveIdx][channel.Offset[0]>>16]
+				sample := channel.Amplitude[0] * r.waveTables[waveIdx][channel.Offset[0]>>16]
+
+				if channel.Track.Effect.Type == t.EffectPulse {
+					channel.Effect.Offset += channel.Effect.Increment
+					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
+
+					modFactor := r.calcPulseFactor(channel.Track.Waveform, channel.Effect.Offset) // 0..1
+					effectIntensity := float64(channel.Track.Effect.Intensity) * 0.7              // intensity já é 0..1
+
+					gain := (1.0 - effectIntensity) + (effectIntensity * modFactor)
+					sample = int(float64(sample) * gain)
+				}
+
+				if channel.Track.Effect.Type == t.EffectSpin {
+					channel.Effect.Offset += channel.Effect.Increment
+					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
+
+					ll, rr := sample, sample
+					ll, rr = r.applySpin(channel, ll, rr)
+					left += ll
+					right += rr
+				} else {
+					left += sample
+					right += sample
+				}
 			case t.TrackBinauralBeat:
 				inc0 := channel.Increment[0]
 				inc1 := channel.Increment[1]
@@ -54,7 +87,7 @@ func (r *AudioRenderer) mix(samples []int) []int {
 					channel.Effect.Offset += channel.Effect.Increment
 					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
 
-					factor := r.calcDopplerFactor(channel.Effect.Offset, channel.Track.Intensity)
+					factor := r.calcDopplerFactor(channel.Effect.Offset, channel.Track.Effect.Intensity)
 					inc0 = int(math.Round(float64(inc0) * factor))
 					inc1 = int(math.Round(float64(inc1) * factor))
 				}
@@ -73,7 +106,7 @@ func (r *AudioRenderer) mix(samples []int) []int {
 					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
 
 					modFactor := r.calcPulseFactor(channel.Track.Waveform, channel.Effect.Offset) // 0..1
-					effectIntensity := float64(channel.Track.Intensity) * 0.7
+					effectIntensity := float64(channel.Track.Effect.Intensity) * 0.7              // intensity já é 0..1
 
 					gain := (1.0 - effectIntensity) + (effectIntensity * modFactor)
 					ll = int(float64(ll) * gain)
@@ -90,7 +123,7 @@ func (r *AudioRenderer) mix(samples []int) []int {
 					channel.Effect.Offset += channel.Effect.Increment
 					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
 
-					factor := r.calcDopplerFactor(channel.Effect.Offset, channel.Track.Intensity)
+					factor := r.calcDopplerFactor(channel.Effect.Offset, channel.Track.Effect.Intensity)
 					inc0 = int(math.Round(float64(inc0) * factor))
 					inc1 = int(math.Round(float64(inc1) * factor))
 				}
@@ -126,7 +159,7 @@ func (r *AudioRenderer) mix(samples []int) []int {
 					channel.Effect.Offset += channel.Effect.Increment
 					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
 
-					factor := r.calcDopplerFactor(channel.Effect.Offset, channel.Track.Intensity)
+					factor := r.calcDopplerFactor(channel.Effect.Offset, channel.Track.Effect.Intensity)
 					incCarrier = int(math.Round(float64(incCarrier) * factor))
 				}
 
@@ -174,7 +207,7 @@ func (r *AudioRenderer) mix(samples []int) []int {
 					modFactor := r.calcPulseFactor(channel.Track.Waveform, channel.Effect.Offset) // 0..1
 
 					// Intensity (0..100) -> 0..1
-					effectIntensity := float64(channel.Track.Intensity) * 0.7
+					effectIntensity := float64(channel.Track.Effect.Intensity) * 0.7
 
 					gain := (1.0 - effectIntensity) + (effectIntensity * modFactor)
 					sampleVal = int(float64(sampleVal) * gain)
@@ -234,7 +267,7 @@ func (r *AudioRenderer) mix(samples []int) []int {
 					modFactor := r.calcPulseFactor(channel.Track.Waveform, channel.Effect.Offset)
 
 					// Mix the effect (0..1) weighted by intensity
-					effectIntensity := float64(channel.Track.Intensity) * 0.7
+					effectIntensity := float64(channel.Track.Effect.Intensity) * 0.7
 					gain := (1.0 - effectIntensity) + (effectIntensity * modFactor)
 
 					left += int(float64(bgLeft*backgroundAmplitude) * gain)

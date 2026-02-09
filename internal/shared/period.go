@@ -27,21 +27,21 @@ func AdjustPeriods(last, next *t.Period) error {
 		// Apply Fade-In
 		if tr0.Type == t.TrackSilence {
 			tr0.Type = tr2.Type
-			tr0.Effect.Type = tr2.Effect.Type
-			tr0.Effect.Configuration = tr2.Effect.Configuration
 			tr0.Carrier = tr2.Carrier
 			tr0.Resonance = tr2.Resonance
 			tr0.Amplitude = 0
-			tr0.Intensity = tr2.Intensity
 			tr0.Waveform = tr2.Waveform
+			tr0.Effect.Type = tr2.Effect.Type
+			tr0.Effect.Value = tr2.Effect.Value
+			tr0.Effect.Intensity = tr2.Effect.Intensity
 		}
 
 		// Apply Fade-Out
 		if tr2.Type == t.TrackSilence {
 			tr2.Carrier = tr1.Carrier
 			tr2.Resonance = tr1.Resonance
-			tr2.Intensity = tr1.Intensity
-			tr2.Effect.Configuration = tr1.Effect.Configuration
+			tr2.Effect.Intensity = tr1.Effect.Intensity
+			tr2.Effect.Value = tr1.Effect.Value
 		}
 
 		// Validate if previus period has a track on and next period turn it off or vice-versa
@@ -70,11 +70,11 @@ func AdjustPeriods(last, next *t.Period) error {
 		// Carry forward the track settings from the end of the last period to the start of the next period
 		tr1.Type = tr2.Type
 		tr1.Effect.Type = tr2.Effect.Type
-		tr1.Effect.Configuration = tr2.Effect.Configuration
+		tr1.Effect.Value = tr2.Effect.Value
 		tr1.Carrier = tr2.Carrier
 		tr1.Resonance = tr2.Resonance
 		tr1.Amplitude = tr2.Amplitude
-		tr1.Intensity = tr2.Intensity
+		tr1.Effect.Intensity = tr2.Effect.Intensity
 		tr1.Waveform = tr2.Waveform
 	}
 	return nil

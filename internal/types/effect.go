@@ -11,12 +11,6 @@
 
 package types
 
-// EffectConfiguration represents the configuration for an effect
-type EffectConfiguration interface {
-	// effectType is a marker method to indicate this type is an EffectConfiguration
-	effectType() EffectType
-}
-
 // EffectType represents the type of effect applied to a background track
 type EffectType int
 
@@ -51,8 +45,8 @@ func (et EffectType) String() string {
 type Effect struct {
 	// Effect type
 	Type EffectType
-	// Effect configuration
-	Configuration EffectConfiguration
+	// Effect value
+	Value float64
 	// Intensity (0-1.0 for 0-100%)
 	Intensity IntensityType
 }
@@ -63,23 +57,3 @@ type EffectState struct {
 	Increment int
 	Offset    int
 }
-
-// EffectSpinConfiguration represents the configuration for a spin effect
-type EffectSpinConfiguration struct {
-	Rate float64
-}
-
-// EffectPulseConfiguration represents the configuration for a pulse effect
-type EffectPulseConfiguration struct {
-	Pulse float64
-}
-
-// EffectDopplerConfiguration represents the configuration for a doppler effect
-type EffectDopplerConfiguration struct {
-	Rate float64
-}
-
-// Marker methods
-func (EffectSpinConfiguration) effectType() EffectType    { return EffectSpin }
-func (EffectPulseConfiguration) effectType() EffectType   { return EffectPulse }
-func (EffectDopplerConfiguration) effectType() EffectType { return EffectDoppler }

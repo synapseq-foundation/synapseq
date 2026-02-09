@@ -53,7 +53,7 @@ func (r *AudioRenderer) calcPulseFactor(waveform t.WaveformType, offset int) flo
 // applySpin applies the spin effect to the given input samples for a channel.
 func (r *AudioRenderer) applySpin(channel *t.Channel, inL, inR int) (outL, outR int) {
 	// Intensity is already 0..1 (see types.IntensityType)
-	intensity := float64(channel.Track.Intensity)
+	intensity := float64(channel.Track.Effect.Intensity)
 	if intensity < 0 {
 		intensity = 0
 	}

@@ -80,23 +80,84 @@ type Track struct {
 	// Waveform shape
 	Waveform WaveformType
 	// Effect configuration
-	Effect
+	Effect Effect
 }
 
 // Validate checks if the track configuration is valid
 func (tr *Track) Validate() error {
+	// Minimum beat frequency to avoid inaudible/ineffective beats
+	const minBeatHz = 0.1
+	effect := &tr.Effect
+
 	if tr.Amplitude < 0 || tr.Amplitude > 4096 {
 		return fmt.Errorf("amplitude must be between 0 and 100. Received: %.2f", tr.Amplitude.ToPercent())
 	}
 	if tr.Carrier < 0 {
-		return fmt.Errorf("carrier frequency must be positive. Received: %.2f", tr.Carrier)
+		return fmt.Errorf("carrier frequency must be a positive number. Received: %.2f", tr.Carrier)
 	}
 	if tr.Resonance < 0 {
-		return fmt.Errorf("resonance frequency must be positive. Received: %.2f", tr.Resonance)
+		return fmt.Errorf("resonance frequency must be a positive number. Received: %.2f", tr.Resonance)
 	}
-	if tr.Intensity < 0 || tr.Intensity > 1.0 {
-		return fmt.Errorf("intensity must be between 0 and 100. Received: %.2f", tr.Intensity.ToPercent())
+	if effect.Value < 0 {
+		return fmt.Errorf("effect value must be greater than or equal to 0. Received: %.2f", effect.Value)
 	}
+	if effect.Intensity < 0 || effect.Intensity > 1.0 {
+		return fmt.Errorf("intensity must be between 0 and 100. Received: %.2f", effect.Intensity.ToPercent())
+	}
+
+	// Track-type specific validation
+	switch tr.Type {
+	case TrackPureTone:
+		if tr.Resonance != 0 {
+			return fmt.Errorf("tone does not use beat/resonance (use binaural/monaural/isochronic). Received: %.2f", tr.Resonance)
+		}
+	case TrackBinauralBeat:
+		if tr.Carrier <= 0 {
+			return fmt.Errorf("carrier frequency must be greater than 0 for binaural beats. Received: %.2f", tr.Carrier)
+		}
+		if tr.Resonance >= tr.Carrier {
+			return fmt.Errorf("resonance frequency must be less than carrier frequency. Received resonance: %.2f, carrier: %.2f", tr.Resonance, tr.Carrier)
+		}
+		if tr.Resonance < minBeatHz {
+			return fmt.Errorf("binaural beat must be >= %.2f Hz. Received: %.2f", minBeatHz, tr.Resonance)
+		}
+		if tr.Resonance >= 2*tr.Carrier {
+			return fmt.Errorf("binaural beat must be < 2*carrier (carrier - beat/2 must be > 0). Received beat: %.2f, carrier: %.2f", tr.Resonance, tr.Carrier)
+		}
+		if tr.Effect.Type == EffectSpin {
+			return fmt.Errorf("spin is not supported for binaural beats")
+		}
+	case TrackMonauralBeat:
+		if tr.Carrier <= 0 {
+			return fmt.Errorf("carrier frequency must be greater than 0 for monaural beats. Received: %.2f", tr.Carrier)
+		}
+		if tr.Resonance >= tr.Carrier {
+			return fmt.Errorf("resonance frequency must be less than carrier frequency. Received resonance: %.2f, carrier: %.2f", tr.Resonance, tr.Carrier)
+		}
+		if tr.Resonance < minBeatHz {
+			return fmt.Errorf("monaural beat must be >= %.2f Hz. Received: %.2f", minBeatHz, tr.Resonance)
+		}
+		if tr.Resonance >= 2*tr.Carrier {
+			return fmt.Errorf("monaural beat must be < 2*carrier (carrier - beat/2 must be > 0). Received beat: %.2f, carrier: %.2f", tr.Resonance, tr.Carrier)
+		}
+		if tr.Effect.Type == EffectPulse {
+			return fmt.Errorf("pulse is not supported for monaural beats")
+		}
+	case TrackIsochronicBeat:
+		if tr.Carrier <= 0 {
+			return fmt.Errorf("carrier frequency must be greater than 0 for isochronic beats. Received: %.2f", tr.Carrier)
+		}
+		if tr.Resonance >= tr.Carrier {
+			return fmt.Errorf("resonance frequency must be less than carrier frequency. Received resonance: %.2f, carrier: %.2f", tr.Resonance, tr.Carrier)
+		}
+		if tr.Resonance < minBeatHz {
+			return fmt.Errorf("isochronic rate must be >= %.2f Hz. Received: %.2f", minBeatHz, tr.Resonance)
+		}
+		if tr.Effect.Type == EffectPulse {
+			return fmt.Errorf("pulse is not supported for isochronic beats")
+		}
+	}
+
 	return nil
 }
 
@@ -106,42 +167,28 @@ func (tr *Track) String() string {
 	case TrackOff, TrackSilence:
 		return "--"
 	case TrackPureTone:
-		return fmt.Sprintf("%s %s %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, KeywordAmplitude, tr.Amplitude.ToPercent())
+		if tr.Effect.Type == EffectOff {
+			return fmt.Sprintf("%s %s %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, KeywordAmplitude, tr.Amplitude.ToPercent())
+		} else {
+			return fmt.Sprintf("%s %s %s %.2f %s %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+		}
 	case TrackBinauralBeat, TrackMonauralBeat, TrackIsochronicBeat:
-		switch tr.Effect.Type {
-		case EffectSpin:
-			cfg := tr.Effect.Configuration.(EffectSpinConfiguration)
-			return fmt.Sprintf("%s %s %s %.2f %s %2.f %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordSpin, cfg.Rate, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
-		case EffectPulse:
-			cfg := tr.Effect.Configuration.(EffectPulseConfiguration)
-			return fmt.Sprintf("%s %s %s %.2f %s %2.f %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordPulse, cfg.Pulse, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
-		case EffectDoppler:
-			cfg := tr.Effect.Configuration.(EffectDopplerConfiguration)
-			return fmt.Sprintf("%s %s %s %.2f %s %2.f %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordDoppler, cfg.Rate, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
-		default:
+		if tr.Effect.Type == EffectOff {
 			return fmt.Sprintf("%s %s %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordAmplitude, tr.Amplitude.ToPercent())
+		} else {
+			return fmt.Sprintf("%s %s %s %.2f %s %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
 		}
 	case TrackWhiteNoise, TrackPinkNoise, TrackBrownNoise:
-		switch tr.Effect.Type {
-		case EffectSpin:
-			cfg := tr.Effect.Configuration.(EffectSpinConfiguration)
-			return fmt.Sprintf("%s %s %s %.2f %s %.2f %s %.2f", KeywordNoise, tr.Type.String(), KeywordSpin, cfg.Rate, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
-		case EffectPulse:
-			cfg := tr.Effect.Configuration.(EffectPulseConfiguration)
-			return fmt.Sprintf("%s %s %s %.2f %s %.2f %s %.2f", KeywordNoise, tr.Type.String(), KeywordPulse, cfg.Pulse, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
-		default:
+		if tr.Effect.Type == EffectOff {
 			return fmt.Sprintf("%s %s %s %.2f", KeywordNoise, tr.Type.String(), KeywordAmplitude, tr.Amplitude.ToPercent())
+		} else {
+			return fmt.Sprintf("%s %s %s %s %.2f %s %.2f %s %.2f", KeywordNoise, tr.Type.String(), KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
 		}
 	case TrackBackground:
-		switch tr.Effect.Type {
-		case EffectSpin:
-			ec := tr.Effect.Configuration.(EffectSpinConfiguration)
-			return fmt.Sprintf("%s %s %s %s %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordBackground, KeywordSpin, KeywordRate, ec.Rate, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
-		case EffectPulse:
-			ec := tr.Effect.Configuration.(EffectPulseConfiguration)
-			return fmt.Sprintf("%s %s %s %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordBackground, KeywordPulse, ec.Pulse, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
-		default:
+		if tr.Effect.Type == EffectOff {
 			return fmt.Sprintf("%s %s %.2f", KeywordBackground, KeywordAmplitude, tr.Amplitude.ToPercent())
+		} else {
+			return fmt.Sprintf("%s %s %s %.2f %s %.2f %s %.2f", KeywordBackground, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
 		}
 	default:
 		return " ???"
@@ -154,50 +201,28 @@ func (tr *Track) ShortString() string {
 	case TrackOff, TrackSilence:
 		return " -"
 	case TrackPureTone:
-		return fmt.Sprintf(" (%s:%.2f %s:%.2f)", KeywordTone, tr.Carrier, KeywordAmplitude, tr.Amplitude.ToPercent())
+		if tr.Effect.Type == EffectOff {
+			return fmt.Sprintf(" (%s:%.2f %s:%.2f)", KeywordTone, tr.Carrier, KeywordAmplitude, tr.Amplitude.ToPercent())
+		} else {
+			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f %s:%.2f)", KeywordTone, tr.Carrier, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+		}
 	case TrackBinauralBeat, TrackMonauralBeat, TrackIsochronicBeat:
-		switch tr.Effect.Type {
-		case EffectSpin:
-			cfg := tr.Effect.Configuration.(EffectSpinConfiguration)
-			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f %s:%.2f %s:%.2f)",
-				KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordSpin, cfg.Rate, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
-		case EffectPulse:
-			cfg := tr.Effect.Configuration.(EffectPulseConfiguration)
-			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f %s:%.2f %s:%.2f)",
-				KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordPulse, cfg.Pulse, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
-		case EffectDoppler:
-			cfg := tr.Effect.Configuration.(EffectDopplerConfiguration)
-			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f %s:%.2f %s:%.2f)",
-				KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordDoppler, cfg.Rate, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
-		default:
-			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f)",
-				KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordAmplitude, tr.Amplitude.ToPercent())
+		if tr.Effect.Type == EffectOff {
+			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f)", KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordAmplitude, tr.Amplitude.ToPercent())
+		} else {
+			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f %s:%.2f %s:%.2f)", KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
 		}
 	case TrackWhiteNoise, TrackPinkNoise, TrackBrownNoise:
-		switch tr.Effect.Type {
-		case EffectSpin:
-			cfg := tr.Effect.Configuration.(EffectSpinConfiguration)
-			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f)",
-				KeywordNoise, tr.Amplitude.ToPercent(), KeywordSpin, cfg.Rate, KeywordIntensity, tr.Intensity.ToPercent())
-		case EffectPulse:
-			cfg := tr.Effect.Configuration.(EffectPulseConfiguration)
-			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f)",
-				KeywordNoise, tr.Amplitude.ToPercent(), KeywordPulse, cfg.Pulse, KeywordIntensity, tr.Intensity.ToPercent())
-		default:
-			return fmt.Sprintf(" (%s:%.2f)", KeywordNoise, tr.Amplitude.ToPercent())
+		if tr.Effect.Type == EffectOff {
+			return fmt.Sprintf(" (%s:%.2f)", tr.Type.String(), tr.Amplitude.ToPercent())
+		} else {
+			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f)", tr.Type.String(), tr.Amplitude.ToPercent(), tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent())
 		}
 	case TrackBackground:
-		switch tr.Effect.Type {
-		case EffectSpin:
-			cfg := tr.Effect.Configuration.(EffectSpinConfiguration)
-			return fmt.Sprintf(" (%s:%s %s:%.2f %s:%.2f %s:%.2f)",
-				KeywordEffect, tr.Effect.Type.String(), KeywordRate, cfg.Rate, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
-		case EffectPulse:
-			cfg := tr.Effect.Configuration.(EffectPulseConfiguration)
-			return fmt.Sprintf(" (%s:%s %s:%.2f %s:%.2f %s:%.2f)",
-				KeywordEffect, tr.Effect.Type.String(), KeywordPulse, cfg.Pulse, KeywordIntensity, tr.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
-		default:
+		if tr.Effect.Type == EffectOff {
 			return fmt.Sprintf(" (%s:%.2f)", KeywordAmplitude, tr.Amplitude.ToPercent())
+		} else {
+			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f)", KeywordBackground, tr.Amplitude.ToPercent(), tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent())
 		}
 	default:
 		return " ???"

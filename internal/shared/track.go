@@ -22,5 +22,5 @@ func IsTrackEqual(tr1, tr2 *t.Track) bool {
 		tr1.Carrier == tr2.Carrier &&
 		tr1.Resonance == tr2.Resonance &&
 		tr1.Waveform == tr2.Waveform &&
-		tr1.Intensity == tr2.Intensity
+		tr1.Effect.Intensity == tr2.Effect.Intensity
 }
