@@ -133,14 +133,8 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 
 			switch effectKind {
 			case t.KeywordPan:
-				if trackType == t.TrackBinauralBeat {
-					return nil, fmt.Errorf("%q effect is not supported for binaural beats: %s", t.KeywordPan, ln)
-				}
 				effect.Type = t.EffectPan
 			case t.KeywordModulation:
-				if trackType == t.TrackMonauralBeat || trackType == t.TrackIsochronicBeat {
-					return nil, fmt.Errorf("%q effect is not supported for monaural or isochronic beats: %s", t.KeywordModulation, ln)
-				}
 				effect.Type = t.EffectModulation
 			case t.KeywordDoppler:
 				effect.Type = t.EffectDoppler

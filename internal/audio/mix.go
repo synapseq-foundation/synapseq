@@ -113,6 +113,13 @@ func (r *AudioRenderer) mix(samples []int) []int {
 					rr = int(float64(rr) * gain)
 				}
 
+				if channel.Track.Effect.Type == t.EffectPan {
+					channel.Effect.Offset += channel.Effect.Increment
+					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
+
+					ll, rr = r.applyPan(channel, ll, rr)
+				}
+
 				left += ll
 				right += rr
 			case t.TrackMonauralBeat:
@@ -138,6 +145,17 @@ func (r *AudioRenderer) mix(samples []int) []int {
 				freqLow := r.waveTables[waveIdx][channel.Offset[1]>>16]
 
 				mixedSample := (channel.Amplitude[0] * (freqHigh + freqLow)) >> 1
+
+				if channel.Track.Effect.Type == t.EffectModulation {
+					channel.Effect.Offset += channel.Effect.Increment
+					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
+
+					modFactor := r.calcModulationFactor(channel.Track.Waveform, channel.Effect.Offset) // 0..1
+					effectIntensity := float64(channel.Track.Effect.Intensity) * 0.7
+					gain := (1.0 - effectIntensity) + (effectIntensity * modFactor)
+
+					mixedSample = int(float64(mixedSample) * gain)
+				}
 
 				if channel.Track.Effect.Type == t.EffectPan {
 					channel.Effect.Offset += channel.Effect.Increment
@@ -175,6 +193,17 @@ func (r *AudioRenderer) mix(samples []int) []int {
 				amp := float64(channel.Amplitude[0])
 
 				out := int(amp * carrier * modFactor)
+
+				if channel.Track.Effect.Type == t.EffectModulation {
+					channel.Effect.Offset += channel.Effect.Increment
+					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
+
+					modFactor := r.calcModulationFactor(channel.Track.Waveform, channel.Effect.Offset) // 0..1
+					effectIntensity := float64(channel.Track.Effect.Intensity) * 0.7
+					gain := (1.0 - effectIntensity) + (effectIntensity * modFactor)
+
+					out = int(float64(out) * gain)
+				}
 
 				if channel.Track.Effect.Type == t.EffectPan {
 					channel.Effect.Offset += channel.Effect.Increment

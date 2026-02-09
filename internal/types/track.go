@@ -85,8 +85,6 @@ type Track struct {
 
 // Validate checks if the track configuration is valid
 func (tr *Track) Validate() error {
-	// Minimum beat frequency to avoid inaudible/ineffective beats
-	const minBeatHz = 0.1
 	effect := &tr.Effect
 
 	if tr.Amplitude < 0 || tr.Amplitude > 4096 {
@@ -111,50 +109,9 @@ func (tr *Track) Validate() error {
 		if tr.Resonance != 0 {
 			return fmt.Errorf("tone does not use beat/resonance (use binaural/monaural/isochronic). Received: %.2f", tr.Resonance)
 		}
-	case TrackBinauralBeat:
-		if tr.Carrier <= 0 {
-			return fmt.Errorf("carrier frequency must be greater than 0 for binaural beats. Received: %.2f", tr.Carrier)
-		}
-		if tr.Resonance >= tr.Carrier {
-			return fmt.Errorf("resonance frequency must be less than carrier frequency. Received resonance: %.2f, carrier: %.2f", tr.Resonance, tr.Carrier)
-		}
-		if tr.Resonance < minBeatHz {
-			return fmt.Errorf("binaural beat must be >= %.2f Hz. Received: %.2f", minBeatHz, tr.Resonance)
-		}
+	case TrackBinauralBeat, TrackMonauralBeat:
 		if tr.Resonance >= 2*tr.Carrier {
-			return fmt.Errorf("binaural beat must be < 2*carrier (carrier - beat/2 must be > 0). Received beat: %.2f, carrier: %.2f", tr.Resonance, tr.Carrier)
-		}
-		if tr.Effect.Type == EffectPan {
-			return fmt.Errorf("pan is not supported for binaural beats")
-		}
-	case TrackMonauralBeat:
-		if tr.Carrier <= 0 {
-			return fmt.Errorf("carrier frequency must be greater than 0 for monaural beats. Received: %.2f", tr.Carrier)
-		}
-		if tr.Resonance >= tr.Carrier {
-			return fmt.Errorf("resonance frequency must be less than carrier frequency. Received resonance: %.2f, carrier: %.2f", tr.Resonance, tr.Carrier)
-		}
-		if tr.Resonance < minBeatHz {
-			return fmt.Errorf("monaural beat must be >= %.2f Hz. Received: %.2f", minBeatHz, tr.Resonance)
-		}
-		if tr.Resonance >= 2*tr.Carrier {
-			return fmt.Errorf("monaural beat must be < 2*carrier (carrier - beat/2 must be > 0). Received beat: %.2f, carrier: %.2f", tr.Resonance, tr.Carrier)
-		}
-		if tr.Effect.Type == EffectModulation {
-			return fmt.Errorf("modulation is not supported for monaural beats")
-		}
-	case TrackIsochronicBeat:
-		if tr.Carrier <= 0 {
-			return fmt.Errorf("carrier frequency must be greater than 0 for isochronic beats. Received: %.2f", tr.Carrier)
-		}
-		if tr.Resonance >= tr.Carrier {
-			return fmt.Errorf("resonance frequency must be less than carrier frequency. Received resonance: %.2f, carrier: %.2f", tr.Resonance, tr.Carrier)
-		}
-		if tr.Resonance < minBeatHz {
-			return fmt.Errorf("isochronic rate must be >= %.2f Hz. Received: %.2f", minBeatHz, tr.Resonance)
-		}
-		if tr.Effect.Type == EffectModulation {
-			return fmt.Errorf("modulation is not supported for isochronic beats")
+			return fmt.Errorf("binaural beat and monaural beat must be < 2*carrier (carrier - beat/2 must be > 0). Received beat: %.2f, carrier: %.2f", tr.Resonance, tr.Carrier)
 		}
 	}
 
