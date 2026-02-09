@@ -107,7 +107,7 @@ func TestAdjustPeriods_FadeOutToSilence(ts *testing.T) {
 	if next.TrackStart[0].Type != t.TrackSilence ||
 		next.TrackStart[0].Carrier != 200 ||
 		next.TrackStart[0].Resonance != 5 ||
-		next.TrackStart[0].Intensity != t.IntensityPercentToRaw(70) {
+		next.TrackStart[0].Effect.Intensity != t.IntensityPercentToRaw(70) {
 		ts.Fatalf("fade-out not applied as expected: %+v", next.TrackStart[0])
 	}
 	if last.TrackEnd[0] != next.TrackStart[0] {
