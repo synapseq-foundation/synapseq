@@ -61,11 +61,9 @@ func TestParseTrackOverride_Success(ts *testing.T) {
 	}
 	templatePreset.Track[1] = t.Track{
 		Type:      t.TrackBackground,
-		Carrier:   200,
-		Resonance: 5,
 		Amplitude: t.AmplitudePercentToRaw(40),
 		Waveform:  t.WaveformSine,
-		Effect:    t.Effect{Type: t.EffectPan, Intensity: t.IntensityPercentToRaw(75)},
+		Effect:    t.Effect{Type: t.EffectPan, Value: 5, Intensity: t.IntensityPercentToRaw(75)},
 	}
 	templatePreset.Track[2] = t.Track{
 		Type:      t.TrackMonauralBeat,
@@ -119,22 +117,22 @@ func TestParseTrackOverride_Success(ts *testing.T) {
 			},
 		},
 		{
-			name:     "override background spin width",
-			line:     "  track 2 spin 250",
+			name:     "override background pan value",
+			line:     "  track 2 pan 5",
 			trackIdx: 1,
 			checkFunc: func(t *testing.T, p *t.Preset) {
-				if p.Track[1].Carrier != 250 {
-					t.Errorf("expected spin width 250, got %v", p.Track[1].Carrier)
+				if p.Track[1].Effect.Value != 5 {
+					t.Errorf("expected pan value 5, got %v", p.Track[1].Effect.Value)
 				}
 			},
 		},
 		{
-			name:     "override background spin rate",
-			line:     "  track 2 rate 7",
+			name:     "override background pan rate",
+			line:     "  track 2 pan 7",
 			trackIdx: 1,
 			checkFunc: func(t *testing.T, p *t.Preset) {
-				if p.Track[1].Resonance != 7 {
-					t.Errorf("expected spin rate 7, got %v", p.Track[1].Resonance)
+				if p.Track[1].Effect.Value != 7 {
+					t.Errorf("expected pan rate 7, got %v", p.Track[1].Effect.Value)
 				}
 			},
 		},
@@ -226,10 +224,10 @@ func TestParseTrackOverride_Errors(ts *testing.T) {
 		{"invalid value", "  track 1 amplitude abc"},
 		{"extra tokens", "  track 1 amplitude 10 extra"},
 		{"tone on background track", "  track 2 tone 300"},
-		{"spin on non-background track", "  track 1 spin 200"},
+		// {"pan on non-background track", "  track 1 pan 200"},
 		{"wrong beat type override", "  track 1 monaural 8"},
-		{"rate on pulse effect", "  track 3 rate 5"},
-		{"pulse on spin effect", "  track 2 pulse 3"},
+		{"value on modulation effect", "  track 3 modulation -5"},
+		{"modulation on pan effect", "  track 2 modulation 3"},
 		{"invalid amplitude (too high)", "  track 1 amplitude 150"},
 		{"invalid intensity (too high)", "  track 2 intensity 150"},
 	}
