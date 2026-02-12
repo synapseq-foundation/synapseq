@@ -34,8 +34,8 @@ func (r *AudioRenderer) calcDopplerFactor(offset int, intensity t.IntensityType)
 	return 1.0 + (depth * lfoNorm)
 }
 
-// calcPulseFactor calculates the pulse effect modulation factor for a channel
-func (r *AudioRenderer) calcPulseFactor(waveform t.WaveformType, offset int) float64 {
+// calcModulationFactor calculates the pulse effect modulation factor for a channel
+func (r *AudioRenderer) calcModulationFactor(waveform t.WaveformType, offset int) float64 {
 	modVal := float64(r.waveTables[int(waveform)][offset>>16])
 
 	threshold := 0.3 * float64(t.WaveTableAmplitude)
@@ -50,8 +50,8 @@ func (r *AudioRenderer) calcPulseFactor(waveform t.WaveformType, offset int) flo
 	return modFactor
 }
 
-// applySpin applies the spin effect to the given input samples for a channel.
-func (r *AudioRenderer) applySpin(channel *t.Channel, inL, inR int) (outL, outR int) {
+// applyPan applies the pan effect to the given input samples for a channel.
+func (r *AudioRenderer) applyPan(channel *t.Channel, inL, inR int) (outL, outR int) {
 	// Intensity is already 0..1 (see types.IntensityType)
 	intensity := float64(channel.Track.Effect.Intensity)
 	if intensity < 0 {

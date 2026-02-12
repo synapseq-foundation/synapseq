@@ -120,9 +120,9 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 		}
 
 		if kind == t.KeywordEffect {
-			effectKind, err := ctx.Line.NextExpectOneOf(t.KeywordSpin, t.KeywordPulse, t.KeywordDoppler)
+			effectKind, err := ctx.Line.NextExpectOneOf(t.KeywordPan, t.KeywordModulation, t.KeywordDoppler)
 			if err != nil {
-				return nil, fmt.Errorf("expected %q, %q or %q after effect: %s", t.KeywordSpin, t.KeywordPulse, t.KeywordDoppler, ln)
+				return nil, fmt.Errorf("expected %q, %q or %q after effect: %s", t.KeywordPan, t.KeywordModulation, t.KeywordDoppler, ln)
 			}
 
 			effectValue, err := ctx.Line.NextFloat64Strict()
@@ -132,16 +132,10 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 			effect.Value = effectValue
 
 			switch effectKind {
-			case t.KeywordSpin:
-				if trackType == t.TrackBinauralBeat {
-					return nil, fmt.Errorf("%q effect is not supported for binaural beats: %s", t.KeywordSpin, ln)
-				}
-				effect.Type = t.EffectSpin
-			case t.KeywordPulse:
-				if trackType == t.TrackMonauralBeat || trackType == t.TrackIsochronicBeat {
-					return nil, fmt.Errorf("%q effect is not supported for monaural or isochronic beats: %s", t.KeywordPulse, ln)
-				}
-				effect.Type = t.EffectPulse
+			case t.KeywordPan:
+				effect.Type = t.EffectPan
+			case t.KeywordModulation:
+				effect.Type = t.EffectModulation
 			case t.KeywordDoppler:
 				effect.Type = t.EffectDoppler
 			}
@@ -181,9 +175,9 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 		}
 
 		if kind == t.KeywordEffect {
-			effectKind, err := ctx.Line.NextExpectOneOf(t.KeywordSpin, t.KeywordPulse)
+			effectKind, err := ctx.Line.NextExpectOneOf(t.KeywordPan, t.KeywordModulation)
 			if err != nil {
-				return nil, fmt.Errorf("expected %q or %q after noise effect: %s", t.KeywordSpin, t.KeywordPulse, ln)
+				return nil, fmt.Errorf("expected %q or %q after noise effect: %s", t.KeywordPan, t.KeywordModulation, ln)
 			}
 
 			effectValue, err := ctx.Line.NextFloat64Strict()
@@ -193,10 +187,10 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 			effect.Value = effectValue
 
 			switch effectKind {
-			case t.KeywordSpin:
-				effect.Type = t.EffectSpin
-			case t.KeywordPulse:
-				effect.Type = t.EffectPulse
+			case t.KeywordPan:
+				effect.Type = t.EffectPan
+			case t.KeywordModulation:
+				effect.Type = t.EffectModulation
 			}
 
 			if _, err := ctx.Line.NextExpectOneOf(t.KeywordIntensity); err != nil {
@@ -222,9 +216,9 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 		}
 
 		if kind == t.KeywordEffect {
-			effectKind, err := ctx.Line.NextExpectOneOf(t.KeywordSpin, t.KeywordPulse)
+			effectKind, err := ctx.Line.NextExpectOneOf(t.KeywordPan, t.KeywordModulation)
 			if err != nil {
-				return nil, fmt.Errorf("expected %q or %q after noise effect: %s", t.KeywordSpin, t.KeywordPulse, ln)
+				return nil, fmt.Errorf("expected %q or %q after noise effect: %s", t.KeywordPan, t.KeywordModulation, ln)
 			}
 
 			effectValue, err := ctx.Line.NextFloat64Strict()
@@ -234,10 +228,10 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 			effect.Value = effectValue
 
 			switch effectKind {
-			case t.KeywordSpin:
-				effect.Type = t.EffectSpin
-			case t.KeywordPulse:
-				effect.Type = t.EffectPulse
+			case t.KeywordPan:
+				effect.Type = t.EffectPan
+			case t.KeywordModulation:
+				effect.Type = t.EffectModulation
 			}
 
 			if _, err := ctx.Line.NextExpectOneOf(t.KeywordIntensity); err != nil {

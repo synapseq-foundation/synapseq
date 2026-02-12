@@ -56,23 +56,23 @@ func (r *AudioRenderer) mix(samples []int) []int {
 
 				sample := channel.Amplitude[0] * r.waveTables[waveIdx][channel.Offset[0]>>16]
 
-				if channel.Track.Effect.Type == t.EffectPulse {
+				if channel.Track.Effect.Type == t.EffectModulation {
 					channel.Effect.Offset += channel.Effect.Increment
 					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
 
-					modFactor := r.calcPulseFactor(channel.Track.Waveform, channel.Effect.Offset) // 0..1
-					effectIntensity := float64(channel.Track.Effect.Intensity) * 0.7              // intensity já é 0..1
+					modFactor := r.calcModulationFactor(channel.Track.Waveform, channel.Effect.Offset) // 0..1
+					effectIntensity := float64(channel.Track.Effect.Intensity) * 0.7                   // intensity já é 0..1
 
 					gain := (1.0 - effectIntensity) + (effectIntensity * modFactor)
 					sample = int(float64(sample) * gain)
 				}
 
-				if channel.Track.Effect.Type == t.EffectSpin {
+				if channel.Track.Effect.Type == t.EffectPan {
 					channel.Effect.Offset += channel.Effect.Increment
 					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
 
 					ll, rr := sample, sample
-					ll, rr = r.applySpin(channel, ll, rr)
+					ll, rr = r.applyPan(channel, ll, rr)
 					left += ll
 					right += rr
 				} else {
@@ -101,16 +101,23 @@ func (r *AudioRenderer) mix(samples []int) []int {
 				ll := channel.Amplitude[0] * r.waveTables[waveIdx][channel.Offset[0]>>16]
 				rr := channel.Amplitude[1] * r.waveTables[waveIdx][channel.Offset[1]>>16]
 
-				if channel.Track.Effect.Type == t.EffectPulse {
+				if channel.Track.Effect.Type == t.EffectModulation {
 					channel.Effect.Offset += channel.Effect.Increment
 					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
 
-					modFactor := r.calcPulseFactor(channel.Track.Waveform, channel.Effect.Offset) // 0..1
-					effectIntensity := float64(channel.Track.Effect.Intensity) * 0.7              // intensity já é 0..1
+					modFactor := r.calcModulationFactor(channel.Track.Waveform, channel.Effect.Offset) // 0..1
+					effectIntensity := float64(channel.Track.Effect.Intensity) * 0.7                   // intensity já é 0..1
 
 					gain := (1.0 - effectIntensity) + (effectIntensity * modFactor)
 					ll = int(float64(ll) * gain)
 					rr = int(float64(rr) * gain)
+				}
+
+				if channel.Track.Effect.Type == t.EffectPan {
+					channel.Effect.Offset += channel.Effect.Increment
+					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
+
+					ll, rr = r.applyPan(channel, ll, rr)
 				}
 
 				left += ll
@@ -139,12 +146,23 @@ func (r *AudioRenderer) mix(samples []int) []int {
 
 				mixedSample := (channel.Amplitude[0] * (freqHigh + freqLow)) >> 1
 
-				if channel.Track.Effect.Type == t.EffectSpin {
+				if channel.Track.Effect.Type == t.EffectModulation {
+					channel.Effect.Offset += channel.Effect.Increment
+					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
+
+					modFactor := r.calcModulationFactor(channel.Track.Waveform, channel.Effect.Offset) // 0..1
+					effectIntensity := float64(channel.Track.Effect.Intensity) * 0.7
+					gain := (1.0 - effectIntensity) + (effectIntensity * modFactor)
+
+					mixedSample = int(float64(mixedSample) * gain)
+				}
+
+				if channel.Track.Effect.Type == t.EffectPan {
 					channel.Effect.Offset += channel.Effect.Increment
 					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
 
 					ll, rr := mixedSample, mixedSample
-					ll, rr = r.applySpin(channel, ll, rr)
+					ll, rr = r.applyPan(channel, ll, rr)
 
 					left += ll
 					right += rr
@@ -169,19 +187,30 @@ func (r *AudioRenderer) mix(samples []int) []int {
 				channel.Offset[1] += channel.Increment[1]
 				channel.Offset[1] &= (t.SineTableSize << 16) - 1
 
-				modFactor := r.calcPulseFactor(channel.Track.Waveform, channel.Offset[1])
+				modFactor := r.calcModulationFactor(channel.Track.Waveform, channel.Offset[1])
 
 				carrier := float64(r.waveTables[waveIdx][channel.Offset[0]>>16])
 				amp := float64(channel.Amplitude[0])
 
 				out := int(amp * carrier * modFactor)
 
-				if channel.Track.Effect.Type == t.EffectSpin {
+				if channel.Track.Effect.Type == t.EffectModulation {
+					channel.Effect.Offset += channel.Effect.Increment
+					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
+
+					modFactor := r.calcModulationFactor(channel.Track.Waveform, channel.Effect.Offset) // 0..1
+					effectIntensity := float64(channel.Track.Effect.Intensity) * 0.7
+					gain := (1.0 - effectIntensity) + (effectIntensity * modFactor)
+
+					out = int(float64(out) * gain)
+				}
+
+				if channel.Track.Effect.Type == t.EffectPan {
 					channel.Effect.Offset += channel.Effect.Increment
 					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
 
 					ll, rr := out, out
-					ll, rr = r.applySpin(channel, ll, rr)
+					ll, rr = r.applyPan(channel, ll, rr)
 
 					left += ll
 					right += rr
@@ -200,11 +229,11 @@ func (r *AudioRenderer) mix(samples []int) []int {
 				sampleVal := channel.Amplitude[0] * noiseVal
 
 				switch channel.Track.Effect.Type {
-				case t.EffectPulse:
+				case t.EffectModulation:
 					channel.Effect.Offset += channel.Effect.Increment
 					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
 
-					modFactor := r.calcPulseFactor(channel.Track.Waveform, channel.Effect.Offset) // 0..1
+					modFactor := r.calcModulationFactor(channel.Track.Waveform, channel.Effect.Offset) // 0..1
 
 					// Intensity (0..100) -> 0..1
 					effectIntensity := float64(channel.Track.Effect.Intensity) * 0.7
@@ -214,12 +243,12 @@ func (r *AudioRenderer) mix(samples []int) []int {
 
 					left += sampleVal
 					right += sampleVal
-				case t.EffectSpin:
+				case t.EffectPan:
 					channel.Effect.Offset += channel.Effect.Increment
 					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
 
 					ll, rr := sampleVal, sampleVal
-					ll, rr = r.applySpin(channel, ll, rr)
+					ll, rr = r.applyPan(channel, ll, rr)
 
 					left += ll
 					right += rr
@@ -248,23 +277,23 @@ func (r *AudioRenderer) mix(samples []int) []int {
 				backgroundAmplitude := channel.Amplitude[0]
 
 				switch channel.Track.Effect.Type {
-				case t.EffectSpin:
+				case t.EffectPan:
 					channel.Effect.Offset += channel.Effect.Increment
 					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
 
 					inL := bgLeft * backgroundAmplitude
 					inR := bgRight * backgroundAmplitude
 
-					outL, outR := r.applySpin(channel, inL, inR)
+					outL, outR := r.applyPan(channel, inL, inR)
 					left += outL
 					right += outR
-				case t.EffectPulse:
-					// LFO for pulse modulation
+				case t.EffectModulation:
+					// LFO for modulation
 					channel.Effect.Offset += channel.Effect.Increment
 					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
 
 					// 0..1
-					modFactor := r.calcPulseFactor(channel.Track.Waveform, channel.Effect.Offset)
+					modFactor := r.calcModulationFactor(channel.Track.Waveform, channel.Effect.Offset)
 
 					// Mix the effect (0..1) weighted by intensity
 					effectIntensity := float64(channel.Track.Effect.Intensity) * 0.7

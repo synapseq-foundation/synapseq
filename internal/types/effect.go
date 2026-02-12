@@ -17,10 +17,10 @@ type EffectType int
 const (
 	// Effect is off
 	EffectOff EffectType = iota
-	// Effect is spin
-	EffectSpin
-	// Effect is pulse
-	EffectPulse
+	// Effect is pan
+	EffectPan
+	// Effect is modulation
+	EffectModulation
 	// Effect is doppler
 	EffectDoppler
 )
@@ -30,10 +30,10 @@ func (et EffectType) String() string {
 	switch et {
 	case EffectOff:
 		return KeywordOff
-	case EffectSpin:
-		return KeywordSpin
-	case EffectPulse:
-		return KeywordPulse
+	case EffectPan:
+		return KeywordPan
+	case EffectModulation:
+		return KeywordModulation
 	case EffectDoppler:
 		return KeywordDoppler
 	default:

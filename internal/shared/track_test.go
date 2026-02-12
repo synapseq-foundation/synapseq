@@ -131,7 +131,7 @@ func TestIsTrackEqual(ts *testing.T) {
 				Resonance: 5,
 				Amplitude: t.AmplitudePercentToRaw(40),
 				Waveform:  t.WaveformSine,
-				Effect:    t.Effect{Type: t.EffectSpin, Intensity: t.IntensityPercentToRaw(60)},
+				Effect:    t.Effect{Type: t.EffectPan, Intensity: t.IntensityPercentToRaw(60)},
 			},
 			b: &t.Track{
 				Type:      t.TrackBackground,
@@ -139,7 +139,7 @@ func TestIsTrackEqual(ts *testing.T) {
 				Resonance: 5,
 				Amplitude: t.AmplitudePercentToRaw(40),
 				Waveform:  t.WaveformSine,
-				Effect:    t.Effect{Type: t.EffectPulse, Intensity: t.IntensityPercentToRaw(60)},
+				Effect:    t.Effect{Type: t.EffectModulation, Intensity: t.IntensityPercentToRaw(60)},
 			},
 			eq: true,
 		},

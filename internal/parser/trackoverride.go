@@ -68,9 +68,9 @@ func (ctx *TextParser) ParseTrackOverride(preset *t.Preset) error {
 		t.KeywordBinaural,
 		t.KeywordMonaural,
 		t.KeywordIsochronic,
-		t.KeywordSpin,
-		t.KeywordPulse,
-		t.KeywordRate,
+		t.KeywordPan,
+		t.KeywordModulation,
+		t.KeywordDoppler,
 		t.KeywordAmplitude,
 		t.KeywordIntensity)
 	if err != nil {
@@ -80,49 +80,52 @@ func (ctx *TextParser) ParseTrackOverride(preset *t.Preset) error {
 			t.KeywordBinaural,
 			t.KeywordMonaural,
 			t.KeywordIsochronic,
-			t.KeywordSpin,
-			t.KeywordPulse,
-			t.KeywordRate,
+			t.KeywordPan,
+			t.KeywordModulation,
+			t.KeywordDoppler,
 			t.KeywordAmplitude,
 			ln)
 	}
 
-	switch kind {
-	case t.KeywordTone, t.KeywordSpin:
-		track := preset.Track[idx]
+	track := preset.Track[idx]
 
-		if kind == t.KeywordTone && track.Type == t.TrackBackground {
-			return fmt.Errorf("background track %d cannot have a tone carrier", trackIdx)
-		}
-		if kind == t.KeywordSpin && track.Type != t.TrackBackground {
-			return fmt.Errorf("track %d must be a background track to set spin width, it is %q", trackIdx, track.Type.String())
-		}
-		if kind == t.KeywordSpin && track.Effect.Type != t.EffectSpin {
-			return fmt.Errorf("spin width can only be set on track %d with spin effect, it is %q", trackIdx, track.Effect.Type.String())
+	switch kind {
+	case t.KeywordTone:
+		if track.Type == t.TrackBackground ||
+			track.Type == t.TrackWhiteNoise ||
+			track.Type == t.TrackPinkNoise ||
+			track.Type == t.TrackBrownNoise {
+			return fmt.Errorf("cannot set tone frequency on track %d of type %q", trackIdx, track.Type.String())
 		}
 
 		carrier, err := ctx.Line.NextFloat64Strict()
 		if err != nil {
-			return fmt.Errorf("carrier: %w", err)
+			return fmt.Errorf("tone frequency: %w", err)
 		}
 
 		preset.Track[idx].Carrier = carrier
-	case t.KeywordBinaural, t.KeywordMonaural, t.KeywordIsochronic, t.KeywordRate, t.KeywordPulse:
-		track := preset.Track[idx]
-
-		// Validate that the track type matches the keyword being set
-		if (kind == t.KeywordBinaural && track.Type != t.TrackBinauralBeat) ||
-			(kind == t.KeywordMonaural && track.Type != t.TrackMonauralBeat) ||
-			(kind == t.KeywordIsochronic && track.Type != t.TrackIsochronicBeat) ||
-			(kind == t.KeywordRate && track.Type != t.TrackBackground) ||
-			(kind == t.KeywordPulse && track.Type != t.TrackBackground) {
-			return fmt.Errorf("cannot change track %d type to %q, it is %q", trackIdx, kind, track.Type.String())
+	case t.KeywordPan, t.KeywordModulation, t.KeywordDoppler:
+		if kind == t.KeywordPan && track.Effect.Type != t.EffectPan {
+			return fmt.Errorf("pan can only be set on track %d with pan effect, it is %q", trackIdx, track.Effect.Type.String())
+		}
+		if kind == t.KeywordModulation && track.Effect.Type != t.EffectModulation {
+			return fmt.Errorf("modulation rate can only be set on track %d with modulation effect, it is %q", trackIdx, track.Effect.Type.String())
+		}
+		if kind == t.KeywordDoppler && track.Effect.Type != t.EffectDoppler {
+			return fmt.Errorf("doppler speed can only be set on track %d with doppler effect, it is %q", trackIdx, track.Effect.Type.String())
 		}
 
-		// Validate that the effect type matches the keyword being set
-		if (kind == t.KeywordRate && track.Effect.Type != t.EffectSpin) ||
-			(kind == t.KeywordPulse && track.Effect.Type != t.EffectPulse) {
-			return fmt.Errorf("cannot change track %d effect to %q, it is %q", trackIdx, kind, track.Effect.Type.String())
+		effectValue, err := ctx.Line.NextFloat64Strict()
+		if err != nil {
+			return fmt.Errorf("effect value: %w", err)
+		}
+
+		preset.Track[idx].Effect.Value = effectValue
+	case t.KeywordBinaural, t.KeywordMonaural, t.KeywordIsochronic:
+		if (kind == t.KeywordBinaural && track.Type != t.TrackBinauralBeat) ||
+			(kind == t.KeywordMonaural && track.Type != t.TrackMonauralBeat) ||
+			(kind == t.KeywordIsochronic && track.Type != t.TrackIsochronicBeat) {
+			return fmt.Errorf("cannot change track %d type to %q, it is %q", trackIdx, kind, track.Type.String())
 		}
 
 		resonance, err := ctx.Line.NextFloat64Strict()
@@ -154,7 +157,6 @@ func (ctx *TextParser) ParseTrackOverride(preset *t.Preset) error {
 		return fmt.Errorf("unexpected token after track override definition: %q", unknown)
 	}
 
-	// Validate the updated track
 	if err := preset.Track[idx].Validate(); err != nil {
 		return fmt.Errorf("invalid track %d after override: %w", trackIdx, err)
 	}

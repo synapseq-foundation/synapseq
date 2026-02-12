@@ -64,18 +64,14 @@ const (
 	KeywordPink = "pink"
 	// Represents a brown noise
 	KeywordBrown = "brown"
-	// Represents a spin noise effect
-	KeywordSpin = "spin"
-	// Represents a width parameter
-	KeywordWidth = "width"
-	// Represents a rate parameter
-	KeywordRate = "rate"
+	// Represents a pan effect
+	KeywordPan = "pan"
 	// Represents an effect
 	KeywordEffect = "effect"
 	// Represents a background sound
 	KeywordBackground = "background"
-	// Represents a pulse
-	KeywordPulse = "pulse"
+	// Represents a modulation effect
+	KeywordModulation = "modulation"
 	// Represents an intensity parameter
 	KeywordIntensity = "intensity"
 	// Represents an pure tone
