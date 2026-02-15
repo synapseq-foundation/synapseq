@@ -99,8 +99,8 @@ beta
 	if opts.SampleRate != 48000 || opts.Volume != 80 || opts.GainLevel != t.GainLevelHigh {
 		ts.Fatalf("unexpected options: %+v", *opts)
 	}
-	if opts.BackgroundPath != bgPath {
-		ts.Fatalf("unexpected background path: got %q want %q", opts.BackgroundPath, bgPath)
+	if opts.BackgroundList[0] != bgPath {
+		ts.Fatalf("unexpected background path: got %q want %q", opts.BackgroundList[0], bgPath)
 	}
 
 	periods := result.Periods

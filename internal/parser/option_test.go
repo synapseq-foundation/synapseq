@@ -76,11 +76,11 @@ func TestParseOption(ts *testing.T) {
 		},
 		{
 			fmt.Sprintf("%sbackground testdata/%s", t.KeywordOption, backgroundFile),
-			t.SequenceOptions{BackgroundPath: filepath.Clean(filepath.Join(basePath, "testdata", backgroundFile))},
+			t.SequenceOptions{BackgroundList: []string{filepath.Clean(filepath.Join(basePath, "testdata", backgroundFile))}},
 		},
 		{
 			fmt.Sprintf("%sbackground ~/Downloads/%s", t.KeywordOption, backgroundFile),
-			t.SequenceOptions{BackgroundPath: filepath.Clean(filepath.Join(homeDir, "Downloads", backgroundFile))},
+			t.SequenceOptions{BackgroundList: []string{filepath.Clean(filepath.Join(homeDir, "Downloads", backgroundFile))}},
 		},
 	}
 

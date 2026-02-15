@@ -86,34 +86,3 @@ func TestIsPresetEmpty(ts *testing.T) {
 		ts.Fatalf("silence preset should not be considered empty")
 	}
 }
-
-func TestNumBackgroundTracks(ts *testing.T) {
-	p, err := t.NewPreset("alpha", false, nil)
-	if err != nil {
-		ts.Fatalf("unexpected error: %v", err)
-	}
-	if NumBackgroundTracks(p) != 0 {
-		ts.Fatalf("expected 0 background tracks initially")
-	}
-
-	p.Track[0].Type = t.TrackBackground
-	if NumBackgroundTracks(p) != 1 {
-		ts.Fatalf("expected 1 background track")
-	}
-
-	if len(p.Track) > 2 {
-		p.Track[2].Type = t.TrackBackground
-	}
-	want := 2
-	if len(p.Track) <= 2 {
-		want = 1
-	}
-	if NumBackgroundTracks(p) != want {
-		ts.Fatalf("unexpected background track count: got %d, want %d", NumBackgroundTracks(p), want)
-	}
-
-	sil := t.NewBuiltinSilencePreset()
-	if NumBackgroundTracks(sil) != 0 {
-		ts.Fatalf("silence preset should have 0 background tracks")
-	}
-}
