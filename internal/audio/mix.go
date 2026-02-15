@@ -19,19 +19,6 @@ import (
 
 // mix generates a stereo audio sample by mixing all channels
 func (r *AudioRenderer) mix(samples []int) []int {
-	// Read background audio samples if enabled
-	var backgroundSamples []int
-
-	if r.backgroundAudio != nil && r.backgroundAudio.IsEnabled() {
-		need := t.BufferSize * audioChannels // Stereo
-		if len(r.backgroundSamples) != need {
-			r.backgroundSamples = make([]int, need)
-		}
-
-		backgroundSamples = r.backgroundSamples
-		r.backgroundAudio.ReadSamples(backgroundSamples, need)
-	}
-
 	for i := range t.BufferSize {
 		var left, right int
 
@@ -263,8 +250,17 @@ func (r *AudioRenderer) mix(samples []int) []int {
 				// Scale: 524287 / 32768 ≈ 16
 				const bgScaleFactor = 16
 
-				bgLeft := backgroundSamples[i*2] * bgScaleFactor
-				bgRight := backgroundSamples[i*2+1] * bgScaleFactor
+				idx := channel.Track.BackgroundIndex
+				if idx < 0 || idx >= len(r.backgroundSamplesByIndex) {
+					continue
+				}
+				bgBuf := r.backgroundSamplesByIndex[idx]
+				if len(bgBuf) < i*2+2 {
+					continue
+				}
+
+				bgLeft := bgBuf[i*2] * bgScaleFactor
+				bgRight := bgBuf[i*2+1] * bgScaleFactor
 
 				// Apply gain reduction if configured (default GainLevelVeryHigh = 0dB, no reduction)
 				if r.GainLevel > 0 {

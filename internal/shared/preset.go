@@ -46,14 +46,3 @@ func IsPresetEmpty(preset *t.Preset) bool {
 	}
 	return true
 }
-
-// NumBackgroundTracks counts the number of background tracks in the preset
-func NumBackgroundTracks(preset *t.Preset) int {
-	count := 0
-	for _, track := range preset.Track {
-		if track.Type == t.TrackBackground {
-			count++
-		}
-	}
-	return count
-}

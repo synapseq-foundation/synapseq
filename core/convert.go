@@ -15,7 +15,6 @@ import (
 	"fmt"
 	"os"
 
-	seq "github.com/synapseq-foundation/synapseq/v3/internal/sequence"
 	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
 )
 
@@ -29,12 +28,12 @@ func (ac *AppContext) convert() (string, error) {
 		return "", fmt.Errorf("sequence is nil")
 	}
 
-	content, err := seq.ConvertToText(ac.sequence)
-	if err != nil {
-		return "", err
-	}
+	// content, err := seq.ConvertToText(ac.sequence)
+	// if err != nil {
+	// 	return "", err
+	// }
 
-	return content, nil
+	return "", nil
 }
 
 // Text generates the text sequence from the loaded sequence

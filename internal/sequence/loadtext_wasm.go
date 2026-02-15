@@ -38,7 +38,7 @@ func LoadTextSequence(rawContent []byte) (*t.Sequence, error) {
 	options := &t.SequenceOptions{
 		SampleRate:     44100,
 		Volume:         100,
-		BackgroundPath: "",
+		BackgroundList: []string{},
 		PresetList:     []string{},
 		GainLevel:      t.GainLevelOff,
 	}
@@ -153,7 +153,7 @@ func LoadTextSequence(rawContent []byte) (*t.Sequence, error) {
 				return nil, fmt.Errorf("line %d: %v", lnn, err)
 			}
 
-			if track.Type == t.TrackBackground && options.BackgroundPath == "" {
+			if track.Type == t.TrackBackground && len(options.BackgroundList) == 0 {
 				return nil, fmt.Errorf("line %d: background track defined but no background audio file specified in options", lnn)
 			}
 
@@ -244,9 +244,6 @@ func LoadTextSequence(rawContent []byte) (*t.Sequence, error) {
 		p := &presets[i]
 		if s.IsPresetEmpty(p) {
 			return nil, fmt.Errorf("preset %q is empty", presets[i].String())
-		}
-		if n := s.NumBackgroundTracks(p); n > 1 {
-			return nil, fmt.Errorf("preset %q has %d background tracks; only one background track is allowed per preset", presets[i].String(), n)
 		}
 	}
 

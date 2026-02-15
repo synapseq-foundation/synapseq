@@ -34,6 +34,7 @@ func AdjustPeriods(last, next *t.Period) error {
 			tr0.Effect.Type = tr2.Effect.Type
 			tr0.Effect.Value = tr2.Effect.Value
 			tr0.Effect.Intensity = tr2.Effect.Intensity
+			tr0.BackgroundIndex = tr2.BackgroundIndex
 		}
 
 		// Apply Fade-Out
@@ -42,6 +43,7 @@ func AdjustPeriods(last, next *t.Period) error {
 			tr2.Resonance = tr1.Resonance
 			tr2.Effect.Intensity = tr1.Effect.Intensity
 			tr2.Effect.Value = tr1.Effect.Value
+			tr2.Effect.Type = tr1.Effect.Type
 		}
 
 		// Validate if previus period has a track on and next period turn it off or vice-versa
@@ -65,6 +67,9 @@ func AdjustPeriods(last, next *t.Period) error {
 			if tr1.Effect.Type != tr2.Effect.Type {
 				return fmt.Errorf("channel %d cannot change effect type directly, use silence instead: %s --> %s", ch+1, tr1.Effect.Type.String(), tr2.Effect.Type.String())
 			}
+			if tr1.BackgroundIndex != tr2.BackgroundIndex {
+				return fmt.Errorf("channel %d cannot change background directly, use silence instead: %d --> %d", ch+1, tr1.BackgroundIndex+1, tr2.BackgroundIndex+1)
+			}
 		}
 
 		// Carry forward the track settings from the end of the last period to the start of the next period
@@ -76,6 +81,7 @@ func AdjustPeriods(last, next *t.Period) error {
 		tr1.Amplitude = tr2.Amplitude
 		tr1.Effect.Intensity = tr2.Effect.Intensity
 		tr1.Waveform = tr2.Waveform
+		tr1.BackgroundIndex = tr2.BackgroundIndex
 	}
 	return nil
 }

@@ -79,6 +79,8 @@ type Track struct {
 	Resonance float64
 	// Waveform shape
 	Waveform WaveformType
+	// Background index
+	BackgroundIndex int
 	// Effect configuration
 	Effect Effect
 }
@@ -143,9 +145,9 @@ func (tr *Track) String() string {
 		}
 	case TrackBackground:
 		if tr.Effect.Type == EffectOff {
-			return fmt.Sprintf("%s %s %.2f", KeywordBackground, KeywordAmplitude, tr.Amplitude.ToPercent())
+			return fmt.Sprintf("%s %d %s %.2f", KeywordBackground, tr.BackgroundIndex+1, KeywordAmplitude, tr.Amplitude.ToPercent())
 		} else {
-			return fmt.Sprintf("%s %s %s %.2f %s %.2f %s %.2f", KeywordBackground, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+			return fmt.Sprintf("%s %d %s %s %.2f %s %.2f %s %.2f", KeywordBackground, tr.BackgroundIndex+1, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
 		}
 	default:
 		return " ???"
@@ -177,9 +179,9 @@ func (tr *Track) ShortString() string {
 		}
 	case TrackBackground:
 		if tr.Effect.Type == EffectOff {
-			return fmt.Sprintf(" (%s:%.2f)", KeywordAmplitude, tr.Amplitude.ToPercent())
+			return fmt.Sprintf(" (%s(%d):%.2f)", KeywordBackground, tr.BackgroundIndex+1, tr.Amplitude.ToPercent())
 		} else {
-			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f)", KeywordBackground, tr.Amplitude.ToPercent(), tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent())
+			return fmt.Sprintf(" (%s(%d):%.2f %s:%.2f %s:%.2f)", KeywordBackground, tr.BackgroundIndex+1, tr.Amplitude.ToPercent(), tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent())
 		}
 	default:
 		return " ???"

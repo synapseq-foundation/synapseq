@@ -36,7 +36,11 @@ type AudioRenderer struct {
 	backgroundAudio *BackgroundAudio
 
 	// Reusable buffer to avoid allocating every mix() call
-	backgroundSamples []int
+	backgroundSamplesByIndex [][]int
+	// Track indices that have active background audio (for optimization)
+	activeBGIndices []int
+	// Mask to track which background audio tracks are currently active
+	activeBGMask []bool
 
 	// Embedding options
 	*AudioRendererOptions
@@ -47,7 +51,7 @@ type AudioRendererOptions struct {
 	SampleRate     int
 	Volume         int
 	GainLevel      t.GainLevel
-	BackgroundPath string
+	BackgroundList []string
 	StatusOutput   io.Writer
 }
 
@@ -70,7 +74,7 @@ func NewAudioRenderer(p []t.Period, ar *AudioRendererOptions) (*AudioRenderer, e
 	}
 
 	// Initialize background audio
-	backgroundAudio, err := NewBackgroundAudio(ar.BackgroundPath)
+	backgroundAudio, err := NewBackgroundAudio(ar.BackgroundList, ar.SampleRate)
 	if err != nil {
 		return nil, err
 	}
@@ -89,14 +93,67 @@ func NewAudioRenderer(p []t.Period, ar *AudioRendererOptions) (*AudioRenderer, e
 	}
 
 	renderer := &AudioRenderer{
-		periods:              p,
-		waveTables:           InitWaveformTables(),
-		noiseGenerator:       NewNoiseGenerator(),
-		backgroundAudio:      backgroundAudio,
-		AudioRendererOptions: ar,
+		periods:                  p,
+		waveTables:               InitWaveformTables(),
+		noiseGenerator:           NewNoiseGenerator(),
+		backgroundAudio:          backgroundAudio,
+		backgroundSamplesByIndex: make([][]int, len(ar.BackgroundList)),
+		activeBGIndices:          make([]int, 0, t.NumberOfChannels),
+		activeBGMask:             make([]bool, len(ar.BackgroundList)),
+		AudioRendererOptions:     ar,
 	}
 
 	return renderer, nil
+}
+
+// collectActiveBackgroundIndices identifies which background audio tracks are currently active based on the channels' configurations
+func (r *AudioRenderer) collectActiveBackgroundIndices() {
+	// Reset the mask for the indices used in the previous cycle
+	for _, idx := range r.activeBGIndices {
+		r.activeBGMask[idx] = false
+	}
+	r.activeBGIndices = r.activeBGIndices[:0]
+
+	for ch := range t.NumberOfChannels {
+		c := &r.channels[ch]
+		if c.Track.Type != t.TrackBackground {
+			continue
+		}
+		idx := c.Track.BackgroundIndex
+		if idx < 0 || idx >= len(r.backgroundSamplesByIndex) {
+			continue
+		}
+		if !r.activeBGMask[idx] {
+			r.activeBGMask[idx] = true
+			r.activeBGIndices = append(r.activeBGIndices, idx)
+		}
+	}
+}
+
+// prepareBackgroundBuffers ensures that the background audio buffers are ready for mixing, loading data from the background audio source as needed
+func (r *AudioRenderer) prepareBackgroundBuffers() {
+	need := t.BufferSize * audioChannels
+
+	for _, idx := range r.activeBGIndices {
+		buf := r.backgroundSamplesByIndex[idx]
+		if len(buf) != need {
+			buf = make([]int, need)
+			r.backgroundSamplesByIndex[idx] = buf
+		}
+
+		if r.backgroundAudio == nil || !r.backgroundAudio.IsEnabled() {
+			for i := range buf {
+				buf[i] = 0
+			}
+			continue
+		}
+
+		if _, err := r.backgroundAudio.ReadSamplesAt(idx, buf, need); err != nil {
+			for i := range buf {
+				buf[i] = 0
+			}
+		}
+	}
 }
 
 // Render generates the audio and passes buffers to the consume function
@@ -131,6 +188,9 @@ func (r *AudioRenderer) Render(consume func(samples []int) error) error {
 		}
 
 		r.sync(currentTimeMs, periodIdx)
+		r.collectActiveBackgroundIndices()
+		r.prepareBackgroundBuffers()
+
 		if statusReporter != nil {
 			statusReporter.CheckPeriodChange(r, periodIdx)
 		}

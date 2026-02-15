@@ -105,7 +105,7 @@ func (ctx *TextParser) ParseOption(options *t.SequenceOptions, filePath string) 
 		}
 
 		if option == t.KeywordBackground {
-			options.BackgroundPath = fullPath
+			options.BackgroundList = append(options.BackgroundList, fullPath)
 		} else {
 			options.PresetList = append(options.PresetList, fullPath)
 		}

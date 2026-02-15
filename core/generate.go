@@ -38,7 +38,7 @@ func (ac *AppContext) generate() (*audio.AudioRenderer, error) {
 		SampleRate:     options.SampleRate,
 		Volume:         options.Volume,
 		GainLevel:      options.GainLevel,
-		BackgroundPath: options.BackgroundPath,
+		BackgroundList: options.BackgroundList,
 		StatusOutput:   ac.statusOutput,
 	})
 	if err != nil {

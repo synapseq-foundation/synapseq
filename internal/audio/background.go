@@ -1,14 +1,3 @@
-/*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
-
 package audio
 
 import (
@@ -23,9 +12,11 @@ import (
 	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
 )
 
-// BackgroundAudio handles background WAV file playback with looping
+// BackgroundAudio handles background WAV playlist playback with looping
 type BackgroundAudio struct {
-	filePath      string
+	filePaths    []string
+	currentIndex int
+
 	decoder       beep.StreamSeekCloser
 	sampleRate    int
 	channels      int
@@ -33,151 +24,196 @@ type BackgroundAudio struct {
 	isEnabled     bool
 	hasReachedEOF bool
 
-	// Cache of the loaded file data
-	cachedData []byte
+	cachedData [][]byte
+	decoders   []beep.StreamSeekCloser
 
-	// Buffer for reading samples
 	buffer     []int
 	bufferSize int
 }
 
-// NewBackgroundAudio creates a new background audio processor
-func NewBackgroundAudio(filePath string) (*BackgroundAudio, error) {
-	if filePath == "" {
+func NewBackgroundAudio(filePaths []string, expectedSampleRate int) (*BackgroundAudio, error) {
+	if len(filePaths) == 0 {
 		return &BackgroundAudio{isEnabled: false}, nil
 	}
 
 	bg := &BackgroundAudio{
-		filePath:   filePath,
-		bufferSize: t.BufferSize * audioChannels, // Stereo
-		isEnabled:  true,
+		filePaths:    filePaths,
+		currentIndex: 0,
+		bufferSize:   t.BufferSize * audioChannels,
+		isEnabled:    true,
+		cachedData:   make([][]byte, len(filePaths)),
+		decoders:     make([]beep.StreamSeekCloser, len(filePaths)),
 	}
 
-	if err := bg.loadAndCache(); err != nil {
+	if err := bg.loadAndCacheAll(); err != nil {
 		return nil, err
 	}
-
-	if err := bg.openFromCache(); err != nil {
+	if err := bg.validateTracks(expectedSampleRate); err != nil {
+		return nil, err
+	}
+	if err := bg.openFromCache(bg.currentIndex); err != nil {
 		return nil, fmt.Errorf("failed to open background file: %w", err)
 	}
-
 	bg.buffer = make([]int, bg.bufferSize)
 	return bg, nil
 }
 
-// loadAndCache loads the file (local or remote) into memory cache
-func (bg *BackgroundAudio) loadAndCache() error {
-	if bg.cachedData != nil {
-		return nil
-	}
+// loadAndCacheAll loads all files (local or remote) into memory cache
+func (bg *BackgroundAudio) loadAndCacheAll() error {
+	for i, p := range bg.filePaths {
+		if bg.cachedData[i] != nil {
+			continue
+		}
 
-	data, err := s.GetFile(bg.filePath, t.FormatWAV)
-	if err != nil {
-		return fmt.Errorf("failed to load background file: %w", err)
+		data, err := s.GetFile(p, t.FormatWAV)
+		if err != nil {
+			return fmt.Errorf("failed to load background file [%d] (%s): %w", i, p, err)
+		}
+		bg.cachedData[i] = data
 	}
-
-	bg.cachedData = data
 	return nil
 }
 
-// openFromCache opens a decoder from the cached data
-func (bg *BackgroundAudio) openFromCache() error {
-	if bg.cachedData == nil {
-		return fmt.Errorf("no cached data available")
+// validateTracks validates all tracks for compatible format and expected output format
+func (bg *BackgroundAudio) validateTracks(expectedSampleRate int) error {
+	if len(bg.cachedData) == 0 {
+		return fmt.Errorf("no background tracks loaded")
+	}
+	if expectedSampleRate <= 0 {
+		return fmt.Errorf("invalid expected sample rate: %d", expectedSampleRate)
 	}
 
-	reader := bytes.NewReader(bg.cachedData)
-	s, f, err := bwav.Decode(reader)
+	// baseDepth := 0
+
+	for i, data := range bg.cachedData {
+		reader := bytes.NewReader(data)
+		stream, format, err := bwav.Decode(reader)
+		if err != nil {
+			return fmt.Errorf("failed to decode background file [%d] (%s): %w", i, bg.filePaths[i], err)
+		}
+		_ = stream.Close()
+
+		sr := int(format.SampleRate)
+		ch := format.NumChannels
+		// depth := format.Precision * 8
+
+		if sr != expectedSampleRate {
+			return fmt.Errorf(
+				"background track [%d] (%s) has sample rate %d Hz, expected %d Hz",
+				i, bg.filePaths[i], sr, expectedSampleRate,
+			)
+		}
+
+		if ch != audioChannels {
+			return fmt.Errorf(
+				"background track [%d] (%s) has %d channel(s), expected %d",
+				i, bg.filePaths[i], ch, audioChannels,
+			)
+		}
+
+		// if i == 0 {
+		// 	baseDepth = depth
+		// } else if depth != baseDepth {
+		// 	return fmt.Errorf(
+		// 		"background track format mismatch in [%d] (%s): bit depth %dbit, expected %dbit",
+		// 		i, bg.filePaths[i], depth, baseDepth,
+		// 	)
+		// }
+	}
+
+	bg.sampleRate = expectedSampleRate
+	bg.channels = audioChannels
+	// bg.bitDepth = baseDepth
+
+	return nil
+}
+
+// openFromCache opens a decoder from cached data at a given index
+func (bg *BackgroundAudio) openFromCache(index int) error {
+	if index < 0 || index >= len(bg.cachedData) {
+		return fmt.Errorf("invalid background index: %d", index)
+	}
+	if bg.cachedData[index] == nil {
+		return fmt.Errorf("no cached data available for index: %d", index)
+	}
+
+	// If decoder already exists for this index, reuse it
+	if bg.decoders[index] != nil {
+		bg.decoder = bg.decoders[index]
+		bg.currentIndex = index
+		bg.hasReachedEOF = false
+		return nil
+	}
+
+	reader := bytes.NewReader(bg.cachedData[index])
+	stream, format, err := bwav.Decode(reader)
 	if err != nil {
 		return err
 	}
 
-	bg.decoder = s
-	bg.sampleRate = int(f.SampleRate)
-	bg.channels = f.NumChannels
-	bg.bitDepth = f.Precision * 8
+	bg.decoders[index] = stream
+	bg.decoder = stream
+	bg.currentIndex = index
+	bg.sampleRate = int(format.SampleRate)
+	bg.channels = format.NumChannels
+	bg.bitDepth = format.Precision * 8
 	bg.hasReachedEOF = false
 
 	return nil
 }
 
-// restart reopens the decoder from cache for looping
-func (bg *BackgroundAudio) restart() error {
-	if !bg.isEnabled {
-		return nil
+// restart advances to next track (looping playlist) and reopens decoder
+func (bg *BackgroundAudio) restartAt(index int) error {
+	if index < 0 || index >= len(bg.filePaths) {
+		return fmt.Errorf("invalid background index: %d", index)
 	}
 
-	// Close current decoder
-	if bg.decoder != nil {
-		_ = bg.decoder.Close()
-		bg.decoder = nil
+	if bg.decoders[index] != nil {
+		_ = bg.decoders[index].Close()
+		bg.decoders[index] = nil
 	}
 
-	// Reopen from cache
-	if err := bg.openFromCache(); err != nil {
-		return fmt.Errorf("failed to restart background file: %w", err)
-	}
-
-	return nil
+	return bg.openFromCache(index)
 }
 
 // ReadSamples reads background audio samples with automatic looping
-func (bg *BackgroundAudio) ReadSamples(samples []int, numSamples int) (int, error) {
-	if !bg.isEnabled || bg.decoder == nil {
-		// Fill with silence if no background
+func (bg *BackgroundAudio) ReadSamplesAt(index int, samples []int, numSamples int) (int, error) {
+	if numSamples > len(samples) {
+		numSamples = len(samples)
+	}
+	if !bg.isEnabled {
 		for i := 0; i < numSamples; i++ {
 			samples[i] = 0
 		}
 		return numSamples, nil
 	}
+	if index < 0 || index >= len(bg.filePaths) {
+		return 0, fmt.Errorf("invalid background index: %d", index)
+	}
+
+	if bg.decoders[index] == nil {
+		if err := bg.openFromCache(index); err != nil {
+			return 0, err
+		}
+	}
 
 	samplesRead := 0
-
 	for samplesRead < numSamples {
 		remaining := numSamples - samplesRead
-		bufferOffset := samplesRead
-
-		// Try to read from current position. If remaining is smaller than a frame,
-		// read at least one full frame and then copy the needed tail.
-		var n int
-		var err error
-		if remaining < bg.channels {
-			tmp := make([]int, bg.channels)
-			n, err = bg.readFromDecoder(tmp, bg.channels)
-			if n > 0 {
-				// copy only what's requested
-				copy(samples[bufferOffset:bufferOffset+remaining], tmp[:remaining])
-				n = remaining
-			}
-		} else {
-			n, err = bg.readFromDecoder(samples[bufferOffset:bufferOffset+remaining], remaining)
-		}
+		n, err := bg.readFromDecoderAt(index, samples[samplesRead:samplesRead+remaining], remaining)
 		samplesRead += n
 
-		if err == io.EOF {
-			// End of file reached, restart for looping
-			if restartErr := bg.restart(); restartErr != nil {
-				// If restart fails, fill remaining with silence
+		if err == io.EOF || n < remaining {
+			if restartErr := bg.restartAt(index); restartErr != nil {
 				for i := samplesRead; i < numSamples; i++ {
 					samples[i] = 0
 				}
 				return numSamples, nil
 			}
-			// Continue reading after restart
 			continue
-		} else if err != nil {
-			return samplesRead, fmt.Errorf("error reading background audio: %w", err)
 		}
-
-		// If we read less than requested but no error, we're at EOF
-		if n < remaining {
-			if restartErr := bg.restart(); restartErr != nil {
-				// Fill remaining with silence if restart fails
-				for i := samplesRead; i < numSamples; i++ {
-					samples[i] = 0
-				}
-				return numSamples, nil
-			}
+		if err != nil {
+			return samplesRead, fmt.Errorf("error reading background audio index %d: %w", index, err)
 		}
 	}
 
@@ -185,40 +221,37 @@ func (bg *BackgroundAudio) ReadSamples(samples []int, numSamples int) (int, erro
 }
 
 // readFromDecoder reads raw samples from the WAV decoder
-func (bg *BackgroundAudio) readFromDecoder(samples []int, maxSamples int) (int, error) {
-	if bg.decoder == nil {
+func (bg *BackgroundAudio) readFromDecoderAt(index int, samples []int, maxSamples int) (int, error) {
+	if index < 0 || index >= len(bg.decoders) || bg.decoders[index] == nil {
 		return 0, io.EOF
 	}
 
-	// Calculate how many frames to read (a frame is a set of samples for all channels)
+	decoder := bg.decoders[index]
 	framesToRead := maxSamples / bg.channels
 	if framesToRead <= 0 {
-		// Need at least one frame to progress
 		framesToRead = 1
 	}
 
 	buf := make([][2]float64, framesToRead)
-	nFrames, ok := bg.decoder.Stream(buf)
+	nFrames, ok := decoder.Stream(buf)
 	if !ok || nFrames == 0 {
-		if err := bg.decoder.Err(); err != nil {
+		if err := decoder.Err(); err != nil {
 			return 0, err
 		}
 		return 0, io.EOF
 	}
 
-	const scale = 32768.0 // 2^15 for 16-bit
+	const scale = 32768.0
 	outN := nFrames * bg.channels
-	// Limit to maxSamples to avoid overrun when we read a full frame but caller
-	// requested fewer samples than a full frame.
 	if outN > maxSamples {
 		outN = maxSamples
 	}
 	framesOut := outN / bg.channels
+
 	for i := 0; i < framesOut; i++ {
 		l := int(buf[i][0] * scale)
 		r := int(buf[i][1] * scale)
 
-		// clip to valid range
 		if l > audioMaxValue {
 			l = audioMaxValue
 		}
@@ -233,15 +266,8 @@ func (bg *BackgroundAudio) readFromDecoder(samples []int, maxSamples int) (int, 
 		}
 
 		samples[2*i] = l
-		if bg.channels >= 2 {
-			// only write second sample if we still have space
-			if 2*i+1 < outN {
-				samples[2*i+1] = r
-			}
-		} else {
-			if 2*i+1 < outN {
-				samples[2*i+1] = l
-			}
+		if 2*i+1 < outN {
+			samples[2*i+1] = r
 		}
 	}
 
