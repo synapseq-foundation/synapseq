@@ -179,9 +179,9 @@ func (tr *Track) ShortString() string {
 		}
 	case TrackBackground:
 		if tr.Effect.Type == EffectOff {
-			return fmt.Sprintf(" (%s(%s):%.2f)", KeywordBackground, tr.BackgroundName, tr.Amplitude.ToPercent())
+			return fmt.Sprintf(" (%s[%s]:%.2f)", KeywordBackground, tr.BackgroundName, tr.Amplitude.ToPercent())
 		} else {
-			return fmt.Sprintf(" (%s(%s):%.2f %s:%.2f %s:%.2f)", KeywordBackground, tr.BackgroundName, tr.Amplitude.ToPercent(), tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent())
+			return fmt.Sprintf(" (%s[%s]:%.2f %s:%.2f %s:%.2f)", KeywordBackground, tr.BackgroundName, tr.Amplitude.ToPercent(), tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent())
 		}
 	default:
 		return " ???"
