@@ -14,6 +14,7 @@ package parser
 import (
 	"fmt"
 
+	s "github.com/synapseq-foundation/synapseq/v3/internal/shared"
 	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
 )
 
@@ -214,6 +215,10 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 		name, ok := ctx.Line.NextToken()
 		if !ok {
 			return nil, fmt.Errorf("background name cannot be empty: %s", ln)
+		}
+
+		if err := s.IsValidNamedRef(name); err != nil {
+			return nil, err
 		}
 
 		if name == "" {

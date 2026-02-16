@@ -89,6 +89,10 @@ func (ctx *TextParser) ParseOption(options *t.SequenceOptions, filePath string) 
 			return fmt.Errorf("expected name for background audio file: %s", ln)
 		}
 
+		if err := s.IsValidNamedRef(name); err != nil {
+			return err
+		}
+
 		content := strings.Join(ctx.Line.Tokens[2:], " ")
 
 		if content == "-" {
