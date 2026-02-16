@@ -250,7 +250,7 @@ func (r *AudioRenderer) mix(samples []int) []int {
 				// Scale: 524287 / 32768 ≈ 16
 				const bgScaleFactor = 16
 
-				idx := channel.Track.BackgroundIndex
+				idx := r.channelBGIndex[ch]
 				if idx < 0 || idx >= len(r.backgroundSamplesByIndex) {
 					continue
 				}

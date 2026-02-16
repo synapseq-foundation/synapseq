@@ -75,7 +75,7 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 	var (
 		carrier, resonance, amplitude float64
 		trackType                     t.TrackType
-		backgroundIndex               int
+		backgroundName                string
 	)
 
 	effect := t.Effect{
@@ -211,13 +211,13 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 	case t.KeywordBackground:
 		trackType = t.TrackBackground
 
-		index, err := ctx.Line.NextIntStrict()
-		if err != nil {
-			return nil, fmt.Errorf("background index: %w", err)
+		name, ok := ctx.Line.NextToken()
+		if !ok {
+			return nil, fmt.Errorf("background name cannot be empty: %s", ln)
 		}
 
-		if index < 1 {
-			return nil, fmt.Errorf("background index must be a positive integer. Received: %d", index)
+		if name == "" {
+			return nil, fmt.Errorf("background name cannot be empty: %s", ln)
 		}
 
 		kind, err := ctx.Line.NextExpectOneOf(t.KeywordEffect, t.KeywordAmplitude)
@@ -260,7 +260,7 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 		}
 
 		// convert to 0-based index
-		backgroundIndex = index - 1
+		backgroundName = name
 	default:
 		return nil, fmt.Errorf("expected %q, %q, %q or %q. Received: %s", t.KeywordTone, t.KeywordNoise, t.KeywordBackground, t.KeywordTrack, first)
 	}
@@ -276,13 +276,13 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 	}
 
 	track := t.Track{
-		Type:            trackType,
-		Carrier:         carrier,
-		Resonance:       resonance,
-		Amplitude:       t.AmplitudePercentToRaw(amplitude),
-		BackgroundIndex: backgroundIndex,
-		Waveform:        waveform,
-		Effect:          effect,
+		Type:           trackType,
+		Carrier:        carrier,
+		Resonance:      resonance,
+		Amplitude:      t.AmplitudePercentToRaw(amplitude),
+		BackgroundName: backgroundName,
+		Waveform:       waveform,
+		Effect:         effect,
 	}
 	if err := track.Validate(); err != nil {
 		return nil, fmt.Errorf("%w", err)

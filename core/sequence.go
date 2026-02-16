@@ -83,9 +83,9 @@ func (ac *AppContext) GainLevel() int {
 }
 
 // BackgroundList returns the background audio list from the loaded sequence options
-func (ac *AppContext) BackgroundList() []string {
+func (ac *AppContext) BackgroundList() map[string]string {
 	if ac.sequence == nil || ac.sequence.Options == nil {
-		return []string{}
+		return map[string]string{}
 	}
 
 	return ac.sequence.Options.BackgroundList

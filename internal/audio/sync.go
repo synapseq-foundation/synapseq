@@ -74,7 +74,13 @@ func (r *AudioRenderer) sync(timeMs int, periodIdx int) {
 		channel.Track.Effect.Type = tr0.Effect.Type
 		channel.Track.Effect.Value = tr0.Effect.Value*(1-alpha) + tr1.Effect.Value*alpha
 		channel.Track.Effect.Intensity = t.IntensityType(float64(tr0.Effect.Intensity)*(1-alpha) + float64(tr1.Effect.Intensity)*alpha)
-		channel.Track.BackgroundIndex = tr0.BackgroundIndex
+		channel.Track.BackgroundName = tr0.BackgroundName
+
+		if channel.Track.Type == t.TrackBackground {
+			r.channelBGIndex[ch] = r.periodBGStart[periodIdx][ch]
+		} else {
+			r.channelBGIndex[ch] = -1
+		}
 
 		// Reset offsets if track type has changed
 		if channel.Type != channel.Track.Type {

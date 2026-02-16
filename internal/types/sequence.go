@@ -28,7 +28,7 @@ type SequenceOptions struct {
 	// Volume level (0-100 for 0-100%)
 	Volume int
 	// List of background audio files
-	BackgroundList []string
+	BackgroundList map[string]string
 	// List of preset configuration files
 	PresetList []string
 	// Gain level (20, 16, 12, 6, 0) for audio processing

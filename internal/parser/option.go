@@ -83,16 +83,16 @@ func (ctx *TextParser) ParseOption(options *t.SequenceOptions, filePath string) 
 			return fmt.Errorf("volume: %v", err)
 		}
 		options.Volume = volume
-	case t.KeywordOptionBackground, t.KeywordOptionPresetList:
-		_, ok := ctx.Line.NextToken()
+	case t.KeywordOptionBackground:
+		name, ok := ctx.Line.NextToken()
 		if !ok {
-			return fmt.Errorf("expected path: %s", ln)
+			return fmt.Errorf("expected name for background audio file: %s", ln)
 		}
 
-		content := strings.Join(ctx.Line.Tokens[1:], " ")
+		content := strings.Join(ctx.Line.Tokens[2:], " ")
 
 		if content == "-" {
-			return fmt.Errorf("stdin (-) is not supported for background or preset list")
+			return fmt.Errorf("stdin (-) is not supported for background list")
 		}
 
 		fullPath := content
@@ -104,11 +104,29 @@ func (ctx *TextParser) ParseOption(options *t.SequenceOptions, filePath string) 
 			}
 		}
 
-		if option == t.KeywordBackground {
-			options.BackgroundList = append(options.BackgroundList, fullPath)
-		} else {
-			options.PresetList = append(options.PresetList, fullPath)
+		options.BackgroundList[name] = fullPath
+	case t.KeywordOptionPresetList:
+		_, ok := ctx.Line.NextToken()
+		if !ok {
+			return fmt.Errorf("expected path: %s", ln)
 		}
+
+		content := strings.Join(ctx.Line.Tokens[1:], " ")
+
+		if content == "-" {
+			return fmt.Errorf("stdin (-) is not supported for preset list")
+		}
+
+		fullPath := content
+		if !s.IsRemoteFile(content) {
+			var err error
+			fullPath, err = getFullPath(content, filePath)
+			if err != nil {
+				return fmt.Errorf("path: %v", err)
+			}
+		}
+
+		options.PresetList = append(options.PresetList, fullPath)
 	case t.KeywordOptionGainLevel:
 		gainLevel, ok := ctx.Line.NextToken()
 		if !ok {

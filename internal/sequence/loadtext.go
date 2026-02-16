@@ -50,7 +50,7 @@ func LoadTextSequence(fileName string) (*t.Sequence, error) {
 	options := &t.SequenceOptions{
 		SampleRate:     44100,
 		Volume:         100,
-		BackgroundList: []string{},
+		BackgroundList: make(map[string]string),
 		PresetList:     []string{},
 		GainLevel:      t.GainLevelOff,
 	}
