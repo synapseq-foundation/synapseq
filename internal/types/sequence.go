@@ -27,12 +27,10 @@ type SequenceOptions struct {
 	SampleRate int
 	// Volume level (0-100 for 0-100%)
 	Volume int
-	// List of background audio files
-	BackgroundList map[string]string
+	// List of ambiance audio files
+	AmbianceList map[string]string
 	// List of preset configuration files
 	PresetList []string
-	// Gain level (20, 16, 12, 6, 0) for audio processing
-	GainLevel GainLevel
 }
 
 // Validate checks if the sequence options are valid

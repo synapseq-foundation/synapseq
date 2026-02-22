@@ -47,8 +47,8 @@ func (r *AudioRenderer) mix(samples []int) []int {
 					channel.Effect.Offset += channel.Effect.Increment
 					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
 
-					modFactor := r.calcModulationFactor(channel.Track.Waveform, channel.Effect.Offset) // 0..1
-					effectIntensity := float64(channel.Track.Effect.Intensity) * 0.7                   // intensity já é 0..1
+					modFactor := r.calcModulationFactor(channel.Track.Waveform, channel.Effect.Offset)
+					effectIntensity := float64(channel.Track.Effect.Intensity) * 0.7
 
 					gain := (1.0 - effectIntensity) + (effectIntensity * modFactor)
 					sample = int(float64(sample) * gain)
@@ -92,8 +92,8 @@ func (r *AudioRenderer) mix(samples []int) []int {
 					channel.Effect.Offset += channel.Effect.Increment
 					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
 
-					modFactor := r.calcModulationFactor(channel.Track.Waveform, channel.Effect.Offset) // 0..1
-					effectIntensity := float64(channel.Track.Effect.Intensity) * 0.7                   // intensity já é 0..1
+					modFactor := r.calcModulationFactor(channel.Track.Waveform, channel.Effect.Offset)
+					effectIntensity := float64(channel.Track.Effect.Intensity) * 0.7
 
 					gain := (1.0 - effectIntensity) + (effectIntensity * modFactor)
 					ll = int(float64(ll) * gain)
@@ -244,17 +244,14 @@ func (r *AudioRenderer) mix(samples []int) []int {
 					left += sampleVal
 					right += sampleVal
 				}
-			case t.TrackBackground:
-				// Scale factor to match wavetable amplitude range
-				// WaveTableAmplitude (0x7FFFF = 524287) vs 16-bit samples (32768)
-				// Scale: 524287 / 32768 ≈ 16
-				const bgScaleFactor = 16
+			case t.TrackAmbiance:
+				bgScaleFactor := 16
 
-				idx := r.channelBGIndex[ch]
-				if idx < 0 || idx >= len(r.backgroundSamplesByIndex) {
+				idx := r.channelAmbianceIndex[ch]
+				if idx < 0 || idx >= len(r.ambianceSamplesByIndex) {
 					continue
 				}
-				bgBuf := r.backgroundSamplesByIndex[idx]
+				bgBuf := r.ambianceSamplesByIndex[idx]
 				if len(bgBuf) < i*2+2 {
 					continue
 				}
@@ -262,45 +259,33 @@ func (r *AudioRenderer) mix(samples []int) []int {
 				bgLeft := bgBuf[i*2] * bgScaleFactor
 				bgRight := bgBuf[i*2+1] * bgScaleFactor
 
-				// Apply gain reduction if configured (default GainLevelVeryHigh = 0dB, no reduction)
-				if r.GainLevel > 0 {
-					dbValue := -float64(r.GainLevel)
-					gainFactor := math.Pow(10, dbValue/20.0)
-					bgLeft = int(float64(bgLeft) * gainFactor)
-					bgRight = int(float64(bgRight) * gainFactor)
-				}
-
-				backgroundAmplitude := channel.Amplitude[0]
+				ambianceAmplitude := channel.Amplitude[0]
 
 				switch channel.Track.Effect.Type {
 				case t.EffectPan:
 					channel.Effect.Offset += channel.Effect.Increment
 					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
 
-					inL := bgLeft * backgroundAmplitude
-					inR := bgRight * backgroundAmplitude
+					inL := bgLeft * ambianceAmplitude
+					inR := bgRight * ambianceAmplitude
 
 					outL, outR := r.applyPan(channel, inL, inR)
 					left += outL
 					right += outR
 				case t.EffectModulation:
-					// LFO for modulation
 					channel.Effect.Offset += channel.Effect.Increment
 					channel.Effect.Offset &= (t.SineTableSize << 16) - 1
 
-					// 0..1
 					modFactor := r.calcModulationFactor(channel.Track.Waveform, channel.Effect.Offset)
 
-					// Mix the effect (0..1) weighted by intensity
 					effectIntensity := float64(channel.Track.Effect.Intensity) * 0.7
 					gain := (1.0 - effectIntensity) + (effectIntensity * modFactor)
 
-					left += int(float64(bgLeft*backgroundAmplitude) * gain)
-					right += int(float64(bgRight*backgroundAmplitude) * gain)
+					left += int(float64(bgLeft*ambianceAmplitude) * gain)
+					right += int(float64(bgRight*ambianceAmplitude) * gain)
 				default:
-					// BG without effect
-					left += bgLeft * backgroundAmplitude
-					right += bgRight * backgroundAmplitude
+					left += bgLeft * ambianceAmplitude
+					right += bgRight * ambianceAmplitude
 				}
 			}
 		}
@@ -310,11 +295,9 @@ func (r *AudioRenderer) mix(samples []int) []int {
 			right = right * r.Volume / 100
 		}
 
-		// Scale down to 24-bit range
 		left >>= audioBitShift
 		right >>= audioBitShift
 
-		// Clipping to 24-bit range
 		if left > audioMaxValue {
 			left = audioMaxValue
 		}

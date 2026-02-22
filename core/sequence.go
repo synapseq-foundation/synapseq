@@ -68,27 +68,13 @@ func (ac *AppContext) Volume() int {
 	return ac.sequence.Options.Volume
 }
 
-// GainLevel returns the gain level from the loaded sequence options.
-// Gain levels:
-// 0 = 0 dB,
-// 3 = -3 dB,
-// 9 = -9 dB,
-// 18 = -18 dB
-func (ac *AppContext) GainLevel() int {
-	if ac.sequence == nil || ac.sequence.Options == nil {
-		return 0
-	}
-
-	return int(ac.sequence.Options.GainLevel)
-}
-
-// BackgroundList returns the background audio list from the loaded sequence options
-func (ac *AppContext) BackgroundList() map[string]string {
+// AmbianceList returns the ambiance audio list from the loaded sequence options
+func (ac *AppContext) AmbianceList() map[string]string {
 	if ac.sequence == nil || ac.sequence.Options == nil {
 		return map[string]string{}
 	}
 
-	return ac.sequence.Options.BackgroundList
+	return ac.sequence.Options.AmbianceList
 }
 
 // RawContent returns the raw content of the loaded sequence

@@ -29,24 +29,24 @@ const (
 
 // AudioRenderer handle audio generation
 type AudioRenderer struct {
-	channels        [t.NumberOfChannels]t.Channel
-	periods         []t.Period
-	waveTables      [4][]int
-	noiseGenerator  *NoiseGenerator
-	backgroundAudio *BackgroundAudio
+	channels       [t.NumberOfChannels]t.Channel
+	periods        []t.Period
+	waveTables     [4][]int
+	noiseGenerator *NoiseGenerator
+	ambianceAudio  *AmbianceAudio
 
 	// Reusable buffer to avoid allocating every mix() call
-	backgroundSamplesByIndex [][]int
-	// Track indices that have active background audio (for optimization)
-	activeBGIndices []int
-	// Mask to track which background audio tracks are currently active
-	activeBGMask []bool
+	ambianceSamplesByIndex [][]int
+	// Track indices that have active ambiance audio (for optimization)
+	activeAmbianceIndices []int
+	// Mask to track which ambiance audio tracks are currently active
+	activeAmbianceMask []bool
 
-	// Cache for the current background index of each channel to optimize lookups during sync
-	channelBGIndex [t.NumberOfChannels]int
+	// Cache for the current ambiance index of each channel to optimize lookups during sync
+	channelAmbianceIndex [t.NumberOfChannels]int
 
-	// cache for the current period's background names for each channel to optimize lookups during sync
-	periodBGStart [][]int
+	// cache for the current period's ambiance names for each channel to optimize lookups during sync
+	periodAmbianceStart [][]int
 
 	// Embedding options
 	*AudioRendererOptions
@@ -54,11 +54,10 @@ type AudioRenderer struct {
 
 // AudioRendererOptions holds options for the audio renderer
 type AudioRendererOptions struct {
-	SampleRate     int
-	Volume         int
-	GainLevel      t.GainLevel
-	BackgroundList map[string]string
-	StatusOutput   io.Writer
+	SampleRate   int
+	Volume       int
+	AmbianceList map[string]string
+	StatusOutput io.Writer
 }
 
 // NewAudioRenderer creates a new AudioRenderer instance
@@ -79,35 +78,35 @@ func NewAudioRenderer(p []t.Period, ar *AudioRendererOptions) (*AudioRenderer, e
 		return nil, fmt.Errorf("no periods defined in the sequence")
 	}
 
-	bgPaths, bgNameToIndex, err := buildBackgroundIndex(ar.BackgroundList)
+	ambiancePaths, ambianceNameToIndex, err := buildAmbianceIndex(ar.AmbianceList)
 	if err != nil {
 		return nil, err
 	}
 
-	periodBGStart, err := precomputePeriodBGStart(p, bgNameToIndex)
+	periodAmbianceStart, err := precomputePeriodAmbianceStart(p, ambianceNameToIndex)
 	if err != nil {
 		return nil, err
 	}
 
-	backgroundAudio, err := NewBackgroundAudio(bgPaths, ar.SampleRate)
+	ambianceAudio, err := NewAmbianceAudio(ambiancePaths, ar.SampleRate)
 	if err != nil {
 		return nil, err
 	}
 
 	renderer := &AudioRenderer{
-		periods:                  p,
-		waveTables:               InitWaveformTables(),
-		noiseGenerator:           NewNoiseGenerator(),
-		backgroundAudio:          backgroundAudio,
-		backgroundSamplesByIndex: make([][]int, len(bgPaths)),
-		activeBGIndices:          make([]int, 0, t.NumberOfChannels),
-		activeBGMask:             make([]bool, len(bgPaths)),
-		periodBGStart:            periodBGStart,
-		AudioRendererOptions:     ar,
+		periods:                p,
+		waveTables:             InitWaveformTables(),
+		noiseGenerator:         NewNoiseGenerator(),
+		ambianceAudio:          ambianceAudio,
+		ambianceSamplesByIndex: make([][]int, len(ambiancePaths)),
+		activeAmbianceIndices:  make([]int, 0, t.NumberOfChannels),
+		activeAmbianceMask:     make([]bool, len(ambiancePaths)),
+		periodAmbianceStart:    periodAmbianceStart,
+		AudioRendererOptions:   ar,
 	}
 
-	for i := range renderer.channelBGIndex {
-		renderer.channelBGIndex[i] = -1
+	for i := range renderer.channelAmbianceIndex {
+		renderer.channelAmbianceIndex[i] = -1
 	}
 
 	return renderer, nil
@@ -115,10 +114,10 @@ func NewAudioRenderer(p []t.Period, ar *AudioRendererOptions) (*AudioRenderer, e
 
 // Render generates the audio and passes buffers to the consume function
 func (r *AudioRenderer) Render(consume func(samples []int) error) error {
-	// Ensure background audio file is closed if opened
+	// Ensure ambiance audio file is closed if opened
 	defer func() {
-		if r.backgroundAudio != nil {
-			r.backgroundAudio.Close()
+		if r.ambianceAudio != nil {
+			r.ambianceAudio.Close()
 		}
 	}()
 
@@ -145,8 +144,8 @@ func (r *AudioRenderer) Render(consume func(samples []int) error) error {
 		}
 
 		r.sync(currentTimeMs, periodIdx)
-		r.collectActiveBackgroundIndices()
-		r.prepareBackgroundBuffers()
+		r.collectActiveAmbianceIndices()
+		r.prepareAmbianceBuffers()
 
 		if statusReporter != nil {
 			statusReporter.CheckPeriodChange(r, periodIdx)

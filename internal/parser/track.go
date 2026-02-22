@@ -61,8 +61,8 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 			waveform = t.WaveformSawtooth
 		}
 
-		if _, err := ctx.Line.NextExpectOneOf(t.KeywordTone, t.KeywordBackground); err != nil {
-			return nil, fmt.Errorf("expected %q or %q after waveform type: %s", t.KeywordTone, t.KeywordBackground, ln)
+		if _, err := ctx.Line.NextExpectOneOf(t.KeywordTone, t.KeywordAmbiance); err != nil {
+			return nil, fmt.Errorf("expected %q or %q after waveform type: %s", t.KeywordTone, t.KeywordAmbiance, ln)
 		}
 
 		ctx.Line.RewindToken(1) // rewind to re-process the tone line
@@ -70,13 +70,13 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 
 	first, ok := ctx.Line.NextToken()
 	if !ok {
-		return nil, fmt.Errorf("expected %q, %s or %q: %s", t.KeywordTone, t.KeywordNoise, t.KeywordBackground, ln)
+		return nil, fmt.Errorf("expected %q, %s or %q: %s", t.KeywordTone, t.KeywordNoise, t.KeywordAmbiance, ln)
 	}
 
 	var (
 		carrier, resonance, amplitude float64
 		trackType                     t.TrackType
-		backgroundName                string
+		ambianceName                  string
 	)
 
 	effect := t.Effect{
@@ -209,12 +209,12 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 				return nil, fmt.Errorf("expected %q after intensity: %s", t.KeywordAmplitude, ln)
 			}
 		}
-	case t.KeywordBackground:
-		trackType = t.TrackBackground
+	case t.KeywordAmbiance:
+		trackType = t.TrackAmbiance
 
 		name, ok := ctx.Line.NextToken()
 		if !ok {
-			return nil, fmt.Errorf("background name cannot be empty: %s", ln)
+			return nil, fmt.Errorf("ambiance name cannot be empty: %s", ln)
 		}
 
 		if err := s.IsValidNamedRef(name); err != nil {
@@ -222,18 +222,18 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 		}
 
 		if name == "" {
-			return nil, fmt.Errorf("background name cannot be empty: %s", ln)
+			return nil, fmt.Errorf("ambiance name cannot be empty: %s", ln)
 		}
 
 		kind, err := ctx.Line.NextExpectOneOf(t.KeywordEffect, t.KeywordAmplitude)
 		if err != nil {
-			return nil, fmt.Errorf("expected %q or %q after background: %s", t.KeywordEffect, t.KeywordAmplitude, ln)
+			return nil, fmt.Errorf("expected %q or %q after ambiance: %s", t.KeywordEffect, t.KeywordAmplitude, ln)
 		}
 
 		if kind == t.KeywordEffect {
 			effectKind, err := ctx.Line.NextExpectOneOf(t.KeywordPan, t.KeywordModulation)
 			if err != nil {
-				return nil, fmt.Errorf("expected %q or %q after noise effect: %s", t.KeywordPan, t.KeywordModulation, ln)
+				return nil, fmt.Errorf("expected %q or %q after ambiance effect: %s", t.KeywordPan, t.KeywordModulation, ln)
 			}
 
 			effectValue, err := ctx.Line.NextFloat64Strict()
@@ -265,9 +265,9 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 		}
 
 		// convert to 0-based index
-		backgroundName = name
+		ambianceName = name
 	default:
-		return nil, fmt.Errorf("expected %q, %q, %q or %q. Received: %s", t.KeywordTone, t.KeywordNoise, t.KeywordBackground, t.KeywordTrack, first)
+		return nil, fmt.Errorf("expected %q, %q, %q or %q. Received: %s", t.KeywordTone, t.KeywordNoise, t.KeywordAmbiance, t.KeywordTrack, first)
 	}
 
 	var err error
@@ -281,13 +281,13 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 	}
 
 	track := t.Track{
-		Type:           trackType,
-		Carrier:        carrier,
-		Resonance:      resonance,
-		Amplitude:      t.AmplitudePercentToRaw(amplitude),
-		BackgroundName: backgroundName,
-		Waveform:       waveform,
-		Effect:         effect,
+		Type:         trackType,
+		Carrier:      carrier,
+		Resonance:    resonance,
+		Amplitude:    t.AmplitudePercentToRaw(amplitude),
+		AmbianceName: ambianceName,
+		Waveform:     waveform,
+		Effect:       effect,
 	}
 	if err := track.Validate(); err != nil {
 		return nil, fmt.Errorf("%w", err)
