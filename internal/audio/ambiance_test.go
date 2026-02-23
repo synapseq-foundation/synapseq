@@ -19,9 +19,10 @@ import (
 	"testing"
 
 	bwav "github.com/gopxl/beep/v2/wav"
+	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
 )
 
-const maxBackgroundFileSize = 10 * 1024 * 1024 // 10MB
+const maxAmbianceFileSize = t.MaxBackgroundFileSize
 
 func mustReadWavAll(t *testing.T, path string) ([]int, uint32, int, int) {
 	t.Helper()
@@ -37,7 +38,7 @@ func mustReadWavAll(t *testing.T, path string) ([]int, uint32, int, int) {
 	}
 	defer s.Close()
 
-	// Stream all frames and convert to interleaved int16 samples to match BackgroundAudio
+	// Stream all frames and convert to interleaved int16 samples to match AmbianceAudio
 	var data []int
 	const scale = 32768.0 // 2^15 for 16-bit
 	buf := make([][2]float64, 4096)
@@ -72,29 +73,29 @@ func mustReadWavAll(t *testing.T, path string) ([]int, uint32, int, int) {
 	return data, uint32(fmt.SampleRate), fmt.NumChannels, fmt.Precision * 8
 }
 
-func TestBackgroundAudio_LoadReadAndLoop(t *testing.T) {
+func TestAmbianceAudio_LoadReadAndLoop(t *testing.T) {
 	path := filepath.Join("testdata", "noise.wav")
 	data, sr, chans, depth := mustReadWavAll(t, path)
 
-	bg, err := NewBackgroundAudio(path)
+	aa, err := NewAmbianceAudio([]string{path}, int(sr))
 	if err != nil {
-		t.Fatalf("NewBackgroundAudio: %v", err)
+		t.Fatalf("NewAmbianceAudio: %v", err)
 	}
-	defer bg.Close()
+	defer aa.Close()
 
-	if !bg.IsEnabled() {
-		t.Fatalf("expected enabled background")
+	if !aa.IsEnabled() {
+		t.Fatalf("expected enabled ambiance")
 	}
-	if bg.sampleRate != int(sr) || bg.channels != chans || bg.bitDepth != depth {
-		t.Fatalf("mismatched bg props sr=%d ch=%d bd=%d vs file sr=%d ch=%d bd=%d", bg.sampleRate, bg.channels, bg.bitDepth, sr, chans, depth)
+	if aa.sampleRate != int(sr) || aa.channels != chans || aa.bitDepth != depth {
+		t.Fatalf("mismatched ambiance props sr=%d ch=%d bd=%d vs file sr=%d ch=%d bd=%d", aa.sampleRate, aa.channels, aa.bitDepth, sr, chans, depth)
 	}
 
-	// Force looping at least once, reading in chunks up to bg.bufferSize
+	// Force looping at least once, reading in chunks up to aa.bufferSize
 	target := len(data) + 123
 	var buf []int
-	chunk := bg.bufferSize
+	chunk := aa.bufferSize
 	if chunk <= 0 {
-		t.Fatalf("invalid bg.bufferSize: %d", chunk)
+		t.Fatalf("invalid aa.bufferSize: %d", chunk)
 	}
 	tmp := make([]int, chunk)
 	total := 0
@@ -103,12 +104,12 @@ func TestBackgroundAudio_LoadReadAndLoop(t *testing.T) {
 		if need > chunk {
 			need = chunk
 		}
-		n, err := bg.ReadSamples(tmp[:need], need)
+		n, err := aa.ReadSamplesAt(0, tmp[:need], need)
 		if err != nil {
-			t.Fatalf("ReadSamples error: %v", err)
+			t.Fatalf("ReadSamplesAt error: %v", err)
 		}
 		if n != need {
-			t.Fatalf("ReadSamples short read: got %d want %d", n, need)
+			t.Fatalf("ReadSamplesAt short read: got %d want %d", n, need)
 		}
 		buf = append(buf, tmp[:need]...)
 		total += n
@@ -129,21 +130,97 @@ func TestBackgroundAudio_LoadReadAndLoop(t *testing.T) {
 	}
 }
 
-func TestBackgroundAudio_DisabledAndClose(t *testing.T) {
-	bg, err := NewBackgroundAudio("")
+func TestAmbianceAudio_MultipleIndicesHaveIndependentReadPosition(t *testing.T) {
+	path := filepath.Join("testdata", "noise.wav")
+	data, sr, _, _ := mustReadWavAll(t, path)
+
+	aa, err := NewAmbianceAudio([]string{path, path}, int(sr))
 	if err != nil {
-		t.Fatalf("NewBackgroundAudio empty: %v", err)
+		t.Fatalf("NewAmbianceAudio: %v", err)
 	}
-	if bg.IsEnabled() {
+	defer aa.Close()
+
+	const chunk = 1024
+	first0 := make([]int, chunk)
+	second0 := make([]int, chunk)
+	first1 := make([]int, chunk)
+
+	n, err := aa.ReadSamplesAt(0, first0, len(first0))
+	if err != nil {
+		t.Fatalf("ReadSamplesAt(0) first error: %v", err)
+	}
+	if n != len(first0) {
+		t.Fatalf("ReadSamplesAt(0) first short read: got %d want %d", n, len(first0))
+	}
+
+	n, err = aa.ReadSamplesAt(0, second0, len(second0))
+	if err != nil {
+		t.Fatalf("ReadSamplesAt(0) second error: %v", err)
+	}
+	if n != len(second0) {
+		t.Fatalf("ReadSamplesAt(0) second short read: got %d want %d", n, len(second0))
+	}
+
+	n, err = aa.ReadSamplesAt(1, first1, len(first1))
+	if err != nil {
+		t.Fatalf("ReadSamplesAt(1) first error: %v", err)
+	}
+	if n != len(first1) {
+		t.Fatalf("ReadSamplesAt(1) first short read: got %d want %d", n, len(first1))
+	}
+
+	// Index 1 must start from beginning, independent from index 0 progress.
+	for i := 0; i < len(first1) && i < len(data); i++ {
+		if first1[i] != data[i] {
+			t.Fatalf("index 1 prefix mismatch at %d: got %d want %d", i, first1[i], data[i])
+		}
+	}
+
+	// Second read from index 0 must continue from where first read stopped.
+	for i := 0; i < len(second0); i++ {
+		want := data[chunk+i]
+		if second0[i] != want {
+			t.Fatalf("index 0 continuation mismatch at %d: got %d want %d", i, second0[i], want)
+		}
+	}
+}
+
+func TestAmbianceAudio_ReadSamplesAt_InvalidIndex(t *testing.T) {
+	path := filepath.Join("testdata", "noise.wav")
+	_, sr, _, _ := mustReadWavAll(t, path)
+
+	aa, err := NewAmbianceAudio([]string{path, path}, int(sr))
+	if err != nil {
+		t.Fatalf("NewAmbianceAudio: %v", err)
+	}
+	defer aa.Close()
+
+	buf := make([]int, 128)
+
+	if _, err := aa.ReadSamplesAt(-1, buf, len(buf)); err == nil {
+		t.Fatalf("expected error for negative ambiance index")
+	}
+
+	if _, err := aa.ReadSamplesAt(2, buf, len(buf)); err == nil {
+		t.Fatalf("expected error for out-of-range ambiance index")
+	}
+}
+
+func TestAmbianceAudio_DisabledAndClose(t *testing.T) {
+	aa, err := NewAmbianceAudio(nil, 44100)
+	if err != nil {
+		t.Fatalf("NewAmbianceAudio empty: %v", err)
+	}
+	if aa.IsEnabled() {
 		t.Fatalf("expected disabled when no path provided")
 	}
 	buf := make([]int, 256)
-	n, err := bg.ReadSamples(buf, len(buf))
+	n, err := aa.ReadSamplesAt(0, buf, len(buf))
 	if err != nil {
-		t.Fatalf("ReadSamples disabled error: %v", err)
+		t.Fatalf("ReadSamplesAt disabled error: %v", err)
 	}
 	if n != len(buf) {
-		t.Fatalf("ReadSamples disabled count: got %d want %d", n, len(buf))
+		t.Fatalf("ReadSamplesAt disabled count: got %d want %d", n, len(buf))
 	}
 	for i, v := range buf {
 		if v != 0 {
@@ -152,12 +229,12 @@ func TestBackgroundAudio_DisabledAndClose(t *testing.T) {
 	}
 
 	// Closing should keep it disabled and safe
-	if err := bg.Close(); err != nil {
+	if err := aa.Close(); err != nil {
 		t.Fatalf("Close disabled: %v", err)
 	}
-	_, err = bg.ReadSamples(buf, len(buf))
+	_, err = aa.ReadSamplesAt(0, buf, len(buf))
 	if err != nil {
-		t.Fatalf("ReadSamples after close error: %v", err)
+		t.Fatalf("ReadSamplesAt after close error: %v", err)
 	}
 	for i, v := range buf {
 		if v != 0 {
@@ -166,9 +243,10 @@ func TestBackgroundAudio_DisabledAndClose(t *testing.T) {
 	}
 }
 
-func TestBackgroundAudio_RemoteWAV(t *testing.T) {
+func TestAmbianceAudio_RemoteWAV(t *testing.T) {
 	// Read local WAV file to serve
 	path := filepath.Join("testdata", "noise.wav")
+	_, sr, _, _ := mustReadWavAll(t, path)
 	wavData, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("failed to read test WAV: %v", err)
@@ -182,32 +260,35 @@ func TestBackgroundAudio_RemoteWAV(t *testing.T) {
 	defer server.Close()
 
 	// Load from remote URL
-	bg, err := NewBackgroundAudio(server.URL)
+	aa, err := NewAmbianceAudio([]string{server.URL}, int(sr))
 	if err != nil {
-		t.Fatalf("NewBackgroundAudio remote: %v", err)
+		t.Fatalf("NewAmbianceAudio remote: %v", err)
 	}
-	defer bg.Close()
+	defer aa.Close()
 
-	if !bg.IsEnabled() {
-		t.Fatalf("expected enabled background for remote")
+	if !aa.IsEnabled() {
+		t.Fatalf("expected enabled ambiance for remote")
 	}
 
 	// Verify cache was populated
-	if bg.cachedData == nil {
+	if aa.cachedData == nil {
 		t.Fatalf("expected cachedData to be populated")
 	}
-	if len(bg.cachedData) != len(wavData) {
-		t.Fatalf("cached data size mismatch: got %d want %d", len(bg.cachedData), len(wavData))
+	if len(aa.cachedData) != 1 {
+		t.Fatalf("cached tracks mismatch: got %d want 1", len(aa.cachedData))
+	}
+	if len(aa.cachedData[0]) != len(wavData) {
+		t.Fatalf("cached data size mismatch: got %d want %d", len(aa.cachedData[0]), len(wavData))
 	}
 
 	// Read some samples to verify it works
 	buf := make([]int, 1024)
-	n, err := bg.ReadSamples(buf, len(buf))
+	n, err := aa.ReadSamplesAt(0, buf, len(buf))
 	if err != nil {
-		t.Fatalf("ReadSamples remote error: %v", err)
+		t.Fatalf("ReadSamplesAt remote error: %v", err)
 	}
 	if n != len(buf) {
-		t.Fatalf("ReadSamples remote count: got %d want %d", n, len(buf))
+		t.Fatalf("ReadSamplesAt remote count: got %d want %d", n, len(buf))
 	}
 
 	// Verify non-zero samples
@@ -223,9 +304,9 @@ func TestBackgroundAudio_RemoteWAV(t *testing.T) {
 	}
 }
 
-func TestBackgroundAudio_Remote10MBLimit(ts *testing.T) {
-	// Create a server that serves more than 10MB
-	const size = 12 * 1024 * 1024 // 12MB
+func TestAmbianceAudio_Remote10MBLimit(ts *testing.T) {
+	// Create a server that serves more than the configured WAV max size
+	const size = maxAmbianceFileSize + 2*1024*1024
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "audio/wav")
 		// Write a simple WAV header (44 bytes) + data
@@ -273,20 +354,23 @@ func TestBackgroundAudio_Remote10MBLimit(ts *testing.T) {
 	}))
 	defer server.Close()
 
-	bg, err := NewBackgroundAudio(server.URL)
+	aa, err := NewAmbianceAudio([]string{server.URL}, 44100)
 	if err != nil {
-		ts.Fatalf("NewBackgroundAudio 10MB limit: %v", err)
+		ts.Fatalf("NewAmbianceAudio 10MB limit: %v", err)
 	}
-	defer bg.Close()
+	defer aa.Close()
 
-	// Verify that only 10MB was read
-	if len(bg.cachedData) != maxBackgroundFileSize {
-		ts.Fatalf("expected cached data to be limited to %d bytes, got %d", maxBackgroundFileSize, len(bg.cachedData))
+	// Verify that data was capped at the configured max size
+	if len(aa.cachedData) != 1 {
+		ts.Fatalf("expected one cached track, got %d", len(aa.cachedData))
+	}
+	if len(aa.cachedData[0]) != maxAmbianceFileSize {
+		ts.Fatalf("expected cached data to be limited to %d bytes, got %d", maxAmbianceFileSize, len(aa.cachedData[0]))
 	}
 }
 
-func TestBackgroundAudio_Local10MBLimit(ts *testing.T) {
-	// Create a temporary WAV file larger than 10MB
+func TestAmbianceAudio_Local10MBLimit(ts *testing.T) {
+	// Create a temporary WAV file larger than the configured WAV max size
 	tmpDir := ts.TempDir()
 	path := filepath.Join(tmpDir, "large.wav")
 
@@ -295,7 +379,7 @@ func TestBackgroundAudio_Local10MBLimit(ts *testing.T) {
 		ts.Fatalf("failed to create temp file: %v", err)
 	}
 
-	const size = 12 * 1024 * 1024 // 12MB
+	const size = maxAmbianceFileSize + 2*1024*1024
 	// Write WAV header
 	header := make([]byte, 44)
 	copy(header[0:4], "RIFF")
@@ -338,21 +422,24 @@ func TestBackgroundAudio_Local10MBLimit(ts *testing.T) {
 	}
 	f.Close()
 
-	bg, err := NewBackgroundAudio(path)
+	aa, err := NewAmbianceAudio([]string{path}, 44100)
 	if err != nil {
-		ts.Fatalf("NewBackgroundAudio local 10MB limit: %v", err)
+		ts.Fatalf("NewAmbianceAudio local 10MB limit: %v", err)
 	}
-	defer bg.Close()
+	defer aa.Close()
 
-	// Verify that only 10MB was read
-	if len(bg.cachedData) != maxBackgroundFileSize {
-		ts.Fatalf("expected cached data to be limited to %d bytes, got %d", maxBackgroundFileSize, len(bg.cachedData))
+	// Verify that data was capped at the configured max size
+	if len(aa.cachedData) != 1 {
+		ts.Fatalf("expected one cached track, got %d", len(aa.cachedData))
+	}
+	if len(aa.cachedData[0]) != maxAmbianceFileSize {
+		ts.Fatalf("expected cached data to be limited to %d bytes, got %d", maxAmbianceFileSize, len(aa.cachedData[0]))
 	}
 }
 
-func TestBackgroundAudio_InvalidPath(t *testing.T) {
-	if _, err := NewBackgroundAudio(filepath.Join("testdata", "missing.wav")); err == nil {
-		t.Fatalf("expected error for missing background file")
+func TestAmbianceAudio_InvalidPath(t *testing.T) {
+	if _, err := NewAmbianceAudio([]string{filepath.Join("testdata", "missing.wav")}, 44100); err == nil {
+		t.Fatalf("expected error for missing ambiance file")
 	}
 }
 

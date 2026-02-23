@@ -86,7 +86,7 @@ func TestAdjustPeriods_FadeOutToSilence(ts *testing.T) {
 	var last, next t.Period
 
 	last.TrackStart[0] = t.Track{
-		Type:      t.TrackBackground,
+		Type:      t.TrackAmbiance,
 		Carrier:   200,
 		Resonance: 5,
 		Amplitude: t.AmplitudePercentToRaw(50),
@@ -151,9 +151,9 @@ func TestAdjustPeriods_Errors(ts *testing.T) {
 			tr2:  t.Track{Type: t.TrackBinauralBeat, Amplitude: t.AmplitudePercentToRaw(12), Waveform: t.WaveformTriangle},
 		},
 		{
-			name: "change effect type while on (background)",
-			tr1:  t.Track{Type: t.TrackBackground, Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectPan}},
-			tr2:  t.Track{Type: t.TrackBackground, Amplitude: t.AmplitudePercentToRaw(25), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectModulation}},
+			name: "change effect type while on (ambiance)",
+			tr1:  t.Track{Type: t.TrackAmbiance, Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectPan}},
+			tr2:  t.Track{Type: t.TrackAmbiance, Amplitude: t.AmplitudePercentToRaw(25), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectModulation}},
 		},
 	}
 

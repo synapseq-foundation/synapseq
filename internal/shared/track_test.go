@@ -124,9 +124,9 @@ func TestIsTrackEqual(ts *testing.T) {
 			eq: false,
 		},
 		{
-			name: "background effect type ignored",
+			name: "ambiance effect type ignored",
 			a: &t.Track{
-				Type:      t.TrackBackground,
+				Type:      t.TrackAmbiance,
 				Carrier:   200,
 				Resonance: 5,
 				Amplitude: t.AmplitudePercentToRaw(40),
@@ -134,7 +134,7 @@ func TestIsTrackEqual(ts *testing.T) {
 				Effect:    t.Effect{Type: t.EffectPan, Intensity: t.IntensityPercentToRaw(60)},
 			},
 			b: &t.Track{
-				Type:      t.TrackBackground,
+				Type:      t.TrackAmbiance,
 				Carrier:   200,
 				Resonance: 5,
 				Amplitude: t.AmplitudePercentToRaw(40),

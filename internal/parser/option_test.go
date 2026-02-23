@@ -30,8 +30,8 @@ func TestHasOption(ts *testing.T) {
 	}{
 		{fmt.Sprintf("%svolume 50", t.KeywordOption), true},
 		{fmt.Sprintf("%ssamplerate 48000", t.KeywordOption), true},
-		{fmt.Sprintf("   %sgainlevel medium", t.KeywordOption), false},
-		{fmt.Sprintf("background file.wav %s", t.KeywordComment), false},
+		{fmt.Sprintf("   %sambiance rain file.wav", t.KeywordOption), false},
+		{fmt.Sprintf("ambiance rain file.wav %s", t.KeywordComment), false},
 	}
 
 	for _, test := range tests {
@@ -64,28 +64,24 @@ func TestParseOption(ts *testing.T) {
 	}{
 		{
 			fmt.Sprintf("%svolume 50", t.KeywordOption),
-			t.SequenceOptions{Volume: 50},
+			t.SequenceOptions{Volume: 50, AmbianceList: map[string]string{}},
 		},
 		{
 			fmt.Sprintf("%ssamplerate 48000", t.KeywordOption),
-			t.SequenceOptions{SampleRate: 48000},
+			t.SequenceOptions{SampleRate: 48000, AmbianceList: map[string]string{}},
 		},
 		{
-			fmt.Sprintf("%sgainlevel low", t.KeywordOption),
-			t.SequenceOptions{GainLevel: t.GainLevelLow},
+			fmt.Sprintf("%s%s rain testdata/%s", t.KeywordOption, t.KeywordOptionAmbiance, backgroundFile),
+			t.SequenceOptions{AmbianceList: map[string]string{"rain": filepath.Clean(filepath.Join(basePath, "testdata", backgroundFile))}},
 		},
 		{
-			fmt.Sprintf("%sbackground testdata/%s", t.KeywordOption, backgroundFile),
-			t.SequenceOptions{BackgroundList: []string{filepath.Clean(filepath.Join(basePath, "testdata", backgroundFile))}},
-		},
-		{
-			fmt.Sprintf("%sbackground ~/Downloads/%s", t.KeywordOption, backgroundFile),
-			t.SequenceOptions{BackgroundList: []string{filepath.Clean(filepath.Join(homeDir, "Downloads", backgroundFile))}},
+			fmt.Sprintf("%s%s river ~/Downloads/%s", t.KeywordOption, t.KeywordOptionAmbiance, backgroundFile),
+			t.SequenceOptions{AmbianceList: map[string]string{"river": filepath.Clean(filepath.Join(homeDir, "Downloads", backgroundFile))}},
 		},
 	}
 
 	for _, test := range tests {
-		option := t.SequenceOptions{}
+		option := t.SequenceOptions{AmbianceList: map[string]string{}}
 		ctx := NewTextParser(test.line)
 
 		if err := ctx.ParseOption(&option, basePath); err != nil {

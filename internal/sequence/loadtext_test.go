@@ -71,16 +71,15 @@ func TestLoadTextSequence_Success(ts *testing.T) {
 # Options
 @samplerate 48000
 @volume 80
-@background testdata/noise.wav
-@gainlevel high
+@ambiance testnoise testdata/noise.wav
 
 # Presets
 alpha
-  noise brown amplitude 40
+  ambiance testnoise brown amplitude 40
   tone 300 binaural 10 amplitude 20
 
 beta
-  noise brown amplitude 40
+  ambiance testnoise brown amplitude 40
   tone 300 binaural 14 amplitude 15
 
 # Timeline
@@ -96,11 +95,11 @@ beta
 	}
 
 	opts := result.Options
-	if opts.SampleRate != 48000 || opts.Volume != 80 || opts.GainLevel != t.GainLevelHigh {
+	if opts.SampleRate != 48000 || opts.Volume != 80 {
 		ts.Fatalf("unexpected options: %+v", *opts)
 	}
-	if opts.BackgroundList[0] != bgPath {
-		ts.Fatalf("unexpected background path: got %q want %q", opts.BackgroundList[0], bgPath)
+	if opts.AmbianceList["testnoise"] != bgPath {
+		ts.Fatalf("unexpected ambiance path: got %q want %q", opts.AmbianceList["testnoise"], bgPath)
 	}
 
 	periods := result.Periods
