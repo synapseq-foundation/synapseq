@@ -104,7 +104,7 @@ func (r *AudioRenderer) prepareAmbianceBuffers() {
 			r.ambianceSamplesByIndex[idx] = buf
 		}
 
-		if r.ambianceAudio == nil || !r.ambianceAudio.IsEnabled() {
+		if r.ambianceAudio == nil {
 			for i := range buf {
 				buf[i] = 0
 			}

@@ -21,7 +21,7 @@ type AmbianceAudio struct {
 	sampleRate    int
 	channels      int
 	bitDepth      int
-	isEnabled     bool
+	closed        bool
 	hasReachedEOF bool
 
 	cachedData [][]byte
@@ -35,14 +35,13 @@ type AmbianceAudio struct {
 // loading and validating the ambiance audio tracks
 func NewAmbianceAudio(filePaths []string, expectedSampleRate int) (*AmbianceAudio, error) {
 	if len(filePaths) == 0 {
-		return &AmbianceAudio{isEnabled: false}, nil
+		return &AmbianceAudio{}, nil
 	}
 
 	aa := &AmbianceAudio{
 		filePaths:    filePaths,
 		currentIndex: 0,
 		bufferSize:   t.BufferSize * audioChannels,
-		isEnabled:    true,
 		cachedData:   make([][]byte, len(filePaths)),
 		decoders:     make([]beep.StreamSeekCloser, len(filePaths)),
 	}
@@ -183,7 +182,7 @@ func (aa *AmbianceAudio) ReadSamplesAt(index int, samples []int, numSamples int)
 	if numSamples > len(samples) {
 		numSamples = len(samples)
 	}
-	if !aa.isEnabled {
+	if aa.closed || len(aa.filePaths) == 0 {
 		for i := 0; i < numSamples; i++ {
 			samples[i] = 0
 		}
@@ -278,14 +277,18 @@ func (aa *AmbianceAudio) readFromDecoderAt(index int, samples []int, maxSamples 
 
 // Close closes the ambiance audio decoder
 func (aa *AmbianceAudio) Close() error {
-	aa.isEnabled = false
-	if aa.decoder != nil {
-		return aa.decoder.Close()
-	}
-	return nil
-}
+	aa.closed = true
+	var firstErr error
 
-// IsEnabled returns whether ambiance audio is enabled
-func (aa *AmbianceAudio) IsEnabled() bool {
-	return aa.isEnabled
+	for i := range aa.decoders {
+		if aa.decoders[i] != nil {
+			if err := aa.decoders[i].Close(); err != nil && firstErr == nil {
+				firstErr = err
+			}
+			aa.decoders[i] = nil
+		}
+	}
+
+	aa.decoder = nil
+	return firstErr
 }
