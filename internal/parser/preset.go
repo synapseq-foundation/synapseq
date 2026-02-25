@@ -79,9 +79,13 @@ func (ctx *TextParser) ParsePreset(presets *[]t.Preset) (*t.Preset, error) {
 		return nil, fmt.Errorf("unexpected token after preset definition: %q", unknown)
 	}
 
+	if err := s.IsValidNamedRef(presetName); err != nil {
+		return nil, err
+	}
+
 	preset, err := t.NewPreset(presetName, isTemplate, fromPreset)
 	if err != nil {
-		return nil, fmt.Errorf("%w", err)
+		return nil, err
 	}
 	return preset, nil
 }

@@ -91,7 +91,7 @@ func (ctx *TextParser) ParseTrackOverride(preset *t.Preset) error {
 
 	switch kind {
 	case t.KeywordTone:
-		if track.Type == t.TrackBackground ||
+		if track.Type == t.TrackAmbiance ||
 			track.Type == t.TrackWhiteNoise ||
 			track.Type == t.TrackPinkNoise ||
 			track.Type == t.TrackBrownNoise {

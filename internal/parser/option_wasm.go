@@ -62,7 +62,23 @@ func (ctx *TextParser) ParseOption(options *t.SequenceOptions) error {
 			return fmt.Errorf("volume: %v", err)
 		}
 		options.Volume = volume
-	case t.KeywordOptionBackground, t.KeywordOptionPresetList:
+	case t.KeywordOptionAmbiance:
+		name, ok := ctx.Line.NextToken()
+		if !ok {
+			return fmt.Errorf("expected name for ambiance audio file: %s", ln)
+		}
+
+		if err := s.IsValidNamedRef(name); err != nil {
+			return fmt.Errorf("invalid ambiance name: %v", err)
+		}
+
+		content := strings.Join(ctx.Line.Tokens[2:], " ")
+		if !s.IsRemoteFile(content) {
+			return fmt.Errorf("file paths are not supported in WASM for ambiance audio: %s", content)
+		}
+
+		options.AmbianceList[name] = content
+	case t.KeywordOptionPresetList:
 		_, ok := ctx.Line.NextToken()
 		if !ok {
 			return fmt.Errorf("expected path: %s", ln)
@@ -70,38 +86,16 @@ func (ctx *TextParser) ParseOption(options *t.SequenceOptions) error {
 
 		content := strings.Join(ctx.Line.Tokens[1:], " ")
 		if !s.IsRemoteFile(content) {
-			return fmt.Errorf("file paths are not supported in WASM for background or preset list: %s", content)
+			return fmt.Errorf("file paths are not supported in WASM for preset list: %s", content)
 		}
 
-		if option == t.KeywordBackground {
-			options.BackgroundPath = content
-		} else {
-			options.PresetList = append(options.PresetList, content)
-		}
-	case t.KeywordOptionGainLevel:
-		gainLevel, ok := ctx.Line.NextToken()
-		if !ok {
-			return fmt.Errorf("expected gain level: %s", ln)
-		}
-
-		switch gainLevel {
-		case t.KeywordOff:
-			options.GainLevel = t.GainLevelOff
-		case t.KeywordOptionGainLevelHigh:
-			options.GainLevel = t.GainLevelHigh
-		case t.KeywordOptionGainLevelMedium:
-			options.GainLevel = t.GainLevelMedium
-		case t.KeywordOptionGainLevelLow:
-			options.GainLevel = t.GainLevelLow
-		default:
-			return fmt.Errorf("invalid gain level: %q", gainLevel)
-		}
+		options.PresetList = append(options.PresetList, content)
 	default:
 		return fmt.Errorf("invalid option: %q", option)
 	}
 
-	// If the option is not background, ensure no extra tokens are present
-	if option != t.KeywordOptionBackground {
+	// If the option is not ambiance, ensure no extra tokens are present
+	if option != t.KeywordOptionAmbiance {
 		unknown, ok := ctx.Line.Peek()
 		if ok {
 			return fmt.Errorf("unexpected token after option definition: %q", unknown)

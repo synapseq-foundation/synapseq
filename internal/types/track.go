@@ -35,8 +35,8 @@ const (
 	TrackPinkNoise
 	// Track is brown noise
 	TrackBrownNoise
-	// Track is a background noise
-	TrackBackground
+	// Track is a ambiance
+	TrackAmbiance
 )
 
 // String returns the string representation of the TrackType
@@ -60,8 +60,8 @@ func (tr TrackType) String() string {
 		return KeywordPink
 	case TrackBrownNoise:
 		return KeywordBrown
-	case TrackBackground:
-		return KeywordBackground
+	case TrackAmbiance:
+		return KeywordAmbiance
 	default:
 		return "unknown"
 	}
@@ -79,6 +79,8 @@ type Track struct {
 	Resonance float64
 	// Waveform shape
 	Waveform WaveformType
+	// Ambiance name
+	AmbianceName string
 	// Effect configuration
 	Effect Effect
 }
@@ -141,11 +143,11 @@ func (tr *Track) String() string {
 		} else {
 			return fmt.Sprintf("%s %s %s %s %.2f %s %.2f %s %.2f", KeywordNoise, tr.Type.String(), KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
 		}
-	case TrackBackground:
+	case TrackAmbiance:
 		if tr.Effect.Type == EffectOff {
-			return fmt.Sprintf("%s %s %.2f", KeywordBackground, KeywordAmplitude, tr.Amplitude.ToPercent())
+			return fmt.Sprintf("%s %s %s %.2f", KeywordAmbiance, tr.AmbianceName, KeywordAmplitude, tr.Amplitude.ToPercent())
 		} else {
-			return fmt.Sprintf("%s %s %s %.2f %s %.2f %s %.2f", KeywordBackground, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+			return fmt.Sprintf("%s %s %s %s %.2f %s %.2f %s %.2f", KeywordAmbiance, tr.AmbianceName, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
 		}
 	default:
 		return " ???"
@@ -175,11 +177,11 @@ func (tr *Track) ShortString() string {
 		} else {
 			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f)", tr.Type.String(), tr.Amplitude.ToPercent(), tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent())
 		}
-	case TrackBackground:
+	case TrackAmbiance:
 		if tr.Effect.Type == EffectOff {
-			return fmt.Sprintf(" (%s:%.2f)", KeywordAmplitude, tr.Amplitude.ToPercent())
+			return fmt.Sprintf(" (%s:%.2f)", tr.AmbianceName, tr.Amplitude.ToPercent())
 		} else {
-			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f)", KeywordBackground, tr.Amplitude.ToPercent(), tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent())
+			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f)", tr.AmbianceName, tr.Amplitude.ToPercent(), tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent())
 		}
 	default:
 		return " ???"

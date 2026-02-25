@@ -145,8 +145,8 @@ func TestNextExpectOneOf(ts *testing.T) {
 		Amplitude: t.AmplitudePercentToRaw(5),
 	}).String()
 
-	trLnBackground := (&t.Track{
-		Type:      t.TrackBackground,
+	trLnAmbiance := (&t.Track{
+		Type:      t.TrackAmbiance,
 		Amplitude: t.AmplitudePercentToRaw(50),
 	}).String()
 
@@ -157,9 +157,9 @@ func TestNextExpectOneOf(ts *testing.T) {
 		expectError   bool
 	}{
 		{trLnTone, []string{t.KeywordWaveform, t.KeywordNoise}, t.KeywordWaveform, false},
-		{trLnNoisePink, []string{t.KeywordBackground, t.KeywordNoise}, t.KeywordNoise, false},
-		{trLnNoiseWhite, []string{t.KeywordTriangle, t.KeywordBackground}, "", true},
-		{trLnBackground, []string{t.KeywordNoise, t.KeywordWaveform}, "", true},
+		{trLnNoisePink, []string{t.KeywordAmbiance, t.KeywordNoise}, t.KeywordNoise, false},
+		{trLnNoiseWhite, []string{t.KeywordTriangle, t.KeywordAmbiance}, "", true},
+		{trLnAmbiance, []string{t.KeywordNoise, t.KeywordWaveform}, "", true},
 	}
 
 	for _, test := range tests {

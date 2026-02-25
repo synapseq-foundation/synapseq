@@ -65,7 +65,7 @@ func TestCountActiveChannels(ts *testing.T) {
 			chs: func() []t.Channel {
 				chs := make([]t.Channel, 8)
 				chs[1].Track.Type = t.TrackBinauralBeat
-				chs[6].Track.Type = t.TrackBackground
+				chs[6].Track.Type = t.TrackAmbiance
 				return chs
 			}(),
 			expected: 7,
@@ -85,7 +85,7 @@ func TestCountActiveChannels(ts *testing.T) {
 			name: "last off but previous active",
 			chs: func() []t.Channel {
 				chs := make([]t.Channel, 6)
-				chs[4].Track.Type = t.TrackBackground
+				chs[4].Track.Type = t.TrackAmbiance
 				return chs
 			}(),
 			expected: 5,

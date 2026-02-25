@@ -29,14 +29,24 @@ const (
 
 // AudioRenderer handle audio generation
 type AudioRenderer struct {
-	channels        [t.NumberOfChannels]t.Channel
-	periods         []t.Period
-	waveTables      [4][]int
-	noiseGenerator  *NoiseGenerator
-	backgroundAudio *BackgroundAudio
+	channels       [t.NumberOfChannels]t.Channel
+	periods        []t.Period
+	waveTables     [4][]int
+	noiseGenerator *NoiseGenerator
+	ambianceAudio  *AmbianceAudio
 
 	// Reusable buffer to avoid allocating every mix() call
-	backgroundSamples []int
+	ambianceSamplesByIndex [][]int
+	// Track indices that have active ambiance audio (for optimization)
+	activeAmbianceIndices []int
+	// Mask to track which ambiance audio tracks are currently active
+	activeAmbianceMask []bool
+
+	// Cache for the current ambiance index of each channel to optimize lookups during sync
+	channelAmbianceIndex [t.NumberOfChannels]int
+
+	// cache for the current period's ambiance names for each channel to optimize lookups during sync
+	periodAmbianceStart [][]int
 
 	// Embedding options
 	*AudioRendererOptions
@@ -44,11 +54,10 @@ type AudioRenderer struct {
 
 // AudioRendererOptions holds options for the audio renderer
 type AudioRendererOptions struct {
-	SampleRate     int
-	Volume         int
-	GainLevel      t.GainLevel
-	BackgroundPath string
-	StatusOutput   io.Writer
+	SampleRate   int
+	Volume       int
+	AmbianceList map[string]string
+	StatusOutput io.Writer
 }
 
 // NewAudioRenderer creates a new AudioRenderer instance
@@ -69,31 +78,35 @@ func NewAudioRenderer(p []t.Period, ar *AudioRendererOptions) (*AudioRenderer, e
 		return nil, fmt.Errorf("no periods defined in the sequence")
 	}
 
-	// Initialize background audio
-	backgroundAudio, err := NewBackgroundAudio(ar.BackgroundPath)
+	ambiancePaths, ambianceNameToIndex, err := buildAmbianceIndex(ar.AmbianceList)
 	if err != nil {
 		return nil, err
 	}
 
-	// Validate background audio parameters
-	if backgroundAudio.isEnabled {
-		bgSampleRate := backgroundAudio.sampleRate
-		if bgSampleRate != ar.SampleRate {
-			return nil, fmt.Errorf("background audio sample rate (%d Hz) does not match output sample rate (%d Hz)",
-				bgSampleRate, ar.SampleRate)
-		}
-		bgChannels := backgroundAudio.channels
-		if bgChannels != audioChannels {
-			return nil, fmt.Errorf("background audio must be stereo (%d channels detected)", bgChannels)
-		}
+	periodAmbianceStart, err := precomputePeriodAmbianceStart(p, ambianceNameToIndex)
+	if err != nil {
+		return nil, err
+	}
+
+	ambianceAudio, err := NewAmbianceAudio(ambiancePaths, ar.SampleRate)
+	if err != nil {
+		return nil, err
 	}
 
 	renderer := &AudioRenderer{
-		periods:              p,
-		waveTables:           InitWaveformTables(),
-		noiseGenerator:       NewNoiseGenerator(),
-		backgroundAudio:      backgroundAudio,
-		AudioRendererOptions: ar,
+		periods:                p,
+		waveTables:             InitWaveformTables(),
+		noiseGenerator:         NewNoiseGenerator(),
+		ambianceAudio:          ambianceAudio,
+		ambianceSamplesByIndex: make([][]int, len(ambiancePaths)),
+		activeAmbianceIndices:  make([]int, 0, t.NumberOfChannels),
+		activeAmbianceMask:     make([]bool, len(ambiancePaths)),
+		periodAmbianceStart:    periodAmbianceStart,
+		AudioRendererOptions:   ar,
+	}
+
+	for i := range renderer.channelAmbianceIndex {
+		renderer.channelAmbianceIndex[i] = -1
 	}
 
 	return renderer, nil
@@ -101,10 +114,10 @@ func NewAudioRenderer(p []t.Period, ar *AudioRendererOptions) (*AudioRenderer, e
 
 // Render generates the audio and passes buffers to the consume function
 func (r *AudioRenderer) Render(consume func(samples []int) error) error {
-	// Ensure background audio file is closed if opened
+	// Ensure ambiance audio file is closed if opened
 	defer func() {
-		if r.backgroundAudio != nil {
-			r.backgroundAudio.Close()
+		if r.ambianceAudio != nil {
+			r.ambianceAudio.Close()
 		}
 	}()
 
@@ -131,6 +144,9 @@ func (r *AudioRenderer) Render(consume func(samples []int) error) error {
 		}
 
 		r.sync(currentTimeMs, periodIdx)
+		r.collectActiveAmbianceIndices()
+		r.prepareAmbianceBuffers()
+
 		if statusReporter != nil {
 			statusReporter.CheckPeriodChange(r, periodIdx)
 		}

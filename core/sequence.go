@@ -15,18 +15,18 @@ package core
 
 import (
 	seq "github.com/synapseq-foundation/synapseq/v3/internal/sequence"
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
 )
 
 // LoadSequence loads the sequence from the input file based on the specified format
 func (ac *AppContext) LoadSequence() error {
 	var err error
-	if ac.format == t.FormatText {
-		ac.sequence, err = seq.LoadTextSequence(ac.inputFile)
-	} else {
-		ac.sequence, err = seq.LoadStructuredSequence(ac.inputFile, ac.format)
-	}
+	// if ac.format == t.FormatText {
+	// 	ac.sequence, err = seq.LoadTextSequence(ac.inputFile)
+	// } else {
+	// 	ac.sequence, err = seq.LoadStructuredSequence(ac.inputFile, ac.format)
+	// }
 
+	ac.sequence, err = seq.LoadTextSequence(ac.inputFile)
 	if err != nil {
 		return err
 	}
@@ -68,27 +68,13 @@ func (ac *AppContext) Volume() int {
 	return ac.sequence.Options.Volume
 }
 
-// GainLevel returns the gain level from the loaded sequence options.
-// Gain levels:
-// 0 = 0 dB,
-// 3 = -3 dB,
-// 9 = -9 dB,
-// 18 = -18 dB
-func (ac *AppContext) GainLevel() int {
+// AmbianceList returns the ambiance audio list from the loaded sequence options
+func (ac *AppContext) AmbianceList() map[string]string {
 	if ac.sequence == nil || ac.sequence.Options == nil {
-		return 0
+		return map[string]string{}
 	}
 
-	return int(ac.sequence.Options.GainLevel)
-}
-
-// BackgroundPath returns the background audio path from the loaded sequence options
-func (ac *AppContext) BackgroundPath() string {
-	if ac.sequence == nil || ac.sequence.Options == nil {
-		return ""
-	}
-
-	return ac.sequence.Options.BackgroundPath
+	return ac.sequence.Options.AmbianceList
 }
 
 // RawContent returns the raw content of the loaded sequence
