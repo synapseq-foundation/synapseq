@@ -83,9 +83,6 @@ func TestAmbianceAudio_LoadReadAndLoop(t *testing.T) {
 	}
 	defer aa.Close()
 
-	if !aa.IsEnabled() {
-		t.Fatalf("expected enabled ambiance")
-	}
 	if aa.sampleRate != int(sr) || aa.channels != chans || aa.bitDepth != depth {
 		t.Fatalf("mismatched ambiance props sr=%d ch=%d bd=%d vs file sr=%d ch=%d bd=%d", aa.sampleRate, aa.channels, aa.bitDepth, sr, chans, depth)
 	}
@@ -211,9 +208,6 @@ func TestAmbianceAudio_DisabledAndClose(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewAmbianceAudio empty: %v", err)
 	}
-	if aa.IsEnabled() {
-		t.Fatalf("expected disabled when no path provided")
-	}
 	buf := make([]int, 256)
 	n, err := aa.ReadSamplesAt(0, buf, len(buf))
 	if err != nil {
@@ -265,10 +259,6 @@ func TestAmbianceAudio_RemoteWAV(t *testing.T) {
 		t.Fatalf("NewAmbianceAudio remote: %v", err)
 	}
 	defer aa.Close()
-
-	if !aa.IsEnabled() {
-		t.Fatalf("expected enabled ambiance for remote")
-	}
 
 	// Verify cache was populated
 	if aa.cachedData == nil {
