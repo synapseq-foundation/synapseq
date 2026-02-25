@@ -102,10 +102,9 @@ func TestAudioRenderer_RenderWav_Integration(ts *testing.T) {
 	periods := []t.Period{p0, p1, p2, pEnd}
 
 	options := &AudioRendererOptions{
-		SampleRate:     44100,
-		Volume:         80,
-		GainLevel:      t.GainLevelMedium,
-		BackgroundPath: "",
+		SampleRate:   44100,
+		Volume:       80,
+		AmbianceList: map[string]string{},
 	}
 
 	renderer, err := NewAudioRenderer(periods, options)
@@ -181,14 +180,14 @@ func TestAudioRenderer_RenderWav_Integration(ts *testing.T) {
 	}
 }
 
-func TestAudioRenderer_RenderWav_WithBackground(ts *testing.T) {
-	// Create a simple test WAV file as background
+func TestAudioRenderer_RenderWav_WithAmbiance(ts *testing.T) {
+	// Create a simple test WAV file as ambiance
 	tempDir := ts.TempDir()
-	bgPath := filepath.Join(tempDir, "background.wav")
+	bgPath := filepath.Join(tempDir, "ambiance.wav")
 
 	bgFile, err := os.Create(bgPath)
 	if err != nil {
-		ts.Fatalf("Failed to create background file: %v", err)
+		ts.Fatalf("Failed to create ambiance file: %v", err)
 	}
 	defer bgFile.Close()
 
@@ -197,19 +196,20 @@ func TestAudioRenderer_RenderWav_WithBackground(ts *testing.T) {
 	val := float64(1000) / 32768.0
 	cs := &constStreamer{framesLeft: sr, val: val}
 	if err := bwav.Encode(bgFile, cs, format); err != nil {
-		ts.Fatalf("Failed to write background: %v", err)
+		ts.Fatalf("Failed to write ambiance: %v", err)
 	}
 	if _, err := bgFile.Seek(0, 0); err != nil {
-		ts.Fatalf("Failed to rewind background file: %v", err)
+		ts.Fatalf("Failed to rewind ambiance file: %v", err)
 	}
 
-	// Create test period with background track
+	// Create test period with ambiance track
 	var p0, pEnd t.Period
 	p0.Time = 0
 	p0.TrackStart[0] = t.Track{
-		Type:      t.TrackBackground,
-		Amplitude: t.AmplitudePercentToRaw(30),
-		Waveform:  t.WaveformSine,
+		Type:         t.TrackAmbiance,
+		AmbianceName: "bg",
+		Amplitude:    t.AmplitudePercentToRaw(30),
+		Waveform:     t.WaveformSine,
 	}
 	p0.TrackEnd[0] = p0.TrackStart[0]
 
@@ -217,20 +217,21 @@ func TestAudioRenderer_RenderWav_WithBackground(ts *testing.T) {
 	periods := []t.Period{p0, pEnd}
 
 	options := &AudioRendererOptions{
-		SampleRate:     44100,
-		Volume:         100,
-		GainLevel:      t.GainLevelMedium,
-		BackgroundPath: bgPath,
+		SampleRate: 44100,
+		Volume:     100,
+		AmbianceList: map[string]string{
+			"bg": bgPath,
+		},
 	}
 
 	renderer, err := NewAudioRenderer(periods, options)
 	if err != nil {
-		ts.Fatalf("NewAudioRenderer with background failed: %v", err)
+		ts.Fatalf("NewAudioRenderer with ambiance failed: %v", err)
 	}
 
 	outPath := filepath.Join(tempDir, "test_with_bg.wav")
 	if err := renderer.RenderWav(outPath); err != nil {
-		ts.Fatalf("RenderWav with background failed: %v", err)
+		ts.Fatalf("RenderWav with ambiance failed: %v", err)
 	}
 
 	// Basic validation
@@ -262,7 +263,6 @@ func TestAudioRenderer_Render_CallbacksAndSizes(ts *testing.T) {
 	opts := &AudioRendererOptions{
 		SampleRate: sr,
 		Volume:     80,
-		GainLevel:  t.GainLevelMedium,
 	}
 
 	r, err := NewAudioRenderer(periods, opts)
@@ -325,7 +325,6 @@ func TestAudioRenderer_Render_PropagatesError(ts *testing.T) {
 	opts := &AudioRendererOptions{
 		SampleRate: sr,
 		Volume:     100,
-		GainLevel:  t.GainLevelMedium,
 	}
 
 	r, err := NewAudioRenderer(periods, opts)
@@ -367,7 +366,6 @@ func TestAudioRenderer_Render_NilConsumer(ts *testing.T) {
 	opts := &AudioRendererOptions{
 		SampleRate: sr,
 		Volume:     90,
-		GainLevel:  t.GainLevelMedium,
 	}
 
 	r, err := NewAudioRenderer(periods, opts)
@@ -405,7 +403,6 @@ func TestRenderRaw_PropagatesWriteError(ts *testing.T) {
 	opts := &AudioRendererOptions{
 		SampleRate:   sr,
 		Volume:       80,
-		GainLevel:    t.GainLevelMedium,
 		StatusOutput: os.Stderr,
 	}
 

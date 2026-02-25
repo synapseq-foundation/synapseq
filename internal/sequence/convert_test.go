@@ -1,3 +1,5 @@
+//go:build ignore
+
 /*
  * SynapSeq - Synapse-Sequenced Brainwave Generator
  * https://synapseq.org

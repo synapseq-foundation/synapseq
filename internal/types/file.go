@@ -14,8 +14,8 @@ package types
 const (
 	// MaxTextFileSize is the maximum allowed size for text files (32KB)
 	MaxTextFileSize = 32 * 1024
-	// MaxBackgroundFileSize is the maximum allowed size for background files (10MB)
-	MaxBackgroundFileSize = 10 * 1024 * 1024
+	// MaxBackgroundFileSize is the maximum allowed size for background files (20MB)
+	MaxBackgroundFileSize = 20 * 1024 * 1024
 	// MaxStructuredFileSize is the maximum allowed size for structured files (128KB)
 	MaxStructuredFileSize = 128 * 1024
 )

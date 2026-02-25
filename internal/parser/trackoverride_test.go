@@ -60,10 +60,11 @@ func TestParseTrackOverride_Success(ts *testing.T) {
 		Waveform:  t.WaveformSine,
 	}
 	templatePreset.Track[1] = t.Track{
-		Type:      t.TrackBackground,
-		Amplitude: t.AmplitudePercentToRaw(40),
-		Waveform:  t.WaveformSine,
-		Effect:    t.Effect{Type: t.EffectPan, Value: 5, Intensity: t.IntensityPercentToRaw(75)},
+		Type:         t.TrackAmbiance,
+		AmbianceName: "rain",
+		Amplitude:    t.AmplitudePercentToRaw(40),
+		Waveform:     t.WaveformSine,
+		Effect:       t.Effect{Type: t.EffectPan, Value: 5, Intensity: t.IntensityPercentToRaw(75)},
 	}
 	templatePreset.Track[2] = t.Track{
 		Type:      t.TrackMonauralBeat,
@@ -117,7 +118,7 @@ func TestParseTrackOverride_Success(ts *testing.T) {
 			},
 		},
 		{
-			name:     "override background pan value",
+			name:     "override ambiance pan value",
 			line:     "  track 2 pan 5",
 			trackIdx: 1,
 			checkFunc: func(t *testing.T, p *t.Preset) {
@@ -127,7 +128,7 @@ func TestParseTrackOverride_Success(ts *testing.T) {
 			},
 		},
 		{
-			name:     "override background pan rate",
+			name:     "override ambiance pan rate",
 			line:     "  track 2 pan 7",
 			trackIdx: 1,
 			checkFunc: func(t *testing.T, p *t.Preset) {
@@ -189,19 +190,21 @@ func TestParseTrackOverride_Errors(ts *testing.T) {
 		Waveform:  t.WaveformSine,
 	}
 	templatePreset.Track[1] = t.Track{
-		Type:      t.TrackBackground,
-		Carrier:   200,
-		Resonance: 5,
-		Amplitude: t.AmplitudePercentToRaw(40),
-		Waveform:  t.WaveformSine,
-		Effect:    t.Effect{Type: t.EffectPan, Intensity: t.IntensityPercentToRaw(75)},
+		Type:         t.TrackAmbiance,
+		AmbianceName: "rain",
+		Carrier:      200,
+		Resonance:    5,
+		Amplitude:    t.AmplitudePercentToRaw(40),
+		Waveform:     t.WaveformSine,
+		Effect:       t.Effect{Type: t.EffectPan, Intensity: t.IntensityPercentToRaw(75)},
 	}
 	templatePreset.Track[2] = t.Track{
-		Type:      t.TrackBackground,
-		Resonance: 2.5,
-		Amplitude: t.AmplitudePercentToRaw(40),
-		Waveform:  t.WaveformSine,
-		Effect:    t.Effect{Type: t.EffectModulation, Intensity: t.IntensityPercentToRaw(60)},
+		Type:         t.TrackAmbiance,
+		AmbianceName: "river",
+		Resonance:    2.5,
+		Amplitude:    t.AmplitudePercentToRaw(40),
+		Waveform:     t.WaveformSine,
+		Effect:       t.Effect{Type: t.EffectModulation, Intensity: t.IntensityPercentToRaw(60)},
 	}
 
 	// Create derived preset
@@ -223,8 +226,8 @@ func TestParseTrackOverride_Errors(ts *testing.T) {
 		{"missing value", "  track 1 amplitude"},
 		{"invalid value", "  track 1 amplitude abc"},
 		{"extra tokens", "  track 1 amplitude 10 extra"},
-		{"tone on background track", "  track 2 tone 300"},
-		// {"pan on non-background track", "  track 1 pan 200"},
+		{"tone on ambiance track", "  track 2 tone 300"},
+		// {"pan on non-ambiance track", "  track 1 pan 200"},
 		{"wrong beat type override", "  track 1 monaural 8"},
 		{"value on modulation effect", "  track 3 modulation -5"},
 		{"modulation on pan effect", "  track 2 modulation 3"},

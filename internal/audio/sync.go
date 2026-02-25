@@ -74,6 +74,13 @@ func (r *AudioRenderer) sync(timeMs int, periodIdx int) {
 		channel.Track.Effect.Type = tr0.Effect.Type
 		channel.Track.Effect.Value = tr0.Effect.Value*(1-alpha) + tr1.Effect.Value*alpha
 		channel.Track.Effect.Intensity = t.IntensityType(float64(tr0.Effect.Intensity)*(1-alpha) + float64(tr1.Effect.Intensity)*alpha)
+		channel.Track.AmbianceName = tr0.AmbianceName
+
+		if channel.Track.Type == t.TrackAmbiance {
+			r.channelAmbianceIndex[ch] = r.periodAmbianceStart[periodIdx][ch]
+		} else {
+			r.channelAmbianceIndex[ch] = -1
+		}
 
 		// Reset offsets if track type has changed
 		if channel.Type != channel.Track.Type {
@@ -114,7 +121,7 @@ func (r *AudioRenderer) sync(timeMs int, periodIdx int) {
 			channel.Increment[1] = int(channel.Track.Resonance / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)
 		case t.TrackWhiteNoise, t.TrackPinkNoise, t.TrackBrownNoise:
 			channel.Amplitude[0] = int(channel.Track.Amplitude)
-		case t.TrackBackground:
+		case t.TrackAmbiance:
 			channel.Amplitude[0] = int(channel.Track.Amplitude)
 		}
 	}

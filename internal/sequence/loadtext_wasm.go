@@ -36,11 +36,10 @@ func LoadTextSequence(rawContent []byte) (*t.Sequence, error) {
 	lastLoadedPresetPath := ""
 	// Initialize audio options
 	options := &t.SequenceOptions{
-		SampleRate:     44100,
-		Volume:         100,
-		BackgroundPath: "",
-		PresetList:     []string{},
-		GainLevel:      t.GainLevelOff,
+		SampleRate:   44100,
+		Volume:       100,
+		AmbianceList: make(map[string]string),
+		PresetList:   []string{},
 	}
 
 	var (
@@ -153,10 +152,6 @@ func LoadTextSequence(rawContent []byte) (*t.Sequence, error) {
 				return nil, fmt.Errorf("line %d: %v", lnn, err)
 			}
 
-			if track.Type == t.TrackBackground && options.BackgroundPath == "" {
-				return nil, fmt.Errorf("line %d: background track defined but no background audio file specified in options", lnn)
-			}
-
 			lastPreset.Track[trackIndex] = *track
 			continue
 		}
@@ -226,7 +221,7 @@ func LoadTextSequence(rawContent []byte) (*t.Sequence, error) {
 		if tok == t.KeywordWaveform ||
 			tok == t.KeywordTone ||
 			tok == t.KeywordNoise ||
-			tok == t.KeywordBackground ||
+			tok == t.KeywordAmbiance ||
 			tok == t.KeywordTrack {
 			return nil, fmt.Errorf("line %d: expected two-space indentation for elements under preset definition\n   %s", lnn, ctx.Line.Raw)
 		}
@@ -244,9 +239,6 @@ func LoadTextSequence(rawContent []byte) (*t.Sequence, error) {
 		p := &presets[i]
 		if s.IsPresetEmpty(p) {
 			return nil, fmt.Errorf("preset %q is empty", presets[i].String())
-		}
-		if n := s.NumBackgroundTracks(p); n > 1 {
-			return nil, fmt.Errorf("preset %q has %d background tracks; only one background track is allowed per preset", presets[i].String(), n)
 		}
 	}
 

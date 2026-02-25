@@ -113,9 +113,6 @@ func loadPresets(filename string) ([]t.Preset, error) {
 		if s.IsPresetEmpty(&p) {
 			return nil, fmt.Errorf("preset file: preset %q is empty", p.String())
 		}
-		if n := s.NumBackgroundTracks(&p); n > 1 {
-			return nil, fmt.Errorf("preset file: preset %q has %d background tracks; only one background track is allowed per preset", p.String(), n)
-		}
 	}
 
 	return presets, nil

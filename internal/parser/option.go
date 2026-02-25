@@ -83,16 +83,20 @@ func (ctx *TextParser) ParseOption(options *t.SequenceOptions, filePath string) 
 			return fmt.Errorf("volume: %v", err)
 		}
 		options.Volume = volume
-	case t.KeywordOptionBackground, t.KeywordOptionPresetList:
-		_, ok := ctx.Line.NextToken()
+	case t.KeywordOptionAmbiance:
+		name, ok := ctx.Line.NextToken()
 		if !ok {
-			return fmt.Errorf("expected path: %s", ln)
+			return fmt.Errorf("expected name for ambiance audio file: %s", ln)
 		}
 
-		content := strings.Join(ctx.Line.Tokens[1:], " ")
+		if err := s.IsValidNamedRef(name); err != nil {
+			return err
+		}
+
+		content := strings.Join(ctx.Line.Tokens[2:], " ")
 
 		if content == "-" {
-			return fmt.Errorf("stdin (-) is not supported for background or preset list")
+			return fmt.Errorf("stdin (-) is not supported for ambiance list")
 		}
 
 		fullPath := content
@@ -104,35 +108,35 @@ func (ctx *TextParser) ParseOption(options *t.SequenceOptions, filePath string) 
 			}
 		}
 
-		if option == t.KeywordBackground {
-			options.BackgroundPath = fullPath
-		} else {
-			options.PresetList = append(options.PresetList, fullPath)
-		}
-	case t.KeywordOptionGainLevel:
-		gainLevel, ok := ctx.Line.NextToken()
+		options.AmbianceList[name] = fullPath
+	case t.KeywordOptionPresetList:
+		_, ok := ctx.Line.NextToken()
 		if !ok {
-			return fmt.Errorf("expected gain level: %s", ln)
+			return fmt.Errorf("expected path: %s", ln)
 		}
 
-		switch gainLevel {
-		case t.KeywordOff:
-			options.GainLevel = t.GainLevelOff
-		case t.KeywordOptionGainLevelHigh:
-			options.GainLevel = t.GainLevelHigh
-		case t.KeywordOptionGainLevelMedium:
-			options.GainLevel = t.GainLevelMedium
-		case t.KeywordOptionGainLevelLow:
-			options.GainLevel = t.GainLevelLow
-		default:
-			return fmt.Errorf("invalid gain level: %q", gainLevel)
+		content := strings.Join(ctx.Line.Tokens[1:], " ")
+
+		if content == "-" {
+			return fmt.Errorf("stdin (-) is not supported for preset list")
 		}
+
+		fullPath := content
+		if !s.IsRemoteFile(content) {
+			var err error
+			fullPath, err = getFullPath(content, filePath)
+			if err != nil {
+				return fmt.Errorf("path: %v", err)
+			}
+		}
+
+		options.PresetList = append(options.PresetList, fullPath)
 	default:
 		return fmt.Errorf("invalid option: %q", option)
 	}
 
-	// If the option is not background, ensure no extra tokens are present
-	if option != t.KeywordOptionBackground {
+	// If the option is not ambiance, ensure no extra tokens are present
+	if option != t.KeywordOptionAmbiance {
 		unknown, ok := ctx.Line.Peek()
 		if ok {
 			return fmt.Errorf("unexpected token after option definition: %q", unknown)

@@ -24,18 +24,10 @@ const (
 	KeywordOptionSampleRate = "samplerate"
 	// Represents a volume option
 	KeywordOptionVolume = "volume"
-	// Represents a background option
-	KeywordOptionBackground = "background"
+	// Represents an ambiance option
+	KeywordOptionAmbiance = "ambiance"
 	// Represents a presetlist option
 	KeywordOptionPresetList = "presetlist"
-	// Represents a gain level option
-	KeywordOptionGainLevel = "gainlevel"
-	// Represents a low gain level option
-	KeywordOptionGainLevelLow = "low"
-	// Represents a medium gain level option
-	KeywordOptionGainLevelMedium = "medium"
-	// Represents a high gain level option
-	KeywordOptionGainLevelHigh = "high"
 	// Represents a waveform option
 	KeywordWaveform = "waveform"
 	// Represents a sine wave
@@ -68,8 +60,8 @@ const (
 	KeywordPan = "pan"
 	// Represents an effect
 	KeywordEffect = "effect"
-	// Represents a background sound
-	KeywordBackground = "background"
+	// Represents an ambiance sound
+	KeywordAmbiance = "ambiance"
 	// Represents a modulation effect
 	KeywordModulation = "modulation"
 	// Represents an intensity parameter

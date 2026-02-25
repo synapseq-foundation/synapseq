@@ -1,4 +1,4 @@
-//go:build !wasm
+//go:build ignore
 
 /*
  * SynapSeq - Synapse-Sequenced Brainwave Generator

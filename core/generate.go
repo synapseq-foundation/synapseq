@@ -35,11 +35,10 @@ func (ac *AppContext) generate() (*audio.AudioRenderer, error) {
 	}
 
 	renderer, err := audio.NewAudioRenderer(sequence.Periods, &audio.AudioRendererOptions{
-		SampleRate:     options.SampleRate,
-		Volume:         options.Volume,
-		GainLevel:      options.GainLevel,
-		BackgroundPath: options.BackgroundPath,
-		StatusOutput:   ac.statusOutput,
+		SampleRate:   options.SampleRate,
+		Volume:       options.Volume,
+		AmbianceList: options.AmbianceList,
+		StatusOutput: ac.statusOutput,
 	})
 	if err != nil {
 		return nil, err
