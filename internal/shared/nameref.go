@@ -13,6 +13,8 @@ package shared
 
 import "fmt"
 
+const MaxNamedRefLength = 20
+
 // IsValidNamedRef checks if a name is valid for a named reference
 func IsValidNamedRef(name string) error {
 	isLetter := func(b byte) bool {
@@ -24,6 +26,10 @@ func IsValidNamedRef(name string) error {
 
 	if len(name) == 0 {
 		return fmt.Errorf("reference name cannot be empty")
+	}
+
+	if len(name) > MaxNamedRefLength {
+		return fmt.Errorf("reference name cannot be longer than %d characters: %q", MaxNamedRefLength, name)
 	}
 
 	first := name[0]
