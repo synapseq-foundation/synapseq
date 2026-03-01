@@ -19,7 +19,7 @@ SynapSeq currently supports text input in .spsq format.
 	    "log"
 	    "os"
 
-	    synapseq "github.com/synapseq-foundation/synapseq/v3/core"
+	    synapseq "github.com/synapseq-foundation/synapseq/v4/core"
 	)
 
 	func main() {

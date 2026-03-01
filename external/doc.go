@@ -29,8 +29,8 @@ ffplay using streaming PCM audio.
 	import (
 	    "log"
 
-	    synapseq "github.com/synapseq-foundation/synapseq/v3/core"
-	    "github.com/synapseq-foundation/synapseq/v3/external"
+	    synapseq "github.com/synapseq-foundation/synapseq/v4/core"
+	    "github.com/synapseq-foundation/synapseq/v4/external"
 	)
 
 	func main() {
@@ -63,8 +63,8 @@ using constant bit rate (CBR) at 320 kbps.
 	import (
 	    "log"
 
-	    synapseq "github.com/synapseq-foundation/synapseq/v3/core"
-	    "github.com/synapseq-foundation/synapseq/v3/external"
+	    synapseq "github.com/synapseq-foundation/synapseq/v4/core"
+	    "github.com/synapseq-foundation/synapseq/v4/external"
 	)
 
 	func main() {
