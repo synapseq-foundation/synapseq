@@ -1,4 +1,4 @@
-//go:build !nohub && !wasm
+//go:build !wasm
 
 /*
  * SynapSeq - Synapse-Sequenced Brainwave Generator
@@ -21,11 +21,11 @@ import (
 	"sync"
 	"text/tabwriter"
 
-	synapseq "github.com/synapseq-foundation/synapseq/v3/core"
-	"github.com/synapseq-foundation/synapseq/v3/internal/cli"
-	"github.com/synapseq-foundation/synapseq/v3/internal/hub"
-	s "github.com/synapseq-foundation/synapseq/v3/internal/shared"
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
+	"github.com/synapseq-foundation/synapseq/v4/internal/cli"
+	"github.com/synapseq-foundation/synapseq/v4/internal/hub"
+	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // hubRunUpdate updates the local Hub manifest
@@ -83,7 +83,7 @@ func hubRunGet(sequenceId, outputFile string, opts *cli.CLIOptions) error {
 		}
 	}
 
-	appCtx, err := synapseq.NewAppContext(inputFile, outputFile, "text")
+	appCtx, err := synapseq.NewAppContext(inputFile, outputFile)
 	if err != nil {
 		return fmt.Errorf("failed to create application context. Error\n  %v", err)
 	}
@@ -97,13 +97,12 @@ func hubRunGet(sequenceId, outputFile string, opts *cli.CLIOptions) error {
 	}
 
 	outputOpts := &outputOptions{
-		OutputFile:       outputFile,
-		Quiet:            opts.Quiet,
-		Play:             opts.Play,
-		Mp3:              opts.Mp3,
-		UnsafeNoMetadata: opts.UnsafeNoMetadata,
-		FFplayPath:       opts.FFplayPath,
-		FFmpegPath:       opts.FFmpegPath,
+		OutputFile: outputFile,
+		Quiet:      opts.Quiet,
+		Play:       opts.Play,
+		Mp3:        opts.Mp3,
+		FFplayPath: opts.FFplayPath,
+		FFmpegPath: opts.FFmpegPath,
 	}
 
 	if err := processSequenceOutput(appCtx, outputOpts); err != nil {
@@ -280,7 +279,7 @@ func hubRunInfo(sequenceID string) error {
 		return fmt.Errorf("failed to download sequence from hub. Error\n  %v", err)
 	}
 
-	appCtx, err := synapseq.NewAppContext(seqFile, "", "text")
+	appCtx, err := synapseq.NewAppContext(seqFile, "")
 	if err != nil {
 		return fmt.Errorf("failed to create application context. Error\n  %v", err)
 	}

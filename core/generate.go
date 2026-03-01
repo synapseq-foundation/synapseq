@@ -17,9 +17,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/synapseq-foundation/synapseq/v3/internal/audio"
-	"github.com/synapseq-foundation/synapseq/v3/internal/info"
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	"github.com/synapseq-foundation/synapseq/v4/internal/audio"
 )
 
 // generate generates the audio renderer based on the loaded sequence
@@ -56,19 +54,6 @@ func (ac *AppContext) WAV() error {
 
 	if err = renderer.RenderWav(ac.outputFile); err != nil {
 		return err
-	}
-
-	presetList := ac.sequence.Options.PresetList
-	if ac.format == t.FormatText && len(presetList) == 0 && !ac.unsafeNoMetadata {
-		metadata, err := info.NewMetadata(ac.sequence.RawContent)
-		if err != nil {
-			return err
-		}
-
-		if err = audio.WriteICMTChunkFromTextFile(ac.outputFile, metadata); err != nil {
-			return err
-		}
-
 	}
 
 	return nil

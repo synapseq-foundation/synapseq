@@ -22,8 +22,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/synapseq-foundation/synapseq/v3/internal/info"
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	"github.com/synapseq-foundation/synapseq/v4/internal/info"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // TrackDownload sends an anonymous download event to the SynapSeq Hub analytics endpoint.
@@ -65,7 +65,7 @@ func TrackDownload(sequenceID string, action t.HubActionTracking) error {
 		// Fail silently. Tracking must never break CLI functionality
 		return nil
 	}
-	defer resp.Body.Close()
+	resp.Body.Close()
 
 	return nil
 }

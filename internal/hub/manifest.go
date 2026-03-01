@@ -17,7 +17,7 @@ import (
 	"encoding/json"
 	"os"
 
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // GetManifest retrieves and parses the Hub manifest file from the cache

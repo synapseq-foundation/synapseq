@@ -17,7 +17,7 @@ import (
 	"fmt"
 	"os"
 
-	synapseq "github.com/synapseq-foundation/synapseq/v3/core"
+	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
 )
 
 // OutputOptions defines options for processing sequence output
@@ -36,15 +36,6 @@ func processSequenceOutput(appCtx *synapseq.AppContext, opts *outputOptions) err
 	// --- Handle Stream mode (output = "-")
 	if opts.OutputFile == "-" {
 		return appCtx.Stream(os.Stdout)
-	}
-
-	// --- Unsafe mode
-	if opts.UnsafeNoMetadata {
-		var err error
-		appCtx, err = appCtx.WithUnsafeNoMetadata()
-		if err != nil {
-			return err
-		}
 	}
 
 	// --- Print comments

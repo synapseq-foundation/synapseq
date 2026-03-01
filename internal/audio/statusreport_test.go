@@ -16,8 +16,8 @@ import (
 	"strings"
 	"testing"
 
-	s "github.com/synapseq-foundation/synapseq/v3/internal/shared"
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 func TestStatusReporter_DisplayPeriodChange_PrintsStartAndDash(ts *testing.T) {

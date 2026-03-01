@@ -19,7 +19,7 @@ import (
 	"strings"
 	"testing"
 
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 func writeSeqFile(tst *testing.T, content string) string {
@@ -75,11 +75,11 @@ func TestLoadTextSequence_Success(ts *testing.T) {
 
 # Presets
 alpha
-  ambiance testnoise brown amplitude 40
+  noise brown amplitude 40
   tone 300 binaural 10 amplitude 20
 
 beta
-  ambiance testnoise brown amplitude 40
+  noise brown amplitude 40
   tone 300 binaural 14 amplitude 15
 
 # Timeline
@@ -87,7 +87,7 @@ beta
 00:01:00 beta
 `
 	path := writeSeqFile(ts, seq)
-	bgPath := filepath.Join(filepath.Dir(path), "testdata", "noise.wav")
+	abPath := filepath.Join(filepath.Dir(path), "testdata", "noise.wav")
 
 	result, err := LoadTextSequence(path)
 	if err != nil {
@@ -98,8 +98,8 @@ beta
 	if opts.SampleRate != 48000 || opts.Volume != 80 {
 		ts.Fatalf("unexpected options: %+v", *opts)
 	}
-	if opts.AmbianceList["testnoise"] != bgPath {
-		ts.Fatalf("unexpected ambiance path: got %q want %q", opts.AmbianceList["testnoise"], bgPath)
+	if opts.AmbianceList["testnoise"] != abPath {
+		ts.Fatalf("unexpected ambiance path: got %q want %q", opts.AmbianceList["testnoise"], abPath)
 	}
 
 	periods := result.Periods

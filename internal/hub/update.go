@@ -20,7 +20,7 @@ import (
 	"os"
 	"strings"
 
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // HubUpdate updates the local Hub manifest cache

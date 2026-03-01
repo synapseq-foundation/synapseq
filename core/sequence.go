@@ -14,22 +14,17 @@
 package core
 
 import (
-	seq "github.com/synapseq-foundation/synapseq/v3/internal/sequence"
+	seq "github.com/synapseq-foundation/synapseq/v4/internal/sequence"
 )
 
 // LoadSequence loads the sequence from the input file based on the specified format
 func (ac *AppContext) LoadSequence() error {
 	var err error
-	// if ac.format == t.FormatText {
-	// 	ac.sequence, err = seq.LoadTextSequence(ac.inputFile)
-	// } else {
-	// 	ac.sequence, err = seq.LoadStructuredSequence(ac.inputFile, ac.format)
-	// }
-
 	ac.sequence, err = seq.LoadTextSequence(ac.inputFile)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 

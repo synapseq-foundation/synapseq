@@ -14,7 +14,7 @@ package shared
 import (
 	"fmt"
 
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // FindPreset searches for a preset by name in a slice of presets

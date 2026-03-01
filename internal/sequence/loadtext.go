@@ -17,9 +17,9 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/synapseq-foundation/synapseq/v3/internal/parser"
-	s "github.com/synapseq-foundation/synapseq/v3/internal/shared"
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	"github.com/synapseq-foundation/synapseq/v4/internal/parser"
+	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // LoadTextSequence loads a sequence from a text file

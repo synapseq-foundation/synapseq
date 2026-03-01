@@ -14,8 +14,8 @@
 package main
 
 import (
-	synapseq "github.com/synapseq-foundation/synapseq/v3/core"
-	"github.com/synapseq-foundation/synapseq/v3/external"
+	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
+	"github.com/synapseq-foundation/synapseq/v4/external"
 )
 
 // externalPlay invokes utility tool to play from streaming audio input
@@ -40,35 +40,6 @@ func externalMp3(ffmpegPath string, appCtx *synapseq.AppContext) error {
 	}
 
 	if err := ffmpeg.Convert(appCtx, "mp3"); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// externalExtractTextSequence extracts text sequence from input file using ffprobe
-func externalExtractTextSequence(ffprobePath string, inputFile string) (string, error) {
-	ffprobe, err := external.NewFFprobe(ffprobePath)
-	if err != nil {
-		return "", err
-	}
-
-	content, err := ffprobe.ExtractTextSequence(inputFile)
-	if err != nil {
-		return "", err
-	}
-
-	return content, nil
-}
-
-// externalSaveExtractedTextSequence saves extracted text sequence to output file using ffprobe
-func externalSaveExtractedTextSequence(ffprobePath, inputFile, outputFile string) error {
-	ffprobe, err := external.NewFFprobe(ffprobePath)
-	if err != nil {
-		return err
-	}
-
-	if err := ffprobe.SaveExtractedTextSequence(inputFile, outputFile); err != nil {
 		return err
 	}
 

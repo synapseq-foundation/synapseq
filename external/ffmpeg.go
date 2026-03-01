@@ -18,8 +18,7 @@ import (
 	"os"
 	"strconv"
 
-	synapseq "github.com/synapseq-foundation/synapseq/v3/core"
-	"github.com/synapseq-foundation/synapseq/v3/internal/info"
+	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
 )
 
 // FFmpeg represents the ffmpeg external tool
@@ -46,21 +45,6 @@ func NewFFmpegUnsafe(path string) *FFmpeg {
 		path = "ffmpeg"
 	}
 	return &FFmpeg{baseUtility: baseUtility{path: path}}
-}
-
-// metadataArgs returns ffmpeg arguments for embedding metadata.
-func (fm *FFmpeg) metadataArgs(metadata *info.Metadata) map[string]string {
-	if metadata == nil {
-		return nil
-	}
-
-	return map[string]string{
-		"synapseq_id":        metadata.ID(),
-		"synapseq_generated": metadata.Generated(),
-		"synapseq_version":   metadata.Version(),
-		"synapseq_platform":  metadata.Platform(),
-		"synapseq_content":   metadata.Content(),
-	}
 }
 
 // Convert encodes streaming PCM into the specified format using ffmpeg.
@@ -99,24 +83,6 @@ func (fm *FFmpeg) Convert(appCtx *synapseq.AppContext, format string) error {
 	// BUT for brainwave entrainment, only MP3 is currently relevant
 	default:
 		return fmt.Errorf("unsupported format: %s", format)
-	}
-
-	// Metadata embedding
-	if len(appCtx.PresetList()) == 0 && !appCtx.UnsafeNoMetadata() && appCtx.Format() == "text" {
-		rawContent := appCtx.RawContent()
-		if rawContent == nil {
-			return fmt.Errorf("raw content is nil for metadata embedding")
-		}
-
-		metadata, err := info.NewMetadata(rawContent)
-		if err != nil {
-			return fmt.Errorf("failed to create metadata: %v", err)
-		}
-
-		metaArgs := fm.metadataArgs(metadata)
-		for key, value := range metaArgs {
-			args = append(args, "-metadata", fmt.Sprintf("%s=%s", key, value))
-		}
 	}
 
 	args = append(args, []string{
