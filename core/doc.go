@@ -24,21 +24,19 @@ SynapSeq currently supports text input in .spsq format.
 
 	func main() {
 	    // Create application context
-	    ctx, err := synapseq.NewAppContext("input.spsq", "output.wav")
-	    if err != nil {
-	        log.Fatal(err)
-	    }
+	    ctx := synapseq.NewAppContext()
 
 	    // Enable verbose output (optional)
 	    ctx = ctx.WithVerbose(os.Stderr)
 
 		// Load sequence (required before generating WAV or streaming)
-		if err := ctx.LoadSequence(); err != nil {
+		loaded, err := ctx.Load("input.spsq")
+		if err != nil {
 			log.Fatal(err)
 		}
 
 	    // Generate WAV file
-	    if err := ctx.WAV(); err != nil {
+	    if err := loaded.WAV("output.wav"); err != nil {
 	        log.Fatal(err)
 	    }
 	}
