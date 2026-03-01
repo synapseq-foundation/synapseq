@@ -60,8 +60,8 @@ func utilityPath(utilPath string) (string, error) {
 	return "", fmt.Errorf("file at path is not executable: %s", utilPath)
 }
 
-// startPipeCmd starts the given command and pipes appCtx streaming audio to its stdin
-func startPipeCmd(cmd *exec.Cmd, appCtx *synapseq.AppContext) error {
+// startPipeCmd starts the given command and pipes loadedCtx streaming audio to its stdin.
+func startPipeCmd(cmd *exec.Cmd, loadedCtx *synapseq.LoadedContext) error {
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return err
@@ -75,7 +75,7 @@ func startPipeCmd(cmd *exec.Cmd, appCtx *synapseq.AppContext) error {
 		return err
 	}
 
-	streamErr := appCtx.Stream(stdin)
+	streamErr := loadedCtx.Stream(stdin)
 
 	stdin.Close()
 

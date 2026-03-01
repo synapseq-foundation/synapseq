@@ -48,13 +48,16 @@ func NewFFmpegUnsafe(path string) *FFmpeg {
 }
 
 // Convert encodes streaming PCM into the specified format using ffmpeg.
-func (fm *FFmpeg) Convert(appCtx *synapseq.AppContext, format string) error {
-	if appCtx == nil {
-		return fmt.Errorf("app context cannot be nil")
+func (fm *FFmpeg) Convert(loadedCtx *synapseq.LoadedContext, outputFile string, format string) error {
+	if loadedCtx == nil {
+		return fmt.Errorf("loaded context cannot be nil")
+	}
+
+	if outputFile == "" {
+		return fmt.Errorf("output file cannot be empty")
 	}
 
 	// Remove existing output file if it exists
-	outputFile := appCtx.OutputFile()
 	if _, err := os.Stat(outputFile); err == nil {
 		if err := os.Remove(outputFile); err != nil {
 			return fmt.Errorf("failed to remove existing output file: %v", err)
@@ -67,7 +70,7 @@ func (fm *FFmpeg) Convert(appCtx *synapseq.AppContext, format string) error {
 		"-loglevel", "error",
 		"-f", "s16le",
 		"-ch_layout", "stereo",
-		"-ar", strconv.Itoa(appCtx.SampleRate()),
+		"-ar", strconv.Itoa(loadedCtx.SampleRate()),
 		"-i", "pipe:0",
 	}
 
@@ -91,7 +94,7 @@ func (fm *FFmpeg) Convert(appCtx *synapseq.AppContext, format string) error {
 	}...)
 
 	ffmpeg := fm.Command(args...)
-	if err := startPipeCmd(ffmpeg, appCtx); err != nil {
+	if err := startPipeCmd(ffmpeg, loadedCtx); err != nil {
 		return err
 	}
 

@@ -46,10 +46,10 @@ func NewFFPlayUnsafe(path string) *FFplay {
 	return &FFplay{baseUtility: baseUtility{path: path}}
 }
 
-// Play invokes ffplay to play from streaming audio input
-func (fp *FFplay) Play(appCtx *synapseq.AppContext) error {
-	if appCtx == nil {
-		return fmt.Errorf("app context cannot be nil")
+// Play invokes ffplay to play from streaming audio input.
+func (fp *FFplay) Play(loadedCtx *synapseq.LoadedContext) error {
+	if loadedCtx == nil {
+		return fmt.Errorf("loaded context cannot be nil")
 	}
 
 	ffplay := fp.Command(
@@ -59,11 +59,11 @@ func (fp *FFplay) Play(appCtx *synapseq.AppContext) error {
 		"-autoexit",
 		"-f", "s16le",
 		"-ch_layout", "stereo",
-		"-ar", strconv.Itoa(appCtx.SampleRate()),
+		"-ar", strconv.Itoa(loadedCtx.SampleRate()),
 		"-i", "pipe:0",
 	)
 
-	if err := startPipeCmd(ffplay, appCtx); err != nil {
+	if err := startPipeCmd(ffplay, loadedCtx); err != nil {
 		return err
 	}
 

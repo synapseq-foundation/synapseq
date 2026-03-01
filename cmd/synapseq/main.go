@@ -117,17 +117,15 @@ func run(opts *cli.CLIOptions, args []string) error {
 		outputFile = args[1]
 	}
 
-	appCtx, err := synapseq.NewAppContext(inputFile, outputFile)
-	if err != nil {
-		return err
-	}
+	appCtx := synapseq.NewAppContext()
 
 	if !opts.Quiet && outputFile != "-" {
 		appCtx = appCtx.WithVerbose(os.Stderr)
 	}
 
 	// Load sequence file
-	if err := appCtx.LoadSequence(); err != nil {
+	loadedCtx, err := appCtx.Load(inputFile)
+	if err != nil {
 		return err
 	}
 
@@ -149,7 +147,7 @@ func run(opts *cli.CLIOptions, args []string) error {
 		FFmpegPath: opts.FFmpegPath,
 	}
 
-	return processSequenceOutput(appCtx, outputOpts)
+	return processSequenceOutput(loadedCtx, outputOpts)
 }
 
 // getDefaultOutputFile generates a default output filename based on the input filename

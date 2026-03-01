@@ -81,16 +81,14 @@ func hubRunGet(sequenceId, outputFile string, opts *cli.CLIOptions) error {
 		}
 	}
 
-	appCtx, err := synapseq.NewAppContext(inputFile, outputFile)
-	if err != nil {
-		return fmt.Errorf("failed to create application context. Error\n  %v", err)
-	}
+	appCtx := synapseq.NewAppContext()
 
 	if !opts.Quiet && outputFile != "-" {
 		appCtx = appCtx.WithVerbose(os.Stdout)
 	}
 
-	if err := appCtx.LoadSequence(); err != nil {
+	loadedCtx, err := appCtx.Load(inputFile)
+	if err != nil {
 		return fmt.Errorf("failed to load sequence. Error\n  %v", err)
 	}
 
@@ -103,7 +101,7 @@ func hubRunGet(sequenceId, outputFile string, opts *cli.CLIOptions) error {
 		FFmpegPath: opts.FFmpegPath,
 	}
 
-	if err := processSequenceOutput(appCtx, outputOpts); err != nil {
+	if err := processSequenceOutput(loadedCtx, outputOpts); err != nil {
 		return fmt.Errorf("failed to process sequence output. Error\n  %v", err)
 	}
 
@@ -111,7 +109,7 @@ func hubRunGet(sequenceId, outputFile string, opts *cli.CLIOptions) error {
 	return nil
 }
 
-// / hubRunList prints all available sequences from the Hub manifest in a tabular format
+// hubRunList prints all available sequences from the Hub manifest in a tabular format
 func hubRunList() error {
 	if !hub.ManifestExists() {
 		return fmt.Errorf("hub manifest not found. Please run 'synapseq -hub-update' to fetch the latest Hub manifest")
@@ -277,12 +275,10 @@ func hubRunInfo(sequenceID string) error {
 		return fmt.Errorf("failed to download sequence from hub. Error\n  %v", err)
 	}
 
-	appCtx, err := synapseq.NewAppContext(seqFile, "")
-	if err != nil {
-		return fmt.Errorf("failed to create application context. Error\n  %v", err)
-	}
+	appCtx := synapseq.NewAppContext()
 
-	if err := appCtx.LoadSequence(); err != nil {
+	loadedCtx, err := appCtx.Load(seqFile)
+	if err != nil {
 		return fmt.Errorf("failed to load sequence. Error\n  %v", err)
 	}
 
@@ -301,7 +297,7 @@ func hubRunInfo(sequenceID string) error {
 	fmt.Printf("%s", dependencies)
 
 	description := "\nDescription: No description available.\n"
-	comments := appCtx.Comments()
+	comments := loadedCtx.Comments()
 	if len(comments) > 0 {
 		description = "\nDescription:\n"
 		for _, comment := range comments {

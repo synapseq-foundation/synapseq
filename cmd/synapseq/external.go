@@ -17,13 +17,13 @@ import (
 )
 
 // externalPlay invokes utility tool to play from streaming audio input
-func externalPlay(ffplayPath string, appCtx *synapseq.AppContext) error {
+func externalPlay(ffplayPath string, loadedCtx *synapseq.LoadedContext) error {
 	ffplay, err := external.NewFFPlay(ffplayPath)
 	if err != nil {
 		return err
 	}
 
-	if err := ffplay.Play(appCtx); err != nil {
+	if err := ffplay.Play(loadedCtx); err != nil {
 		return err
 	}
 
@@ -31,13 +31,13 @@ func externalPlay(ffplayPath string, appCtx *synapseq.AppContext) error {
 }
 
 // externalMp3 encodes streaming PCM into an MP3 file using external utility
-func externalMp3(ffmpegPath string, appCtx *synapseq.AppContext) error {
+func externalMp3(ffmpegPath string, loadedCtx *synapseq.LoadedContext, outputFile string) error {
 	ffmpeg, err := external.NewFFmpeg(ffmpegPath)
 	if err != nil {
 		return err
 	}
 
-	if err := ffmpeg.Convert(appCtx, "mp3"); err != nil {
+	if err := ffmpeg.Convert(loadedCtx, outputFile, "mp3"); err != nil {
 		return err
 	}
 

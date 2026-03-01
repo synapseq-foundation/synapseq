@@ -30,29 +30,29 @@ type outputOptions struct {
 }
 
 // processSequenceOutput processes the output of a loaded sequence
-func processSequenceOutput(appCtx *synapseq.AppContext, opts *outputOptions) error {
+func processSequenceOutput(loadedCtx *synapseq.LoadedContext, opts *outputOptions) error {
 	// --- Handle Stream mode (output = "-")
 	if opts.OutputFile == "-" {
-		return appCtx.Stream(os.Stdout)
+		return loadedCtx.Stream(os.Stdout)
 	}
 
 	// --- Print comments
 	if !opts.Quiet {
-		for _, c := range appCtx.Comments() {
+		for _, c := range loadedCtx.Comments() {
 			fmt.Fprintf(os.Stderr, "> %s\n", c)
 		}
 	}
 
 	// --- Handle Play using external ffplay
 	if opts.Play {
-		return externalPlay(opts.FFplayPath, appCtx)
+		return externalPlay(opts.FFplayPath, loadedCtx)
 	}
 
 	// --- Handle MP3 output using external ffmpeg
 	if opts.Mp3 {
-		return externalMp3(opts.FFmpegPath, appCtx)
+		return externalMp3(opts.FFmpegPath, loadedCtx, opts.OutputFile)
 	}
 
 	// Default: Render to WAV
-	return appCtx.WAV()
+	return loadedCtx.WAV(opts.OutputFile)
 }
