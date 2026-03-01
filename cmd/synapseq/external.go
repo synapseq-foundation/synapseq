@@ -1,5 +1,3 @@
-//go:build !wasm
-
 /*
  * SynapSeq - Synapse-Sequenced Brainwave Generator
  * https://synapseq.org
