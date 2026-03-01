@@ -15,7 +15,6 @@ package core_test
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
@@ -23,51 +22,45 @@ import (
 
 func ExampleNewAppContext() {
 	// Create a new application context
-	ctx, err := synapseq.NewAppContext("input.spsq", "output.wav")
-	if err != nil {
-		log.Fatal(err)
-	}
+	ctx := synapseq.NewAppContext()
 	_ = ctx
 
 	fmt.Printf("AppContext created successfully\n")
 	// Output: AppContext created successfully
 }
 
-func ExampleAppContext_LoadSequence() {
+func ExampleAppContext_Load() {
 	// Create a new application context
-	ctx, err := synapseq.NewAppContext("input.spsq", "output.wav")
-	if err != nil {
-		log.Fatal(err)
-	}
+	ctx := synapseq.NewAppContext()
 	_ = ctx
 
 	// Load the sequence
-	// if err := ctx.LoadSequence(); err != nil {
+	// loaded, err := ctx.Load("input.spsq")
+	// if err != nil {
 	//	log.Fatal(err)
 	// }
+	// _ = loaded
 
 	fmt.Printf("Sequence loaded successfully\n")
 	// Output: Sequence loaded successfully
 }
 
-func ExampleAppContext_WAV() {
+func ExampleLoadedContext_WAV() {
 	// Create a new application context
-	ctx, err := synapseq.NewAppContext("input.spsq", "output.wav")
-	if err != nil {
-		log.Fatal(err)
-	}
+	ctx := synapseq.NewAppContext()
 
 	// Optional: Enable verbose output
 	// Replace with an io.Writer, e.g., os.Stderr
 	ctx = ctx.WithVerbose(os.Stderr)
 
 	// Load the sequence
-	// if err := ctx.LoadSequence(); err != nil {
+	// loaded, err := ctx.Load("input.spsq")
+	// if err != nil {
 	//	log.Fatal(err)
 	// }
 
 	// Generate the WAV file
-	// if err := ctx.WAV(); err != nil {
+	// if err := loaded.WAV("output.wav"); err != nil {
 	//	log.Fatal(err)
 	// }
 
@@ -75,22 +68,20 @@ func ExampleAppContext_WAV() {
 	// Output: WAV file generated successfully
 }
 
-func ExampleAppContext_Stream() {
+func ExampleLoadedContext_Stream() {
 	// Create a new application context
-	ctx, err := synapseq.NewAppContext("input.spsq", "")
-	if err != nil {
-		log.Fatal(err)
-	}
+	ctx := synapseq.NewAppContext()
 	_ = ctx
 
 	// Load the sequence
-	// if err := ctx.LoadSequence(); err != nil {
+	// loaded, err := ctx.Load("input.spsq")
+	// if err != nil {
 	//	log.Fatal(err)
 	// }
 
 	// Stream the RAW data to standard output (44100 Hz [default], 16-bit, stereo)
 	// Replace with an io.Writer, e.g., os.Stdout
-	// if err := ctx.Stream(os.Stdout); err != nil {
+	// if err := loaded.Stream(os.Stdout); err != nil {
 	//	log.Fatal(err)
 	// }
 
@@ -98,21 +89,19 @@ func ExampleAppContext_Stream() {
 	// Output: RAW data streamed successfully
 }
 
-func ExampleAppContext_Comments() {
+func ExampleLoadedContext_Comments() {
 	// Create a new application context
-	ctx, err := synapseq.NewAppContext("input.spsq", "output.wav")
-	if err != nil {
-		log.Fatal(err)
-	}
+	ctx := synapseq.NewAppContext()
 	_ = ctx
 
 	// Load the sequence
-	// if err := ctx.LoadSequence(); err != nil {
+	// loaded, err := ctx.Load("input.spsq")
+	// if err != nil {
 	//	log.Fatal(err)
 	// }
 
 	// Retrieve comments from the sequence
-	// for _, comment := range ctx.Comments() {
+	// for _, comment := range loaded.Comments() {
 	//	fmt.Println(comment)
 	// }
 
@@ -120,105 +109,95 @@ func ExampleAppContext_Comments() {
 	// Output: Comments retrieved successfully
 }
 
-func ExampleAppContext_SampleRate() {
+func ExampleLoadedContext_SampleRate() {
 	// Create a new application context
-	ctx, err := synapseq.NewAppContext("input.spsq", "output.wav")
-	if err != nil {
-		log.Fatal(err)
-	}
+	ctx := synapseq.NewAppContext()
 	_ = ctx
 
 	// Load the sequence
-	// if err := ctx.LoadSequence(); err != nil {
+	// loaded, err := ctx.Load("input.spsq")
+	// if err != nil {
 	//	log.Fatal(err)
 	// }
 
 	// Get the sample rate from the loaded sequence
-	// sampleRate := ctx.SampleRate()
+	// sampleRate := loaded.SampleRate()
 	// fmt.Printf("Sample Rate: %d Hz\n", sampleRate)
 
 	fmt.Printf("Sample rate retrieved successfully\n")
 	// Output: Sample rate retrieved successfully
 }
 
-func ExampleAppContext_Volume() {
+func ExampleLoadedContext_Volume() {
 	// Create a new application context
-	ctx, err := synapseq.NewAppContext("input.spsq", "output.wav")
-	if err != nil {
-		log.Fatal(err)
-	}
+	ctx := synapseq.NewAppContext()
 	_ = ctx
 
 	// Load the sequence
-	// if err := ctx.LoadSequence(); err != nil {
+	// loaded, err := ctx.Load("input.spsq")
+	// if err != nil {
 	//	log.Fatal(err)
 	// }
 
 	// Get the volume from the loaded sequence
-	// volume := ctx.Volume()
+	// volume := loaded.Volume()
 	// fmt.Printf("Volume: %d\n", volume)
 
 	fmt.Printf("Volume retrieved successfully\n")
 	// Output: Volume retrieved successfully
 }
 
-func ExampleAppContext_AmbianceList() {
+func ExampleLoadedContext_AmbianceList() {
 	// Create a new application context
-	ctx, err := synapseq.NewAppContext("input.spsq", "output.wav")
-	if err != nil {
-		log.Fatal(err)
-	}
+	ctx := synapseq.NewAppContext()
 	_ = ctx
 
 	// Load the sequence
-	// if err := ctx.LoadSequence(); err != nil {
+	// loaded, err := ctx.Load("input.spsq")
+	// if err != nil {
 	//	log.Fatal(err)
 	// }
 
 	// Get the ambiance audio list from the loaded sequence
-	// ambianceList := ctx.AmbianceList()
+	// ambianceList := loaded.AmbianceList()
 	// fmt.Printf("Ambiance entries: %d\n", len(ambianceList))
 
 	fmt.Printf("Ambiance list retrieved successfully\n")
 	// Output: Ambiance list retrieved successfully
 }
 
-func ExampleAppContext_PresetList() {
+func ExampleLoadedContext_PresetList() {
 	// Create a new application context
-	ctx, err := synapseq.NewAppContext("input.spsq", "output.wav")
-	if err != nil {
-		log.Fatal(err)
-	}
+	ctx := synapseq.NewAppContext()
 	_ = ctx
 
 	// Load the sequence
-	// if err := ctx.LoadSequence(); err != nil {
+	// loaded, err := ctx.Load("input.spsq")
+	// if err != nil {
 	//	log.Fatal(err)
 	// }
 
 	// Get the preset list from the loaded sequence
-	// presetList := ctx.PresetList()
+	// presetList := loaded.PresetList()
 	// fmt.Printf("Preset files: %d\n", len(presetList))
 
 	fmt.Printf("Preset list retrieved successfully\n")
 	// Output: Preset list retrieved successfully
 }
 
-func ExampleAppContext_RawContent() {
+func ExampleLoadedContext_RawContent() {
 	// Create a new application context
-	ctx, err := synapseq.NewAppContext("input.spsq", "output.wav")
-	if err != nil {
-		log.Fatal(err)
-	}
+	ctx := synapseq.NewAppContext()
 	_ = ctx
 
 	// Load the sequence
-	// if err := ctx.LoadSequence(); err != nil {
+	// loaded, err := ctx.Load("input.spsq")
+	// if err != nil {
 	//	log.Fatal(err)
 	// }
 
 	// Get the raw content of the loaded sequence
-	// rawContent := ctx.RawContent()
+	// rawContent := loaded.RawContent()
 	// fmt.Printf("Raw Content Length: %d bytes\n", len(rawContent))
 
 	fmt.Printf("Raw content retrieved successfully\n")

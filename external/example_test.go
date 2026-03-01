@@ -15,7 +15,6 @@ package external_test
 
 import (
 	"fmt"
-	"log"
 
 	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
 	"github.com/synapseq-foundation/synapseq/v4/external"
@@ -36,13 +35,14 @@ func ExampleNewFFPlay() {
 
 func ExampleFFplay_Play() {
 	// Create SynapSeq application context
-	ctx, err := synapseq.NewAppContext("input.spsq", "")
-	if err != nil {
-		log.Fatal(err)
-	}
+	ctx := synapseq.NewAppContext()
+	_ = ctx
 
 	// Load sequence (required before playback)
-	// _ = ctx.LoadSequence()
+	// loaded, err := ctx.Load("input.spsq")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
 	// Create ffplay instance
 	// _, err = external.NewFFPlay("")
@@ -51,9 +51,9 @@ func ExampleFFplay_Play() {
 	// }
 
 	// Play audio (real-time)
-	// _ = player.Play(ctx)
+	// _ = player.Play(loaded)
 
-	fmt.Printf("Playback executed successfully for input: %s\n", ctx.InputFile())
+	fmt.Printf("Playback executed successfully for input: %s\n", "input.spsq")
 	// Output:
 	// Playback executed successfully for input: input.spsq
 }
@@ -73,13 +73,14 @@ func ExampleNewFFmpeg() {
 
 func ExampleFFmpeg_Convert() {
 	// Create SynapSeq application context
-	ctx, err := synapseq.NewAppContext("input.spsq", "output.mp3")
-	if err != nil {
-		log.Fatal(err)
-	}
+	ctx := synapseq.NewAppContext()
+	_ = ctx
 
 	// Load sequence (required before encoding)
-	// _ = ctx.LoadSequence()
+	// loaded, err := ctx.Load("input.spsq")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
 	// Create ffmpeg instance
 	// encoder, err := external.NewFFmpeg("")
@@ -88,9 +89,9 @@ func ExampleFFmpeg_Convert() {
 	// }
 
 	// Encode MP3 at 320 kbps CBR
-	// _ = encoder.Convert(ctx, "mp3")
+	// _ = encoder.Convert(loaded, "output.mp3", "mp3")
 
-	fmt.Printf("MP3 encoding executed successfully for output: %s\n", ctx.OutputFile())
+	fmt.Printf("MP3 encoding executed successfully for output: %s\n", "output.mp3")
 	// Output:
 	// MP3 encoding executed successfully for output: output.mp3
 }
