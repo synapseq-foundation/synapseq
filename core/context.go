@@ -21,37 +21,20 @@ import (
 // It provides a safe, immutable context for sequence processing.
 // Methods that modify the context return a new instance.
 type AppContext struct {
-	inputFile    string
-	outputFile   string
 	statusOutput io.Writer
-	sequence     *t.Sequence
+}
+
+// LoadedContext holds a loaded sequence and execution settings.
+type LoadedContext struct {
+	appCtx    *AppContext
+	sequence  *t.Sequence
 }
 
 // NewAppContext creates a new AppContext instance.
-//
-// Parameters:
-//   - inputFile: path to the input sequence file (can be local path, stdin "-", or HTTP/HTTPS URL)
-//   - outputFile: path to the output WAV file (local path only)
-//
-// Returns:
-//   - *AppContext: a new AppContext instance with the provided configuration
-//   - error: an error if the input parameters are invalid (e.g., unsupported output file path)
-func NewAppContext(inputFile, outputFile string) (*AppContext, error) {
+func NewAppContext() *AppContext {
 	return &AppContext{
-		inputFile:    inputFile,
-		outputFile:   outputFile,
 		statusOutput: nil,
-	}, nil
-}
-
-// InputFile returns the input file path.
-func (ac *AppContext) InputFile() string {
-	return ac.inputFile
-}
-
-// OutputFile returns the output file path.
-func (ac *AppContext) OutputFile() string {
-	return ac.outputFile
+	}
 }
 
 // Verbose returns whether verbose mode is enabled.

@@ -17,66 +17,68 @@ import (
 	seq "github.com/synapseq-foundation/synapseq/v4/internal/sequence"
 )
 
-// LoadSequence loads the sequence from the input file based on the specified format
-func (ac *AppContext) LoadSequence() error {
-	var err error
-	ac.sequence, err = seq.LoadTextSequence(ac.inputFile)
+// Load loads the sequence from the input file.
+func (ac *AppContext) Load(path string) (*LoadedContext, error) {
+	sequence, err := seq.LoadTextSequence(path)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return &LoadedContext{
+		appCtx:   ac,
+		sequence: sequence,
+	}, nil
 }
 
-// Comments returns the comments from the loaded sequence
-func (ac *AppContext) Comments() []string {
-	if ac.sequence == nil {
+// Comments returns the comments from the loaded sequence.
+func (lc *LoadedContext) Comments() []string {
+	if lc.sequence == nil {
 		return nil
 	}
-	return ac.sequence.Comments
+	return lc.sequence.Comments
 }
 
-// SampleRate returns the sample rate from the loaded sequence options
-func (ac *AppContext) SampleRate() int {
-	if ac.sequence == nil || ac.sequence.Options == nil {
+// SampleRate returns the sample rate from the loaded sequence options.
+func (lc *LoadedContext) SampleRate() int {
+	if lc.sequence == nil || lc.sequence.Options == nil {
 		return 0
 	}
 
-	return ac.sequence.Options.SampleRate
+	return lc.sequence.Options.SampleRate
 }
 
-// PresetList returns the preset list from the loaded sequence options
-func (ac *AppContext) PresetList() []string {
-	if ac.sequence == nil || ac.sequence.Options == nil {
+// PresetList returns the preset list from the loaded sequence options.
+func (lc *LoadedContext) PresetList() []string {
+	if lc.sequence == nil || lc.sequence.Options == nil {
 		return []string{}
 	}
 
-	return ac.sequence.Options.PresetList
+	return lc.sequence.Options.PresetList
 }
 
-// Volume returns the volume from the loaded sequence options
-func (ac *AppContext) Volume() int {
-	if ac.sequence == nil || ac.sequence.Options == nil {
+// Volume returns the volume from the loaded sequence options.
+func (lc *LoadedContext) Volume() int {
+	if lc.sequence == nil || lc.sequence.Options == nil {
 		return 0
 	}
 
-	return ac.sequence.Options.Volume
+	return lc.sequence.Options.Volume
 }
 
-// AmbianceList returns the ambiance audio list from the loaded sequence options
-func (ac *AppContext) AmbianceList() map[string]string {
-	if ac.sequence == nil || ac.sequence.Options == nil {
+// AmbianceList returns the ambiance audio list from the loaded sequence options.
+func (lc *LoadedContext) AmbianceList() map[string]string {
+	if lc.sequence == nil || lc.sequence.Options == nil {
 		return map[string]string{}
 	}
 
-	return ac.sequence.Options.AmbianceList
+	return lc.sequence.Options.AmbianceList
 }
 
-// RawContent returns the raw content of the loaded sequence
-func (ac *AppContext) RawContent() []byte {
-	if ac.sequence == nil {
+// RawContent returns the raw content of the loaded sequence.
+func (lc *LoadedContext) RawContent() []byte {
+	if lc.sequence == nil {
 		return nil
 	}
 
-	return ac.sequence.RawContent
+	return lc.sequence.RawContent
 }
