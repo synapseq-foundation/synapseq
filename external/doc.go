@@ -34,12 +34,10 @@ ffplay using streaming PCM audio.
 	)
 
 	func main() {
-	    ctx, err := synapseq.NewAppContext("input.spsq", "")
-	    if err != nil {
-	        log.Fatal(err)
-	    }
+	    ctx := synapseq.NewAppContext()
 
-	    if err := ctx.LoadSequence(); err != nil {
+	    loaded, err := ctx.Load("input.spsq")
+	    if err != nil {
 	        log.Fatal(err)
 	    }
 
@@ -48,7 +46,7 @@ ffplay using streaming PCM audio.
 	        log.Fatal(err)
 	    }
 
-	    if err := player.Play(ctx); err != nil {
+	    if err := player.Play(loaded); err != nil {
 	        log.Fatal(err)
 	    }
 	}
@@ -68,12 +66,10 @@ using constant bit rate (CBR) at 320 kbps.
 	)
 
 	func main() {
-	    ctx, err := synapseq.NewAppContext("input.spsq", "output.mp3")
-	    if err != nil {
-	        log.Fatal(err)
-	    }
+	    ctx := synapseq.NewAppContext()
 
-	    if err := ctx.LoadSequence(); err != nil {
+	    loaded, err := ctx.Load("input.spsq")
+	    if err != nil {
 	        log.Fatal(err)
 	    }
 
@@ -82,7 +78,7 @@ using constant bit rate (CBR) at 320 kbps.
 	        log.Fatal(err)
 	    }
 
-	    if err := encoder.Convert(ctx, "mp3"); err != nil {
+	    if err := encoder.Convert(loaded, "output.mp3", "mp3"); err != nil {
 	        log.Fatal(err)
 	    }
 	}
