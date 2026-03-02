@@ -14,6 +14,8 @@
 package core
 
 import (
+	"maps"
+
 	seq "github.com/synapseq-foundation/synapseq/v4/internal/sequence"
 )
 
@@ -30,12 +32,16 @@ func (ac *AppContext) Load(path string) (*LoadedContext, error) {
 	}, nil
 }
 
-// Comments returns the comments from the loaded sequence.
+// Comments returns a defensive copy of sequence comments.
 func (lc *LoadedContext) Comments() []string {
-	if lc.sequence == nil {
-		return nil
+	if lc.sequence == nil || len(lc.sequence.Comments) == 0 {
+		return []string{}
 	}
-	return lc.sequence.Comments
+
+	comments := make([]string, len(lc.sequence.Comments))
+	copy(comments, lc.sequence.Comments)
+
+	return comments
 }
 
 // SampleRate returns the sample rate from the loaded sequence options.
@@ -47,13 +53,16 @@ func (lc *LoadedContext) SampleRate() int {
 	return lc.sequence.Options.SampleRate
 }
 
-// PresetList returns the preset list from the loaded sequence options.
+// PresetList returns a defensive copy of preset list.
 func (lc *LoadedContext) PresetList() []string {
-	if lc.sequence == nil || lc.sequence.Options == nil {
+	if lc.sequence == nil || lc.sequence.Options == nil || len(lc.sequence.Options.PresetList) == 0 {
 		return []string{}
 	}
 
-	return lc.sequence.Options.PresetList
+	presets := make([]string, len(lc.sequence.Options.PresetList))
+	copy(presets, lc.sequence.Options.PresetList)
+
+	return presets
 }
 
 // Volume returns the volume from the loaded sequence options.
@@ -65,20 +74,26 @@ func (lc *LoadedContext) Volume() int {
 	return lc.sequence.Options.Volume
 }
 
-// Ambiance returns the ambiance audio list from the loaded sequence options.
+// Ambiance returns a defensive copy of ambiance map.
 func (lc *LoadedContext) Ambiance() map[string]string {
-	if lc.sequence == nil || lc.sequence.Options == nil {
+	if lc.sequence == nil || lc.sequence.Options == nil || len(lc.sequence.Options.Ambiance) == 0 {
 		return map[string]string{}
 	}
 
-	return lc.sequence.Options.Ambiance
+	ambiance := make(map[string]string, len(lc.sequence.Options.Ambiance))
+	maps.Copy(ambiance, lc.sequence.Options.Ambiance)
+
+	return ambiance
 }
 
-// RawContent returns the raw content of the loaded sequence.
+// RawContent returns a defensive copy of raw content.
 func (lc *LoadedContext) RawContent() []byte {
-	if lc.sequence == nil {
-		return nil
+	if lc.sequence == nil || len(lc.sequence.RawContent) == 0 {
+		return []byte{}
 	}
 
-	return lc.sequence.RawContent
+	raw := make([]byte, len(lc.sequence.RawContent))
+	copy(raw, lc.sequence.RawContent)
+
+	return raw
 }
