@@ -1,5 +1,3 @@
-//go:build !wasm
-
 /*
  * SynapSeq - Synapse-Sequenced Brainwave Generator
  * https://synapseq.org
@@ -19,8 +17,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	synapseq "github.com/synapseq-foundation/synapseq/v3/core"
-	"github.com/synapseq-foundation/synapseq/v3/internal/cli"
+	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
+	"github.com/synapseq-foundation/synapseq/v4/internal/cli"
 )
 
 // main is the entry point of the SynapSeq application
@@ -119,64 +117,15 @@ func run(opts *cli.CLIOptions, args []string) error {
 		outputFile = args[1]
 	}
 
-	// --- Handle Extract mode
-	if opts.ExtractTextSequence {
-		if opts.Mp3 {
-			if outputFile == "-" {
-				content, err := externalExtractTextSequence(opts.FFprobePath, inputFile)
-				if err != nil {
-					return fmt.Errorf("failed to extract text sequence. Error\n  %w", err)
-				}
-				fmt.Println(content)
-				return nil
-			}
-
-			outputFile = getDefaultOutputFile(inputFile, "spsq")
-			if err := externalSaveExtractedTextSequence(opts.FFprobePath, inputFile, outputFile); err != nil {
-				return fmt.Errorf("failed to extract text sequence. Error\n  %w", err)
-			}
-
-			if !opts.Quiet {
-				fmt.Println("Extraction completed successfully.")
-			}
-
-			return nil
-		}
-
-		if outputFile == "-" {
-			content, err := synapseq.Extract(inputFile)
-			if err != nil {
-				return fmt.Errorf("failed to extract text sequence. Error\n  %w", err)
-			}
-			fmt.Println(content)
-			return nil
-		}
-
-		outputFile = getDefaultOutputFile(inputFile, "spsq")
-		if err := synapseq.SaveExtracted(inputFile, outputFile); err != nil {
-			return fmt.Errorf("failed to extract text sequence. Error\n  %w", err)
-		}
-
-		if !opts.Quiet {
-			fmt.Println("Extraction completed successfully.")
-		}
-		return nil
-	}
-
-	// Detect format flags
-	format := detectFormat(opts)
-
-	appCtx, err := synapseq.NewAppContext(inputFile, outputFile, format)
-	if err != nil {
-		return err
-	}
+	appCtx := synapseq.NewAppContext()
 
 	if !opts.Quiet && outputFile != "-" {
 		appCtx = appCtx.WithVerbose(os.Stderr)
 	}
 
 	// Load sequence file
-	if err := appCtx.LoadSequence(); err != nil {
+	loadedCtx, err := appCtx.Load(inputFile)
+	if err != nil {
 		return err
 	}
 
@@ -188,53 +137,17 @@ func run(opts *cli.CLIOptions, args []string) error {
 		return nil
 	}
 
-	// --- Handle Convert mode
-	if opts.ConvertToText {
-		if outputFile == "-" {
-			content, err := appCtx.Text()
-			if err != nil {
-				return fmt.Errorf("failed to convert to text. Error\n  %w", err)
-			}
-			fmt.Println(content)
-			return nil
-		}
-
-		if err := appCtx.SaveText(); err != nil {
-			return fmt.Errorf("failed to convert to text. Error\n  %w", err)
-		}
-
-		if !opts.Quiet {
-			fmt.Println("Conversion completed successfully.")
-		}
-		return nil
-	}
-
 	// --- Process output using centralized handler
 	outputOpts := &outputOptions{
-		OutputFile:       outputFile,
-		Quiet:            opts.Quiet,
-		Play:             opts.Play,
-		Mp3:              opts.Mp3,
-		UnsafeNoMetadata: opts.UnsafeNoMetadata,
-		FFplayPath:       opts.FFplayPath,
-		FFmpegPath:       opts.FFmpegPath,
+		OutputFile: outputFile,
+		Quiet:      opts.Quiet,
+		Play:       opts.Play,
+		Mp3:        opts.Mp3,
+		FFplayPath: opts.FFplayPath,
+		FFmpegPath: opts.FFmpegPath,
 	}
 
-	return processSequenceOutput(appCtx, outputOpts)
-}
-
-// detectFormat detects the input format based on CLI options
-func detectFormat(opts *cli.CLIOptions) string {
-	switch {
-	case opts.FormatJSON:
-		return "json"
-	case opts.FormatXML:
-		return "xml"
-	case opts.FormatYAML:
-		return "yaml"
-	default:
-		return "text"
-	}
+	return processSequenceOutput(loadedCtx, outputOpts)
 }
 
 // getDefaultOutputFile generates a default output filename based on the input filename

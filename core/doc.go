@@ -7,13 +7,9 @@ for the SynapSeq brainwave generator.
 This package is designed to be used as a library by other Go projects
 that want to integrate SynapSeq audio generation capabilities.
 
-# Supported Formats
+# Supported Format
 
-SynapSeq supports multiple input formats:
-  - text (.spsq): Human-readable text format with presets
-  - json: Structured JSON format
-  - xml: Structured XML format
-  - yaml: Structured YAML format
+SynapSeq currently supports text input in .spsq format.
 
 # Example Usage
 
@@ -23,26 +19,24 @@ SynapSeq supports multiple input formats:
 	    "log"
 	    "os"
 
-	    synapseq "github.com/synapseq-foundation/synapseq/v3/core"
+	    synapseq "github.com/synapseq-foundation/synapseq/v4/core"
 	)
 
 	func main() {
 	    // Create application context
-	    ctx, err := synapseq.NewAppContext("input.spsq", "output.wav", "text")
-	    if err != nil {
-	        log.Fatal(err)
-	    }
+	    ctx := synapseq.NewAppContext()
 
 	    // Enable verbose output (optional)
 	    ctx = ctx.WithVerbose(os.Stderr)
 
-		// Load sequence (required before generating WAV, streaming, or converting)
-		if err := ctx.LoadSequence(); err != nil {
+		// Load sequence (required before generating WAV or streaming)
+		loaded, err := ctx.Load("input.spsq")
+		if err != nil {
 			log.Fatal(err)
 		}
 
 	    // Generate WAV file
-	    if err := ctx.WAV(); err != nil {
+	    if err := loaded.WAV("output.wav"); err != nil {
 	        log.Fatal(err)
 	    }
 	}

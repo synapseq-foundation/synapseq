@@ -19,10 +19,8 @@ import (
 	"testing"
 
 	bwav "github.com/gopxl/beep/v2/wav"
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
-
-const maxAmbianceFileSize = t.MaxBackgroundFileSize
 
 func mustReadWavAll(t *testing.T, path string) ([]int, uint32, int, int) {
 	t.Helper()
@@ -296,7 +294,7 @@ func TestAmbianceAudio_RemoteWAV(t *testing.T) {
 
 func TestAmbianceAudio_Remote10MBLimit(ts *testing.T) {
 	// Create a server that serves more than the configured WAV max size
-	const size = maxAmbianceFileSize + 2*1024*1024
+	const size = t.MaxWavFileSize + 2*1024*1024
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "audio/wav")
 		// Write a simple WAV header (44 bytes) + data
@@ -354,8 +352,8 @@ func TestAmbianceAudio_Remote10MBLimit(ts *testing.T) {
 	if len(aa.cachedData) != 1 {
 		ts.Fatalf("expected one cached track, got %d", len(aa.cachedData))
 	}
-	if len(aa.cachedData[0]) != maxAmbianceFileSize {
-		ts.Fatalf("expected cached data to be limited to %d bytes, got %d", maxAmbianceFileSize, len(aa.cachedData[0]))
+	if len(aa.cachedData[0]) != t.MaxWavFileSize {
+		ts.Fatalf("expected cached data to be limited to %d bytes, got %d", t.MaxWavFileSize, len(aa.cachedData[0]))
 	}
 }
 
@@ -369,7 +367,7 @@ func TestAmbianceAudio_Local10MBLimit(ts *testing.T) {
 		ts.Fatalf("failed to create temp file: %v", err)
 	}
 
-	const size = maxAmbianceFileSize + 2*1024*1024
+	const size = t.MaxWavFileSize + 2*1024*1024
 	// Write WAV header
 	header := make([]byte, 44)
 	copy(header[0:4], "RIFF")
@@ -422,8 +420,8 @@ func TestAmbianceAudio_Local10MBLimit(ts *testing.T) {
 	if len(aa.cachedData) != 1 {
 		ts.Fatalf("expected one cached track, got %d", len(aa.cachedData))
 	}
-	if len(aa.cachedData[0]) != maxAmbianceFileSize {
-		ts.Fatalf("expected cached data to be limited to %d bytes, got %d", maxAmbianceFileSize, len(aa.cachedData[0]))
+	if len(aa.cachedData[0]) != t.MaxWavFileSize {
+		ts.Fatalf("expected cached data to be limited to %d bytes, got %d", t.MaxWavFileSize, len(aa.cachedData[0]))
 	}
 }
 

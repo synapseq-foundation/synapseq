@@ -17,14 +17,12 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/synapseq-foundation/synapseq/v3/internal/audio"
-	"github.com/synapseq-foundation/synapseq/v3/internal/info"
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	"github.com/synapseq-foundation/synapseq/v4/internal/audio"
 )
 
 // generate generates the audio renderer based on the loaded sequence
-func (ac *AppContext) generate() (*audio.AudioRenderer, error) {
-	sequence := ac.sequence
+func (lc *LoadedContext) generate() (*audio.AudioRenderer, error) {
+	sequence := lc.sequence
 	if sequence == nil {
 		return nil, fmt.Errorf("sequence is nil")
 	}
@@ -38,7 +36,7 @@ func (ac *AppContext) generate() (*audio.AudioRenderer, error) {
 		SampleRate:   options.SampleRate,
 		Volume:       options.Volume,
 		AmbianceList: options.AmbianceList,
-		StatusOutput: ac.statusOutput,
+		StatusOutput: lc.appCtx.statusOutput,
 	})
 	if err != nil {
 		return nil, err
@@ -47,36 +45,27 @@ func (ac *AppContext) generate() (*audio.AudioRenderer, error) {
 	return renderer, nil
 }
 
-// WAV generates the WAV file from the loaded sequence
-func (ac *AppContext) WAV() error {
-	renderer, err := ac.generate()
+// WAV generates the WAV file from the loaded sequence.
+func (lc *LoadedContext) WAV(outputFile string) error {
+	if outputFile == "" {
+		return fmt.Errorf("output file cannot be empty")
+	}
+
+	renderer, err := lc.generate()
 	if err != nil {
 		return err
 	}
 
-	if err = renderer.RenderWav(ac.outputFile); err != nil {
+	if err = renderer.RenderWav(outputFile); err != nil {
 		return err
-	}
-
-	presetList := ac.sequence.Options.PresetList
-	if ac.format == t.FormatText && len(presetList) == 0 && !ac.unsafeNoMetadata {
-		metadata, err := info.NewMetadata(ac.sequence.RawContent)
-		if err != nil {
-			return err
-		}
-
-		if err = audio.WriteICMTChunkFromTextFile(ac.outputFile, metadata); err != nil {
-			return err
-		}
-
 	}
 
 	return nil
 }
 
-// Stream generates the raw audio stream from the loaded sequence
-func (ac *AppContext) Stream(data io.Writer) error {
-	renderer, err := ac.generate()
+// Stream generates the raw audio stream from the loaded sequence.
+func (lc *LoadedContext) Stream(data io.Writer) error {
+	renderer, err := lc.generate()
 	if err != nil {
 		return err
 	}

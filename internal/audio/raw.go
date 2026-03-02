@@ -15,7 +15,7 @@ import (
 	"bufio"
 	"io"
 
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // RenderRaw renders the audio to a raw PCM stream (16-bit little-endian)

@@ -14,7 +14,7 @@ package audio
 import (
 	"math"
 
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // InitWaveformTables initializes the waveform tables

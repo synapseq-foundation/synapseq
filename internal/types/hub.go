@@ -1,5 +1,3 @@
-//go:build !nohub
-
 /*
  * SynapSeq - Synapse-Sequenced Brainwave Generator
  * https://synapseq.org

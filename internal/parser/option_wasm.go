@@ -17,8 +17,8 @@ import (
 	"fmt"
 	"strings"
 
-	s "github.com/synapseq-foundation/synapseq/v3/internal/shared"
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // HasOption checks if the first element is an option

@@ -1,5 +1,3 @@
-//go:build !nohub
-
 /*
  * SynapSeq - Synapse-Sequenced Brainwave Generator
  * https://synapseq.org
@@ -22,7 +20,7 @@ import (
 	"strings"
 	"sync"
 
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // HubGet retrieves a sequence by its ID from the Hub

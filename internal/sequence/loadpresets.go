@@ -14,9 +14,9 @@ package sequence
 import (
 	"fmt"
 
-	"github.com/synapseq-foundation/synapseq/v3/internal/parser"
-	s "github.com/synapseq-foundation/synapseq/v3/internal/shared"
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	"github.com/synapseq-foundation/synapseq/v4/internal/parser"
+	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // loadPresets loads presets from a given file path

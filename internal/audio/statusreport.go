@@ -16,8 +16,8 @@ import (
 	"io"
 	"strings"
 
-	s "github.com/synapseq-foundation/synapseq/v3/internal/shared"
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // StatusReporter handles terminal status output during rendering

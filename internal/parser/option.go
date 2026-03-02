@@ -19,8 +19,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	s "github.com/synapseq-foundation/synapseq/v3/internal/shared"
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // getFullPath resolves the full path of a given file path

@@ -15,7 +15,7 @@ import (
 	"fmt"
 	"sort"
 
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // Render generates the audio and passes buffers to the consume function

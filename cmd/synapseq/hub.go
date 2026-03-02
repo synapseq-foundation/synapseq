@@ -1,5 +1,3 @@
-//go:build !nohub && !wasm
-
 /*
  * SynapSeq - Synapse-Sequenced Brainwave Generator
  * https://synapseq.org
@@ -21,11 +19,11 @@ import (
 	"sync"
 	"text/tabwriter"
 
-	synapseq "github.com/synapseq-foundation/synapseq/v3/core"
-	"github.com/synapseq-foundation/synapseq/v3/internal/cli"
-	"github.com/synapseq-foundation/synapseq/v3/internal/hub"
-	s "github.com/synapseq-foundation/synapseq/v3/internal/shared"
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
+	"github.com/synapseq-foundation/synapseq/v4/internal/cli"
+	"github.com/synapseq-foundation/synapseq/v4/internal/hub"
+	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // hubRunUpdate updates the local Hub manifest
@@ -83,30 +81,27 @@ func hubRunGet(sequenceId, outputFile string, opts *cli.CLIOptions) error {
 		}
 	}
 
-	appCtx, err := synapseq.NewAppContext(inputFile, outputFile, "text")
-	if err != nil {
-		return fmt.Errorf("failed to create application context. Error\n  %v", err)
-	}
+	appCtx := synapseq.NewAppContext()
 
 	if !opts.Quiet && outputFile != "-" {
 		appCtx = appCtx.WithVerbose(os.Stdout)
 	}
 
-	if err := appCtx.LoadSequence(); err != nil {
+	loadedCtx, err := appCtx.Load(inputFile)
+	if err != nil {
 		return fmt.Errorf("failed to load sequence. Error\n  %v", err)
 	}
 
 	outputOpts := &outputOptions{
-		OutputFile:       outputFile,
-		Quiet:            opts.Quiet,
-		Play:             opts.Play,
-		Mp3:              opts.Mp3,
-		UnsafeNoMetadata: opts.UnsafeNoMetadata,
-		FFplayPath:       opts.FFplayPath,
-		FFmpegPath:       opts.FFmpegPath,
+		OutputFile: outputFile,
+		Quiet:      opts.Quiet,
+		Play:       opts.Play,
+		Mp3:        opts.Mp3,
+		FFplayPath: opts.FFplayPath,
+		FFmpegPath: opts.FFmpegPath,
 	}
 
-	if err := processSequenceOutput(appCtx, outputOpts); err != nil {
+	if err := processSequenceOutput(loadedCtx, outputOpts); err != nil {
 		return fmt.Errorf("failed to process sequence output. Error\n  %v", err)
 	}
 
@@ -114,7 +109,7 @@ func hubRunGet(sequenceId, outputFile string, opts *cli.CLIOptions) error {
 	return nil
 }
 
-// / hubRunList prints all available sequences from the Hub manifest in a tabular format
+// hubRunList prints all available sequences from the Hub manifest in a tabular format
 func hubRunList() error {
 	if !hub.ManifestExists() {
 		return fmt.Errorf("hub manifest not found. Please run 'synapseq -hub-update' to fetch the latest Hub manifest")
@@ -280,12 +275,10 @@ func hubRunInfo(sequenceID string) error {
 		return fmt.Errorf("failed to download sequence from hub. Error\n  %v", err)
 	}
 
-	appCtx, err := synapseq.NewAppContext(seqFile, "", "text")
-	if err != nil {
-		return fmt.Errorf("failed to create application context. Error\n  %v", err)
-	}
+	appCtx := synapseq.NewAppContext()
 
-	if err := appCtx.LoadSequence(); err != nil {
+	loadedCtx, err := appCtx.Load(seqFile)
+	if err != nil {
 		return fmt.Errorf("failed to load sequence. Error\n  %v", err)
 	}
 
@@ -304,7 +297,7 @@ func hubRunInfo(sequenceID string) error {
 	fmt.Printf("%s", dependencies)
 
 	description := "\nDescription: No description available.\n"
-	comments := appCtx.Comments()
+	comments := loadedCtx.Comments()
 	if len(comments) > 0 {
 		description = "\nDescription:\n"
 		for _, comment := range comments {

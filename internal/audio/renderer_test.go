@@ -22,7 +22,7 @@ import (
 
 	"github.com/gopxl/beep/v2"
 	bwav "github.com/gopxl/beep/v2/wav"
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 type constStreamer struct {

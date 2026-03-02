@@ -15,7 +15,7 @@ import (
 	"fmt"
 	"strings"
 
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // HasComment checks if the first element is a comment

@@ -14,7 +14,7 @@ package audio
 import (
 	"math"
 
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // calcDopplerFactor returns a pitch multiplier in [1-depth .. 1+depth] based on a sine LFO.

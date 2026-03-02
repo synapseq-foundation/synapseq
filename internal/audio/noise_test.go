@@ -15,7 +15,7 @@ import (
 	"math"
 	"testing"
 
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 func genWhiteExpected(n int) []int {
