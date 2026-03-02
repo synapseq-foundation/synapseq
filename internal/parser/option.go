@@ -108,7 +108,7 @@ func (ctx *TextParser) ParseOption(options *t.SequenceOptions, filePath string) 
 			}
 		}
 
-		options.AmbianceList[name] = fullPath
+		options.Ambiance[name] = fullPath
 	case t.KeywordOptionPresetList:
 		_, ok := ctx.Line.NextToken()
 		if !ok {

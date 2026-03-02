@@ -73,9 +73,9 @@ func streamPcm(this js.Value, args []js.Value) interface{} {
 				}
 
 				renderer, err := audio.NewAudioRenderer(seq.Periods, &audio.AudioRendererOptions{
-					SampleRate:   seq.Options.SampleRate,
-					Volume:       seq.Options.Volume,
-					AmbianceList: seq.Options.AmbianceList,
+					SampleRate: seq.Options.SampleRate,
+					Volume:     seq.Options.Volume,
+					Ambiance:   seq.Options.Ambiance,
 				})
 				if err != nil {
 					onError.Invoke(err.Error())

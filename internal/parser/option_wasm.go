@@ -77,7 +77,7 @@ func (ctx *TextParser) ParseOption(options *t.SequenceOptions) error {
 			return fmt.Errorf("file paths are not supported in WASM for ambiance audio: %s", content)
 		}
 
-		options.AmbianceList[name] = content
+		options.Ambiance[name] = content
 	case t.KeywordOptionPresetList:
 		_, ok := ctx.Line.NextToken()
 		if !ok {
