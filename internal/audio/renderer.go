@@ -56,7 +56,7 @@ type AudioRenderer struct {
 type AudioRendererOptions struct {
 	SampleRate   int
 	Volume       int
-	AmbianceList map[string]string
+	Ambiance     map[string]string
 	StatusOutput io.Writer
 }
 
@@ -78,7 +78,7 @@ func NewAudioRenderer(p []t.Period, ar *AudioRendererOptions) (*AudioRenderer, e
 		return nil, fmt.Errorf("no periods defined in the sequence")
 	}
 
-	ambiancePaths, ambianceNameToIndex, err := buildAmbianceIndex(ar.AmbianceList)
+	ambiancePaths, ambianceNameToIndex, err := buildAmbianceIndex(ar.Ambiance)
 	if err != nil {
 		return nil, err
 	}

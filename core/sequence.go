@@ -65,13 +65,13 @@ func (lc *LoadedContext) Volume() int {
 	return lc.sequence.Options.Volume
 }
 
-// AmbianceList returns the ambiance audio list from the loaded sequence options.
-func (lc *LoadedContext) AmbianceList() map[string]string {
+// Ambiance returns the ambiance audio list from the loaded sequence options.
+func (lc *LoadedContext) Ambiance() map[string]string {
 	if lc.sequence == nil || lc.sequence.Options == nil {
 		return map[string]string{}
 	}
 
-	return lc.sequence.Options.AmbianceList
+	return lc.sequence.Options.Ambiance
 }
 
 // RawContent returns the raw content of the loaded sequence.

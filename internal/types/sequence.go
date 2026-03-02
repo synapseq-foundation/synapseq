@@ -28,7 +28,7 @@ type SequenceOptions struct {
 	// Volume level (0-100 for 0-100%)
 	Volume int
 	// List of ambiance audio files
-	AmbianceList map[string]string
+	Ambiance map[string]string
 	// List of preset configuration files
 	PresetList []string
 }

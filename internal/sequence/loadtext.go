@@ -48,10 +48,10 @@ func LoadTextSequence(fileName string) (*t.Sequence, error) {
 	lastLoadedPresetPath := ""
 	// Initialize audio options
 	options := &t.SequenceOptions{
-		SampleRate:   44100,
-		Volume:       100,
-		AmbianceList: make(map[string]string),
-		PresetList:   []string{},
+		SampleRate: 44100,
+		Volume:     100,
+		Ambiance:   make(map[string]string),
+		PresetList: []string{},
 	}
 
 	var (

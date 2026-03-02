@@ -64,24 +64,24 @@ func TestParseOption(ts *testing.T) {
 	}{
 		{
 			fmt.Sprintf("%svolume 50", t.KeywordOption),
-			t.SequenceOptions{Volume: 50, AmbianceList: map[string]string{}},
+			t.SequenceOptions{Volume: 50, Ambiance: map[string]string{}},
 		},
 		{
 			fmt.Sprintf("%ssamplerate 48000", t.KeywordOption),
-			t.SequenceOptions{SampleRate: 48000, AmbianceList: map[string]string{}},
+			t.SequenceOptions{SampleRate: 48000, Ambiance: map[string]string{}},
 		},
 		{
 			fmt.Sprintf("%s%s rain testdata/%s", t.KeywordOption, t.KeywordOptionAmbiance, backgroundFile),
-			t.SequenceOptions{AmbianceList: map[string]string{"rain": filepath.Clean(filepath.Join(basePath, "testdata", backgroundFile))}},
+			t.SequenceOptions{Ambiance: map[string]string{"rain": filepath.Clean(filepath.Join(basePath, "testdata", backgroundFile))}},
 		},
 		{
 			fmt.Sprintf("%s%s river ~/Downloads/%s", t.KeywordOption, t.KeywordOptionAmbiance, backgroundFile),
-			t.SequenceOptions{AmbianceList: map[string]string{"river": filepath.Clean(filepath.Join(homeDir, "Downloads", backgroundFile))}},
+			t.SequenceOptions{Ambiance: map[string]string{"river": filepath.Clean(filepath.Join(homeDir, "Downloads", backgroundFile))}},
 		},
 	}
 
 	for _, test := range tests {
-		option := t.SequenceOptions{AmbianceList: map[string]string{}}
+		option := t.SequenceOptions{Ambiance: map[string]string{}}
 		ctx := NewTextParser(test.line)
 
 		if err := ctx.ParseOption(&option, basePath); err != nil {

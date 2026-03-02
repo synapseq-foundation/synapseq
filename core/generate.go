@@ -35,7 +35,7 @@ func (lc *LoadedContext) generate() (*audio.AudioRenderer, error) {
 	renderer, err := audio.NewAudioRenderer(sequence.Periods, &audio.AudioRendererOptions{
 		SampleRate:   options.SampleRate,
 		Volume:       options.Volume,
-		AmbianceList: options.AmbianceList,
+		Ambiance:     options.Ambiance,
 		StatusOutput: lc.appCtx.statusOutput,
 	})
 	if err != nil {

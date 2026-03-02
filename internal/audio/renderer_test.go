@@ -102,9 +102,9 @@ func TestAudioRenderer_RenderWav_Integration(ts *testing.T) {
 	periods := []t.Period{p0, p1, p2, pEnd}
 
 	options := &AudioRendererOptions{
-		SampleRate:   44100,
-		Volume:       80,
-		AmbianceList: map[string]string{},
+		SampleRate: 44100,
+		Volume:     80,
+		Ambiance:   map[string]string{},
 	}
 
 	renderer, err := NewAudioRenderer(periods, options)
@@ -219,7 +219,7 @@ func TestAudioRenderer_RenderWav_WithAmbiance(ts *testing.T) {
 	options := &AudioRendererOptions{
 		SampleRate: 44100,
 		Volume:     100,
-		AmbianceList: map[string]string{
+		Ambiance: map[string]string{
 			"bg": bgPath,
 		},
 	}
