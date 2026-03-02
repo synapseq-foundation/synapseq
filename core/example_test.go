@@ -147,7 +147,7 @@ func ExampleLoadedContext_Volume() {
 	// Output: Volume retrieved successfully
 }
 
-func ExampleLoadedContext_AmbianceList() {
+func ExampleLoadedContext_Ambiance() {
 	// Create a new application context
 	ctx := synapseq.NewAppContext()
 	_ = ctx
@@ -158,12 +158,12 @@ func ExampleLoadedContext_AmbianceList() {
 	//	log.Fatal(err)
 	// }
 
-	// Get the ambiance audio list from the loaded sequence
-	// ambianceList := loaded.AmbianceList()
-	// fmt.Printf("Ambiance entries: %d\n", len(ambianceList))
+	// Get the ambiance audio from the loaded sequence
+	// ambiance := loaded.Ambiance()
+	// fmt.Printf("Ambiance entries: %d\n", len(ambiance))
 
-	fmt.Printf("Ambiance list retrieved successfully\n")
-	// Output: Ambiance list retrieved successfully
+	fmt.Printf("Ambiance retrieved successfully\n")
+	// Output: Ambiance retrieved successfully
 }
 
 func ExampleLoadedContext_PresetList() {

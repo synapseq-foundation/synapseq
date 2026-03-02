@@ -98,8 +98,8 @@ beta
 	if opts.SampleRate != 48000 || opts.Volume != 80 {
 		ts.Fatalf("unexpected options: %+v", *opts)
 	}
-	if opts.AmbianceList["testnoise"] != abPath {
-		ts.Fatalf("unexpected ambiance path: got %q want %q", opts.AmbianceList["testnoise"], abPath)
+	if opts.Ambiance["testnoise"] != abPath {
+		ts.Fatalf("unexpected ambiance path: got %q want %q", opts.Ambiance["testnoise"], abPath)
 	}
 
 	periods := result.Periods
