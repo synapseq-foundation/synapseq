@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
@@ -44,54 +45,98 @@ func TestHasOption(ts *testing.T) {
 }
 
 func TestParseOption(ts *testing.T) {
-	backgroundFile := "noise.wav"
-
 	cwd, err := os.Getwd()
 	if err != nil {
 		ts.Fatalf("cannot get current working directory: %v", err)
-	}
-
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		ts.Fatalf("cannot get user home directory: %v", err)
 	}
 
 	basePath := filepath.Dir(cwd)
 
 	tests := []struct {
 		line     string
-		expected t.SequenceOptions
+		expected *t.ParseOptions
 	}{
 		{
 			fmt.Sprintf("%svolume 50", t.KeywordOption),
-			t.SequenceOptions{Volume: 50, Ambiance: map[string]string{}},
+			&t.ParseOptions{Values: map[string]string{t.KeywordOptionVolume: "50"}, Ambiance: map[string]string{}, Extends: []string{}},
 		},
 		{
 			fmt.Sprintf("%ssamplerate 48000", t.KeywordOption),
-			t.SequenceOptions{SampleRate: 48000, Ambiance: map[string]string{}},
+			&t.ParseOptions{Values: map[string]string{t.KeywordOptionSampleRate: "48000"}, Ambiance: map[string]string{}, Extends: []string{}},
 		},
 		{
-			fmt.Sprintf("%s%s rain testdata/%s", t.KeywordOption, t.KeywordOptionAmbiance, backgroundFile),
-			t.SequenceOptions{Ambiance: map[string]string{"rain": filepath.Clean(filepath.Join(basePath, "testdata", backgroundFile))}},
+			fmt.Sprintf("%s%s rain testdata/noise", t.KeywordOption, t.KeywordOptionAmbiance),
+			&t.ParseOptions{Values: map[string]string{}, Ambiance: map[string]string{"rain": filepath.Clean(filepath.Join(basePath, "testdata", "noise.wav"))}, Extends: []string{}},
 		},
 		{
-			fmt.Sprintf("%s%s river ~/Downloads/%s", t.KeywordOption, t.KeywordOptionAmbiance, backgroundFile),
-			t.SequenceOptions{Ambiance: map[string]string{"river": filepath.Clean(filepath.Join(homeDir, "Downloads", backgroundFile))}},
+			fmt.Sprintf("%s%s shared/base", t.KeywordOption, t.KeywordOptionExtends),
+			&t.ParseOptions{Values: map[string]string{}, Ambiance: map[string]string{}, Extends: []string{filepath.Clean(filepath.Join(basePath, "shared", "base.spsc"))}},
 		},
 	}
 
 	for _, test := range tests {
-		option := t.SequenceOptions{Ambiance: map[string]string{}}
 		ctx := NewTextParser(test.line)
 
-		if err := ctx.ParseOption(&option, basePath); err != nil {
+		parsed, err := ctx.ParseOption(basePath)
+		if err != nil {
 			ts.Errorf("For line '%s', unexpected error: %v", test.line, err)
 			continue
 		}
 
-		if !reflect.DeepEqual(option, test.expected) {
+		if !reflect.DeepEqual(parsed, test.expected) {
 			ts.Errorf("For line '%s', expected option %+v but got %+v",
-				test.line, test.expected, option)
+				test.line, test.expected, parsed)
 		}
+	}
+}
+
+func TestParseOptionErrors(ts *testing.T) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		ts.Fatalf("cannot get current working directory: %v", err)
+	}
+
+	basePath := filepath.Dir(cwd)
+
+	tests := []struct {
+		name        string
+		line        string
+		wantErrText string
+	}{
+		{
+			name:        "ambiance path with extension rejected",
+			line:        fmt.Sprintf("%s%s rain audio/river.wav", t.KeywordOption, t.KeywordOptionAmbiance),
+			wantErrText: "ambiance local path must not include file extension",
+		},
+		{
+			name:        "extends path with extension rejected",
+			line:        fmt.Sprintf("%s%s shared/base.spsc", t.KeywordOption, t.KeywordOptionExtends),
+			wantErrText: "extends local path must not include file extension",
+		},
+		{
+			name:        "absolute path rejected",
+			line:        fmt.Sprintf("%s%s rain /tmp/river", t.KeywordOption, t.KeywordOptionAmbiance),
+			wantErrText: "absolute paths are not allowed",
+		},
+		{
+			name:        "unexpected extra token after volume",
+			line:        fmt.Sprintf("%svolume 50 extra", t.KeywordOption),
+			wantErrText: "unexpected token after option definition",
+		},
+	}
+
+	for _, test := range tests {
+		ts.Run(test.name, func(ts *testing.T) {
+			ctx := NewTextParser(test.line)
+
+			_, err := ctx.ParseOption(basePath)
+			if err == nil {
+				ts.Fatalf("expected error, got nil")
+			}
+
+			if !strings.Contains(err.Error(), test.wantErrText) {
+				ts.Fatalf("expected error containing %q, got %v", test.wantErrText, err)
+			}
+		})
 	}
 }
