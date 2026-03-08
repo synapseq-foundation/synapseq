@@ -53,16 +53,16 @@ func (lc *LoadedContext) SampleRate() int {
 	return lc.sequence.Options.SampleRate
 }
 
-// PresetList returns a defensive copy of preset list.
-func (lc *LoadedContext) PresetList() []string {
-	if lc.sequence == nil || lc.sequence.Options == nil || len(lc.sequence.Options.PresetList) == 0 {
+// Extends returns a defensive copy of extends list.
+func (lc *LoadedContext) Extends() []string {
+	if lc.sequence == nil || lc.sequence.Options == nil || len(lc.sequence.Options.Extends) == 0 {
 		return []string{}
 	}
 
-	presets := make([]string, len(lc.sequence.Options.PresetList))
-	copy(presets, lc.sequence.Options.PresetList)
+	extends := make([]string, len(lc.sequence.Options.Extends))
+	copy(extends, lc.sequence.Options.Extends)
 
-	return presets
+	return extends
 }
 
 // Volume returns the volume from the loaded sequence options.
