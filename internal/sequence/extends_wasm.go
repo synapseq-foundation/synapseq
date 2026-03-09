@@ -1,4 +1,4 @@
-//go:build !wasm
+//go:build wasm
 
 /*
  * SynapSeq - Synapse-Sequenced Brainwave Generator
@@ -14,26 +14,16 @@
 package sequence
 
 import (
-	"fmt"
-	"path/filepath"
-
 	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
-// LoadTextSequence loads a sequence from a text file
-func LoadTextSequence(fileName string) (*t.Sequence, error) {
+// extends loads preset and option definitions from a remote .spsc file.
+func extends(fileName string) (*t.Extends, error) {
 	rawContent, err := s.GetFile(fileName, t.FormatText)
 	if err != nil {
-		return nil, fmt.Errorf("error loading sequence file: %v", err)
+		return nil, err
 	}
 
-	absInputFile, err := filepath.Abs(fileName)
-	if err != nil {
-		return nil, fmt.Errorf("cannot resolve absolute path: %w", err)
-	}
-
-	baseDir := filepath.Dir(absInputFile)
-
-	return parseSequenceContent(rawContent, baseDir)
+	return parseExtendsContent(rawContent, "")
 }
