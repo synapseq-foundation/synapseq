@@ -15,34 +15,17 @@ package parser
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
-// getFullPath resolves the full path of a given file path
-func getFullPath(path, basePath string) (string, error) {
-	if strings.HasPrefix(path, "~") {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return "", err
-		}
-		expanded := filepath.Join(homeDir, strings.TrimPrefix(path, "~"))
-		return filepath.Clean(expanded), nil
-	}
+var windowsDrivePathPattern = regexp.MustCompile(`^[a-zA-Z]:`)
 
-	if filepath.IsAbs(path) {
-		return filepath.Clean(path), nil
-	}
-
-	fullPath := filepath.Join(basePath, path)
-	return filepath.Clean(fullPath), nil
-}
-
-// HasOption checks if the first element is an option
+// HasOption checks if the first element is an option.
 func (ctx *TextParser) HasOption() bool {
 	ln := ctx.Line.Raw
 
@@ -53,95 +36,123 @@ func (ctx *TextParser) HasOption() bool {
 	return string(ln[0]) == t.KeywordOption
 }
 
-// ParseOption extracts and applies the option from the elements
-func (ctx *TextParser) ParseOption(options *t.SequenceOptions, filePath string) error {
+// resolveLocalOptionFile resolves a local modular file path relative to dirPath.
+func resolveLocalOptionFile(dirPath, content, ext, optionName string) (string, error) {
+	if content == "" {
+		return "", fmt.Errorf("expected path for %s option", optionName)
+	}
+
+	if content == "-" {
+		return "", fmt.Errorf("stdin (-) is not supported for %s option", optionName)
+	}
+
+	if strings.Contains(content, "\\") {
+		return "", fmt.Errorf("invalid path separator '\\'. Use '/' in %s option paths", optionName)
+	}
+
+	if strings.HasPrefix(content, "/") {
+		return "", fmt.Errorf("absolute paths are not allowed in %s option paths", optionName)
+	}
+
+	if windowsDrivePathPattern.MatchString(content) {
+		return "", fmt.Errorf("drive paths are not allowed in %s option paths", optionName)
+	}
+
+	cleanPath := filepath.Clean(content)
+	if cleanPath == "." || cleanPath == ".." || strings.HasPrefix(cleanPath, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("parent directory traversal is not allowed in %s option paths", optionName)
+	}
+
+	if filepath.Ext(cleanPath) != "" {
+		return "", fmt.Errorf("%s local path must not include file extension", optionName)
+	}
+
+	return filepath.Join(dirPath, cleanPath) + ext, nil
+}
+
+// ParseOption extracts and returns raw parsed option values.
+func (ctx *TextParser) ParseOption(dirPath string) (*t.ParseOptions, error) {
 	ln := ctx.Line.Raw
+
 	tok, ok := ctx.Line.NextToken()
 	if !ok {
-		return fmt.Errorf("expected option, got EOF: %s", ln)
+		return nil, fmt.Errorf("expected option, got EOF: %s", ln)
 	}
 
 	if string(tok[0]) != t.KeywordOption {
-		return fmt.Errorf("expected option. Received: %s", tok)
+		return nil, fmt.Errorf("expected option. Received: %s", tok)
 	}
 
 	option := tok[1:]
 	if len(option) == 0 {
-		return fmt.Errorf("expected option name: %s", ln)
+		return nil, fmt.Errorf("expected option name: %s", ln)
 	}
+
+	parsed := t.NewParseOptions()
 
 	switch option {
 	case t.KeywordOptionSampleRate:
-		sampleRate, err := ctx.Line.NextIntStrict()
-		if err != nil {
-			return fmt.Errorf("samplerate: %v", err)
+		value, ok := ctx.Line.NextToken()
+		if !ok {
+			return nil, fmt.Errorf("expected samplerate value: %s", ln)
 		}
-		options.SampleRate = sampleRate
+
+		parsed.Values[t.KeywordOptionSampleRate] = value
 	case t.KeywordOptionVolume:
-		volume, err := ctx.Line.NextIntStrict()
-		if err != nil {
-			return fmt.Errorf("volume: %v", err)
+		value, ok := ctx.Line.NextToken()
+		if !ok {
+			return nil, fmt.Errorf("expected volume value: %s", ln)
 		}
-		options.Volume = volume
+
+		parsed.Values[t.KeywordOptionVolume] = value
 	case t.KeywordOptionAmbiance:
 		name, ok := ctx.Line.NextToken()
 		if !ok {
-			return fmt.Errorf("expected name for ambiance audio file: %s", ln)
+			return nil, fmt.Errorf("expected name for ambiance audio file: %s", ln)
 		}
 
 		if err := s.IsValidNamedRef(name); err != nil {
-			return err
+			return nil, err
 		}
 
-		content := strings.Join(ctx.Line.Tokens[2:], " ")
-
-		if content == "-" {
-			return fmt.Errorf("stdin (-) is not supported for ambiance list")
-		}
-
-		fullPath := content
-		if !s.IsRemoteFile(content) {
-			var err error
-			fullPath, err = getFullPath(content, filePath)
-			if err != nil {
-				return fmt.Errorf("path: %v", err)
-			}
-		}
-
-		options.Ambiance[name] = fullPath
-	case t.KeywordOptionPresetList:
-		_, ok := ctx.Line.NextToken()
+		content, ok := ctx.Line.NextToken()
 		if !ok {
-			return fmt.Errorf("expected path: %s", ln)
-		}
-
-		content := strings.Join(ctx.Line.Tokens[1:], " ")
-
-		if content == "-" {
-			return fmt.Errorf("stdin (-) is not supported for preset list")
+			return nil, fmt.Errorf("expected path for ambiance audio file: %s", ln)
 		}
 
 		fullPath := content
 		if !s.IsRemoteFile(content) {
 			var err error
-			fullPath, err = getFullPath(content, filePath)
+			fullPath, err = resolveLocalOptionFile(dirPath, content, ".wav", "ambiance")
 			if err != nil {
-				return fmt.Errorf("path: %v", err)
+				return nil, err
 			}
 		}
 
-		options.PresetList = append(options.PresetList, fullPath)
-	default:
-		return fmt.Errorf("invalid option: %q", option)
-	}
-
-	// If the option is not ambiance, ensure no extra tokens are present
-	if option != t.KeywordOptionAmbiance {
-		unknown, ok := ctx.Line.Peek()
-		if ok {
-			return fmt.Errorf("unexpected token after option definition: %q", unknown)
+		parsed.Ambiance[name] = fullPath
+	case t.KeywordOptionExtends:
+		content, ok := ctx.Line.NextToken()
+		if !ok {
+			return nil, fmt.Errorf("expected path: %s", ln)
 		}
+
+		fullPath := content
+		if !s.IsRemoteFile(content) {
+			var err error
+			fullPath, err = resolveLocalOptionFile(dirPath, content, ".spsc", "extends")
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		parsed.Extends = append(parsed.Extends, fullPath)
+	default:
+		return nil, fmt.Errorf("invalid option: %q", option)
 	}
 
-	return nil
+	if unknown, ok := ctx.Line.Peek(); ok {
+		return nil, fmt.Errorf("unexpected token after option definition: %q", unknown)
+	}
+
+	return parsed, nil
 }

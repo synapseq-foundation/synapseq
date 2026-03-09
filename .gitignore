@@ -4,6 +4,7 @@
 bin/
 
 *.spsq
+*.spsc
 
 !/samples/**/*.spsq
 

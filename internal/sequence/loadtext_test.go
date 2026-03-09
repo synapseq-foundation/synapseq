@@ -32,6 +32,21 @@ func writeSeqFile(tst *testing.T, content string) string {
 	return p
 }
 
+func writeRelFile(tst *testing.T, dir, relPath, content string) string {
+	tst.Helper()
+
+	path := filepath.Join(dir, relPath)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		tst.Fatalf("mkdir temp rel file dir: %v", err)
+	}
+
+	if err := os.WriteFile(path, []byte(strings.TrimSpace(content)+"\n"), 0o600); err != nil {
+		tst.Fatalf("write temp rel file: %v", err)
+	}
+
+	return path
+}
+
 func eqTrackGotWant(got, want t.Track) bool {
 	if got.Type != want.Type {
 		return false
@@ -71,7 +86,7 @@ func TestLoadTextSequence_Success(ts *testing.T) {
 # Options
 @samplerate 48000
 @volume 80
-@ambiance testnoise testdata/noise.wav
+@ambiance testnoise testdata/noise
 
 # Presets
 alpha
@@ -311,10 +326,10 @@ alpha
 	}
 }
 
-func TestLoadTextSequence_LoadsExternalPreset(ts *testing.T) {
+func TestLoadTextSequence_LoadsExternalPresetViaExtends(ts *testing.T) {
 	dir := ts.TempDir()
 
-	presetRel := "external-presets.spsq"
+	presetRel := "external-presets.spsc"
 	presetPath := filepath.Join(dir, presetRel)
 	presetContent := `
 # Presets
@@ -326,21 +341,15 @@ preparation
 		ts.Fatalf("write external presets: %v", err)
 	}
 
-	seqContent := "# Options\n@presetlist " + presetRel + "\n\n# Timeline\n00:00:00 preparation\n00:01:00 preparation\n"
+	seqContent := "# Options\n@extends external-presets\n\n# Timeline\n00:00:00 preparation\n00:01:00 preparation\n"
 	seqPath := filepath.Join(dir, "seq.spsq")
 	if err := os.WriteFile(seqPath, []byte(strings.TrimSpace(seqContent)+"\n"), 0o600); err != nil {
 		ts.Fatalf("write temp sequence: %v", err)
 	}
 
-	oldwd, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
-		ts.Fatalf("chdir to temp dir: %v", err)
-	}
-	defer func() { _ = os.Chdir(oldwd) }()
-
 	result, err := LoadTextSequence(seqPath)
 	if err != nil {
-		ts.Fatalf("LoadTextSequence with external presets error: %v", err)
+		ts.Fatalf("LoadTextSequence with external extends error: %v", err)
 	}
 
 	if len(result.Periods) != 2 {
@@ -363,5 +372,82 @@ preparation
 	}
 	if !hasTrack(result.Periods[1].TrackStart, wantNoise) || !hasTrack(result.Periods[1].TrackStart, wantTone) {
 		ts.Fatalf("missing preparation tracks in period[1]: %+v", result.Periods[1].TrackStart)
+	}
+}
+
+func TestLoadTextSequence_ExtendsOverrideOptionsByOrder(ts *testing.T) {
+	dir := ts.TempDir()
+
+	writeRelFile(ts, dir, "config/base.spsc", `
+@samplerate 44100
+
+alpha
+  tone 100 binaural 1 amplitude 1
+`)
+
+	writeRelFile(ts, dir, "config/override.spsc", `
+@samplerate 48000
+`)
+
+	seqPath := writeRelFile(ts, dir, "seq.spsq", `
+@extends config/base
+@extends config/override
+
+00:00:00 alpha
+00:01:00 alpha
+`)
+
+	result, err := LoadTextSequence(seqPath)
+	if err != nil {
+		ts.Fatalf("LoadTextSequence with ordered extends error: %v", err)
+	}
+
+	if result.Options.SampleRate != 48000 {
+		ts.Fatalf("expected SampleRate=48000 after ordered extends override, got %d", result.Options.SampleRate)
+	}
+}
+
+func TestLoadTextSequence_MergesAmbianceFromExtendsAndMainFile(ts *testing.T) {
+	dir := ts.TempDir()
+
+	writeRelFile(ts, dir, "packs/forest.spsc", `
+@ambiance forest audio/forest
+
+alpha
+  ambiance forest amplitude 20
+`)
+
+	writeRelFile(ts, dir, "packs/river.spsc", `
+@ambiance river audio/river
+`)
+
+	seqPath := writeRelFile(ts, dir, "seq.spsq", `
+@extends packs/forest
+@extends packs/river
+@ambiance wind audio/wind
+
+00:00:00 alpha
+00:01:00 alpha
+`)
+
+	result, err := LoadTextSequence(seqPath)
+	if err != nil {
+		ts.Fatalf("LoadTextSequence with merged ambiance error: %v", err)
+	}
+
+	want := map[string]string{
+		"forest": filepath.Join(dir, "packs", "audio", "forest.wav"),
+		"river":  filepath.Join(dir, "packs", "audio", "river.wav"),
+		"wind":   filepath.Join(dir, "audio", "wind.wav"),
+	}
+
+	if len(result.Options.Ambiance) != len(want) {
+		ts.Fatalf("expected %d ambiance entries, got %d: %+v", len(want), len(result.Options.Ambiance), result.Options.Ambiance)
+	}
+
+	for name, path := range want {
+		if result.Options.Ambiance[name] != path {
+			ts.Fatalf("expected ambiance %q to resolve to %q, got %q", name, path, result.Options.Ambiance[name])
+		}
 	}
 }

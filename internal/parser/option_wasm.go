@@ -15,7 +15,6 @@ package parser
 
 import (
 	"fmt"
-	"strings"
 
 	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
@@ -32,75 +31,78 @@ func (ctx *TextParser) HasOption() bool {
 	return string(ln[0]) == t.KeywordOption
 }
 
-// ParseOption extracts and applies the option from the elements
-func (ctx *TextParser) ParseOption(options *t.SequenceOptions) error {
+// ParseOption extracts and returns raw parsed option values.
+func (ctx *TextParser) ParseOption(_ string) (*t.ParseOptions, error) {
 	ln := ctx.Line.Raw
 	tok, ok := ctx.Line.NextToken()
 	if !ok {
-		return fmt.Errorf("expected option, got EOF: %s", ln)
+		return nil, fmt.Errorf("expected option, got EOF: %s", ln)
 	}
 
 	if string(tok[0]) != t.KeywordOption {
-		return fmt.Errorf("expected option. Received: %s", tok)
+		return nil, fmt.Errorf("expected option. Received: %s", tok)
 	}
 
 	option := tok[1:]
 	if len(option) == 0 {
-		return fmt.Errorf("expected option name: %s", ln)
+		return nil, fmt.Errorf("expected option name: %s", ln)
 	}
+
+	parsed := t.NewParseOptions()
 
 	switch option {
 	case t.KeywordOptionSampleRate:
-		sampleRate, err := ctx.Line.NextIntStrict()
-		if err != nil {
-			return fmt.Errorf("samplerate: %v", err)
+		value, ok := ctx.Line.NextToken()
+		if !ok {
+			return nil, fmt.Errorf("expected samplerate value: %s", ln)
 		}
-		options.SampleRate = sampleRate
+
+		parsed.Values[t.KeywordOptionSampleRate] = value
 	case t.KeywordOptionVolume:
-		volume, err := ctx.Line.NextIntStrict()
-		if err != nil {
-			return fmt.Errorf("volume: %v", err)
+		value, ok := ctx.Line.NextToken()
+		if !ok {
+			return nil, fmt.Errorf("expected volume value: %s", ln)
 		}
-		options.Volume = volume
+
+		parsed.Values[t.KeywordOptionVolume] = value
 	case t.KeywordOptionAmbiance:
 		name, ok := ctx.Line.NextToken()
 		if !ok {
-			return fmt.Errorf("expected name for ambiance audio file: %s", ln)
+			return nil, fmt.Errorf("expected name for ambiance audio file: %s", ln)
 		}
 
 		if err := s.IsValidNamedRef(name); err != nil {
-			return fmt.Errorf("invalid ambiance name: %v", err)
+			return nil, fmt.Errorf("invalid ambiance name: %v", err)
 		}
 
-		content := strings.Join(ctx.Line.Tokens[2:], " ")
-		if !s.IsRemoteFile(content) {
-			return fmt.Errorf("file paths are not supported in WASM for ambiance audio: %s", content)
-		}
-
-		options.Ambiance[name] = content
-	case t.KeywordOptionPresetList:
-		_, ok := ctx.Line.NextToken()
+		content, ok := ctx.Line.NextToken()
 		if !ok {
-			return fmt.Errorf("expected path: %s", ln)
+			return nil, fmt.Errorf("expected path for ambiance audio file: %s", ln)
 		}
 
-		content := strings.Join(ctx.Line.Tokens[1:], " ")
 		if !s.IsRemoteFile(content) {
-			return fmt.Errorf("file paths are not supported in WASM for preset list: %s", content)
+			return nil, fmt.Errorf("file paths are not supported in WASM for ambiance audio: %s", content)
 		}
 
-		options.PresetList = append(options.PresetList, content)
+		parsed.Ambiance[name] = content
+	case t.KeywordOptionExtends:
+		content, ok := ctx.Line.NextToken()
+		if !ok {
+			return nil, fmt.Errorf("expected path: %s", ln)
+		}
+
+		if !s.IsRemoteFile(content) {
+			return nil, fmt.Errorf("file paths are not supported in WASM for extends: %s", content)
+		}
+
+		parsed.Extends = append(parsed.Extends, content)
 	default:
-		return fmt.Errorf("invalid option: %q", option)
+		return nil, fmt.Errorf("invalid option: %q", option)
 	}
 
-	// If the option is not ambiance, ensure no extra tokens are present
-	if option != t.KeywordOptionAmbiance {
-		unknown, ok := ctx.Line.Peek()
-		if ok {
-			return fmt.Errorf("unexpected token after option definition: %q", unknown)
-		}
+	if unknown, ok := ctx.Line.Peek(); ok {
+		return nil, fmt.Errorf("unexpected token after option definition: %q", unknown)
 	}
 
-	return nil
+	return parsed, nil
 }

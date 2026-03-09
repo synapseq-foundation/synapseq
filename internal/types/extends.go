@@ -1,5 +1,3 @@
-//go:build wasm
-
 /*
  * SynapSeq - Synapse-Sequenced Brainwave Generator
  * https://synapseq.org
@@ -11,13 +9,10 @@
  * See the file COPYING.txt for details.
  */
 
-package sequence
+package types
 
-import (
-	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
-)
-
-// LoadTextSequence loads a sequence from a file content
-func LoadTextSequence(rawContent []byte) (*t.Sequence, error) {
-	return parseSequenceContent(rawContent, "")
+// Extends represents the configuration for options and presets to extend from.
+type Extends struct {
+	Presets []Preset
+	Options *ParseOptions
 }

@@ -21,11 +21,11 @@ import (
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
-// LoadTextSequence loads a sequence from a text file
-func LoadTextSequence(fileName string) (*t.Sequence, error) {
+// extends loads preset and option definitions from a .spsc file.
+func extends(fileName string) (*t.Extends, error) {
 	rawContent, err := s.GetFile(fileName, t.FormatText)
 	if err != nil {
-		return nil, fmt.Errorf("error loading sequence file: %v", err)
+		return nil, err
 	}
 
 	absInputFile, err := filepath.Abs(fileName)
@@ -35,5 +35,5 @@ func LoadTextSequence(fileName string) (*t.Sequence, error) {
 
 	baseDir := filepath.Dir(absInputFile)
 
-	return parseSequenceContent(rawContent, baseDir)
+	return parseExtendsContent(rawContent, baseDir)
 }

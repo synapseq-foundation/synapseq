@@ -166,7 +166,7 @@ func ExampleLoadedContext_Ambiance() {
 	// Output: Ambiance retrieved successfully
 }
 
-func ExampleLoadedContext_PresetList() {
+func ExampleLoadedContext_Extends() {
 	// Create a new application context
 	ctx := synapseq.NewAppContext()
 	_ = ctx
@@ -177,12 +177,12 @@ func ExampleLoadedContext_PresetList() {
 	//	log.Fatal(err)
 	// }
 
-	// Get the preset list from the loaded sequence
-	// presetList := loaded.PresetList()
-	// fmt.Printf("Preset files: %d\n", len(presetList))
+	// Get the extends list from the loaded sequence
+	// extends := loaded.Extends()
+	// fmt.Printf("Extends entries: %d\n", len(extends))
 
-	fmt.Printf("Preset list retrieved successfully\n")
-	// Output: Preset list retrieved successfully
+	fmt.Printf("Extends list retrieved successfully\n")
+	// Output: Extends list retrieved successfully
 }
 
 func ExampleLoadedContext_RawContent() {
