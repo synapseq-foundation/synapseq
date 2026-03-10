@@ -12,7 +12,9 @@
 package cli
 
 import (
+	"io"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -30,6 +32,19 @@ func TestParseFlags(ts *testing.T) {
 		{
 			args:         []string{"cmd", "-version"},
 			expected:     &CLIOptions{ShowVersion: true},
+			expectedArgs: []string{},
+			expectError:  false,
+		},
+		// New template flag
+		{
+			args:         []string{"cmd", "-new", "meditation"},
+			expected:     &CLIOptions{New: "meditation"},
+			expectedArgs: []string{},
+			expectError:  false,
+		},
+		{
+			args:         []string{"cmd", "-new", "focus"},
+			expected:     &CLIOptions{New: "focus"},
 			expectedArgs: []string{},
 			expectError:  false,
 		},
@@ -80,13 +95,6 @@ func TestParseFlags(ts *testing.T) {
 			args:         []string{"cmd", "-quiet", "-test"},
 			expected:     &CLIOptions{Quiet: true, Test: true},
 			expectedArgs: []string{},
-			expectError:  false,
-		},
-		// External tool flags
-		{
-			args:         []string{"cmd", "-play", "-mp3", "input.spsq", "output.mp3"},
-			expected:     &CLIOptions{Play: true, Mp3: true},
-			expectedArgs: []string{"input.spsq", "output.mp3"},
 			expectError:  false,
 		},
 		// Hub boolean flags
@@ -201,6 +209,9 @@ func TestParseFlags(ts *testing.T) {
 		if opts.ShowVersion != test.expected.ShowVersion {
 			ts.Errorf("For args %v, ShowVersion: expected %v but got %v", test.args, test.expected.ShowVersion, opts.ShowVersion)
 		}
+		if opts.New != test.expected.New {
+			ts.Errorf("For args %v, New: expected %q but got %q", test.args, test.expected.New, opts.New)
+		}
 		if opts.ShowHelp != test.expected.ShowHelp {
 			ts.Errorf("For args %v, ShowHelp: expected %v but got %v", test.args, test.expected.ShowHelp, opts.ShowHelp)
 		}
@@ -212,9 +223,6 @@ func TestParseFlags(ts *testing.T) {
 		}
 		if opts.Play != test.expected.Play {
 			ts.Errorf("For args %v, Play: expected %v but got %v", test.args, test.expected.Play, opts.Play)
-		}
-		if opts.Mp3 != test.expected.Mp3 {
-			ts.Errorf("For args %v, Mp3: expected %v but got %v", test.args, test.expected.Mp3, opts.Mp3)
 		}
 		if opts.HubUpdate != test.expected.HubUpdate {
 			ts.Errorf("For args %v, HubUpdate: expected %v but got %v", test.args, test.expected.HubUpdate, opts.HubUpdate)
@@ -311,5 +319,42 @@ func TestParseFlagsEdgeCases(ts *testing.T) {
 	}
 	if len(args) != 1 || args[0] != "input.spsq" {
 		ts.Errorf("expected args [\"input.spsq\"], got %v", args)
+	}
+}
+
+func TestHelpIncludesQuickStart(ts *testing.T) {
+	originalStdout := os.Stdout
+	readPipe, writePipe, err := os.Pipe()
+	if err != nil {
+		ts.Fatalf("failed to create pipe: %v", err)
+	}
+
+	os.Stdout = writePipe
+	Help()
+	writePipe.Close()
+	os.Stdout = originalStdout
+
+	output, err := io.ReadAll(readPipe)
+	if err != nil {
+		ts.Fatalf("failed to read help output: %v", err)
+	}
+
+	helpText := string(output)
+	checks := []string{
+		"Usage:\n  synapseq [options] <input> [output]",
+		"Quick start:",
+		"Generate session.wav in the current folder",
+		"defaults to <input>.wav",
+		"-new TYPE         Template type: meditation, focus, sleep, relaxation",
+		"Hub examples:",
+		"Run -hub-update once before using other -hub-* commands.",
+		"synapseq -hub-update",
+		"synapseq -hub-get deep-sleep deep-sleep.wav",
+	}
+
+	for _, expected := range checks {
+		if !strings.Contains(helpText, expected) {
+			ts.Errorf("help output missing %q\nfull output:\n%s", expected, helpText)
+		}
 	}
 }

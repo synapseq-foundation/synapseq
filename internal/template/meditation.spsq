@@ -1,0 +1,56 @@
+# SynapSeq Template
+# Meditation Session (20 minutes)
+#
+# This example demonstrates:
+# - presets
+# - noise background
+# - binaural tones
+# - timeline transitions
+#
+# Run this file with:
+# synapseq meditation.spsq
+
+
+# --------------------------
+# Presets
+# --------------------------
+
+# Light relaxation (alpha)
+alpha
+  noise pink amplitude 35
+  tone 200 binaural 10 amplitude 15
+
+# Deeper relaxation (low alpha)
+alpha-deep
+  noise pink amplitude 40
+  tone 180 binaural 8 amplitude 18
+
+# Meditation state (theta)
+theta
+  noise pink amplitude 45
+  tone 160 binaural 6 amplitude 20
+
+
+# --------------------------
+# Timeline
+# --------------------------
+
+# Start in silence for fade-in
+00:00:00 silence
+
+# Enter relaxed state
+00:00:30 alpha
+
+# Gradually deepen relaxation
+00:05:00 alpha smooth
+00:10:00 alpha-deep
+
+# Transition into meditation
+00:12:00 alpha-deep smooth
+00:17:00 theta
+
+# Maintain meditation state
+00:19:30 theta
+
+# Fade out gently
+00:20:00 silence

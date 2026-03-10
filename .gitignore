@@ -6,7 +6,7 @@ bin/
 *.spsq
 *.spsc
 
-!/samples/**/*.spsq
+!/internal/template/**/*.spsq
 
 scripts/generated
 
