@@ -95,6 +95,15 @@ func run(opts *cli.CLIOptions, args []string) error {
 		return uninstallWindowsFileAssociation(opts.Quiet)
 	}
 
+	// --new template generation
+	if opts.New != "" {
+		outputFile := opts.New + ".spsq"
+		if len(args) == 1 {
+			outputFile = args[0]
+		}
+		return generateTemplate(opts.New, outputFile)
+	}
+
 	// --help or missing args
 	if opts.ShowHelp || len(args) == 0 {
 		cli.Help()
@@ -105,16 +114,14 @@ func run(opts *cli.CLIOptions, args []string) error {
 		return fmt.Errorf("invalid number of flags\nUse -help for usage information")
 	}
 
-	// Determine output format
+	// Default: process input file and generate output
 	outputFormat := "wav"
-	if opts.Mp3 {
-		outputFormat = "mp3"
-	}
 
 	inputFile := args[0]
 	outputFile := getDefaultOutputFile(inputFile, outputFormat)
 	if len(args) == 2 {
 		outputFile = args[1]
+		outputFormat = strings.ToLower(filepath.Ext(outputFile))
 	}
 
 	appCtx := synapseq.NewAppContext()
@@ -142,7 +149,7 @@ func run(opts *cli.CLIOptions, args []string) error {
 		OutputFile: outputFile,
 		Quiet:      opts.Quiet,
 		Play:       opts.Play,
-		Mp3:        opts.Mp3,
+		Mp3:        outputFormat == ".mp3",
 		FFplayPath: opts.FFplayPath,
 		FFmpegPath: opts.FFmpegPath,
 	}

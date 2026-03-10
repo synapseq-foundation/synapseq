@@ -73,12 +73,11 @@ func hubRunGet(sequenceId, outputFile string, opts *cli.CLIOptions) error {
 		return fmt.Errorf("failed to download sequence from hub. Error\n  %v", err)
 	}
 
+	outputFormat := ".wav"
 	if outputFile == "" {
-		if opts.Mp3 {
-			outputFile = entry.Name + ".mp3"
-		} else {
-			outputFile = entry.Name + ".wav"
-		}
+		outputFile = entry.Name + outputFormat
+	} else {
+		outputFormat = strings.ToLower(filepath.Ext(outputFile))
 	}
 
 	appCtx := synapseq.NewAppContext()
@@ -96,7 +95,7 @@ func hubRunGet(sequenceId, outputFile string, opts *cli.CLIOptions) error {
 		OutputFile: outputFile,
 		Quiet:      opts.Quiet,
 		Play:       opts.Play,
-		Mp3:        opts.Mp3,
+		Mp3:        outputFormat == ".mp3",
 		FFplayPath: opts.FFplayPath,
 		FFmpegPath: opts.FFmpegPath,
 	}

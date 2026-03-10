@@ -24,6 +24,8 @@ import (
 type CLIOptions struct {
 	// Show version information and exit
 	ShowVersion bool
+	// New starter sequence template type
+	New string
 	// Quiet mode, suppress non-error output
 	Quiet bool
 	// Test mode, validate syntax without generating output
@@ -36,8 +38,6 @@ type CLIOptions struct {
 	UninstallFileAssociation bool
 	// Play (with ffplay)
 	Play bool
-	// Mp3 output format (with ffmpeg)
-	Mp3 bool
 	// Hub update index of available sequences
 	HubUpdate bool
 	// Hub clean up local cache
@@ -62,49 +62,72 @@ type CLIOptions struct {
 
 // Help prints the help message
 func Help() {
-	fmt.Printf("SynapSeq - Synapse-Sequenced Brainwave Generator, version %s\n", info.VERSION)
-	fmt.Printf("(c) 2025-2026 %s, %s\n", info.AUTHOR, info.AUTHOR_URL)
-	fmt.Printf("Released under the GNU GPL v2. See file COPYING for details.\n\n")
+	fmt.Printf("SynapSeq %s - Synapse-Sequenced Brainwave Generator\n\n", info.VERSION)
 
-	fmt.Printf("Usage: synapseq [options] <input> <output>\n\n")
+	fmt.Printf("Usage:\n")
+	fmt.Printf("  synapseq [options] <input> [output]\n\n")
 
-	fmt.Printf("INPUT formats:\n")
-	fmt.Printf("    Local file path:     	path/to/sequence.spsq\n")
-	fmt.Printf("    Standard input:      	-\n")
-	fmt.Printf("    HTTP/HTTPS URL:      	https://example.com/sequence.spsq\n\n")
+	fmt.Printf("Quick start:\n")
+	fmt.Printf("  synapseq session.spsq\n")
+	fmt.Printf("    Generate session.wav in the current folder\n\n")
+	fmt.Printf("  synapseq session.spsq relax.wav\n")
+	fmt.Printf("    Generate a WAV file with a custom name\n\n")
+	fmt.Printf("  synapseq -test session.spsq\n")
+	fmt.Printf("    Validate the sequence without generating audio\n\n")
+	fmt.Printf("  synapseq -play session.spsq\n")
+	fmt.Printf("    Play the sequence directly with ffplay\n\n")
+	fmt.Printf("  synapseq session.spsq relax.mp3\n")
+	fmt.Printf("    Export to MP3 with ffmpeg\n\n")
+	fmt.Printf("  synapseq -new meditation\n")
+	fmt.Printf("    Create a new sequence file from the meditation template\n\n")
 
-	fmt.Printf("OUTPUT formats:\n")
-	fmt.Printf("    WAV file:            	path/to/output.wav\n")
-	fmt.Printf("    Standard output:     	- (raw PCM, 16-bit stereo)\n\n")
+	fmt.Printf("Input:\n")
+	fmt.Printf("  local file        path/to/sequence.spsq\n")
+	fmt.Printf("  URL               https://example.com/sequence.spsq\n")
+	fmt.Printf("  standard input    -\n\n")
 
-	fmt.Printf("Main options:\n")
-	fmt.Printf("  -quiet         		Suppress non-error output\n")
-	fmt.Printf("  -test          		Validate syntax without generating output\n")
-	fmt.Printf("  -version       		Show version information\n")
-	fmt.Printf("  -help         		Show this help message\n\n")
+	fmt.Printf("Output:\n")
+	fmt.Printf("  omitted           defaults to <input>.wav\n")
+	fmt.Printf("  WAV file          path/to/output.wav\n")
+	fmt.Printf("  MP3 file          path/to/output.mp3\n")
+	fmt.Printf("  standard output   -   raw PCM (16-bit stereo)\n\n")
 
-	fmt.Printf("Hub options:\n")
-	fmt.Printf("  -hub-update      		Update index of available sequences\n")
-	fmt.Printf("  -hub-clean      		Clean up local cache\n")
-	fmt.Printf("  -hub-list       		List available sequences\n")
-	fmt.Printf("  -hub-search     		Search sequences\n")
-	fmt.Printf("  -hub-download       		Download sequence and dependencies\n")
-	fmt.Printf("  -hub-info       		Show information about a sequence\n")
-	fmt.Printf("  -hub-get       		Get sequence\n\n")
+	fmt.Printf("Most common options:\n")
+	fmt.Printf("  -new TYPE         Template type: meditation, focus, sleep, relaxation, example\n")
+	fmt.Printf("  -test             Check syntax only\n")
+	fmt.Printf("  -play             Play audio using ffplay\n")
+	fmt.Printf("  -quiet            Suppress non-error output\n")
+	fmt.Printf("  -version          Show version information\n")
+	fmt.Printf("  -help             Show this help message\n\n")
 
-	fmt.Printf("External tool options:\n")
-	fmt.Printf("  -play          		Play audio using ffplay\n")
-	fmt.Printf("  -mp3 				Convert output to MP3 format using ffmpeg\n")
-	fmt.Printf("  -ffmpeg-path  		Path to ffmpeg executable (default: ffmpeg)\n")
-	fmt.Printf("  -ffplay-path  		Path to ffplay executable (default: ffplay)\n\n")
+	fmt.Printf("Hub:\n")
+	fmt.Printf("  Run -hub-update once before using other -hub-* commands.\n\n")
+	fmt.Printf("  -hub-list                     List available sequences\n")
+	fmt.Printf("  -hub-search WORD              Search the Hub\n")
+	fmt.Printf("  -hub-info NAME                Show information about a sequence\n")
+	fmt.Printf("  -hub-download NAME [DIR]      Download a sequence and dependencies\n")
+	fmt.Printf("  -hub-get NAME [OUTPUT]        Download and generate in one step\n")
+	fmt.Printf("  -hub-update                   Update the local Hub index\n")
+	fmt.Printf("  -hub-clean                    Clean up local Hub cache\n\n")
+
+	fmt.Printf("Hub examples:\n")
+	fmt.Printf("  synapseq -hub-update\n")
+	fmt.Printf("  synapseq -hub-search calm-state\n")
+	fmt.Printf("  synapseq -hub-download calm-state\n")
+	fmt.Printf("  synapseq -hub-get calm-state calm-state.wav\n")
+	fmt.Printf("  synapseq -hub-get calm-state calm-state.mp3\n\n")
+
+	fmt.Printf("Advanced:\n")
+	fmt.Printf("  -ffmpeg-path PATH   Path to ffmpeg executable\n")
+	fmt.Printf("  -ffplay-path PATH   Path to ffplay executable\n\n")
 
 	if runtime.GOOS == "windows" {
 		fmt.Printf("Windows-specific options:\n")
-		fmt.Printf("  -install-file-association  	Associate .spsq files with SynapSeq\n")
-		fmt.Printf("  -uninstall-file-association	Remove .spsq file association\n\n")
+		fmt.Printf("  -install-file-association    Associate .spsq files with SynapSeq\n")
+		fmt.Printf("  -uninstall-file-association  Remove .spsq file association\n\n")
 	}
 
-	fmt.Printf("For detailed documentation:\n")
+	fmt.Printf("Docs:\n")
 	fmt.Printf("  %s\n", info.DOC_URL)
 }
 
@@ -130,6 +153,7 @@ func ParseFlags() (*CLIOptions, []string, error) {
 
 	// General options
 	fs.BoolVar(&opts.ShowVersion, "version", false, "Show version information")
+	fs.StringVar(&opts.New, "new", "", "Template type: meditation, focus, sleep, relaxation, example")
 	fs.BoolVar(&opts.Quiet, "quiet", false, "Enable quiet mode")
 	fs.BoolVar(&opts.Test, "test", false, "Validate syntax without generating output")
 	fs.BoolVar(&opts.ShowHelp, "help", false, "Show help")
@@ -145,7 +169,6 @@ func ParseFlags() (*CLIOptions, []string, error) {
 
 	// External tool options
 	fs.BoolVar(&opts.Play, "play", false, "Play audio using ffplay")
-	fs.BoolVar(&opts.Mp3, "mp3", false, "Output MP3 format (requires ffmpeg)")
 	fs.StringVar(&opts.FFmpegPath, "ffmpeg-path", "", "Path to ffmpeg executable")
 	fs.StringVar(&opts.FFplayPath, "ffplay-path", "", "Path to ffplay executable")
 
@@ -154,5 +177,9 @@ func ParseFlags() (*CLIOptions, []string, error) {
 	fs.BoolVar(&opts.UninstallFileAssociation, "uninstall-file-association", false, "Remove .spsq file association (Windows only)")
 
 	err := fs.Parse(os.Args[1:])
+	if err != nil {
+		return nil, nil, err
+	}
+
 	return opts, fs.Args(), err
 }
