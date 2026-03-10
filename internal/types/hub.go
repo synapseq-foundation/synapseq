@@ -12,22 +12,18 @@
 package types
 
 const (
-	// Hub Base URL for the Hub repository
-	HubBaseURL = "https://hub.synapseq.org"
 	// HubManifestURL is the URL to fetch the Hub manifest
 	HubManifestURL = "https://hub.synapseq.org/manifest.json"
-	// HubTrackEndpoint is the endpoint for tracking downloads
-	HubTrackEndpoint = "https://us-central1-synapseq-hub.cloudfunctions.net/trackDownload"
 )
 
 // HubDependencyType represents the type of a Hub dependency
 type HubDependencyType string
 
 const (
-	// HubDependencyTypePresetList represents a preset list dependency
-	HubDependencyTypePresetList HubDependencyType = "presetlist"
-	// HubDependencyTypeBackground represents a background dependency
-	HubDependencyTypeBackground HubDependencyType = "background"
+	// HubDependencyTypeExtends represents a extend dependency
+	HubDependencyTypeExtends HubDependencyType = "extends"
+	// HubDependencyTypeAmbiance represents a ambiance dependency
+	HubDependencyTypeAmbiance HubDependencyType = "ambiance"
 )
 
 // String returns the string representation of the HubDependencyType

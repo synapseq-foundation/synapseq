@@ -18,7 +18,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
@@ -42,7 +41,7 @@ func HubGet(sequenceID string) (*t.HubEntry, error) {
 }
 
 // HubDownload downloads a sequence and its dependencies from the Hub
-func HubDownload(entry *t.HubEntry, action t.HubActionTracking, wg *sync.WaitGroup) (string, error) {
+func HubDownload(entry *t.HubEntry, action t.HubActionTracking) (string, error) {
 	if entry == nil {
 		return "", fmt.Errorf("hub entry is nil")
 	}
@@ -64,10 +63,10 @@ func HubDownload(entry *t.HubEntry, action t.HubActionTracking, wg *sync.WaitGro
 
 	for _, dep := range entry.Dependencies {
 		var depPath string
-		if dep.Type == t.HubDependencyTypeBackground {
+		if dep.Type == t.HubDependencyTypeAmbiance {
 			depPath = filepath.Join(path, dep.Name+".wav")
 		} else {
-			depPath = filepath.Join(path, dep.Name+".spsq")
+			depPath = filepath.Join(path, dep.Name+".spsc")
 		}
 
 		resp, err := http.Get(dep.DownloadUrl)
@@ -99,13 +98,6 @@ func HubDownload(entry *t.HubEntry, action t.HubActionTracking, wg *sync.WaitGro
 
 	if err = os.WriteFile(sequencePath, data, 0644); err != nil {
 		return "", fmt.Errorf("error saving sequence %s: %v", entry.Name, err)
-	}
-
-	if wg != nil {
-		wg.Go(func() {
-			// Track the download event
-			TrackDownload(entry.ID, action)
-		})
 	}
 
 	return sequencePath, nil
