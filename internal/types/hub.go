@@ -14,8 +14,6 @@ package types
 const (
 	// HubManifestURL is the URL to fetch the Hub manifest
 	HubManifestURL = "https://hub.synapseq.org/manifest.json"
-	// HubTrackEndpoint is the endpoint for tracking downloads
-	HubTrackEndpoint = "https://us-central1-synapseq-hub.cloudfunctions.net/trackDownload"
 )
 
 // HubDependencyType represents the type of a Hub dependency

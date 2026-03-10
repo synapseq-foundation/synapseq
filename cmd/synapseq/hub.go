@@ -16,7 +16,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"text/tabwriter"
 
 	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
@@ -54,8 +53,6 @@ func hubRunClean(quiet bool) error {
 
 // hubRunGet retrieves and processes a sequence from the Hub
 func hubRunGet(sequenceId, outputFile string, opts *cli.CLIOptions) error {
-	var wg sync.WaitGroup
-
 	if !hub.ManifestExists() {
 		return fmt.Errorf("hub manifest not found. Please run 'synapseq -hub-update' to fetch the latest Hub manifest")
 	}
@@ -68,7 +65,7 @@ func hubRunGet(sequenceId, outputFile string, opts *cli.CLIOptions) error {
 		return fmt.Errorf("sequence not found in hub: %s", sequenceId)
 	}
 
-	inputFile, err := hub.HubDownload(entry, t.HubActionTrackingGet, &wg)
+	inputFile, err := hub.HubDownload(entry, t.HubActionTrackingGet)
 	if err != nil {
 		return fmt.Errorf("failed to download sequence from hub. Error\n  %v", err)
 	}
@@ -104,7 +101,6 @@ func hubRunGet(sequenceId, outputFile string, opts *cli.CLIOptions) error {
 		return fmt.Errorf("failed to process sequence output. Error\n  %v", err)
 	}
 
-	wg.Wait()
 	return nil
 }
 
@@ -190,8 +186,6 @@ func hubRunSearch(query string) error {
 
 // hubRunDownload downloads a sequence and all its dependencies into a given folder
 func hubRunDownload(sequenceID, targetDir string, quiet bool) error {
-	var wg sync.WaitGroup
-
 	if !hub.ManifestExists() {
 		return fmt.Errorf("hub manifest not found. Please run 'synapseq -hub-update' to fetch the latest Hub manifest")
 	}
@@ -224,7 +218,7 @@ func hubRunDownload(sequenceID, targetDir string, quiet bool) error {
 		return fmt.Errorf("sequence not found: %s", sequenceID)
 	}
 
-	seqFile, err := hub.HubDownload(entry, t.HubActionTrackingDownload, &wg)
+	seqFile, err := hub.HubDownload(entry, t.HubActionTrackingDownload)
 	if err != nil {
 		return fmt.Errorf("failed to download sequence from hub. Error\n  %v", err)
 	}
@@ -233,7 +227,6 @@ func hubRunDownload(sequenceID, targetDir string, quiet bool) error {
 		return fmt.Errorf("failed to copy files to target directory. Error\n  %v", err)
 	}
 
-	wg.Wait()
 	if !quiet {
 		fmt.Printf("Sequence %q and its dependencies have been downloaded to %s\n", entry.Name, targetDir)
 	}
@@ -243,8 +236,6 @@ func hubRunDownload(sequenceID, targetDir string, quiet bool) error {
 
 // hubRunInfo shows information about a sequence from the Hub
 func hubRunInfo(sequenceID string) error {
-	var wg sync.WaitGroup
-
 	if !hub.ManifestExists() {
 		return fmt.Errorf("hub manifest not found. Please run 'synapseq -hub-update' to fetch the latest Hub manifest")
 	}
@@ -269,7 +260,7 @@ func hubRunInfo(sequenceID string) error {
 		return fmt.Errorf("sequence not found: %s", sequenceID)
 	}
 
-	seqFile, err := hub.HubDownload(entry, t.HubActionTrackingInfo, &wg)
+	seqFile, err := hub.HubDownload(entry, t.HubActionTrackingInfo)
 	if err != nil {
 		return fmt.Errorf("failed to download sequence from hub. Error\n  %v", err)
 	}
@@ -305,6 +296,5 @@ func hubRunInfo(sequenceID string) error {
 	}
 	fmt.Printf("%s", description)
 
-	wg.Wait()
 	return nil
 }
