@@ -64,10 +64,10 @@ func HubDownload(entry *t.HubEntry, action t.HubActionTracking, wg *sync.WaitGro
 
 	for _, dep := range entry.Dependencies {
 		var depPath string
-		if dep.Type == t.HubDependencyTypeBackground {
+		if dep.Type == t.HubDependencyTypeAmbiance {
 			depPath = filepath.Join(path, dep.Name+".wav")
 		} else {
-			depPath = filepath.Join(path, dep.Name+".spsq")
+			depPath = filepath.Join(path, dep.Name+".spsc")
 		}
 
 		resp, err := http.Get(dep.DownloadUrl)
