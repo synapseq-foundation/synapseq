@@ -12,6 +12,7 @@
 package audio
 
 import (
+	"math"
 	"testing"
 
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
@@ -83,7 +84,7 @@ func TestAudioRendererMix_ModulationAffectsStereoWithSharedPhase(ts *testing.T) 
 	renderer.channels[0] = t.Channel{
 		Track: t.Track{
 			Type:     t.TrackBinauralBeat,
-			Waveform: t.WaveformSquare,
+			Waveform: t.WaveformSawtooth,
 			Effect: t.Effect{
 				Type:      t.EffectModulation,
 				Intensity: t.IntensityPercentToRaw(100),
@@ -99,8 +100,18 @@ func TestAudioRendererMix_ModulationAffectsStereoWithSharedPhase(ts *testing.T) 
 
 	samples := renderer.mix(make([]int, t.BufferSize*audioChannels))
 
-	baseSample := renderer.channels[0].Amplitude[0] * renderer.waveTables[int(t.WaveformSquare)][1]
-	expected := clampPCM16(int(float64(baseSample)*0.3) >> audioBitShift)
+	baseSample := renderer.channels[0].Amplitude[0] * renderer.waveTables[int(t.WaveformSawtooth)][1]
+	modOffset := renderer.channels[0].Effect.Increment & phaseMask
+	modVal := float64(renderer.waveTables[int(t.WaveformSawtooth)][modOffset>>16])
+	threshold := 0.3 * float64(t.WaveTableAmplitude)
+	den := 0.7 * float64(t.WaveTableAmplitude)
+	modFactor := 0.0
+	if modVal > threshold {
+		modFactor = (modVal - threshold) / den
+		modFactor = modFactor * modFactor * (3 - 2*modFactor)
+	}
+	gain := 0.3 + 0.7*modFactor
+	expected := clampPCM16(int(math.Round(float64(baseSample)*gain)) >> audioBitShift)
 
 	if samples[0] != expected || samples[1] != expected {
 		ts.Fatalf("unexpected modulation output: got [%d %d], want [%d %d]", samples[0], samples[1], expected, expected)
