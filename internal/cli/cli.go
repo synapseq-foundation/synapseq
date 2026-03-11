@@ -26,6 +26,8 @@ type CLIOptions struct {
 	ShowVersion bool
 	// New starter sequence template type
 	New string
+	// Preview mode, renders HTML timeline instead of audio
+	Preview bool
 	// Quiet mode, suppress non-error output
 	Quiet bool
 	// Test mode, validate syntax without generating output
@@ -76,6 +78,8 @@ func Help() {
 	fmt.Printf("    Validate the sequence without generating audio\n\n")
 	fmt.Printf("  synapseq -play session.spsq\n")
 	fmt.Printf("    Play the sequence directly with ffplay\n\n")
+	fmt.Printf("  synapseq -preview session.spsq\n")
+	fmt.Printf("    Generate session.html with a visual timeline preview\n\n")
 	fmt.Printf("  synapseq session.spsq relax.mp3\n")
 	fmt.Printf("    Export to MP3 with ffmpeg\n\n")
 	fmt.Printf("  synapseq -new meditation\n")
@@ -95,6 +99,7 @@ func Help() {
 	fmt.Printf("Most common options:\n")
 	fmt.Printf("  -new TYPE         Template type: meditation, focus, sleep, relaxation, example\n")
 	fmt.Printf("  -test             Check syntax only\n")
+	fmt.Printf("  -preview          Render an HTML preview timeline\n")
 	fmt.Printf("  -play             Play audio using ffplay\n")
 	fmt.Printf("  -quiet            Suppress non-error output\n")
 	fmt.Printf("  -version          Show version information\n")
@@ -154,6 +159,7 @@ func ParseFlags() (*CLIOptions, []string, error) {
 	// General options
 	fs.BoolVar(&opts.ShowVersion, "version", false, "Show version information")
 	fs.StringVar(&opts.New, "new", "", "Template type: meditation, focus, sleep, relaxation, example")
+	fs.BoolVar(&opts.Preview, "preview", false, "Render HTML preview timeline")
 	fs.BoolVar(&opts.Quiet, "quiet", false, "Enable quiet mode")
 	fs.BoolVar(&opts.Test, "test", false, "Validate syntax without generating output")
 	fs.BoolVar(&opts.ShowHelp, "help", false, "Show help")
