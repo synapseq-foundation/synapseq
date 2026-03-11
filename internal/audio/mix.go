@@ -206,11 +206,7 @@ func (r *AudioRenderer) mix(samples []int) []int {
 					right += out
 				}
 			case t.TrackWhiteNoise, t.TrackPinkNoise, t.TrackBrownNoise:
-				// Use pre-generated pink noise sample for efficiency
-				noiseVal := r.noiseGenerator.Generate(t.TrackPinkNoise)
-				if channel.Track.Type != t.TrackPinkNoise {
-					noiseVal = r.noiseGenerator.Generate(channel.Track.Type)
-				}
+				noiseVal := r.noiseGenerator.Generate(channel.Track.Type)
 
 				// Scale noise by amplitude
 				sampleVal := channel.Amplitude[0] * noiseVal
