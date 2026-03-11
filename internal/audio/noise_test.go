@@ -19,15 +19,24 @@ import (
 )
 
 func genWhiteExpected(n int) []int {
-	// Replicates the LCG and scaling used in generateWhiteNoise
-	s := 2
-	scale := int(t.WaveTableAmplitude / 65535)
+	// Replicates the xorshift generator and the pink-state warm-up in NewNoiseGenerator.
+	s := initialNoiseSeed
+	for range noiseBands {
+		s = nextExpectedRandom(s)
+	}
 	out := make([]int, n)
 	for i := 0; i < n; i++ {
-		s = (s * randMult) % 131074
-		out[i] = (s - 65535) * scale
+		s = nextExpectedRandom(s)
+		out[i] = (int(s>>16) - maxCenteredRandom) * whiteNoiseScale
 	}
 	return out
+}
+
+func nextExpectedRandom(seed uint32) uint32 {
+	seed ^= seed << 13
+	seed ^= seed >> 17
+	seed ^= seed << 5
+	return seed
 }
 
 func meanAbsDelta(vals []int) float64 {
