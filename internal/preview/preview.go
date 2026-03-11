@@ -343,6 +343,19 @@ func buildGraphMetrics(periods []t.Period, totalDurationMs int) []previewGraphMe
 			FormatValue: formatPercent,
 		},
 		{
+			Key:         "effect",
+			Label:       "Effect",
+			RangePrefix: "Effect range",
+			EmptyLabel:  "No effect value data available for this sequence.",
+			SelectValue: func(track t.Track) (float64, bool) {
+				if !includeVisibleTrack(track) || track.Effect.Type == t.EffectOff {
+					return 0, false
+				}
+				return track.Effect.Value, true
+			},
+			FormatValue: formatFloat,
+		},
+		{
 			Key:         "intensity",
 			Label:       "Intensity",
 			RangePrefix: "Effect intensity range",
@@ -652,7 +665,7 @@ func buildSeries(periods []t.Period, minCarrier, maxCarrier float64, hasCarrier 
 }
 
 func buildTrackView(channel int, track t.Track) previewTrackView {
-	meta := make([]previewMetaView, 0, 6)
+	meta := make([]previewMetaView, 0, 7)
 
 	if track.Carrier > 0 {
 		meta = append(meta, previewMetaView{Label: "Carrier", Value: formatHz(track.Carrier)})
@@ -670,6 +683,7 @@ func buildTrackView(channel int, track t.Track) previewTrackView {
 	if track.Effect.Type != t.EffectOff {
 		meta = append(meta,
 			previewMetaView{Label: "Effect", Value: track.Effect.Type.String()},
+			previewMetaView{Label: "Effect value", Value: formatFloat(track.Effect.Value)},
 			previewMetaView{Label: "Intensity", Value: formatPercent(track.Effect.Intensity.ToPercent())},
 		)
 	}
@@ -971,6 +985,10 @@ func formatHz(value float64) string {
 
 func formatPercent(value float64) string {
 	return fmt.Sprintf("%.2f%%", value)
+}
+
+func formatFloat(value float64) string {
+	return fmt.Sprintf("%.2f", value)
 }
 
 func formatDuration(ms int) string {
