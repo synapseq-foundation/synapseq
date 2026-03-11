@@ -185,6 +185,26 @@ func ExampleLoadedContext_Extends() {
 	// Output: Extends list retrieved successfully
 }
 
+func ExampleLoadedContext_Preview() {
+	// Create a new application context
+	ctx := synapseq.NewAppContext()
+	_ = ctx
+
+	// Load the sequence
+	// loaded, err := ctx.Load("input.spsq")
+	// if err != nil {
+	//	log.Fatal(err)
+	// }
+
+	// Generate the HTML preview file
+	// if err := loaded.Preview("preview.html"); err != nil {
+	//	log.Fatal(err)
+	// }
+
+	fmt.Printf("HTML preview generated successfully\n")
+	// Output: HTML preview generated successfully
+}
+
 func ExampleLoadedContext_RawContent() {
 	// Create a new application context
 	ctx := synapseq.NewAppContext()

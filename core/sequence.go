@@ -14,8 +14,10 @@
 package core
 
 import (
+	"fmt"
 	"maps"
 
+	preview "github.com/synapseq-foundation/synapseq/v4/internal/preview"
 	seq "github.com/synapseq-foundation/synapseq/v4/internal/sequence"
 )
 
@@ -96,4 +98,13 @@ func (lc *LoadedContext) RawContent() []byte {
 	copy(raw, lc.sequence.RawContent)
 
 	return raw
+}
+
+// Preview renders the loaded sequence as an HTML preview.
+func (lc *LoadedContext) Preview() ([]byte, error) {
+	if lc.sequence == nil {
+		return nil, fmt.Errorf("sequence is nil")
+	}
+
+	return preview.GetPreviewContent(lc.sequence.Periods)
 }

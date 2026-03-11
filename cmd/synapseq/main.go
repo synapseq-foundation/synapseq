@@ -116,6 +116,9 @@ func run(opts *cli.CLIOptions, args []string) error {
 
 	// Default: process input file and generate output
 	outputFormat := "wav"
+	if opts.Preview {
+		outputFormat = "html"
+	}
 
 	inputFile := args[0]
 	outputFile := getDefaultOutputFile(inputFile, outputFormat)
@@ -148,6 +151,7 @@ func run(opts *cli.CLIOptions, args []string) error {
 	outputOpts := &outputOptions{
 		OutputFile: outputFile,
 		Quiet:      opts.Quiet,
+		Preview:    opts.Preview,
 		Play:       opts.Play,
 		Mp3:        outputFormat == ".mp3",
 		FFplayPath: opts.FFplayPath,
