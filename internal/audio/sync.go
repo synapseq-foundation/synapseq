@@ -71,6 +71,9 @@ func (r *AudioRenderer) syncChannel(ch int, periodIdx int, period t.Period, alph
 	previousEffectType := channel.Track.Effect.Type
 
 	channel.Track = track
+	channel.WaveformStart = period.TrackStart[ch].Waveform
+	channel.WaveformEnd = period.TrackEnd[ch].Waveform
+	channel.WaveformAlpha = alpha
 	r.updateAmbianceIndex(ch, periodIdx, track.Type)
 	r.resetRuntimeState(channel, previousTrackType, previousEffectType)
 	r.configureEffectState(channel)

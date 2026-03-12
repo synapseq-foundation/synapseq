@@ -35,8 +35,8 @@ func (r *AudioRenderer) calcDopplerFactor(offset int, intensity t.IntensityType)
 }
 
 // calcModulationFactor calculates the pulse effect modulation factor for a channel
-func (r *AudioRenderer) calcModulationFactor(waveform t.WaveformType, offset int) float64 {
-	modVal := float64(r.waveTables[int(waveform)][offset>>16])
+func (r *AudioRenderer) calcModulationFactor(channel *t.Channel, offset int) float64 {
+	modVal := r.waveformValue(channel, offset)
 
 	threshold := 0.3 * float64(t.WaveTableAmplitude)
 	den := 0.7 * float64(t.WaveTableAmplitude)
