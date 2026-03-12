@@ -19,6 +19,10 @@ const (
 type Channel struct {
 	// Current track setting (updated from current period)
 	Track Track
+	// Waveform morph state for transitions within the current period
+	WaveformStart WaveformType
+	WaveformEnd   WaveformType
+	WaveformAlpha float64
 	// Track type
 	Type TrackType
 	// Current amplitude state

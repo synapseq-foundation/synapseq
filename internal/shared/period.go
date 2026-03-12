@@ -47,6 +47,7 @@ func AdjustPeriods(last, next *t.Period) error {
 			tr2.Effect.Value = tr1.Effect.Value
 			tr2.Effect.Type = tr1.Effect.Type
 			tr2.AmbianceName = tr1.AmbianceName
+			tr2.Waveform = tr1.Waveform
 		}
 
 		// Validate if previus period has a track on and next period turn it off or vice-versa
@@ -63,9 +64,6 @@ func AdjustPeriods(last, next *t.Period) error {
 			// No slide alowed between different track types, waveforms, or effect types
 			if tr1.Type != tr2.Type {
 				return fmt.Errorf("channel %d cannot change track type directly, use silence instead: %s --> %s", ch+1, tr1.Type.String(), tr2.Type.String())
-			}
-			if tr1.Waveform != tr2.Waveform {
-				return fmt.Errorf("channel %d cannot change waveform directly, use silence instead: %s --> %s", ch+1, tr1.Waveform.String(), tr2.Waveform.String())
 			}
 			if tr1.Effect.Type != tr2.Effect.Type {
 				return fmt.Errorf("channel %d cannot change effect type directly, use silence instead: %s --> %s", ch+1, tr1.Effect.Type.String(), tr2.Effect.Type.String())
