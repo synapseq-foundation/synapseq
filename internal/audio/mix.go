@@ -108,7 +108,7 @@ func (r *AudioRenderer) mixIsochronicBeat(channel *t.Channel, waveIdx int) stere
 }
 
 func (r *AudioRenderer) mixNoise(channel *t.Channel) stereoSample {
-	sample := channel.Amplitude[0] * r.noiseGenerator.Generate(channel.Track.Type)
+	sample := channel.Amplitude[0] * r.noiseGenerator.Generate(channel.Track.Type, channel.Track.NoiseSmooth)
 	return r.applyEffectToMono(channel, sample)
 }
 

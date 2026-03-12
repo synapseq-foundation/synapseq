@@ -30,6 +30,7 @@ func AdjustPeriods(last, next *t.Period) error {
 			tr0.Carrier = tr2.Carrier
 			tr0.Resonance = tr2.Resonance
 			tr0.Amplitude = 0
+			tr0.NoiseSmooth = tr2.NoiseSmooth
 			tr0.Waveform = tr2.Waveform
 			tr0.Effect.Type = tr2.Effect.Type
 			tr0.Effect.Value = tr2.Effect.Value
@@ -41,6 +42,7 @@ func AdjustPeriods(last, next *t.Period) error {
 		if tr2.Type == t.TrackSilence {
 			tr2.Carrier = tr1.Carrier
 			tr2.Resonance = tr1.Resonance
+			tr2.NoiseSmooth = tr1.NoiseSmooth
 			tr2.Effect.Intensity = tr1.Effect.Intensity
 			tr2.Effect.Value = tr1.Effect.Value
 			tr2.Effect.Type = tr1.Effect.Type
@@ -80,6 +82,7 @@ func AdjustPeriods(last, next *t.Period) error {
 		tr1.Carrier = tr2.Carrier
 		tr1.Resonance = tr2.Resonance
 		tr1.Amplitude = tr2.Amplitude
+		tr1.NoiseSmooth = tr2.NoiseSmooth
 		tr1.Effect.Intensity = tr2.Effect.Intensity
 		tr1.Waveform = tr2.Waveform
 		tr1.AmbianceName = tr2.AmbianceName

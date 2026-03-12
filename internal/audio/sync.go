@@ -83,6 +83,7 @@ func interpolateTrack(start, end t.Track, alpha float64) t.Track {
 		Amplitude:    t.AmplitudeType(lerpFloat64(float64(start.Amplitude), float64(end.Amplitude), alpha)),
 		Carrier:      lerpFloat64(start.Carrier, end.Carrier, alpha),
 		Resonance:    lerpFloat64(start.Resonance, end.Resonance, alpha),
+		NoiseSmooth:  lerpFloat64(start.NoiseSmooth, end.NoiseSmooth, alpha),
 		Waveform:     start.Waveform,
 		AmbianceName: start.AmbianceName,
 		Effect: t.Effect{

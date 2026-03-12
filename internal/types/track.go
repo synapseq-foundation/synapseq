@@ -81,6 +81,8 @@ type Track struct {
 	Waveform WaveformType
 	// Ambiance name
 	AmbianceName string
+	// Noise smooth (0-100, for 0-100%)
+	NoiseSmooth float64
 	// Effect configuration
 	Effect Effect
 }
@@ -115,6 +117,10 @@ func (tr *Track) Validate() error {
 		if tr.Resonance >= 2*tr.Carrier {
 			return fmt.Errorf("binaural beat and monaural beat must be < 2*carrier (carrier - beat/2 must be > 0). Received beat: %.2f, carrier: %.2f", tr.Resonance, tr.Carrier)
 		}
+	case TrackWhiteNoise, TrackPinkNoise, TrackBrownNoise:
+		if tr.NoiseSmooth < 0 || tr.NoiseSmooth > 100 {
+			return fmt.Errorf("noise smooth must be between 0 and 100. Received: %.2f", tr.NoiseSmooth)
+		}
 	}
 
 	return nil
@@ -139,9 +145,9 @@ func (tr *Track) String() string {
 		}
 	case TrackWhiteNoise, TrackPinkNoise, TrackBrownNoise:
 		if tr.Effect.Type == EffectOff {
-			return fmt.Sprintf("%s %s %s %.2f", KeywordNoise, tr.Type.String(), KeywordAmplitude, tr.Amplitude.ToPercent())
+			return fmt.Sprintf("%s %s %s %.2f %s %.2f", KeywordNoise, tr.Type.String(), KeywordSmooth, tr.NoiseSmooth, KeywordAmplitude, tr.Amplitude.ToPercent())
 		} else {
-			return fmt.Sprintf("%s %s %s %s %.2f %s %.2f %s %.2f", KeywordNoise, tr.Type.String(), KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+			return fmt.Sprintf("%s %s %s %.2f %s %s %.2f %s %.2f %s %.2f", KeywordNoise, tr.Type.String(), KeywordSmooth, tr.NoiseSmooth, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
 		}
 	case TrackAmbiance:
 		if tr.Effect.Type == EffectOff {
@@ -173,9 +179,9 @@ func (tr *Track) ShortString() string {
 		}
 	case TrackWhiteNoise, TrackPinkNoise, TrackBrownNoise:
 		if tr.Effect.Type == EffectOff {
-			return fmt.Sprintf(" (%s:%.2f)", tr.Type.String(), tr.Amplitude.ToPercent())
+			return fmt.Sprintf(" (%s:%.2f %s:%.2f)", tr.Type.String(), tr.Amplitude.ToPercent(), KeywordSmooth, tr.NoiseSmooth)
 		} else {
-			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f)", tr.Type.String(), tr.Amplitude.ToPercent(), tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent())
+			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f %s:%.2f)", tr.Type.String(), tr.Amplitude.ToPercent(), KeywordSmooth, tr.NoiseSmooth, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent())
 		}
 	case TrackAmbiance:
 		if tr.Effect.Type == EffectOff {
