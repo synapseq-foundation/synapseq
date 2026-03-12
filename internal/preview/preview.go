@@ -343,6 +343,19 @@ func buildGraphMetrics(periods []t.Period, totalDurationMs int) []previewGraphMe
 			FormatValue: formatPercent,
 		},
 		{
+			Key:         "smooth",
+			Label:       "Smooth",
+			RangePrefix: "Smooth range",
+			EmptyLabel:  "No noise smooth data available for this sequence.",
+			SelectValue: func(track t.Track) (float64, bool) {
+				if !isNoiseTrack(track) {
+					return 0, false
+				}
+				return track.NoiseSmooth, true
+			},
+			FormatValue: formatPercent,
+		},
+		{
 			Key:         "effect",
 			Label:       "Effect",
 			RangePrefix: "Effect range",
@@ -569,6 +582,7 @@ func interpolateTrackForPreview(startTrack, endTrack t.Track, alpha float64) t.T
 	track.Amplitude = t.AmplitudeType(float64(startTrack.Amplitude)*(1-alpha) + float64(endTrack.Amplitude)*alpha)
 	track.Carrier = startTrack.Carrier*(1-alpha) + endTrack.Carrier*alpha
 	track.Resonance = startTrack.Resonance*(1-alpha) + endTrack.Resonance*alpha
+	track.NoiseSmooth = startTrack.NoiseSmooth*(1-alpha) + endTrack.NoiseSmooth*alpha
 	track.Effect.Value = startTrack.Effect.Value*(1-alpha) + endTrack.Effect.Value*alpha
 	track.Effect.Intensity = t.IntensityType(float64(startTrack.Effect.Intensity)*(1-alpha) + float64(endTrack.Effect.Intensity)*alpha)
 	return track
@@ -665,7 +679,7 @@ func buildSeries(periods []t.Period, minCarrier, maxCarrier float64, hasCarrier 
 }
 
 func buildTrackView(channel int, track t.Track) previewTrackView {
-	meta := make([]previewMetaView, 0, 7)
+	meta := make([]previewMetaView, 0, 8)
 
 	if track.Carrier > 0 {
 		meta = append(meta, previewMetaView{Label: "Carrier", Value: formatHz(track.Carrier)})
@@ -678,6 +692,9 @@ func buildTrackView(channel int, track t.Track) previewTrackView {
 	}
 	if track.AmbianceName != "" {
 		meta = append(meta, previewMetaView{Label: "Ambiance", Value: track.AmbianceName})
+	}
+	if isNoiseTrack(track) {
+		meta = append(meta, previewMetaView{Label: "Smooth", Value: formatPercent(track.NoiseSmooth)})
 	}
 	meta = append(meta, previewMetaView{Label: "Amplitude", Value: formatPercent(track.Amplitude.ToPercent())})
 	if track.Effect.Type != t.EffectOff {
@@ -722,13 +739,16 @@ func buildPrimarySummary(items []previewSegmentItemView) string {
 }
 
 func buildSegmentSummary(startTrack, endTrack t.Track) string {
-	parts := make([]string, 0, 3)
+	parts := make([]string, 0, 4)
 
 	if startTrack.Carrier > 0 || endTrack.Carrier > 0 {
 		parts = append(parts, fmt.Sprintf("carrier %s -> %s", formatHz(startTrack.Carrier), formatHz(endTrack.Carrier)))
 	}
 	if usesBeat(startTrack) || usesBeat(endTrack) || startTrack.Resonance > 0 || endTrack.Resonance > 0 {
 		parts = append(parts, fmt.Sprintf("beat %s -> %s", formatHz(startTrack.Resonance), formatHz(endTrack.Resonance)))
+	}
+	if isNoiseTrack(startTrack) || isNoiseTrack(endTrack) {
+		parts = append(parts, fmt.Sprintf("smooth %s -> %s", formatPercent(startTrack.NoiseSmooth), formatPercent(endTrack.NoiseSmooth)))
 	}
 	parts = append(parts, fmt.Sprintf("amp %s -> %s", formatPercent(startTrack.Amplitude.ToPercent()), formatPercent(endTrack.Amplitude.ToPercent())))
 
@@ -753,7 +773,7 @@ func buildTrackSummary(track t.Track) string {
 	case t.TrackBinauralBeat, t.TrackMonauralBeat, t.TrackIsochronicBeat:
 		return fmt.Sprintf("Carrier %s with beat %s", formatHz(track.Carrier), formatHz(track.Resonance))
 	case t.TrackWhiteNoise, t.TrackPinkNoise, t.TrackBrownNoise:
-		return fmt.Sprintf("%s texture layer", humanTrackType(track))
+		return fmt.Sprintf("%s texture layer with %s smooth", humanTrackType(track), formatPercent(track.NoiseSmooth))
 	case t.TrackAmbiance:
 		if track.AmbianceName != "" {
 			return fmt.Sprintf("Ambiance layer %q", track.AmbianceName)
@@ -847,6 +867,7 @@ func resolveGraphTrack(periods []t.Period, periodIndex int, channel int) (t.Trac
 		resolved := previous
 		resolved.Carrier = track.Carrier
 		resolved.Resonance = track.Resonance
+		resolved.NoiseSmooth = track.NoiseSmooth
 		resolved.Amplitude = track.Amplitude
 		resolved.Effect = track.Effect
 		return resolved, true
@@ -897,6 +918,15 @@ func isToneTrack(track t.Track) bool {
 func isTextureTrack(track t.Track) bool {
 	switch track.Type {
 	case t.TrackWhiteNoise, t.TrackPinkNoise, t.TrackBrownNoise, t.TrackAmbiance:
+		return true
+	default:
+		return false
+	}
+}
+
+func isNoiseTrack(track t.Track) bool {
+	switch track.Type {
+	case t.TrackWhiteNoise, t.TrackPinkNoise, t.TrackBrownNoise:
 		return true
 	default:
 		return false

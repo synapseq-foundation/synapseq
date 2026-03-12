@@ -14,8 +14,9 @@ func TestGetPreviewContent(ts *testing.T) {
 			Time: 0,
 			TrackStart: [t.NumberOfChannels]t.Track{
 				{
-					Type:      t.TrackPinkNoise,
-					Amplitude: t.AmplitudePercentToRaw(35),
+					Type:        t.TrackPinkNoise,
+					NoiseSmooth: 35,
+					Amplitude:   t.AmplitudePercentToRaw(35),
 				},
 				{
 					Type:      t.TrackBinauralBeat,
@@ -32,8 +33,9 @@ func TestGetPreviewContent(ts *testing.T) {
 			},
 			TrackEnd: [t.NumberOfChannels]t.Track{
 				{
-					Type:      t.TrackPinkNoise,
-					Amplitude: 0,
+					Type:        t.TrackPinkNoise,
+					NoiseSmooth: 10,
+					Amplitude:   0,
 				},
 				{
 					Type:      t.TrackSilence,
@@ -93,6 +95,7 @@ func TestGetPreviewContent(ts *testing.T) {
 		"Carrier",
 		"Carrier",
 		"Beat",
+		"Smooth",
 		"Amplitude",
 		"Effect",
 		"Effect value",
@@ -100,9 +103,11 @@ func TestGetPreviewContent(ts *testing.T) {
 		"pan",
 		"Intensity",
 		"75.00%",
+		"35.00%",
 		"data-graph-target=\"resonance\"",
 		"data-graph-target=\"carrier\"",
 		"data-graph-target=\"amplitude\"",
+		"data-graph-target=\"smooth\"",
 		"data-graph-target=\"effect\"",
 		"data-graph-target=\"intensity\"",
 		"0.00%",
