@@ -25,9 +25,11 @@ func TestAudioRendererMix_PureToneFirstSampleAndPhaseAdvance(ts *testing.T) {
 			Type:     t.TrackPureTone,
 			Waveform: t.WaveformSquare,
 		},
-		Type:      t.TrackPureTone,
-		Amplitude: [2]int{4096, 0},
-		Increment: [2]int{t.PhasePrecision, 0},
+		WaveformStart: t.WaveformSquare,
+		WaveformEnd:   t.WaveformSquare,
+		Type:          t.TrackPureTone,
+		Amplitude:     [2]int{4096, 0},
+		Increment:     [2]int{t.PhasePrecision, 0},
 	}
 
 	samples := renderer.mix(make([]int, t.BufferSize*audioChannels))
@@ -56,9 +58,11 @@ func TestAudioRendererMix_PanEffectRoutesMonoSignal(ts *testing.T) {
 				Intensity: t.IntensityPercentToRaw(100),
 			},
 		},
-		Type:      t.TrackPureTone,
-		Amplitude: [2]int{4096, 0},
-		Increment: [2]int{t.PhasePrecision, 0},
+		WaveformStart: t.WaveformSquare,
+		WaveformEnd:   t.WaveformSquare,
+		Type:          t.TrackPureTone,
+		Amplitude:     [2]int{4096, 0},
+		Increment:     [2]int{t.PhasePrecision, 0},
 		Effect: t.EffectState{
 			Increment: int(t.SineTableSize/4) * t.PhasePrecision,
 		},
@@ -90,9 +94,11 @@ func TestAudioRendererMix_ModulationAffectsStereoWithSharedPhase(ts *testing.T) 
 				Intensity: t.IntensityPercentToRaw(100),
 			},
 		},
-		Type:      t.TrackBinauralBeat,
-		Amplitude: [2]int{4096, 4096},
-		Increment: [2]int{t.PhasePrecision, t.PhasePrecision},
+		WaveformStart: t.WaveformSawtooth,
+		WaveformEnd:   t.WaveformSawtooth,
+		Type:          t.TrackBinauralBeat,
+		Amplitude:     [2]int{4096, 4096},
+		Increment:     [2]int{t.PhasePrecision, t.PhasePrecision},
 		Effect: t.EffectState{
 			Increment: int(t.SineTableSize/2) * t.PhasePrecision,
 		},
@@ -120,6 +126,34 @@ func TestAudioRendererMix_ModulationAffectsStereoWithSharedPhase(ts *testing.T) 
 	expectedEffectOffset := (t.BufferSize * int(t.SineTableSize/2) * t.PhasePrecision) & phaseMask
 	if renderer.channels[0].Effect.Offset != expectedEffectOffset {
 		ts.Fatalf("unexpected modulation phase offset: got %d, want %d", renderer.channels[0].Effect.Offset, expectedEffectOffset)
+	}
+}
+
+func TestAudioRendererMix_PureToneMorphsBetweenWaveforms(ts *testing.T) {
+	renderer := newMixTestRenderer()
+	renderer.channels[0] = t.Channel{
+		Track: t.Track{
+			Type:     t.TrackPureTone,
+			Waveform: t.WaveformSine,
+		},
+		WaveformStart: t.WaveformSine,
+		WaveformEnd:   t.WaveformSquare,
+		WaveformAlpha: 0.25,
+		Type:          t.TrackPureTone,
+		Amplitude:     [2]int{4096, 0},
+		Increment:     [2]int{t.PhasePrecision, 0},
+	}
+
+	samples := renderer.mix(make([]int, t.BufferSize*audioChannels))
+
+	sine := float64(renderer.waveTables[int(t.WaveformSine)][1])
+	square := float64(renderer.waveTables[int(t.WaveformSquare)][1])
+	blended := lerpFloat64(sine, square, 0.25)
+	expectedRaw := int(math.Round(float64(renderer.channels[0].Amplitude[0]) * blended))
+	expected := clampPCM16(expectedRaw >> audioBitShift)
+
+	if samples[0] != expected || samples[1] != expected {
+		ts.Fatalf("unexpected morphed sample: got [%d %d], want [%d %d]", samples[0], samples[1], expected, expected)
 	}
 }
 

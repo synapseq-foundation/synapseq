@@ -61,8 +61,12 @@ func TestAudioRendererSync_InterpolatesTrackAndSignal(ts *testing.T) {
 	if channel.Track.Type != t.TrackBinauralBeat {
 		ts.Fatalf("unexpected track type: got %v", channel.Track.Type)
 	}
+	if channel.WaveformStart != t.WaveformSine || channel.WaveformEnd != t.WaveformTriangle {
+		ts.Fatalf("unexpected waveform morph state: got %v -> %v", channel.WaveformStart, channel.WaveformEnd)
+	}
+	assertAlmostEqual(ts, channel.WaveformAlpha, 0.5, 0.0001)
 	if channel.Track.Waveform != t.WaveformSine {
-		ts.Fatalf("unexpected waveform: got %v", channel.Track.Waveform)
+		ts.Fatalf("unexpected displayed waveform: got %v", channel.Track.Waveform)
 	}
 	if channel.Track.Effect.Type != t.EffectModulation {
 		ts.Fatalf("unexpected effect type: got %v", channel.Track.Effect.Type)
