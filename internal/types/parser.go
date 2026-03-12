@@ -92,6 +92,8 @@ const (
 	KeywordTemplate = "template"
 	// Represents a doppler effect
 	KeywordDoppler = "doppler"
+	// Represents a smooth
+	KeywordSmooth = "smooth"
 )
 
 // ParseOptions stores raw option values parsed from text input
@@ -112,62 +114,62 @@ func NewParseOptions() *ParseOptions {
 
 // Merge merges parsed option values into the current instance
 func (po *ParseOptions) Merge(other *ParseOptions) {
-    if po == nil || other == nil {
-        return
-    }
+	if po == nil || other == nil {
+		return
+	}
 
-    if po.Values == nil {
-        po.Values = make(map[string]string)
-    }
-    if po.Ambiance == nil {
-        po.Ambiance = make(map[string]string)
-    }
-    if po.Extends == nil {
-        po.Extends = []string{}
-    }
+	if po.Values == nil {
+		po.Values = make(map[string]string)
+	}
+	if po.Ambiance == nil {
+		po.Ambiance = make(map[string]string)
+	}
+	if po.Extends == nil {
+		po.Extends = []string{}
+	}
 
-    maps.Copy(po.Values, other.Values)
-    maps.Copy(po.Ambiance, other.Ambiance)
-    po.Extends = append(po.Extends, other.Extends...)
+	maps.Copy(po.Values, other.Values)
+	maps.Copy(po.Ambiance, other.Ambiance)
+	po.Extends = append(po.Extends, other.Extends...)
 }
 
 // Build converts parsed raw options into validated SequenceOptions
 func (po *ParseOptions) Build() (*SequenceOptions, error) {
-    options := &SequenceOptions{
-        SampleRate: 44100,
-        Volume:     100,
-        Ambiance:   make(map[string]string),
-        Extends:    []string{},
-    }
+	options := &SequenceOptions{
+		SampleRate: 44100,
+		Volume:     100,
+		Ambiance:   make(map[string]string),
+		Extends:    []string{},
+	}
 
-    if po == nil {
-        return options, nil
-    }
+	if po == nil {
+		return options, nil
+	}
 
-    if value, ok := po.Values[KeywordOptionSampleRate]; ok {
-        sampleRate, err := strconv.Atoi(value)
-        if err != nil {
-            return nil, fmt.Errorf("invalid samplerate value %q", value)
-        }
-        options.SampleRate = sampleRate
-    }
+	if value, ok := po.Values[KeywordOptionSampleRate]; ok {
+		sampleRate, err := strconv.Atoi(value)
+		if err != nil {
+			return nil, fmt.Errorf("invalid samplerate value %q", value)
+		}
+		options.SampleRate = sampleRate
+	}
 
-    if value, ok := po.Values[KeywordOptionVolume]; ok {
-        volume, err := strconv.Atoi(value)
-        if err != nil {
-            return nil, fmt.Errorf("invalid volume value %q", value)
-        }
-        options.Volume = volume
-    }
+	if value, ok := po.Values[KeywordOptionVolume]; ok {
+		volume, err := strconv.Atoi(value)
+		if err != nil {
+			return nil, fmt.Errorf("invalid volume value %q", value)
+		}
+		options.Volume = volume
+	}
 
-    maps.Copy(options.Ambiance, po.Ambiance)
-    options.Extends = append(options.Extends, po.Extends...)
+	maps.Copy(options.Ambiance, po.Ambiance)
+	options.Extends = append(options.Extends, po.Extends...)
 
-    if err := options.Validate(); err != nil {
-        return nil, err
-    }
+	if err := options.Validate(); err != nil {
+		return nil, err
+	}
 
-    return options, nil
+	return options, nil
 }
 
 // Parser defines the interface for parsing different content types

@@ -74,9 +74,9 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 	}
 
 	var (
-		carrier, resonance, amplitude float64
-		trackType                     t.TrackType
-		ambianceName                  string
+		carrier, resonance, amplitude, smooth float64
+		trackType                             t.TrackType
+		ambianceName                          string
 	)
 
 	effect := t.Effect{
@@ -171,9 +171,20 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 			trackType = t.TrackBrownNoise
 		}
 
-		kind, err = ctx.Line.NextExpectOneOf(t.KeywordEffect, t.KeywordAmplitude)
+		kind, err = ctx.Line.NextExpectOneOf(t.KeywordEffect, t.KeywordSmooth, t.KeywordAmplitude)
 		if err != nil {
-			return nil, fmt.Errorf("expected %q or %q after noise type: %s", t.KeywordEffect, t.KeywordAmplitude, ln)
+			return nil, fmt.Errorf("expected %q, %q or %q after noise type: %s", t.KeywordEffect, t.KeywordSmooth, t.KeywordAmplitude, ln)
+		}
+
+		if kind == t.KeywordSmooth {
+			smooth, err = ctx.Line.NextFloat64Strict()
+			if err != nil {
+				return nil, fmt.Errorf("noise smooth: %w", err)
+			}
+			kind, err = ctx.Line.NextExpectOneOf(t.KeywordEffect, t.KeywordAmplitude)
+			if err != nil {
+				return nil, fmt.Errorf("expected %q or %q after noise smooth: %s", t.KeywordEffect, t.KeywordAmplitude, ln)
+			}
 		}
 
 		if kind == t.KeywordEffect {
@@ -286,6 +297,7 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 		Resonance:    resonance,
 		Amplitude:    t.AmplitudePercentToRaw(amplitude),
 		AmbianceName: ambianceName,
+		NoiseSmooth:  smooth,
 		Waveform:     waveform,
 		Effect:       effect,
 	}

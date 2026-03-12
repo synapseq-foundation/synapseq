@@ -37,6 +37,12 @@ const (
 	// Brown noise decay factor expressed as an integer fraction
 	brownDecayNumerator   = 9
 	brownDecayDenominator = 10
+	// Number of cascaded low-pass stages used for noise smoothing.
+	noiseSmoothnessStages = 3
+	// User smoothness is mapped almost linearly up to this point.
+	noiseSmoothnessLinearCeiling = 60.0
+	// Minimum EMA alpha used at maximum smoothness to keep the signal moving.
+	noiseSmoothnessMinAlpha = 0.02
 )
 
 // NoiseGenerator handles all noise generation
@@ -49,6 +55,9 @@ type NoiseGenerator struct {
 
 	// Brown noise state
 	brownLast int
+
+	// Per-track low-pass state, preserved while smoothness ramps.
+	smoothState map[t.TrackType]noiseSmoothnessState
 }
 
 // pinkNoiseState holds the per-band state for the Voss-McCartney pink noise generator.
@@ -63,27 +72,42 @@ type pinkNoiseBand struct {
 	increment int
 }
 
+type noiseSmoothnessState struct {
+	initialized bool
+	stages      [noiseSmoothnessStages]float64
+}
+
+type noiseSmoothnessProfile struct {
+	linearTarget float64
+	maxEffective float64
+}
+
 // NewNoiseGenerator creates a new noise generator with initial seed
 func NewNoiseGenerator() *NoiseGenerator {
 	ng := &NoiseGenerator{
-		seed: initialNoiseSeed,
+		seed:        initialNoiseSeed,
+		smoothState: make(map[t.TrackType]noiseSmoothnessState),
 	}
 	ng.initPinkNoise()
 	return ng
 }
 
 // Generate generates a noise sample based on the track type
-func (ng *NoiseGenerator) Generate(tr t.TrackType) int {
+func (ng *NoiseGenerator) Generate(tr t.TrackType, smooth float64) int {
+	var sample int
+
 	switch tr {
 	case t.TrackWhiteNoise:
-		return ng.generateWhiteNoise()
+		sample = ng.generateWhiteNoise()
 	case t.TrackPinkNoise:
-		return ng.generatePinkNoise()
+		sample = ng.generatePinkNoise()
 	case t.TrackBrownNoise:
-		return ng.generateBrownNoise()
+		sample = ng.generateBrownNoise()
 	default:
 		return 0
 	}
+
+	return ng.applySmoothness(tr, smooth, sample)
 }
 
 // nextRandom generates the next deterministic pseudo-random value.
@@ -158,4 +182,80 @@ func (ng *NoiseGenerator) generatePinkNoise() int {
 	}
 
 	return total >> noiseShift
+}
+
+func (ng *NoiseGenerator) applySmoothness(tr t.TrackType, smooth float64, sample int) int {
+	if smooth <= 0 {
+		return sample
+	}
+	if smooth > 100 {
+		smooth = 100
+	}
+
+	state := ng.smoothState[tr]
+
+	if !state.initialized {
+		for idx := range state.stages {
+			state.stages[idx] = float64(sample)
+		}
+		state.initialized = true
+		ng.smoothState[tr] = state
+		return sample
+	}
+
+	alpha := noiseSmoothnessAlpha(tr, smooth)
+	value := float64(sample)
+	for idx := range state.stages {
+		state.stages[idx] += (value - state.stages[idx]) * alpha
+		value = state.stages[idx]
+	}
+
+	ng.smoothState[tr] = state
+	return clampNoiseSample(int(value))
+}
+
+func noiseSmoothnessAlpha(tr t.TrackType, smoothness float64) float64 {
+	normalized := effectiveNoiseSmoothness(tr, smoothness) / 100.0
+	inverse := 1.0 - normalized
+	return noiseSmoothnessMinAlpha + (1.0-noiseSmoothnessMinAlpha)*inverse*inverse
+}
+
+func effectiveNoiseSmoothness(tr t.TrackType, smoothness float64) float64 {
+	profile := noiseSmoothnessProfileForTrack(tr)
+
+	if smoothness < 0 {
+		return 0
+	}
+	if smoothness > 100 {
+		smoothness = 100
+	}
+	if smoothness <= noiseSmoothnessLinearCeiling {
+		return smoothness * profile.linearTarget / noiseSmoothnessLinearCeiling
+	}
+
+	progress := (smoothness - noiseSmoothnessLinearCeiling) / (100.0 - noiseSmoothnessLinearCeiling)
+	return profile.linearTarget + (profile.maxEffective-profile.linearTarget)*progress*progress
+}
+
+func noiseSmoothnessProfileForTrack(tr t.TrackType) noiseSmoothnessProfile {
+	switch tr {
+	case t.TrackWhiteNoise:
+		return noiseSmoothnessProfile{linearTarget: 30, maxEffective: 42}
+	case t.TrackPinkNoise:
+		return noiseSmoothnessProfile{linearTarget: 24, maxEffective: 34}
+	case t.TrackBrownNoise:
+		return noiseSmoothnessProfile{linearTarget: 18, maxEffective: 28}
+	default:
+		return noiseSmoothnessProfile{linearTarget: 24, maxEffective: 34}
+	}
+}
+
+func clampNoiseSample(sample int) int {
+	if sample > int(t.WaveTableAmplitude) {
+		return int(t.WaveTableAmplitude)
+	}
+	if sample < -int(t.WaveTableAmplitude) {
+		return -int(t.WaveTableAmplitude)
+	}
+	return sample
 }
