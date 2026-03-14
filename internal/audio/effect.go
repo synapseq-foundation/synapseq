@@ -61,9 +61,9 @@ func (r *AudioRenderer) applyPan(channel *t.Channel, inL, inR int) (outL, outR i
 		intensity = 1
 	}
 
-	// Sine LFO in [-A..A] => normalize to [-1..1]
-	lfo := r.waveTables[int(t.WaveformSine)][channel.Effect.Offset>>16]
-	x := (float64(lfo) / float64(t.WaveTableAmplitude)) * intensity // [-1..1]
+	// Selected waveform in [-A..A] => normalize to [-1..1]
+	targetX := (r.waveformValue(channel, channel.Effect.Offset) / float64(t.WaveTableAmplitude)) * intensity
+	x := r.smoothedPanPosition(channel, targetX)
 
 	// High-resolution linear pan gains (0..65536), avoids 8-bit pan stepping artifacts
 	// x=-1 => left=1.0 right=0.0 ; x=+1 => left=0.0 right=1.0
@@ -81,4 +81,30 @@ func (r *AudioRenderer) applyPan(channel *t.Channel, inL, inR int) (outL, outR i
 	outL = int((int64(inL) * int64(lGain)) >> 16)
 	outR = int((int64(inR) * int64(rGain)) >> 16)
 	return outL, outR
+}
+
+func (r *AudioRenderer) smoothedPanPosition(channel *t.Channel, targetX float64) float64 {
+	if !channel.Effect.PanInitialized {
+		channel.Effect.PanPosition = targetX
+		channel.Effect.PanInitialized = true
+		return targetX
+	}
+
+	maxDelta := 2 * r.effectSlewMaxDelta()
+	delta := targetX - channel.Effect.PanPosition
+	if delta > maxDelta {
+		delta = maxDelta
+	} else if delta < -maxDelta {
+		delta = -maxDelta
+	}
+
+	channel.Effect.PanPosition += delta
+	if channel.Effect.PanPosition > 1 {
+		channel.Effect.PanPosition = 1
+	}
+	if channel.Effect.PanPosition < -1 {
+		channel.Effect.PanPosition = -1
+	}
+
+	return channel.Effect.PanPosition
 }

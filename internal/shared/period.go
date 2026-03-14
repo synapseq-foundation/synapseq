@@ -61,7 +61,7 @@ func AdjustPeriods(last, next *t.Period) error {
 			tr1.Type != t.TrackSilence &&
 			tr2.Type != t.TrackOff &&
 			tr2.Type != t.TrackSilence {
-			// No slide alowed between different track types, waveforms, or effect types
+			// No slide allowed between different track types, effect types, or ambiance sources.
 			if tr1.Type != tr2.Type {
 				return fmt.Errorf("channel %d cannot change track type directly, use silence instead: %s --> %s", ch+1, tr1.Type.String(), tr2.Type.String())
 			}

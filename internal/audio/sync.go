@@ -114,6 +114,10 @@ func (r *AudioRenderer) resetRuntimeState(channel *t.Channel, previousTrackType 
 
 	if previousEffectType != channel.Track.Effect.Type {
 		channel.Effect.Offset = 0
+		channel.Effect.ModulationGain = 0
+		channel.Effect.ModulationInitialized = false
+		channel.Effect.PanPosition = 0
+		channel.Effect.PanInitialized = false
 	}
 }
 

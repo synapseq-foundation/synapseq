@@ -19,6 +19,8 @@ import (
 
 const phaseMask = (t.SineTableSize << 16) - 1
 
+const modulationSlewTimeMs = 2.0
+
 type stereoSample struct {
 	left  int
 	right int
@@ -184,8 +186,41 @@ func (r *AudioRenderer) applyModulation(channel *t.Channel, sample int) int {
 func (r *AudioRenderer) applyModulationToCurrentPhase(channel *t.Channel, sample int) int {
 	modFactor := r.calcModulationFactor(channel, channel.Effect.Offset)
 	effectIntensity := float64(channel.Track.Effect.Intensity) * 0.7
-	gain := (1.0 - effectIntensity) + (effectIntensity * modFactor)
+	targetGain := (1.0 - effectIntensity) + (effectIntensity * modFactor)
+	gain := r.smoothedModulationGain(channel, targetGain)
 	return int(float64(sample) * gain)
+}
+
+func (r *AudioRenderer) smoothedModulationGain(channel *t.Channel, targetGain float64) float64 {
+	if !channel.Effect.ModulationInitialized {
+		channel.Effect.ModulationGain = targetGain
+		channel.Effect.ModulationInitialized = true
+		return targetGain
+	}
+
+	maxDelta := r.effectSlewMaxDelta()
+	delta := targetGain - channel.Effect.ModulationGain
+	if delta > maxDelta {
+		delta = maxDelta
+	} else if delta < -maxDelta {
+		delta = -maxDelta
+	}
+
+	channel.Effect.ModulationGain += delta
+	return channel.Effect.ModulationGain
+}
+
+func (r *AudioRenderer) effectSlewMaxDelta() float64 {
+	if r.SampleRate <= 0 {
+		return 1
+	}
+
+	rampSamples := float64(r.SampleRate) * modulationSlewTimeMs / 1000.0
+	if rampSamples < 1 {
+		return 1
+	}
+
+	return 1 / rampSamples
 }
 
 func (r *AudioRenderer) waveformSample(channel *t.Channel, offset int) int {

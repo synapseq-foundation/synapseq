@@ -56,4 +56,10 @@ type EffectState struct {
 	// LFO state for the currently active effect (phase + step)
 	Increment int
 	Offset    int
+	// Smoothed modulation gain to avoid clicks on abrupt waveform edges.
+	ModulationGain        float64
+	ModulationInitialized bool
+	// Smoothed pan position to avoid hard channel switching on square waves.
+	PanPosition    float64
+	PanInitialized bool
 }
