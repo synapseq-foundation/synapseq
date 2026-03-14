@@ -43,7 +43,9 @@ func InitWaveformTables() [4][]int {
 					val = 3.0 - (2.0 * phase / math.Pi)
 				}
 			case int(t.WaveformSawtooth):
-				val = (2.0 * phase / (2.0 * math.Pi)) - 1.0
+				// Center the discontinuity at pi so waveform morphs stay phase-aligned with
+				// square/triangle and do not sound like a fade during transitions.
+				val = 2.0 * (phase/(2.0*math.Pi) - math.Floor(phase/(2.0*math.Pi)+0.5))
 			default:
 				val = math.Sin(phase)
 			}
