@@ -151,9 +151,9 @@ func (tr *Track) String() string {
 		}
 	case TrackAmbiance:
 		if tr.Effect.Type == EffectOff {
-			return fmt.Sprintf("%s %s %s %.2f", KeywordAmbiance, tr.AmbianceName, KeywordAmplitude, tr.Amplitude.ToPercent())
+			return fmt.Sprintf("%s %s %s %s %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordAmbiance, tr.AmbianceName, KeywordAmplitude, tr.Amplitude.ToPercent())
 		} else {
-			return fmt.Sprintf("%s %s %s %s %.2f %s %.2f %s %.2f", KeywordAmbiance, tr.AmbianceName, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+			return fmt.Sprintf("%s %s %s %s %s %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordAmbiance, tr.AmbianceName, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
 		}
 	default:
 		return " ???"
