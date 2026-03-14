@@ -119,7 +119,7 @@ func TestInitWaveformTables_Sawtooth(ts *testing.T) {
 
 	exp := func(j int) int {
 		phase := float64(j) * 2.0 * math.Pi / float64(t.SineTableSize)
-		val := (2.0 * phase / (2.0 * math.Pi)) - 1.0
+		val := 2.0*(phase/(2.0*math.Pi)-math.Floor(phase/(2.0*math.Pi)+0.5))
 		return int(float64(amp) * val)
 	}
 
@@ -134,8 +134,8 @@ func TestInitWaveformTables_Sawtooth(ts *testing.T) {
 	if tab[j1] != exp(j1) {
 		ts.Fatalf("sawtooth j=pi/2: want %d, got %d", exp(j1), tab[j1])
 	}
-	if tab[j2] != 0 {
-		ts.Fatalf("sawtooth j=pi: want 0, got %d", tab[j2])
+	if tab[j2] != exp(j2) {
+		ts.Fatalf("sawtooth j=pi: want %d, got %d", exp(j2), tab[j2])
 	}
 	if tab[j3] != exp(j3) {
 		ts.Fatalf("sawtooth j=3pi/2: want %d, got %d", exp(j3), tab[j3])
