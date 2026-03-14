@@ -115,6 +115,36 @@ func TestAdjustPeriods_FadeOutToSilence(ts *testing.T) {
 	}
 }
 
+func TestAdjustPeriods_AllowsWaveformChangeWhileOn(ts *testing.T) {
+	var last, next t.Period
+
+	last.TrackStart[0] = t.Track{
+		Type:      t.TrackBinauralBeat,
+		Amplitude: t.AmplitudePercentToRaw(10),
+		Waveform:  t.WaveformSine,
+	}
+	last.TrackEnd[0] = t.Track{
+		Type:      t.TrackBinauralBeat,
+		Amplitude: t.AmplitudePercentToRaw(10),
+		Waveform:  t.WaveformSine,
+	}
+	next.TrackStart[0] = t.Track{
+		Type:      t.TrackBinauralBeat,
+		Amplitude: t.AmplitudePercentToRaw(12),
+		Waveform:  t.WaveformTriangle,
+	}
+
+	if err := AdjustPeriods(&last, &next); err != nil {
+		ts.Fatalf("unexpected error when changing waveform: %v", err)
+	}
+	if last.TrackEnd[0].Waveform != t.WaveformTriangle {
+		ts.Fatalf("waveform was not carried forward: got %v", last.TrackEnd[0].Waveform)
+	}
+	if last.TrackEnd[0] != next.TrackStart[0] {
+		ts.Fatalf("carry-forward mismatch after waveform change: last.TrackEnd != next.TrackStart\nlast=%+v\nnext=%+v", last.TrackEnd[0], next.TrackStart[0])
+	}
+}
+
 func TestAdjustPeriods_Errors(ts *testing.T) {
 	makePer := func(tr0, tr1, tr2 t.Track) (t.Period, t.Period) {
 		var last, next t.Period
@@ -144,11 +174,6 @@ func TestAdjustPeriods_Errors(ts *testing.T) {
 			name: "change type while on",
 			tr1:  t.Track{Type: t.TrackBinauralBeat, Amplitude: t.AmplitudePercentToRaw(10), Waveform: t.WaveformSine},
 			tr2:  t.Track{Type: t.TrackMonauralBeat, Amplitude: t.AmplitudePercentToRaw(12), Waveform: t.WaveformSine},
-		},
-		{
-			name: "change waveform while on",
-			tr1:  t.Track{Type: t.TrackBinauralBeat, Amplitude: t.AmplitudePercentToRaw(10), Waveform: t.WaveformSine},
-			tr2:  t.Track{Type: t.TrackBinauralBeat, Amplitude: t.AmplitudePercentToRaw(12), Waveform: t.WaveformTriangle},
 		},
 		{
 			name: "change effect type while on (ambiance)",

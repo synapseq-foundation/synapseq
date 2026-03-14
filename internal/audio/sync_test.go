@@ -105,6 +105,10 @@ func TestAudioRendererSync_ResetsOffsetsAndClearsResidualState(ts *testing.T) {
 	renderer.channels[0].Increment = [2]int{33, 44}
 	renderer.channels[0].Effect.Offset = 55
 	renderer.channels[0].Effect.Increment = 66
+	renderer.channels[0].Effect.ModulationGain = 0.75
+	renderer.channels[0].Effect.ModulationInitialized = true
+	renderer.channels[0].Effect.PanPosition = 0.25
+	renderer.channels[0].Effect.PanInitialized = true
 
 	renderer.sync(0, 0)
 
@@ -126,6 +130,12 @@ func TestAudioRendererSync_ResetsOffsetsAndClearsResidualState(ts *testing.T) {
 	}
 	if channel.Effect.Offset != 0 {
 		ts.Fatalf("effect offset was not reset on effect change: got %d", channel.Effect.Offset)
+	}
+	if channel.Effect.ModulationGain != 0 || channel.Effect.ModulationInitialized {
+		ts.Fatalf("modulation smoothing state was not reset: got gain=%f initialized=%v", channel.Effect.ModulationGain, channel.Effect.ModulationInitialized)
+	}
+	if channel.Effect.PanPosition != 0 || channel.Effect.PanInitialized {
+		ts.Fatalf("pan smoothing state was not reset: got pos=%f initialized=%v", channel.Effect.PanPosition, channel.Effect.PanInitialized)
 	}
 }
 
@@ -150,6 +160,10 @@ func TestAudioRendererSync_ResetsEffectPhaseWhenEffectChanges(ts *testing.T) {
 	renderer.channels[0].Track.Effect.Type = t.EffectPan
 	renderer.channels[0].Effect.Offset = 1234
 	renderer.channels[0].Effect.Increment = 4321
+	renderer.channels[0].Effect.ModulationGain = 0.4
+	renderer.channels[0].Effect.ModulationInitialized = true
+	renderer.channels[0].Effect.PanPosition = -0.5
+	renderer.channels[0].Effect.PanInitialized = true
 
 	renderer.sync(0, 0)
 
@@ -159,6 +173,12 @@ func TestAudioRendererSync_ResetsEffectPhaseWhenEffectChanges(ts *testing.T) {
 	}
 	if channel.Effect.Increment != renderer.frequencyToIncrement(5) {
 		ts.Fatalf("unexpected effect increment after effect change: got %d", channel.Effect.Increment)
+	}
+	if channel.Effect.ModulationInitialized {
+		ts.Fatalf("modulation smoothing state should be reset on effect change")
+	}
+	if channel.Effect.PanInitialized {
+		ts.Fatalf("pan smoothing state should be reset on effect change")
 	}
 	if channel.Increment[0] != renderer.frequencyToIncrement(220) {
 		ts.Fatalf("unexpected carrier increment: got %d", channel.Increment[0])

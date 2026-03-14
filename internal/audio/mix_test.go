@@ -107,15 +107,7 @@ func TestAudioRendererMix_ModulationAffectsStereoWithSharedPhase(ts *testing.T) 
 	samples := renderer.mix(make([]int, t.BufferSize*audioChannels))
 
 	baseSample := renderer.channels[0].Amplitude[0] * renderer.waveTables[int(t.WaveformSawtooth)][1]
-	modOffset := renderer.channels[0].Effect.Increment & phaseMask
-	modVal := float64(renderer.waveTables[int(t.WaveformSawtooth)][modOffset>>16])
-	threshold := 0.3 * float64(t.WaveTableAmplitude)
-	den := 0.7 * float64(t.WaveTableAmplitude)
-	modFactor := 0.0
-	if modVal > threshold {
-		modFactor = (modVal - threshold) / den
-		modFactor = modFactor * modFactor * (3 - 2*modFactor)
-	}
+	modFactor := 0.5
 	gain := 0.3 + 0.7*modFactor
 	expected := clampPCM16(int(math.Round(float64(baseSample)*gain)) >> audioBitShift)
 
@@ -126,6 +118,28 @@ func TestAudioRendererMix_ModulationAffectsStereoWithSharedPhase(ts *testing.T) 
 	expectedEffectOffset := (t.BufferSize * int(t.SineTableSize/2) * t.PhasePrecision) & phaseMask
 	if renderer.channels[0].Effect.Offset != expectedEffectOffset {
 		ts.Fatalf("unexpected modulation phase offset: got %d, want %d", renderer.channels[0].Effect.Offset, expectedEffectOffset)
+	}
+}
+
+func TestAudioRendererMix_SawtoothModulationUsesLinearRamp(ts *testing.T) {
+	renderer := newMixTestRenderer()
+	channel := &renderer.channels[0]
+	channel.Track = t.Track{
+		Type:     t.TrackIsochronicBeat,
+		Waveform: t.WaveformSawtooth,
+		Effect: t.Effect{
+			Type:      t.EffectModulation,
+			Intensity: t.IntensityPercentToRaw(100),
+		},
+	}
+	channel.WaveformStart = t.WaveformSawtooth
+	channel.WaveformEnd = t.WaveformSawtooth
+	channel.Effect.Offset = int(t.SineTableSize/2) * t.PhasePrecision
+
+	got := renderer.applyModulationToCurrentPhase(channel, 1000)
+	expected := int(math.Round(1000 * (0.3 + 0.7*0.5)))
+	if got != expected {
+		ts.Fatalf("unexpected sawtooth modulation output at mid ramp: got %d, want %d", got, expected)
 	}
 }
 
@@ -154,6 +168,64 @@ func TestAudioRendererMix_PureToneMorphsBetweenWaveforms(ts *testing.T) {
 
 	if samples[0] != expected || samples[1] != expected {
 		ts.Fatalf("unexpected morphed sample: got [%d %d], want [%d %d]", samples[0], samples[1], expected, expected)
+	}
+}
+
+func TestAudioRendererMix_ModulationSlewsAbruptSquareGainChanges(ts *testing.T) {
+	renderer := newMixTestRenderer()
+	channel := &renderer.channels[0]
+	channel.Track = t.Track{
+		Type:     t.TrackAmbiance,
+		Waveform: t.WaveformSquare,
+		Effect: t.Effect{
+			Type:      t.EffectModulation,
+			Intensity: t.IntensityPercentToRaw(100),
+		},
+	}
+	channel.WaveformStart = t.WaveformSquare
+	channel.WaveformEnd = t.WaveformSquare
+	channel.Effect.ModulationGain = 1
+	channel.Effect.ModulationInitialized = true
+
+	got := renderer.applyModulationToCurrentPhase(channel, 1000)
+	expectedFloor := int(1000 * 0.3)
+	if got <= expectedFloor || got >= 1000 {
+		ts.Fatalf("unexpected slewed modulation output: got %d, want between %d and 1000", got, expectedFloor)
+	}
+	if channel.Effect.ModulationGain >= 1 || channel.Effect.ModulationGain <= 0.3 {
+		ts.Fatalf("unexpected slewed modulation gain: got %f", channel.Effect.ModulationGain)
+	}
+}
+
+func TestAudioRendererMix_PanUsesWaveformAndSlewsSquareSwitches(ts *testing.T) {
+	renderer := newMixTestRenderer()
+	channel := &renderer.channels[0]
+	channel.Track = t.Track{
+		Type:     t.TrackAmbiance,
+		Waveform: t.WaveformSquare,
+		Effect: t.Effect{
+			Type:      t.EffectPan,
+			Intensity: t.IntensityPercentToRaw(100),
+		},
+	}
+	channel.WaveformStart = t.WaveformSquare
+	channel.WaveformEnd = t.WaveformSquare
+	channel.Effect.PanPosition = -1
+	channel.Effect.PanInitialized = true
+	channel.Effect.Offset = int(t.SineTableSize/4) * t.PhasePrecision
+
+	left, right := renderer.applyPan(channel, 1000, 1000)
+	if left <= 0 || right <= 0 {
+		ts.Fatalf("unexpected hard-switched pan output: got [%d %d]", left, right)
+	}
+	if channel.Effect.PanPosition <= -1 || channel.Effect.PanPosition >= 1 {
+		ts.Fatalf("unexpected slewed pan position: got %f", channel.Effect.PanPosition)
+	}
+	if channel.Effect.PanPosition >= -0.9 {
+		ts.Fatalf("expected a small initial slew step, got pan position %f", channel.Effect.PanPosition)
+	}
+	if right <= 0 || left >= 1000 {
+		ts.Fatalf("expected pan to start moving toward right channel without hard switch: got [%d %d]", left, right)
 	}
 }
 
