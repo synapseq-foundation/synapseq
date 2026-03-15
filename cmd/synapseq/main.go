@@ -23,6 +23,7 @@ import (
 	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
 	"github.com/synapseq-foundation/synapseq/v4/internal/cli"
 	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
+	"github.com/synapseq-foundation/synapseq/v4/internal/manual"
 )
 
 // main is the entry point of the SynapSeq application
@@ -108,6 +109,11 @@ func run(opts *cli.CLIOptions, args []string) error {
 	// --version
 	if opts.ShowVersion {
 		cli.ShowVersion()
+		return nil
+	}
+
+	if opts.ShowManual {
+		manual.Show()
 		return nil
 	}
 

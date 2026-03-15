@@ -70,6 +70,12 @@ func TestParseFlags(ts *testing.T) {
 			expectedArgs: []string{},
 			expectError:  false,
 		},
+		{
+			args:         []string{"cmd", "-manual"},
+			expected:     &CLIOptions{ShowManual: true},
+			expectedArgs: []string{},
+			expectError:  false,
+		},
 		// Quiet flag
 		{
 			args:         []string{"cmd", "-quiet", "input.spsq", "output.wav"},
@@ -242,6 +248,9 @@ func TestParseFlags(ts *testing.T) {
 		if opts.ShowHelp != test.expected.ShowHelp {
 			ts.Errorf("For args %v, ShowHelp: expected %v but got %v", test.args, test.expected.ShowHelp, opts.ShowHelp)
 		}
+		if opts.ShowManual != test.expected.ShowManual {
+			ts.Errorf("For args %v, ShowManual: expected %v but got %v", test.args, test.expected.ShowManual, opts.ShowManual)
+		}
 		if opts.Preview != test.expected.Preview {
 			ts.Errorf("For args %v, Preview: expected %v but got %v", test.args, test.expected.Preview, opts.Preview)
 		}
@@ -387,9 +396,11 @@ func TestHelpIncludesQuickStart(ts *testing.T) {
 		"Usage:\n  synapseq [options] <input> [output]",
 		"Quick start:",
 		"Generate session.wav in the current folder",
+		"Print the full language and usage manual",
 		"Generate session.html with a visual timeline preview",
 		"defaults to <input>.wav",
 		"-new TYPE         Template type: meditation, focus, sleep, relaxation",
+		"-manual           Show the full manual",
 		"-preview          Render an HTML preview timeline",
 		"Hub examples:",
 		"Run -hub-update once before using other -hub-* commands.",

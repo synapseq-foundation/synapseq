@@ -35,6 +35,8 @@ type CLIOptions struct {
 	Test bool
 	// Show help message and exit
 	ShowHelp bool
+	// Show full manual and exit
+	ShowManual bool
 	// Disable ANSI colors in CLI output
 	NoColor bool
 	// Windows file association installation
@@ -141,6 +143,8 @@ func Help() {
 	fmt.Fprintf(color.Output, "    %s\n\n", Muted("Export to MP3 with ffmpeg"))
 	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq -new meditation"))
 	fmt.Fprintf(color.Output, "    %s\n\n", Muted("Create a new sequence file from the meditation template"))
+	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq -manual"))
+	fmt.Fprintf(color.Output, "    %s\n\n", Muted("Print the full language and usage manual"))
 
 	fmt.Fprintf(color.Output, "%s\n", Section("Input:"))
 	fmt.Fprintf(color.Output, "  local file        %s\n", Command("path/to/sequence.spsq"))
@@ -160,6 +164,7 @@ func Help() {
 	fmt.Fprintf(color.Output, "  %s             Play audio using ffplay\n", Flag("-play"))
 	fmt.Fprintf(color.Output, "  %s            Suppress non-error output\n", Flag("-quiet"))
 	fmt.Fprintf(color.Output, "  %s         Disable ANSI colors in CLI output\n", Flag("-no-color"))
+	fmt.Fprintf(color.Output, "  %s           Show the full manual\n", Flag("-manual"))
 	fmt.Fprintf(color.Output, "  %s          Show version information\n", Flag("-version"))
 	fmt.Fprintf(color.Output, "  %s             Show this help message\n\n", Flag("-help"))
 
@@ -225,6 +230,7 @@ func ParseFlags() (*CLIOptions, []string, error) {
 	fs.BoolVar(&opts.NoColor, "no-colors", false, "Disable ANSI colors in CLI output")
 	fs.BoolVar(&opts.Test, "test", false, "Validate syntax without generating output")
 	fs.BoolVar(&opts.ShowHelp, "help", false, "Show help")
+	fs.BoolVar(&opts.ShowManual, "manual", false, "Show the full manual")
 
 	// Hub options
 	fs.BoolVar(&opts.HubUpdate, "hub-update", false, "Update index of available sequences")
