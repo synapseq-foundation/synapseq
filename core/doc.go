@@ -27,7 +27,7 @@ SynapSeq currently supports text input in .spsq format.
 	    ctx := synapseq.NewAppContext()
 
 	    // Enable verbose output (optional)
-	    ctx = ctx.WithVerbose(os.Stderr)
+	    ctx = ctx.WithVerbose(os.Stderr, true)
 
 		// Load sequence (required before generating WAV or streaming)
 		loaded, err := ctx.Load("input.spsq")

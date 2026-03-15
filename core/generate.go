@@ -37,6 +37,7 @@ func (lc *LoadedContext) generate() (*audio.AudioRenderer, error) {
 		Volume:       options.Volume,
 		Ambiance:     options.Ambiance,
 		StatusOutput: lc.appCtx.statusOutput,
+		Colors:       lc.appCtx.statusColors,
 	})
 	if err != nil {
 		return nil, err
