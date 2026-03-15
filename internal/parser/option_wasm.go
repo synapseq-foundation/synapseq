@@ -16,6 +16,7 @@ package parser
 import (
 	"fmt"
 
+	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
 	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
@@ -33,75 +34,89 @@ func (ctx *TextParser) HasOption() bool {
 
 // ParseOption extracts and returns raw parsed option values.
 func (ctx *TextParser) ParseOption(_ string) (*t.ParseOptions, error) {
-	ln := ctx.Line.Raw
 	tok, ok := ctx.Line.NextToken()
 	if !ok {
-		return nil, fmt.Errorf("expected option, got EOF: %s", ln)
+		return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "option")
 	}
+	span, _ := ctx.Line.LastTokenSpan()
 
 	if string(tok[0]) != t.KeywordOption {
-		return nil, fmt.Errorf("expected option. Received: %s", tok)
+		return nil, diag.Parse("expected option").WithSpan(span).WithFound(tok)
 	}
 
 	option := tok[1:]
 	if len(option) == 0 {
-		return nil, fmt.Errorf("expected option name: %s", ln)
+		return nil, diag.Parse("expected option name").WithSpan(span).WithFound(tok)
 	}
 
 	parsed := t.NewParseOptions()
+	validOptions := []string{
+		t.KeywordOptionSampleRate,
+		t.KeywordOptionVolume,
+		t.KeywordOptionAmbiance,
+		t.KeywordOptionExtends,
+	}
 
 	switch option {
 	case t.KeywordOptionSampleRate:
 		value, ok := ctx.Line.NextToken()
 		if !ok {
-			return nil, fmt.Errorf("expected samplerate value: %s", ln)
+			return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "samplerate value")
 		}
 
 		parsed.Values[t.KeywordOptionSampleRate] = value
 	case t.KeywordOptionVolume:
 		value, ok := ctx.Line.NextToken()
 		if !ok {
-			return nil, fmt.Errorf("expected volume value: %s", ln)
+			return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "volume value")
 		}
 
 		parsed.Values[t.KeywordOptionVolume] = value
 	case t.KeywordOptionAmbiance:
 		name, ok := ctx.Line.NextToken()
 		if !ok {
-			return nil, fmt.Errorf("expected name for ambiance audio file: %s", ln)
+			return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "ambiance name")
 		}
+		nameSpan, _ := ctx.Line.LastTokenSpan()
 
 		if err := s.IsValidNamedRef(name); err != nil {
-			return nil, fmt.Errorf("invalid ambiance name: %v", err)
+			return nil, diag.Validation(err.Error()).WithSpan(nameSpan).WithFound(name).WithCause(err)
 		}
 
 		content, ok := ctx.Line.NextToken()
 		if !ok {
-			return nil, fmt.Errorf("expected path for ambiance audio file: %s", ln)
+			return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "ambiance URL")
 		}
+		contentSpan, _ := ctx.Line.LastTokenSpan()
 
 		if !s.IsRemoteFile(content) {
-			return nil, fmt.Errorf("file paths are not supported in WASM for ambiance audio: %s", content)
+			return nil, diag.Validation("WASM only supports remote URLs for ambiance audio").WithSpan(contentSpan).WithFound(content)
 		}
 
 		parsed.Ambiance[name] = content
 	case t.KeywordOptionExtends:
 		content, ok := ctx.Line.NextToken()
 		if !ok {
-			return nil, fmt.Errorf("expected path: %s", ln)
+			return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "extends URL")
 		}
+		contentSpan, _ := ctx.Line.LastTokenSpan()
 
 		if !s.IsRemoteFile(content) {
-			return nil, fmt.Errorf("file paths are not supported in WASM for extends: %s", content)
+			return nil, diag.Validation("WASM only supports remote URLs for extends").WithSpan(contentSpan).WithFound(content)
 		}
 
 		parsed.Extends = append(parsed.Extends, content)
 	default:
-		return nil, fmt.Errorf("invalid option: %q", option)
+		diagnostic := diag.Parse("invalid option").WithSpan(span).WithFound(option).WithExpected(validOptions...)
+		if suggestion, ok := diag.ClosestMatch(option, validOptions, diag.DefaultSuggestionDistance(option)); ok {
+			diagnostic.WithSuggestion(fmt.Sprintf("did you mean %q?", suggestion))
+		}
+		return nil, diagnostic
 	}
 
 	if unknown, ok := ctx.Line.Peek(); ok {
-		return nil, fmt.Errorf("unexpected token after option definition: %q", unknown)
+		unknownSpan, _ := ctx.Line.PeekSpan()
+		return nil, diag.Parse("unexpected token after option definition").WithSpan(unknownSpan).WithFound(unknown)
 	}
 
 	return parsed, nil

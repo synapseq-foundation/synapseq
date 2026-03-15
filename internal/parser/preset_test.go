@@ -14,6 +14,7 @@ package parser
 import (
 	"testing"
 
+	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -195,5 +196,28 @@ func TestParsePreset_WithTemplate(ts *testing.T) {
 				ts.Errorf("%s: expected From to be nil", tt.name)
 			}
 		}
+	}
+}
+
+func TestParsePresetTemplateTypoDiagnostic(ts *testing.T) {
+	ctx := NewTextParser("alpha as templat")
+
+	_, err := ctx.ParsePreset(nil)
+	if err == nil {
+		ts.Fatal("expected preset diagnostic")
+	}
+
+	diagnostic, ok := diag.As(err)
+	if !ok {
+		ts.Fatalf("expected diag.Diagnostic, got %T", err)
+	}
+	if diagnostic.Found != "templat" {
+		ts.Fatalf("expected found token templat, got %q", diagnostic.Found)
+	}
+	if diagnostic.Suggestion != "did you mean \"template\"?" {
+		ts.Fatalf("expected template suggestion, got %q", diagnostic.Suggestion)
+	}
+	if diagnostic.Span.Column != 10 || diagnostic.Span.EndColumn != 17 {
+		ts.Fatalf("expected template span 10..17, got %d..%d", diagnostic.Span.Column, diagnostic.Span.EndColumn)
 	}
 }

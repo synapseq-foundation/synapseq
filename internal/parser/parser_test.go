@@ -16,6 +16,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -87,6 +88,41 @@ func TestNextToken(ts *testing.T) {
 				ts.Errorf("For line '%s', expected token %d to be '%s' but got '%s'", test.line, i, expectedToken, tokens[i])
 			}
 		}
+	}
+}
+
+func TestTokenSpans(ts *testing.T) {
+	ctx := NewTextParser("  tone 300 binaual 10 amplitude 10")
+
+	span, ok := ctx.Line.PeekSpan()
+	if !ok {
+		ts.Fatal("expected span for first token")
+	}
+	if span.Column != 3 || span.EndColumn != 7 {
+		ts.Fatalf("expected first token span 3..7, got %d..%d", span.Column, span.EndColumn)
+	}
+
+	token, ok := ctx.Line.NextToken()
+	if !ok || token != t.KeywordTone {
+		ts.Fatalf("expected first token %q, got %q", t.KeywordTone, token)
+	}
+
+	if _, ok := ctx.Line.NextToken(); !ok {
+		ts.Fatal("expected second token")
+	}
+	if _, ok := ctx.Line.NextToken(); !ok {
+		ts.Fatal("expected third token")
+	}
+
+	span, ok = ctx.Line.LastTokenSpan()
+	if !ok {
+		ts.Fatal("expected last token span")
+	}
+	if span.Column != 12 || span.EndColumn != 19 {
+		ts.Fatalf("expected typo token span 12..19, got %d..%d", span.Column, span.EndColumn)
+	}
+	if span.LineText != "  tone 300 binaual 10 amplitude 10" {
+		ts.Fatalf("unexpected line text in span: %q", span.LineText)
 	}
 }
 
@@ -179,6 +215,38 @@ func TestNextExpectOneOf(ts *testing.T) {
 	}
 }
 
+func TestNextExpectOneOfReturnsDiagnostic(ts *testing.T) {
+	ctx := NewTextParser("tone 300 binaual 10")
+
+	for range 2 {
+		if _, ok := ctx.Line.NextToken(); !ok {
+			ts.Fatal("unexpected EOF preparing test")
+		}
+	}
+
+	_, err := ctx.Line.NextExpectOneOf(t.KeywordBinaural, t.KeywordMonaural, t.KeywordIsochronic)
+	if err == nil {
+		ts.Fatal("expected diagnostic error")
+	}
+
+	diagnostic, ok := diag.As(err)
+	if !ok {
+		ts.Fatalf("expected diag.Diagnostic, got %T", err)
+	}
+	if diagnostic.Message != "unexpected token" {
+		ts.Fatalf("expected unexpected token message, got %q", diagnostic.Message)
+	}
+	if diagnostic.Found != "binaual" {
+		ts.Fatalf("expected found token binaual, got %q", diagnostic.Found)
+	}
+	if diagnostic.Span.Column != 10 || diagnostic.Span.EndColumn != 17 {
+		ts.Fatalf("expected token span 10..17, got %d..%d", diagnostic.Span.Column, diagnostic.Span.EndColumn)
+	}
+	if diagnostic.Suggestion != "did you mean \"binaural\"?" {
+		ts.Fatalf("expected typo suggestion, got %q", diagnostic.Suggestion)
+	}
+}
+
 func TestFloat64Strict(ts *testing.T) {
 	tests := []struct {
 		line          string
@@ -214,6 +282,32 @@ func TestFloat64Strict(ts *testing.T) {
 	}
 }
 
+func TestFloat64StrictDiagnostic(ts *testing.T) {
+	ctx := NewTextParser("tone nope")
+	if _, ok := ctx.Line.NextToken(); !ok {
+		ts.Fatal("expected first token")
+	}
+
+	_, err := ctx.Line.NextFloat64Strict()
+	if err == nil {
+		ts.Fatal("expected diagnostic error")
+	}
+
+	diagnostic, ok := diag.As(err)
+	if !ok {
+		ts.Fatalf("expected diag.Diagnostic, got %T", err)
+	}
+	if diagnostic.Message != "invalid float" {
+		ts.Fatalf("expected invalid float message, got %q", diagnostic.Message)
+	}
+	if diagnostic.Found != "nope" {
+		ts.Fatalf("expected found token nope, got %q", diagnostic.Found)
+	}
+	if diagnostic.Span.Column != 6 || diagnostic.Span.EndColumn != 10 {
+		ts.Fatalf("expected invalid float span 6..10, got %d..%d", diagnostic.Span.Column, diagnostic.Span.EndColumn)
+	}
+}
+
 func TestNextIntStrict(ts *testing.T) {
 	tests := []struct {
 		line          string
@@ -244,5 +338,31 @@ func TestNextIntStrict(ts *testing.T) {
 				ts.Errorf("For line '%s', expected value %d but got %d", test.line, test.expectedValue, value)
 			}
 		}
+	}
+}
+
+func TestNextIntStrictEOFDiagnostic(ts *testing.T) {
+	ctx := NewTextParser("track")
+	if _, ok := ctx.Line.NextToken(); !ok {
+		ts.Fatal("expected first token")
+	}
+
+	_, err := ctx.Line.NextIntStrict()
+	if err == nil {
+		ts.Fatal("expected EOF diagnostic")
+	}
+
+	diagnostic, ok := diag.As(err)
+	if !ok {
+		ts.Fatalf("expected diag.Diagnostic, got %T", err)
+	}
+	if diagnostic.Message != "unexpected end of line" {
+		ts.Fatalf("expected EOF message, got %q", diagnostic.Message)
+	}
+	if diagnostic.Span.Column != 6 || diagnostic.Span.EndColumn != 7 {
+		ts.Fatalf("expected EOF span 6..7, got %d..%d", diagnostic.Span.Column, diagnostic.Span.EndColumn)
+	}
+	if len(diagnostic.Expected) != 1 || diagnostic.Expected[0] != "integer" {
+		ts.Fatalf("expected integer expectation, got %#v", diagnostic.Expected)
 	}
 }

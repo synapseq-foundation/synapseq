@@ -16,6 +16,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -262,5 +263,28 @@ func TestParseTrack_Errors(ts *testing.T) {
 		if err == nil {
 			ts.Errorf("For line '%s', expected error but got none", line)
 		}
+	}
+}
+
+func TestParseTrack_TypoDiagnostic(ts *testing.T) {
+	ctx := NewTextParser("tone 300 binaual 10 amplitude 10")
+
+	_, err := ctx.ParseTrack()
+	if err == nil {
+		ts.Fatal("expected typo diagnostic")
+	}
+
+	diagnostic, ok := diag.As(err)
+	if !ok {
+		ts.Fatalf("expected diag.Diagnostic, got %T", err)
+	}
+	if diagnostic.Found != "binaual" {
+		ts.Fatalf("expected found token binaual, got %q", diagnostic.Found)
+	}
+	if diagnostic.Suggestion != "did you mean \"binaural\"?" {
+		ts.Fatalf("expected binaural suggestion, got %q", diagnostic.Suggestion)
+	}
+	if diagnostic.Span.Column != 10 || diagnostic.Span.EndColumn != 17 {
+		ts.Fatalf("expected typo at 10..17, got %d..%d", diagnostic.Span.Column, diagnostic.Span.EndColumn)
 	}
 }

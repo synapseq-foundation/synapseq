@@ -107,7 +107,8 @@ func TestAudioRendererMix_ModulationAffectsStereoWithSharedPhase(ts *testing.T) 
 	samples := renderer.mix(make([]int, t.BufferSize*audioChannels))
 
 	baseSample := renderer.channels[0].Amplitude[0] * renderer.waveTables[int(t.WaveformSawtooth)][1]
-	modFactor := 0.5
+	modOffset := renderer.channels[0].Effect.Increment
+	modFactor := renderer.calcModulationFactor(&renderer.channels[0], modOffset)
 	gain := 0.3 + 0.7*modFactor
 	expected := clampPCM16(int(math.Round(float64(baseSample)*gain)) >> audioBitShift)
 
@@ -121,7 +122,7 @@ func TestAudioRendererMix_ModulationAffectsStereoWithSharedPhase(ts *testing.T) 
 	}
 }
 
-func TestAudioRendererMix_SawtoothModulationUsesLinearRamp(ts *testing.T) {
+func TestAudioRendererMix_SawtoothModulationUsesThresholdedCurve(ts *testing.T) {
 	renderer := newMixTestRenderer()
 	channel := &renderer.channels[0]
 	channel.Track = t.Track{
@@ -137,9 +138,10 @@ func TestAudioRendererMix_SawtoothModulationUsesLinearRamp(ts *testing.T) {
 	channel.Effect.Offset = int(t.SineTableSize/2) * t.PhasePrecision
 
 	got := renderer.applyModulationToCurrentPhase(channel, 1000)
-	expected := int(math.Round(1000 * (0.3 + 0.7*0.5)))
+	modFactor := renderer.calcModulationFactor(channel, channel.Effect.Offset)
+	expected := int(math.Round(1000 * (0.3 + 0.7*modFactor)))
 	if got != expected {
-		ts.Fatalf("unexpected sawtooth modulation output at mid ramp: got %d, want %d", got, expected)
+		ts.Fatalf("unexpected sawtooth modulation output for current curve: got %d, want %d", got, expected)
 	}
 }
 

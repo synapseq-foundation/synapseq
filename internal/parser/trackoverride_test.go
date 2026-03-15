@@ -14,6 +14,7 @@ package parser
 import (
 	"testing"
 
+	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -334,5 +335,44 @@ func TestPresetInheritance_Integration(ts *testing.T) {
 	// Verify that template tracks are unchanged
 	if templatePreset.Track[0].Carrier != 300 {
 		ts.Errorf("template should remain unchanged, expected carrier 300, got %v", templatePreset.Track[0].Carrier)
+	}
+}
+
+func TestParseTrackOverrideKeywordTypoDiagnostic(ts *testing.T) {
+	templatePreset, err := t.NewPreset("base", true, nil)
+	if err != nil {
+		ts.Fatalf("failed to create template: %v", err)
+	}
+	templatePreset.Track[0] = t.Track{
+		Type:      t.TrackBinauralBeat,
+		Carrier:   300,
+		Resonance: 10,
+		Amplitude: t.AmplitudePercentToRaw(20),
+		Waveform:  t.WaveformSine,
+	}
+
+	derivedPreset, err := t.NewPreset("derived", false, templatePreset)
+	if err != nil {
+		ts.Fatalf("failed to create derived preset: %v", err)
+	}
+
+	ctx := NewTextParser("  track 1 amplitud 10")
+	err = ctx.ParseTrackOverride(derivedPreset)
+	if err == nil {
+		ts.Fatal("expected override diagnostic")
+	}
+
+	diagnostic, ok := diag.As(err)
+	if !ok {
+		ts.Fatalf("expected diag.Diagnostic, got %T", err)
+	}
+	if diagnostic.Found != "amplitud" {
+		ts.Fatalf("expected found token amplitud, got %q", diagnostic.Found)
+	}
+	if diagnostic.Suggestion != "did you mean \"amplitude\"?" {
+		ts.Fatalf("expected amplitude suggestion, got %q", diagnostic.Suggestion)
+	}
+	if diagnostic.Span.Column != 11 || diagnostic.Span.EndColumn != 19 {
+		ts.Fatalf("expected override span 11..19, got %d..%d", diagnostic.Span.Column, diagnostic.Span.EndColumn)
 	}
 }

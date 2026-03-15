@@ -19,5 +19,5 @@ import (
 
 // LoadTextSequence loads a sequence from a file content
 func LoadTextSequence(rawContent []byte) (*t.Sequence, error) {
-	return parseSequenceContent(rawContent, "")
+	return parseSequenceContent(rawContent, "", "")
 }
