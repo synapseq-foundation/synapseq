@@ -57,15 +57,21 @@ type previewNodeMarkerView struct {
 }
 
 type previewGraphMetricView struct {
-	Key        string
-	Label      string
-	RangeLabel string
-	MinLabel   string
-	MaxLabel   string
-	EmptyLabel string
-	Default    bool
-	HasData    bool
-	Series     []previewSeriesView
+	Key         string
+	Label       string
+	RangeLabel  string
+	MinLabel    string
+	MaxLabel    string
+	EmptyLabel  string
+	Default     bool
+	HasData     bool
+	LegendItems []previewGraphLegendItemView
+	Series      []previewSeriesView
+}
+
+type previewGraphLegendItemView struct {
+	Label string
+	Color string
 }
 
 type previewSeriesView struct {
@@ -130,13 +136,15 @@ type previewMetaView struct {
 }
 
 type graphMetricDefinition struct {
-	Key         string
-	Label       string
-	RangePrefix string
-	EmptyLabel  string
-	Default     bool
-	SelectValue func(track t.Track) (float64, bool)
-	FormatValue func(value float64) string
+	Key                   string
+	Label                 string
+	RangePrefix           string
+	EmptyLabel            string
+	Default               bool
+	SelectValue           func(track t.Track) (float64, bool)
+	SelectTransitionValue func(startTrack, endTrack t.Track, alpha float64) (float64, bool)
+	BuildLegendItems      func(series []previewSeriesView, periods []t.Period) []previewGraphLegendItemView
+	FormatValue           func(value float64) string
 }
 
 type rawGraphSeriesPoint struct {
@@ -330,6 +338,33 @@ func buildGraphMetrics(periods []t.Period, totalDurationMs int) []previewGraphMe
 			FormatValue: formatHz,
 		},
 		{
+			Key:         "waveform",
+			Label:       "Waveform",
+			RangePrefix: "Waveform range",
+			EmptyLabel:  "No waveform data available for this sequence.",
+			SelectValue: func(track t.Track) (float64, bool) {
+				if !supportsWaveform(track) {
+					return 0, false
+				}
+				return float64(track.Waveform), true
+			},
+			SelectTransitionValue: func(startTrack, endTrack t.Track, alpha float64) (float64, bool) {
+				if !supportsWaveform(startTrack) {
+					return 0, false
+				}
+
+				startValue := float64(startTrack.Waveform)
+				endValue := startValue
+				if supportsWaveform(endTrack) {
+					endValue = float64(endTrack.Waveform)
+				}
+
+				return startValue*(1-alpha) + endValue*alpha, true
+			},
+			BuildLegendItems: buildWaveformLegendItems,
+			FormatValue:      formatWaveformValue,
+		},
+		{
 			Key:         "amplitude",
 			Label:       "Amplitude",
 			RangePrefix: "Amplitude range",
@@ -400,6 +435,8 @@ func buildGraphMetricView(definition graphMetricDefinition, periods []t.Period, 
 		series = buildPreviewSeriesFromRaw(rawSeries, minValue, maxValue, totalDurationMs, definition.FormatValue)
 	}
 
+	legendItems := buildMetricLegendItems(definition, series, periods)
+
 	rangeLabel := definition.EmptyLabel
 	minLabel := "0"
 	maxLabel := "0"
@@ -410,15 +447,16 @@ func buildGraphMetricView(definition graphMetricDefinition, periods []t.Period, 
 	}
 
 	return previewGraphMetricView{
-		Key:        definition.Key,
-		Label:      definition.Label,
-		RangeLabel: rangeLabel,
-		MinLabel:   minLabel,
-		MaxLabel:   maxLabel,
-		EmptyLabel: definition.EmptyLabel,
-		Default:    definition.Default,
-		HasData:    hasData,
-		Series:     series,
+		Key:         definition.Key,
+		Label:       definition.Label,
+		RangeLabel:  rangeLabel,
+		MinLabel:    minLabel,
+		MaxLabel:    maxLabel,
+		EmptyLabel:  definition.EmptyLabel,
+		Default:     definition.Default,
+		HasData:     hasData,
+		LegendItems: legendItems,
+		Series:      series,
 	}
 }
 
@@ -458,8 +496,15 @@ func collectGraphMetricSeries(definition graphMetricDefinition, periods []t.Peri
 				}
 
 				progress := float64(step) / float64(samples)
-				track := interpolateTrackForPreview(startTrack, endTrack, applyTransitionAlpha(progress, period.Transition))
-				value, ok := definition.SelectValue(track)
+				alpha := applyTransitionAlpha(progress, period.Transition)
+				var value float64
+				var ok bool
+				if definition.SelectTransitionValue != nil {
+					value, ok = definition.SelectTransitionValue(startTrack, endTrack, alpha)
+				} else {
+					track := interpolateTrackForPreview(startTrack, endTrack, alpha)
+					value, ok = definition.SelectValue(track)
+				}
 				if !ok {
 					continue
 				}
@@ -784,6 +829,51 @@ func buildTrackSummary(track t.Track) string {
 	}
 }
 
+func buildMetricLegendItems(definition graphMetricDefinition, series []previewSeriesView, periods []t.Period) []previewGraphLegendItemView {
+	if definition.BuildLegendItems != nil {
+		return definition.BuildLegendItems(series, periods)
+	}
+
+	items := make([]previewGraphLegendItemView, 0, len(series))
+	for _, current := range series {
+		items = append(items, previewGraphLegendItemView{
+			Label: current.LegendLabel,
+			Color: current.Color,
+		})
+	}
+
+	return items
+}
+
+func buildWaveformLegendItems(_ []previewSeriesView, periods []t.Period) []previewGraphLegendItemView {
+	seen := map[t.WaveformType]bool{}
+	ordered := make([]previewGraphLegendItemView, 0, 4)
+
+	appendWaveform := func(track t.Track) {
+		if !supportsWaveform(track) {
+			return
+		}
+
+		if seen[track.Waveform] {
+			return
+		}
+
+		seen[track.Waveform] = true
+		ordered = append(ordered, previewGraphLegendItemView{
+			Label: humanWaveformType(track.Waveform),
+		})
+	}
+
+	for _, period := range periods {
+		for ch := range t.NumberOfChannels {
+			appendWaveform(period.TrackStart[ch])
+			appendWaveform(period.TrackEnd[ch])
+		}
+	}
+
+	return ordered
+}
+
 func buildGraphValueLabel(track t.Track) string {
 	if usesBeat(track) {
 		return fmt.Sprintf("%s / %s", formatHz(track.Carrier), formatHz(track.Resonance))
@@ -934,7 +1024,7 @@ func isNoiseTrack(track t.Track) bool {
 }
 
 func supportsWaveform(track t.Track) bool {
-	return isToneTrack(track) || track.Type == t.TrackSilence
+	return isToneTrack(track) || track.Type == t.TrackSilence || track.Type == t.TrackAmbiance
 }
 
 func usesBeat(track t.Track) bool {
@@ -968,6 +1058,21 @@ func humanTrackType(track t.Track) string {
 		return "Brown noise"
 	case t.TrackAmbiance:
 		return "Ambiance"
+	default:
+		return "Unknown"
+	}
+}
+
+func humanWaveformType(waveform t.WaveformType) string {
+	switch waveform {
+	case t.WaveformSine:
+		return "Sine"
+	case t.WaveformSquare:
+		return "Square"
+	case t.WaveformTriangle:
+		return "Triangle"
+	case t.WaveformSawtooth:
+		return "Sawtooth"
 	default:
 		return "Unknown"
 	}
@@ -1019,6 +1124,17 @@ func formatPercent(value float64) string {
 
 func formatFloat(value float64) string {
 	return fmt.Sprintf("%.2f", value)
+}
+
+func formatWaveformValue(value float64) string {
+	waveform := int(math.Round(value))
+	if waveform < int(t.WaveformSine) {
+		waveform = int(t.WaveformSine)
+	}
+	if waveform > int(t.WaveformSawtooth) {
+		waveform = int(t.WaveformSawtooth)
+	}
+	return humanWaveformType(t.WaveformType(waveform))
 }
 
 func formatDuration(ms int) string {

@@ -770,13 +770,15 @@
             </div>
 
             <div class="graph-legend" aria-label="Graph legend">
-              {{ range .Series }}
+              {{ range .LegendItems }}
               <span class="graph-legend-item">
+                {{ if .Color }}
                 <span
                   class="graph-legend-swatch"
                   data-swatch-color="{{ .Color }}"
                 ></span>
-                <span>{{ .LegendLabel }}</span>
+                {{ end }}
+                <span>{{ .Label }}</span>
               </span>
               {{ end }}
             </div>
