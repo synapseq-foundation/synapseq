@@ -204,6 +204,9 @@ func Render() string {
 	writeBullet(&b, "ease-in", "Start the transition gently and accelerate into the target state. Useful when you want the next section to arrive progressively rather than immediately.")
 	writeBullet(&b, "ease-out", "Move quickly at first and then settle more gently as the next state is reached. Useful for soft landings near the end of a section.")
 	writeBullet(&b, "smooth", "Apply a balanced easing curve across the whole transition. This is usually the best choice for gradual meditative ramps.")
+	writeBullet(&b, "Compatibility rule", "Consecutive timeline entries cannot reuse the same channel with an incompatible track type, effect type, or ambiance source.")
+	writeBullet(&b, "Silence bridge", "If you need to switch a channel from one incompatible sound design to another, insert a silence preset between those timeline entries.")
+	writeBullet(&b, "Direct on/off changes", "A channel should not jump directly between an active track and off; use silence as the bridge state.")
 	writeCodeBlock(&b,
 		"00:00:00 silence",
 		"00:00:20 focus-light",
@@ -211,6 +214,13 @@ func Render() string {
 		"00:07:00 focus",
 		"00:19:30 focus",
 		"00:20:00 silence",
+	)
+	writeCodeBlock(&b,
+		"# Good: incompatible presets are separated by silence",
+		"00:00:00 silence",
+		"00:00:15 doppler-preset",
+		"00:00:30 silence",
+		"00:00:45 pan-preset",
 	)
 
 	writeSection(&b, "Extended Files")

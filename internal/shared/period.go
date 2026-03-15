@@ -14,6 +14,7 @@ package shared
 import (
 	"fmt"
 
+	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -53,7 +54,9 @@ func AdjustPeriods(last, next *t.Period) error {
 		// Validate if previus period has a track on and next period turn it off or vice-versa
 		if (tr1.Type != t.TrackOff && tr1.Type != t.TrackSilence && tr2.Type == t.TrackOff) ||
 			(tr1.Type == t.TrackOff && tr2.Type != t.TrackOff && tr2.Type != t.TrackSilence) {
-			return fmt.Errorf("channel %d cannot be turned off or on directly, use silence instead: %s --> %s", ch+1, tr1.Type.String(), tr2.Type.String())
+			return diag.Validation(
+				fmt.Sprintf("channel %d cannot switch directly between an active track and off on consecutive timeline entries: %s -> %s", ch+1, tr1.Type.String(), tr2.Type.String()),
+			).WithHint("the current timeline entry conflicts with the previous one on this channel; insert a silence entry between them")
 		}
 
 		// Determine if both periods have a track on
@@ -63,13 +66,19 @@ func AdjustPeriods(last, next *t.Period) error {
 			tr2.Type != t.TrackSilence {
 			// No slide allowed between different track types, effect types, or ambiance sources.
 			if tr1.Type != tr2.Type {
-				return fmt.Errorf("channel %d cannot change track type directly, use silence instead: %s --> %s", ch+1, tr1.Type.String(), tr2.Type.String())
+				return diag.Validation(
+					fmt.Sprintf("channel %d cannot move directly from %s to %s on consecutive timeline entries", ch+1, tr1.Type.String(), tr2.Type.String()),
+				).WithHint("the current timeline entry reuses this channel with an incompatible track type; insert a silence entry between the two presets")
 			}
 			if tr1.Effect.Type != tr2.Effect.Type {
-				return fmt.Errorf("channel %d cannot change effect type directly, use silence instead: %s --> %s", ch+1, tr1.Effect.Type.String(), tr2.Effect.Type.String())
+				return diag.Validation(
+					fmt.Sprintf("channel %d cannot move directly from %s effect to %s effect on consecutive timeline entries", ch+1, tr1.Effect.Type.String(), tr2.Effect.Type.String()),
+				).WithHint("the current timeline entry reuses this channel with an incompatible effect; insert a silence entry between the two presets")
 			}
 			if tr1.AmbianceName != tr2.AmbianceName {
-				return fmt.Errorf("channel %d cannot change ambiance directly, use silence instead: %s --> %s", ch+1, tr1.AmbianceName, tr2.AmbianceName)
+				return diag.Validation(
+					fmt.Sprintf("channel %d cannot move directly from ambiance %q to %q on consecutive timeline entries", ch+1, tr1.AmbianceName, tr2.AmbianceName),
+				).WithHint("the current timeline entry reuses this channel with a different ambiance source; insert a silence entry between the two presets")
 			}
 		}
 
