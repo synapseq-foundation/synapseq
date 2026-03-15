@@ -12,8 +12,7 @@
 package parser
 
 import (
-	"fmt"
-
+	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
 	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
@@ -40,14 +39,13 @@ func (ctx *TextParser) HasTrack() bool {
 // ParseTrack extracts and returns a Track from the current line context
 func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 	waveform := t.WaveformSine
-	ln := ctx.Line.Raw
 
 	if tok, ok := ctx.Line.Peek(); ok && tok == t.KeywordWaveform {
 		ctx.Line.NextToken() // skip "waveform"
 
 		wfTok, err := ctx.Line.NextExpectOneOf(t.KeywordSine, t.KeywordSquare, t.KeywordTriangle, t.KeywordSawtooth)
 		if err != nil {
-			return nil, fmt.Errorf("expected %q, %q, %q, or %q after waveform: %s", t.KeywordSine, t.KeywordSquare, t.KeywordTriangle, t.KeywordSawtooth, ln)
+			return nil, err
 		}
 
 		switch wfTok {
@@ -62,7 +60,7 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 		}
 
 		if _, err := ctx.Line.NextExpectOneOf(t.KeywordTone, t.KeywordAmbiance); err != nil {
-			return nil, fmt.Errorf("expected %q or %q after waveform type: %s", t.KeywordTone, t.KeywordAmbiance, ln)
+			return nil, err
 		}
 
 		ctx.Line.RewindToken(1) // rewind to re-process the tone line
@@ -70,7 +68,7 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 
 	first, ok := ctx.Line.NextToken()
 	if !ok {
-		return nil, fmt.Errorf("expected %q, %s or %q: %s", t.KeywordTone, t.KeywordNoise, t.KeywordAmbiance, ln)
+		return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), t.KeywordTone, t.KeywordNoise, t.KeywordAmbiance)
 	}
 
 	var (
@@ -89,12 +87,12 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 	case t.KeywordTone:
 		var err error
 		if carrier, err = ctx.Line.NextFloat64Strict(); err != nil {
-			return nil, fmt.Errorf("carrier: %w", err)
+			return nil, err
 		}
 
 		kind, err := ctx.Line.NextExpectOneOf(t.KeywordBinaural, t.KeywordMonaural, t.KeywordIsochronic, t.KeywordEffect, t.KeywordAmplitude)
 		if err != nil {
-			return nil, fmt.Errorf("expected %q, %q, %q, %q, or %q after carrier: %s", t.KeywordBinaural, t.KeywordMonaural, t.KeywordIsochronic, t.KeywordEffect, t.KeywordAmplitude, ln)
+			return nil, err
 		}
 
 		switch kind {
@@ -112,24 +110,24 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 			trackType == t.TrackMonauralBeat ||
 			trackType == t.TrackIsochronicBeat {
 			if resonance, err = ctx.Line.NextFloat64Strict(); err != nil {
-				return nil, fmt.Errorf("resonance: %w", err)
+				return nil, err
 			}
 
 			kind, err = ctx.Line.NextExpectOneOf(t.KeywordEffect, t.KeywordAmplitude)
 			if err != nil {
-				return nil, fmt.Errorf("expected %q or %q after resonance: %s", t.KeywordEffect, t.KeywordAmplitude, ln)
+				return nil, err
 			}
 		}
 
 		if kind == t.KeywordEffect {
 			effectKind, err := ctx.Line.NextExpectOneOf(t.KeywordPan, t.KeywordModulation, t.KeywordDoppler)
 			if err != nil {
-				return nil, fmt.Errorf("expected %q, %q or %q after effect: %s", t.KeywordPan, t.KeywordModulation, t.KeywordDoppler, ln)
+				return nil, err
 			}
 
 			effectValue, err := ctx.Line.NextFloat64Strict()
 			if err != nil {
-				return nil, fmt.Errorf("effect value: %w", err)
+				return nil, err
 			}
 			effect.Value = effectValue
 
@@ -143,23 +141,23 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 			}
 
 			if _, err := ctx.Line.NextExpectOneOf(t.KeywordIntensity); err != nil {
-				return nil, fmt.Errorf("expected %q after effect value: %s", t.KeywordIntensity, ln)
+				return nil, err
 			}
 
 			intensity, err := ctx.Line.NextFloat64Strict()
 			if err != nil {
-				return nil, fmt.Errorf("intensity: %w", err)
+				return nil, err
 			}
 			effect.Intensity = t.IntensityPercentToRaw(intensity)
 
 			if _, err := ctx.Line.NextExpectOneOf(t.KeywordAmplitude); err != nil {
-				return nil, fmt.Errorf("expected %q after intensity: %s", t.KeywordAmplitude, ln)
+				return nil, err
 			}
 		}
 	case t.KeywordNoise:
 		kind, err := ctx.Line.NextExpectOneOf(t.KeywordWhite, t.KeywordPink, t.KeywordBrown)
 		if err != nil {
-			return nil, fmt.Errorf("expected %q, %q, or %q after noise: %s", t.KeywordWhite, t.KeywordPink, t.KeywordBrown, ln)
+			return nil, err
 		}
 
 		switch kind {
@@ -173,29 +171,29 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 
 		kind, err = ctx.Line.NextExpectOneOf(t.KeywordEffect, t.KeywordSmooth, t.KeywordAmplitude)
 		if err != nil {
-			return nil, fmt.Errorf("expected %q, %q or %q after noise type: %s", t.KeywordEffect, t.KeywordSmooth, t.KeywordAmplitude, ln)
+			return nil, err
 		}
 
 		if kind == t.KeywordSmooth {
 			smooth, err = ctx.Line.NextFloat64Strict()
 			if err != nil {
-				return nil, fmt.Errorf("noise smooth: %w", err)
+				return nil, err
 			}
 			kind, err = ctx.Line.NextExpectOneOf(t.KeywordEffect, t.KeywordAmplitude)
 			if err != nil {
-				return nil, fmt.Errorf("expected %q or %q after noise smooth: %s", t.KeywordEffect, t.KeywordAmplitude, ln)
+				return nil, err
 			}
 		}
 
 		if kind == t.KeywordEffect {
 			effectKind, err := ctx.Line.NextExpectOneOf(t.KeywordPan, t.KeywordModulation)
 			if err != nil {
-				return nil, fmt.Errorf("expected %q or %q after noise effect: %s", t.KeywordPan, t.KeywordModulation, ln)
+				return nil, err
 			}
 
 			effectValue, err := ctx.Line.NextFloat64Strict()
 			if err != nil {
-				return nil, fmt.Errorf("effect value: %w", err)
+				return nil, err
 			}
 			effect.Value = effectValue
 
@@ -207,17 +205,17 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 			}
 
 			if _, err := ctx.Line.NextExpectOneOf(t.KeywordIntensity); err != nil {
-				return nil, fmt.Errorf("expected %q after effect value: %s", t.KeywordIntensity, ln)
+				return nil, err
 			}
 
 			intensity, err := ctx.Line.NextFloat64Strict()
 			if err != nil {
-				return nil, fmt.Errorf("intensity: %w", err)
+				return nil, err
 			}
 			effect.Intensity = t.IntensityPercentToRaw(intensity)
 
 			if _, err := ctx.Line.NextExpectOneOf(t.KeywordAmplitude); err != nil {
-				return nil, fmt.Errorf("expected %q after intensity: %s", t.KeywordAmplitude, ln)
+				return nil, err
 			}
 		}
 	case t.KeywordAmbiance:
@@ -225,31 +223,33 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 
 		name, ok := ctx.Line.NextToken()
 		if !ok {
-			return nil, fmt.Errorf("ambiance name cannot be empty: %s", ln)
+			return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "ambiance name")
 		}
 
 		if err := s.IsValidNamedRef(name); err != nil {
-			return nil, err
+			span, _ := ctx.Line.LastTokenSpan()
+			return nil, diag.Validation(err.Error()).WithSpan(span).WithFound(name).WithCause(err)
 		}
 
 		if name == "" {
-			return nil, fmt.Errorf("ambiance name cannot be empty: %s", ln)
+			span, _ := ctx.Line.LastTokenSpan()
+			return nil, diag.Validation("ambiance name cannot be empty").WithSpan(span)
 		}
 
 		kind, err := ctx.Line.NextExpectOneOf(t.KeywordEffect, t.KeywordAmplitude)
 		if err != nil {
-			return nil, fmt.Errorf("expected %q or %q after ambiance: %s", t.KeywordEffect, t.KeywordAmplitude, ln)
+			return nil, err
 		}
 
 		if kind == t.KeywordEffect {
 			effectKind, err := ctx.Line.NextExpectOneOf(t.KeywordPan, t.KeywordModulation)
 			if err != nil {
-				return nil, fmt.Errorf("expected %q or %q after ambiance effect: %s", t.KeywordPan, t.KeywordModulation, ln)
+				return nil, err
 			}
 
 			effectValue, err := ctx.Line.NextFloat64Strict()
 			if err != nil {
-				return nil, fmt.Errorf("effect value: %w", err)
+				return nil, err
 			}
 			effect.Value = effectValue
 
@@ -261,34 +261,36 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 			}
 
 			if _, err := ctx.Line.NextExpectOneOf(t.KeywordIntensity); err != nil {
-				return nil, fmt.Errorf("expected %q after effect value: %s", t.KeywordIntensity, ln)
+				return nil, err
 			}
 
 			intensity, err := ctx.Line.NextFloat64Strict()
 			if err != nil {
-				return nil, fmt.Errorf("intensity: %w", err)
+				return nil, err
 			}
 			effect.Intensity = t.IntensityPercentToRaw(intensity)
 
 			if _, err := ctx.Line.NextExpectOneOf(t.KeywordAmplitude); err != nil {
-				return nil, fmt.Errorf("expected %q after intensity: %s", t.KeywordAmplitude, ln)
+				return nil, err
 			}
 		}
 
 		// convert to 0-based index
 		ambianceName = name
 	default:
-		return nil, fmt.Errorf("expected %q, %q, %q or %q. Received: %s", t.KeywordTone, t.KeywordNoise, t.KeywordAmbiance, t.KeywordTrack, first)
+		span, _ := ctx.Line.LastTokenSpan()
+		return nil, diag.UnexpectedToken(span, first, t.KeywordTone, t.KeywordNoise, t.KeywordAmbiance, t.KeywordTrack)
 	}
 
 	var err error
 	if amplitude, err = ctx.Line.NextFloat64Strict(); err != nil {
-		return nil, fmt.Errorf("amplitude: %w", err)
+		return nil, err
 	}
 
 	unknown, ok := ctx.Line.Peek()
 	if ok {
-		return nil, fmt.Errorf("unexpected token after track definition: %q", unknown)
+		span, _ := ctx.Line.PeekSpan()
+		return nil, diag.Parse("unexpected token after track definition").WithSpan(span).WithFound(unknown)
 	}
 
 	track := t.Track{
@@ -302,7 +304,10 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 		Effect:       effect,
 	}
 	if err := track.Validate(); err != nil {
-		return nil, fmt.Errorf("%w", err)
+		if span, ok := ctx.Line.LastTokenSpan(); ok {
+			return nil, diag.Validation(err.Error()).WithSpan(span).WithCause(err)
+		}
+		return nil, err
 	}
 
 	return &track, nil

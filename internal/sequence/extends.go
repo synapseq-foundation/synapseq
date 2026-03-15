@@ -35,5 +35,5 @@ func extends(fileName string) (*t.Extends, error) {
 
 	baseDir := filepath.Dir(absInputFile)
 
-	return parseExtendsContent(rawContent, baseDir)
+	return parseExtendsContent(rawContent, absInputFile, baseDir)
 }
