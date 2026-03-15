@@ -22,18 +22,20 @@ import (
 // Methods that modify the context return a new instance.
 type AppContext struct {
 	statusOutput io.Writer
+	statusColors bool
 }
 
 // LoadedContext holds a loaded sequence and execution settings.
 type LoadedContext struct {
-	appCtx    *AppContext
-	sequence  *t.Sequence
+	appCtx   *AppContext
+	sequence *t.Sequence
 }
 
 // NewAppContext creates a new AppContext instance.
 func NewAppContext() *AppContext {
 	return &AppContext{
 		statusOutput: nil,
+		statusColors: true,
 	}
 }
 
@@ -44,13 +46,15 @@ func (ac *AppContext) Verbose() bool {
 }
 
 // WithVerbose returns a new AppContext with verbose mode enabled.
-// Status output will be written to the provided writer (typically os.Stderr).
+// Status output will be written to the provided writer (typically os.Stderr),
+// and colors controls whether ANSI color sequences are emitted.
 //
 // Example:
 //
-//	ctx = ctx.WithVerbose(os.Stderr)
-func (ac *AppContext) WithVerbose(data io.Writer) *AppContext {
+//	ctx = ctx.WithVerbose(os.Stderr, true)
+func (ac *AppContext) WithVerbose(data io.Writer, colors bool) *AppContext {
 	newCtx := *ac
 	newCtx.statusOutput = data
+	newCtx.statusColors = colors
 	return &newCtx
 }

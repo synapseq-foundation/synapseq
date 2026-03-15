@@ -19,6 +19,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -213,6 +214,38 @@ alpha
 	_, err := LoadTextSequence(path)
 	if err == nil {
 		ts.Fatalf("expected error for background track without background option")
+	}
+}
+
+func TestLoadTextSequence_TrackDiagnosticIncludesSource(ts *testing.T) {
+	seq := `
+alpha
+  tone 300 binaual 10 amplitude 20
+00:00:00 alpha
+00:01:00 alpha
+`
+	path := writeSeqFile(ts, seq)
+
+	_, err := LoadTextSequence(path)
+	if err == nil {
+		ts.Fatal("expected parse error")
+	}
+
+	diagnostic, ok := diag.As(err)
+	if !ok {
+		ts.Fatalf("expected diag.Diagnostic, got %T", err)
+	}
+	if diagnostic.Span.File != path {
+		ts.Fatalf("expected source file %q, got %q", path, diagnostic.Span.File)
+	}
+	if diagnostic.Span.Line != 2 {
+		ts.Fatalf("expected source line 2, got %d", diagnostic.Span.Line)
+	}
+	if diagnostic.Span.Column != 12 || diagnostic.Span.EndColumn != 19 {
+		ts.Fatalf("expected typo at 12..19, got %d..%d", diagnostic.Span.Column, diagnostic.Span.EndColumn)
+	}
+	if diagnostic.Suggestion != "did you mean \"binaural\"?" {
+		ts.Fatalf("expected typo suggestion, got %q", diagnostic.Suggestion)
 	}
 }
 

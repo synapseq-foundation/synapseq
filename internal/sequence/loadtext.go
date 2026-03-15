@@ -35,5 +35,5 @@ func LoadTextSequence(fileName string) (*t.Sequence, error) {
 
 	baseDir := filepath.Dir(absInputFile)
 
-	return parseSequenceContent(rawContent, baseDir)
+	return parseSequenceContent(rawContent, absInputFile, baseDir)
 }

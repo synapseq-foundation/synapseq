@@ -14,9 +14,18 @@ package cli
 import (
 	"io"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/fatih/color"
 )
+
+var ansiPattern = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
+func stripANSI(text string) string {
+	return ansiPattern.ReplaceAllString(text, "")
+}
 
 func TestParseFlags(ts *testing.T) {
 	originalArgs := os.Args
@@ -61,11 +70,29 @@ func TestParseFlags(ts *testing.T) {
 			expectedArgs: []string{},
 			expectError:  false,
 		},
+		{
+			args:         []string{"cmd", "-manual"},
+			expected:     &CLIOptions{ShowManual: true},
+			expectedArgs: []string{},
+			expectError:  false,
+		},
 		// Quiet flag
 		{
 			args:         []string{"cmd", "-quiet", "input.spsq", "output.wav"},
 			expected:     &CLIOptions{Quiet: true},
 			expectedArgs: []string{"input.spsq", "output.wav"},
+			expectError:  false,
+		},
+		{
+			args:         []string{"cmd", "-no-color", "input.spsq"},
+			expected:     &CLIOptions{NoColor: true},
+			expectedArgs: []string{"input.spsq"},
+			expectError:  false,
+		},
+		{
+			args:         []string{"cmd", "-no-colors", "input.spsq"},
+			expected:     &CLIOptions{NoColor: true},
+			expectedArgs: []string{"input.spsq"},
 			expectError:  false,
 		},
 		// Test flag
@@ -221,11 +248,17 @@ func TestParseFlags(ts *testing.T) {
 		if opts.ShowHelp != test.expected.ShowHelp {
 			ts.Errorf("For args %v, ShowHelp: expected %v but got %v", test.args, test.expected.ShowHelp, opts.ShowHelp)
 		}
+		if opts.ShowManual != test.expected.ShowManual {
+			ts.Errorf("For args %v, ShowManual: expected %v but got %v", test.args, test.expected.ShowManual, opts.ShowManual)
+		}
 		if opts.Preview != test.expected.Preview {
 			ts.Errorf("For args %v, Preview: expected %v but got %v", test.args, test.expected.Preview, opts.Preview)
 		}
 		if opts.Quiet != test.expected.Quiet {
 			ts.Errorf("For args %v, Quiet: expected %v but got %v", test.args, test.expected.Quiet, opts.Quiet)
+		}
+		if opts.NoColor != test.expected.NoColor {
+			ts.Errorf("For args %v, NoColor: expected %v but got %v", test.args, test.expected.NoColor, opts.NoColor)
 		}
 		if opts.Test != test.expected.Test {
 			ts.Errorf("For args %v, Test: expected %v but got %v", test.args, test.expected.Test, opts.Test)
@@ -333,12 +366,22 @@ func TestParseFlagsEdgeCases(ts *testing.T) {
 
 func TestHelpIncludesQuickStart(ts *testing.T) {
 	originalStdout := os.Stdout
+	originalColorOutput := color.Output
+	originalNoColor := color.NoColor
+	defer func() {
+		color.Output = originalColorOutput
+		color.NoColor = originalNoColor
+		os.Stdout = originalStdout
+	}()
+
 	readPipe, writePipe, err := os.Pipe()
 	if err != nil {
 		ts.Fatalf("failed to create pipe: %v", err)
 	}
 
 	os.Stdout = writePipe
+	color.Output = writePipe
+	SetColorEnabled(true)
 	Help()
 	writePipe.Close()
 	os.Stdout = originalStdout
@@ -348,14 +391,16 @@ func TestHelpIncludesQuickStart(ts *testing.T) {
 		ts.Fatalf("failed to read help output: %v", err)
 	}
 
-	helpText := string(output)
+	helpText := stripANSI(string(output))
 	checks := []string{
 		"Usage:\n  synapseq [options] <input> [output]",
 		"Quick start:",
 		"Generate session.wav in the current folder",
+		"Print the full language and usage manual",
 		"Generate session.html with a visual timeline preview",
 		"defaults to <input>.wav",
 		"-new TYPE         Template type: meditation, focus, sleep, relaxation",
+		"-manual           Show the full manual",
 		"-preview          Render an HTML preview timeline",
 		"Hub examples:",
 		"Run -hub-update once before using other -hub-* commands.",
@@ -367,5 +412,39 @@ func TestHelpIncludesQuickStart(ts *testing.T) {
 		if !strings.Contains(helpText, expected) {
 			ts.Errorf("help output missing %q\nfull output:\n%s", expected, helpText)
 		}
+	}
+}
+
+func TestHelpNoColorOmitsANSI(ts *testing.T) {
+	originalStdout := os.Stdout
+	originalColorOutput := color.Output
+	originalNoColor := color.NoColor
+	defer func() {
+		color.Output = originalColorOutput
+		color.NoColor = originalNoColor
+		os.Stdout = originalStdout
+	}()
+
+	readPipe, writePipe, err := os.Pipe()
+	if err != nil {
+		ts.Fatalf("failed to create pipe: %v", err)
+	}
+
+	os.Stdout = writePipe
+	color.Output = writePipe
+	SetColorEnabled(false)
+	Help()
+	writePipe.Close()
+
+	output, err := io.ReadAll(readPipe)
+	if err != nil {
+		ts.Fatalf("failed to read help output: %v", err)
+	}
+
+	if ansiPattern.Match(output) {
+		ts.Fatalf("expected help without ANSI escapes, got %q", string(output))
+	}
+	if !strings.Contains(string(output), "-no-color") {
+		ts.Fatalf("expected help to mention -no-color, got:\n%s", string(output))
 	}
 }

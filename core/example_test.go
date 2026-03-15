@@ -51,7 +51,7 @@ func ExampleLoadedContext_WAV() {
 
 	// Optional: Enable verbose output
 	// Replace with an io.Writer, e.g., os.Stderr
-	ctx = ctx.WithVerbose(os.Stderr)
+	ctx = ctx.WithVerbose(os.Stderr, true)
 
 	// Load the sequence
 	// loaded, err := ctx.Load("input.spsq")

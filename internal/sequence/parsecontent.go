@@ -14,13 +14,14 @@ package sequence
 import (
 	"fmt"
 
+	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
 	"github.com/synapseq-foundation/synapseq/v4/internal/parser"
 	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // parseSequenceContent parses the raw content of a sequence file and returns a Sequence struct
-func parseSequenceContent(rawContent []byte, baseRef string) (*t.Sequence, error) {
+func parseSequenceContent(rawContent []byte, sourceFile string, baseRef string) (*t.Sequence, error) {
 	file := NewSequenceFile(rawContent)
 
 	presets := make([]t.Preset, 0, t.MaxPresets)
@@ -54,12 +55,12 @@ func parseSequenceContent(rawContent []byte, baseRef string) (*t.Sequence, error
 
 		if ctx.HasOption() {
 			if optionsLocked {
-				return nil, fmt.Errorf("line %d: options must be defined on the top of the file, before any presets or timelines", lnn)
+				return nil, lineDiagnostic(sourceFile, lnn, ln, "options must be defined on the top of the file, before any presets or timelines")
 			}
 
 			parsedOptions, err := ctx.ParseOption(baseRef)
 			if err != nil {
-				return nil, fmt.Errorf("line %d: %v", lnn, err)
+				return nil, withSource(err, sourceFile, lnn, ln)
 			}
 
 			rawOptions.Merge(parsedOptions)
@@ -71,7 +72,7 @@ func parseSequenceContent(rawContent []byte, baseRef string) (*t.Sequence, error
 
 				extendsConfig, err := extends(extFile)
 				if err != nil {
-					return nil, fmt.Errorf("line %d: %v", lnn, err)
+					return nil, withSource(err, sourceFile, lnn, ln)
 				}
 
 				loadedExtends[extFile] = struct{}{}
@@ -80,7 +81,7 @@ func parseSequenceContent(rawContent []byte, baseRef string) (*t.Sequence, error
 			}
 
 			if _, err := rawOptions.Build(); err != nil {
-				return nil, fmt.Errorf("line %d: %v", lnn, err)
+				return nil, withSource(err, sourceFile, lnn, ln)
 			}
 
 			continue
@@ -90,22 +91,22 @@ func parseSequenceContent(rawContent []byte, baseRef string) (*t.Sequence, error
 			optionsLocked = true
 
 			if len(presets) >= t.MaxPresets {
-				return nil, fmt.Errorf("line %d: maximum number of presets reached", lnn)
+				return nil, lineDiagnostic(sourceFile, lnn, ln, "maximum number of presets reached")
 			}
 
 			if len(periods) > 0 {
-				return nil, fmt.Errorf("line %d: preset definitions must be before any timeline definitions", lnn)
+				return nil, lineDiagnostic(sourceFile, lnn, ln, "preset definitions must be before any timeline definitions")
 			}
 
 			preset, err := ctx.ParsePreset(&presets)
 			if err != nil {
-				return nil, fmt.Errorf("line %d: %v", lnn, err)
+				return nil, withSource(err, sourceFile, lnn, ln)
 			}
 
 			pName := preset.String()
 			p := s.FindPreset(pName, presets)
 			if p != nil {
-				return nil, fmt.Errorf("line %d: duplicate preset definition: %s", lnn, pName)
+				return nil, lineDiagnostic(sourceFile, lnn, ln, fmt.Sprintf("duplicate preset definition: %s", pName))
 			}
 
 			presets = append(presets, *preset)
@@ -116,26 +117,26 @@ func parseSequenceContent(rawContent []byte, baseRef string) (*t.Sequence, error
 			optionsLocked = true
 
 			if len(presets) == 1 {
-				return nil, fmt.Errorf("line %d: track defined before any preset: %s", lnn, ctx.Line.Raw)
+				return nil, lineDiagnostic(sourceFile, lnn, ln, fmt.Sprintf("track defined before any preset: %s", ctx.Line.Raw))
 			}
 
 			if len(periods) > 0 {
-				return nil, fmt.Errorf("line %d: track definitions must be before any timeline definitions", lnn)
+				return nil, lineDiagnostic(sourceFile, lnn, ln, "track definitions must be before any timeline definitions")
 			}
 
 			lastPreset := &presets[len(presets)-1]
 			if lastPreset.From != nil {
-				return nil, fmt.Errorf("line %d: preset %q inherits from another and cannot define new tracks", lnn, lastPreset.String())
+				return nil, lineDiagnostic(sourceFile, lnn, ln, fmt.Sprintf("preset %q inherits from another and cannot define new tracks", lastPreset.String()))
 			}
 
 			trackIndex, err := s.AllocateTrack(lastPreset)
 			if err != nil {
-				return nil, fmt.Errorf("line %d: %v", lnn, err)
+				return nil, withSource(err, sourceFile, lnn, ln)
 			}
 
 			track, err := ctx.ParseTrack()
 			if err != nil {
-				return nil, fmt.Errorf("line %d: %v", lnn, err)
+				return nil, withSource(err, sourceFile, lnn, ln)
 			}
 
 			lastPreset.Track[trackIndex] = *track
@@ -146,23 +147,23 @@ func parseSequenceContent(rawContent []byte, baseRef string) (*t.Sequence, error
 			optionsLocked = true
 
 			if len(presets) == 1 {
-				return nil, fmt.Errorf("line %d: track override defined before any preset: %s", lnn, ctx.Line.Raw)
+				return nil, lineDiagnostic(sourceFile, lnn, ln, fmt.Sprintf("track override defined before any preset: %s", ctx.Line.Raw))
 			}
 
 			if len(periods) > 0 {
-				return nil, fmt.Errorf("line %d: track override definitions must be before any timeline definitions", lnn)
+				return nil, lineDiagnostic(sourceFile, lnn, ln, "track override definitions must be before any timeline definitions")
 			}
 
 			lastPreset := &presets[len(presets)-1]
 			if lastPreset.IsTemplate {
-				return nil, fmt.Errorf("line %d: cannot override tracks on template preset %q", lnn, lastPreset.String())
+				return nil, lineDiagnostic(sourceFile, lnn, ln, fmt.Sprintf("cannot override tracks on template preset %q", lastPreset.String()))
 			}
 			if lastPreset.From == nil {
-				return nil, fmt.Errorf("line %d: cannot override tracks on preset %q which does not have a 'from' source", lnn, lastPreset.String())
+				return nil, lineDiagnostic(sourceFile, lnn, ln, fmt.Sprintf("cannot override tracks on preset %q which does not have a 'from' source", lastPreset.String()))
 			}
 
 			if err := ctx.ParseTrackOverride(lastPreset); err != nil {
-				return nil, fmt.Errorf("line %d: %v", lnn, err)
+				return nil, withSource(err, sourceFile, lnn, ln)
 			}
 
 			continue
@@ -172,27 +173,27 @@ func parseSequenceContent(rawContent []byte, baseRef string) (*t.Sequence, error
 			optionsLocked = true
 
 			if len(presets) == 1 {
-				return nil, fmt.Errorf("line %d: timeline defined before any preset: %s", lnn, ctx.Line.Raw)
+				return nil, lineDiagnostic(sourceFile, lnn, ln, fmt.Sprintf("timeline defined before any preset: %s", ctx.Line.Raw))
 			}
 
 			period, err := ctx.ParseTimeline(&presets)
 			if err != nil {
-				return nil, fmt.Errorf("line %d: %v", lnn, err)
+				return nil, withSource(err, sourceFile, lnn, ln)
 			}
 
 			if len(periods) == 0 && period.Time != 0 {
-				return nil, fmt.Errorf("line %d: first timeline must start at 00:00:00", lnn)
+				return nil, lineDiagnostic(sourceFile, lnn, ln, "first timeline must start at 00:00:00")
 			}
 
 			if len(periods) > 0 {
 				lastPeriod := &periods[len(periods)-1]
 
 				if lastPeriod.Time >= period.Time {
-					return nil, fmt.Errorf("line %d: timeline %s overlaps with previous timeline %s", lnn, period.TimeString(), lastPeriod.TimeString())
+					return nil, lineDiagnostic(sourceFile, lnn, ln, fmt.Sprintf("timeline %s overlaps with previous timeline %s", period.TimeString(), lastPeriod.TimeString()))
 				}
 
 				if err := s.AdjustPeriods(lastPeriod, period); err != nil {
-					return nil, fmt.Errorf("line %d: %v", lnn, err)
+					return nil, withSource(err, sourceFile, lnn, ln)
 				}
 			}
 
@@ -206,10 +207,10 @@ func parseSequenceContent(rawContent []byte, baseRef string) (*t.Sequence, error
 			tok == t.KeywordNoise ||
 			tok == t.KeywordAmbiance ||
 			tok == t.KeywordTrack {
-			return nil, fmt.Errorf("line %d: expected two-space indentation for elements under preset definition\n   %s", lnn, ctx.Line.Raw)
+			return nil, lineDiagnostic(sourceFile, lnn, ln, "expected two-space indentation for elements under preset definition")
 		}
 
-		return nil, fmt.Errorf("line %d: invalid syntax\n    %s", lnn, ctx.Line.Raw)
+		return nil, lineDiagnostic(sourceFile, lnn, ln, "invalid syntax")
 	}
 
 	if len(presets) == 1 {
@@ -240,7 +241,7 @@ func parseSequenceContent(rawContent []byte, baseRef string) (*t.Sequence, error
 }
 
 // parseExtendsContent parses the raw content of an extended sequence file and returns an Extends struct
-func parseExtendsContent(rawContent []byte, baseRef string) (*t.Extends, error) {
+func parseExtendsContent(rawContent []byte, sourceFile string, baseRef string) (*t.Extends, error) {
 	file := NewSequenceFile(rawContent)
 	presets := make([]t.Preset, 0, t.MaxPresets)
 	rawOptions := t.NewParseOptions()
@@ -261,22 +262,22 @@ func parseExtendsContent(rawContent []byte, baseRef string) (*t.Extends, error) 
 
 		if ctx.HasOption() {
 			if optionsLocked {
-				return nil, fmt.Errorf("spsc file, line %d: options must be defined before any presets", lnn)
+				return nil, lineDiagnostic(sourceFile, lnn, ln, "options must be defined before any presets")
 			}
 
 			parsedOptions, err := ctx.ParseOption(baseRef)
 			if err != nil {
-				return nil, fmt.Errorf("spsc file, line %d: %v", lnn, err)
+				return nil, withSource(err, sourceFile, lnn, ln)
 			}
 
 			if len(parsedOptions.Extends) > 0 {
-				return nil, fmt.Errorf("spsc file, line %d: extends option is not supported in extended files", lnn)
+				return nil, lineDiagnostic(sourceFile, lnn, ln, "extends option is not supported in extended files")
 			}
 
 			rawOptions.Merge(parsedOptions)
 
 			if _, err := rawOptions.Build(); err != nil {
-				return nil, fmt.Errorf("spsc file, line %d: %v", lnn, err)
+				return nil, withSource(err, sourceFile, lnn, ln)
 			}
 
 			continue
@@ -286,18 +287,18 @@ func parseExtendsContent(rawContent []byte, baseRef string) (*t.Extends, error) 
 			optionsLocked = true
 
 			if len(presets) >= t.MaxPresets {
-				return nil, fmt.Errorf("spsc file, line %d: maximum number of presets reached", lnn)
+				return nil, lineDiagnostic(sourceFile, lnn, ln, "maximum number of presets reached")
 			}
 
 			preset, err := ctx.ParsePreset(&presets)
 			if err != nil {
-				return nil, fmt.Errorf("spsc file, line %d: %v", lnn, err)
+				return nil, withSource(err, sourceFile, lnn, ln)
 			}
 
 			pName := preset.String()
 			p := s.FindPreset(pName, presets)
 			if p != nil {
-				return nil, fmt.Errorf("spsc file, line %d: duplicate preset definition: %s", lnn, pName)
+				return nil, lineDiagnostic(sourceFile, lnn, ln, fmt.Sprintf("duplicate preset definition: %s", pName))
 			}
 
 			presets = append(presets, *preset)
@@ -308,22 +309,22 @@ func parseExtendsContent(rawContent []byte, baseRef string) (*t.Extends, error) 
 			optionsLocked = true
 
 			if len(presets) == 0 {
-				return nil, fmt.Errorf("spsc file, line %d: track defined before any preset: %s", lnn, ctx.Line.Raw)
+				return nil, lineDiagnostic(sourceFile, lnn, ln, fmt.Sprintf("track defined before any preset: %s", ctx.Line.Raw))
 			}
 
 			lastPreset := &presets[len(presets)-1]
 			if lastPreset.From != nil {
-				return nil, fmt.Errorf("spsc file, line %d: preset %q inherits from another and cannot define new tracks", lnn, lastPreset.String())
+				return nil, lineDiagnostic(sourceFile, lnn, ln, fmt.Sprintf("preset %q inherits from another and cannot define new tracks", lastPreset.String()))
 			}
 
 			trackIndex, err := s.AllocateTrack(lastPreset)
 			if err != nil {
-				return nil, fmt.Errorf("spsc file, line %d: %v", lnn, err)
+				return nil, withSource(err, sourceFile, lnn, ln)
 			}
 
 			track, err := ctx.ParseTrack()
 			if err != nil {
-				return nil, fmt.Errorf("spsc file, line %d: %v", lnn, err)
+				return nil, withSource(err, sourceFile, lnn, ln)
 			}
 
 			lastPreset.Track[trackIndex] = *track
@@ -334,25 +335,25 @@ func parseExtendsContent(rawContent []byte, baseRef string) (*t.Extends, error) 
 			optionsLocked = true
 
 			if len(presets) == 0 {
-				return nil, fmt.Errorf("spsc file, line %d: track override defined before any preset: %s", lnn, ctx.Line.Raw)
+				return nil, lineDiagnostic(sourceFile, lnn, ln, fmt.Sprintf("track override defined before any preset: %s", ctx.Line.Raw))
 			}
 
 			lastPreset := &presets[len(presets)-1]
 			if lastPreset.IsTemplate {
-				return nil, fmt.Errorf("spsc file, line %d: cannot override tracks on template preset %q", lnn, lastPreset.String())
+				return nil, lineDiagnostic(sourceFile, lnn, ln, fmt.Sprintf("cannot override tracks on template preset %q", lastPreset.String()))
 			}
 			if lastPreset.From == nil {
-				return nil, fmt.Errorf("spsc file, line %d: cannot override tracks on preset %q which does not have a 'from' source", lnn, lastPreset.String())
+				return nil, lineDiagnostic(sourceFile, lnn, ln, fmt.Sprintf("cannot override tracks on preset %q which does not have a 'from' source", lastPreset.String()))
 			}
 
 			if err := ctx.ParseTrackOverride(lastPreset); err != nil {
-				return nil, fmt.Errorf("spsc file, line %d: %v", lnn, err)
+				return nil, withSource(err, sourceFile, lnn, ln)
 			}
 
 			continue
 		}
 
-		return nil, fmt.Errorf("spsc file, line %d: unexpected content: %s", lnn, ln)
+		return nil, lineDiagnostic(sourceFile, lnn, ln, fmt.Sprintf("unexpected content: %s", ln))
 	}
 
 	for i := range presets {
@@ -365,4 +366,43 @@ func parseExtendsContent(rawContent []byte, baseRef string) (*t.Extends, error) 
 		Options: rawOptions,
 		Presets: presets,
 	}, nil
+}
+
+func lineDiagnostic(sourceFile string, lineNumber int, lineText string, message string) error {
+	return diag.Parse(message).WithSpan(diag.Span{
+		File:      sourceFile,
+		Line:      lineNumber,
+		Column:    1,
+		EndColumn: 2,
+		LineText:  lineText,
+	})
+}
+
+func withSource(err error, sourceFile string, lineNumber int, lineText string) error {
+	if diagnostic, ok := diag.As(err); ok {
+		if diagnostic.Span.File == "" {
+			diagnostic.Span.File = sourceFile
+		}
+		if diagnostic.Span.Line == 0 {
+			diagnostic.Span.Line = lineNumber
+		}
+		if diagnostic.Span.LineText == "" {
+			diagnostic.Span.LineText = lineText
+		}
+		if diagnostic.Span.Column < 1 {
+			diagnostic.Span.Column = 1
+		}
+		if diagnostic.Span.EndColumn < diagnostic.Span.Column+1 {
+			diagnostic.Span.EndColumn = diagnostic.Span.Column + 1
+		}
+		return diagnostic
+	}
+
+	return diag.Wrap(diag.KindParse, err.Error(), err).WithSpan(diag.Span{
+		File:      sourceFile,
+		Line:      lineNumber,
+		Column:    1,
+		EndColumn: 2,
+		LineText:  lineText,
+	})
 }

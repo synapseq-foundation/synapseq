@@ -25,5 +25,5 @@ func extends(fileName string) (*t.Extends, error) {
 		return nil, err
 	}
 
-	return parseExtendsContent(rawContent, "")
+	return parseExtendsContent(rawContent, "", "")
 }

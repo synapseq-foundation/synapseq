@@ -76,6 +76,7 @@ func streamPcm(this js.Value, args []js.Value) interface{} {
 					SampleRate: seq.Options.SampleRate,
 					Volume:     seq.Options.Volume,
 					Ambiance:   seq.Options.Ambiance,
+					Colors:     false,
 				})
 				if err != nil {
 					onError.Invoke(err.Error())

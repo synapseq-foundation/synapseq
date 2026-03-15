@@ -21,6 +21,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -138,5 +139,37 @@ func TestParseOptionErrors(ts *testing.T) {
 				ts.Fatalf("expected error containing %q, got %v", test.wantErrText, err)
 			}
 		})
+	}
+}
+
+func TestParseOptionTypoDiagnostic(ts *testing.T) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		ts.Fatalf("cannot get current working directory: %v", err)
+	}
+
+	basePath := filepath.Dir(cwd)
+	ctx := NewTextParser("@volum 50")
+
+	_, err = ctx.ParseOption(basePath)
+	if err == nil {
+		ts.Fatal("expected option diagnostic")
+	}
+
+	diagnostic, ok := diag.As(err)
+	if !ok {
+		ts.Fatalf("expected diag.Diagnostic, got %T", err)
+	}
+	if diagnostic.Message != "invalid option" {
+		ts.Fatalf("expected invalid option message, got %q", diagnostic.Message)
+	}
+	if diagnostic.Found != "volum" {
+		ts.Fatalf("expected found option volum, got %q", diagnostic.Found)
+	}
+	if diagnostic.Suggestion != "did you mean \"volume\"?" {
+		ts.Fatalf("expected volume suggestion, got %q", diagnostic.Suggestion)
+	}
+	if diagnostic.Span.Column != 1 || diagnostic.Span.EndColumn != 7 {
+		ts.Fatalf("expected option span 1..7, got %d..%d", diagnostic.Span.Column, diagnostic.Span.EndColumn)
 	}
 }

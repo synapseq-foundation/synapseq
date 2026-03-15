@@ -58,6 +58,7 @@ type AudioRendererOptions struct {
 	Volume       int
 	Ambiance     map[string]string
 	StatusOutput io.Writer
+	Colors       bool
 }
 
 // NewAudioRenderer creates a new AudioRenderer instance
@@ -128,7 +129,7 @@ func (r *AudioRenderer) Render(consume func(samples []int) error) error {
 
 	var statusReporter *StatusReporter
 	if r.StatusOutput != nil {
-		statusReporter = NewStatusReporter(r.StatusOutput)
+		statusReporter = NewStatusReporter(r.StatusOutput, r.Colors)
 		defer statusReporter.FinalStatus()
 	}
 

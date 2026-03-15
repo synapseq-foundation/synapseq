@@ -1,3 +1,5 @@
+//go:build !js && !wasm
+
 /*
  * SynapSeq - Synapse-Sequenced Brainwave Generator
  * https://synapseq.org
@@ -15,6 +17,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/synapseq-foundation/synapseq/v4/internal/cli"
 	template "github.com/synapseq-foundation/synapseq/v4/internal/template"
 )
 
@@ -34,7 +37,7 @@ func generateTemplate(templateName, outputFile string) error {
 		return fmt.Errorf("failed to write template to file: %v", err)
 	}
 
-	fmt.Printf("Template %q has been generated as %q\n", templateName, outputFile)
-	fmt.Printf("You can edit the file and run it with: synapseq %s\n", outputFile)
+	fmt.Printf("%s %s %s\n", cli.SuccessText("Template generated:"), cli.Accent(fmt.Sprintf("%q", templateName)), cli.Muted(fmt.Sprintf("as %q", outputFile)))
+	fmt.Printf("%s %s\n", cli.Label("Run:"), cli.Command(fmt.Sprintf("synapseq %s", outputFile)))
 	return nil
 }
