@@ -144,6 +144,7 @@ type graphMetricDefinition struct {
 	SelectValue           func(track t.Track) (float64, bool)
 	SelectTransitionValue func(startTrack, endTrack t.Track, alpha float64) (float64, bool)
 	BuildLegendItems      func(series []previewSeriesView, periods []t.Period) []previewGraphLegendItemView
+	BuildPointLabel       func(channel int, track t.Track) string
 	FormatValue           func(value float64) string
 }
 
@@ -160,6 +161,14 @@ type rawGraphSeries struct {
 	Curve   []rawGraphSeriesPoint
 	Markers []rawGraphSeriesPoint
 }
+
+const (
+	graphInsetPct   = 4.0
+	graphViewWidth  = 1000.0
+	graphInnerPct   = 100.0 - (graphInsetPct * 2)
+	graphInnerWidth = graphViewWidth * (graphInnerPct / 100.0)
+	graphMinX       = graphViewWidth * (graphInsetPct / 100.0)
+)
 
 func GetPreviewContent(periods []t.Period) ([]byte, error) {
 	data, err := buildPreviewData(periods)
@@ -195,7 +204,7 @@ func buildPreviewData(periods []t.Period) (*previewTemplateData, error) {
 	for idx, period := range periods {
 		timelineNodes = append(timelineNodes, previewNodeMarkerView{
 			TimeLabel:   formatTime(period.Time),
-			PositionPct: toPercent(period.Time, totalDurationMs),
+			PositionPct: toGraphPercent(period.Time, totalDurationMs),
 		})
 
 		tracks := make([]previewTrackView, 0, t.NumberOfChannels)
@@ -236,7 +245,7 @@ func buildPreviewData(periods []t.Period) (*previewTemplateData, error) {
 			ID:           fmt.Sprintf("node-%d", idx),
 			TimeLabel:    formatTime(period.Time),
 			Transition:   transition,
-			PositionPct:  toPercent(period.Time, totalDurationMs),
+			PositionPct:  toGraphPercent(period.Time, totalDurationMs),
 			TrackCount:   len(tracks),
 			ToneCount:    nodeToneCount,
 			TextureCount: nodeTextureCount,
@@ -266,8 +275,8 @@ func buildPreviewData(periods []t.Period) (*previewTemplateData, error) {
 			EndLabel:       formatTime(next.Time),
 			DurationLabel:  formatDuration(next.Time - current.Time),
 			Transition:     current.Transition.String(),
-			LeftPct:        toPercent(current.Time, totalDurationMs),
-			WidthPct:       toPercent(next.Time-current.Time, totalDurationMs),
+			LeftPct:        toGraphPercent(current.Time, totalDurationMs),
+			WidthPct:       toGraphWidth(next.Time-current.Time, totalDurationMs),
 			Class:          dominantSegmentClass(items),
 			ChannelCount:   len(items),
 			PrimarySummary: buildPrimarySummary(items),
@@ -362,6 +371,7 @@ func buildGraphMetrics(periods []t.Period, totalDurationMs int) []previewGraphMe
 				return startValue*(1-alpha) + endValue*alpha, true
 			},
 			BuildLegendItems: buildWaveformLegendItems,
+			BuildPointLabel:  buildWaveformPointLabel,
 			FormatValue:      formatWaveformValue,
 		},
 		{
@@ -526,7 +536,7 @@ func collectGraphMetricSeries(definition graphMetricDefinition, periods []t.Peri
 				curvePoints = append(curvePoints, rawGraphSeriesPoint{
 					Time:  time,
 					Value: value,
-					Label: definition.FormatValue(value),
+					Label: buildGraphPointLabel(definition, ch, trackForMetricLabel(definition, startTrack, endTrack, alpha)),
 				})
 			}
 		}
@@ -546,7 +556,7 @@ func collectGraphMetricSeries(definition graphMetricDefinition, periods []t.Peri
 			markerPoints = append(markerPoints, rawGraphSeriesPoint{
 				Time:  period.Time,
 				Value: value,
-				Label: definition.FormatValue(value),
+				Label: buildGraphPointLabel(definition, ch, track),
 			})
 		}
 
@@ -580,13 +590,13 @@ func buildPreviewSeriesFromRaw(rawSeries []rawGraphSeries, minValue, maxValue fl
 		color := colors[raw.Channel%len(colors)]
 
 		for _, point := range raw.Curve {
-			x := int((float64(point.Time) / float64(totalDurationMs)) * 1000)
+			x := toGraphX(point.Time, totalDurationMs)
 			y := int(220 - ((point.Value-minValue)/span)*180)
 			coordinates = append(coordinates, fmt.Sprintf("%d,%d", x, y))
 		}
 
 		for _, point := range raw.Markers {
-			x := int((float64(point.Time) / float64(totalDurationMs)) * 1000)
+			x := toGraphX(point.Time, totalDurationMs)
 			y := int(220 - ((point.Value-minValue)/span)*180)
 
 			markers = append(markers, previewGraphPointView{
@@ -695,7 +705,7 @@ func buildSeries(periods []t.Period, minCarrier, maxCarrier float64, hasCarrier 
 				seriesClass = previewClass(trackClassForType(track.Type))
 			}
 
-			x := int((float64(period.Time) / float64(totalDurationMs)) * 1000)
+			x := toGraphX(period.Time, totalDurationMs)
 			y := int(220 - ((track.Carrier-minCarrier)/span)*180)
 
 			points = append(points, previewGraphPointView{
@@ -845,33 +855,49 @@ func buildMetricLegendItems(definition graphMetricDefinition, series []previewSe
 	return items
 }
 
-func buildWaveformLegendItems(_ []previewSeriesView, periods []t.Period) []previewGraphLegendItemView {
-	seen := map[t.WaveformType]bool{}
-	ordered := make([]previewGraphLegendItemView, 0, 4)
-
-	appendWaveform := func(track t.Track) {
-		if !supportsWaveform(track) {
-			return
-		}
-
-		if seen[track.Waveform] {
-			return
-		}
-
-		seen[track.Waveform] = true
-		ordered = append(ordered, previewGraphLegendItemView{
-			Label: humanWaveformType(track.Waveform),
+func buildWaveformLegendItems(series []previewSeriesView, _ []t.Period) []previewGraphLegendItemView {
+	items := make([]previewGraphLegendItemView, 0, len(series))
+	for _, current := range series {
+		items = append(items, previewGraphLegendItemView{
+			Label: current.LegendLabel,
+			Color: current.Color,
 		})
 	}
 
-	for _, period := range periods {
-		for ch := range t.NumberOfChannels {
-			appendWaveform(period.TrackStart[ch])
-			appendWaveform(period.TrackEnd[ch])
+	return items
+}
+
+func buildGraphPointLabel(definition graphMetricDefinition, channel int, track t.Track) string {
+	if definition.BuildPointLabel != nil {
+		return definition.BuildPointLabel(channel, track)
+	}
+
+	value, ok := definition.SelectValue(track)
+	if !ok {
+		return ""
+	}
+
+	return definition.FormatValue(value)
+}
+
+func trackForMetricLabel(definition graphMetricDefinition, startTrack, endTrack t.Track, alpha float64) t.Track {
+	if definition.SelectTransitionValue == nil {
+		return startTrack
+	}
+
+	track := interpolateTrackForPreview(startTrack, endTrack, alpha)
+	if definition.Key == "waveform" {
+		waveformValue, ok := definition.SelectTransitionValue(startTrack, endTrack, alpha)
+		if ok {
+			track.Waveform = clampWaveformValue(waveformValue)
 		}
 	}
 
-	return ordered
+	return track
+}
+
+func buildWaveformPointLabel(channel int, track t.Track) string {
+	return fmt.Sprintf("%s • %s", buildSeriesLegendLabel(channel, track), humanWaveformType(track.Waveform))
 }
 
 func buildGraphValueLabel(track t.Track) string {
@@ -887,7 +913,7 @@ func buildRuler(totalDurationMs int) []previewRulerMarkView {
 		ms := (totalDurationMs * i) / 5
 		marks = append(marks, previewRulerMarkView{
 			Label:   formatTime(ms),
-			LeftPct: float64(i) * 20,
+			LeftPct: toGraphPercent(ms, totalDurationMs),
 		})
 	}
 	return marks
@@ -1127,6 +1153,10 @@ func formatFloat(value float64) string {
 }
 
 func formatWaveformValue(value float64) string {
+	return humanWaveformType(clampWaveformValue(value))
+}
+
+func clampWaveformValue(value float64) t.WaveformType {
 	waveform := int(math.Round(value))
 	if waveform < int(t.WaveformSine) {
 		waveform = int(t.WaveformSine)
@@ -1134,7 +1164,7 @@ func formatWaveformValue(value float64) string {
 	if waveform > int(t.WaveformSawtooth) {
 		waveform = int(t.WaveformSawtooth)
 	}
-	return humanWaveformType(t.WaveformType(waveform))
+	return t.WaveformType(waveform)
 }
 
 func formatDuration(ms int) string {
@@ -1162,6 +1192,22 @@ func toPercent(part, total int) float64 {
 		return 0
 	}
 	return (float64(part) / float64(total)) * 100
+}
+
+func toGraphPercent(part, total int) float64 {
+	return graphInsetPct + ((toPercent(part, total) / 100.0) * graphInnerPct)
+}
+
+func toGraphWidth(part, total int) float64 {
+	return (toPercent(part, total) / 100.0) * graphInnerPct
+}
+
+func toGraphX(part, total int) int {
+	if total <= 0 {
+		return int(graphMinX)
+	}
+
+	return int(math.Round(graphMinX + (float64(part)/float64(total))*graphInnerWidth))
 }
 
 func joinCoordinates(items []string) string {
