@@ -1,3 +1,5 @@
+//go:build !js && !wasm
+
 /*
  * SynapSeq - Synapse-Sequenced Brainwave Generator
  * https://synapseq.org
@@ -16,6 +18,7 @@ import (
 	"os"
 
 	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
+	"github.com/synapseq-foundation/synapseq/v4/internal/cli"
 )
 
 // OutputOptions defines options for processing sequence output
@@ -48,8 +51,8 @@ func processSequenceOutput(loadedCtx *synapseq.LoadedContext, opts *outputOption
 		}
 
 		if !opts.Quiet {
-			fmt.Printf("Preview has been generated as %q\n", opts.OutputFile)
-			fmt.Printf("You can open the file in a web browser to view the sequence preview.\n")
+			fmt.Printf("%s %s\n", cli.SuccessText("Preview generated:"), cli.Accent(fmt.Sprintf("%q", opts.OutputFile)))
+			fmt.Printf("%s\n", cli.Muted("Open the file in a web browser to view the sequence preview."))
 		}
 
 		return nil
@@ -63,7 +66,7 @@ func processSequenceOutput(loadedCtx *synapseq.LoadedContext, opts *outputOption
 	// --- Print comments
 	if !opts.Quiet {
 		for _, c := range loadedCtx.Comments() {
-			fmt.Fprintf(os.Stderr, "> %s\n", c)
+			fmt.Fprintf(os.Stderr, "%s %s\n", cli.Label(">"), cli.Muted(c))
 		}
 	}
 

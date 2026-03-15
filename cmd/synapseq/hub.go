@@ -1,3 +1,5 @@
+//go:build !js && !wasm
+
 /*
  * SynapSeq - Synapse-Sequenced Brainwave Generator
  * https://synapseq.org
@@ -12,6 +14,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -35,7 +38,7 @@ func hubRunUpdate(quiet bool) error {
 		return fmt.Errorf("failed to get hub manifest. Error\n  %v", err)
 	}
 	if !quiet {
-		fmt.Printf("Fetched %d entries from the Hub. Last update: %s\n", len(manifest.Entries), manifest.LastUpdated)
+		fmt.Printf("%s %s %s\n", cli.SuccessText("Fetched"), cli.Accent(fmt.Sprintf("%d", len(manifest.Entries))), cli.Muted(fmt.Sprintf("entries from the Hub. Last update: %s", manifest.LastUpdated)))
 	}
 	return nil
 }
@@ -46,7 +49,7 @@ func hubRunClean(quiet bool) error {
 		return fmt.Errorf("failed to clean hub cache. Error\n  %v", err)
 	}
 	if !quiet {
-		fmt.Println("Hub cache cleaned successfully.")
+		fmt.Println(cli.SuccessText("Hub cache cleaned successfully."))
 	}
 	return nil
 }
@@ -83,7 +86,7 @@ func hubRunGet(sequenceId, outputFile string, opts *cli.CLIOptions) error {
 	appCtx := synapseq.NewAppContext()
 
 	if !opts.Quiet && outputFile != "-" {
-		appCtx = appCtx.WithVerbose(os.Stdout)
+		appCtx = appCtx.WithVerbose(os.Stdout, !opts.NoColor)
 	}
 
 	loadedCtx, err := appCtx.Load(inputFile)
@@ -119,10 +122,13 @@ func hubRunList() error {
 		return fmt.Errorf("failed to load hub manifest. Error\n  %v", err)
 	}
 
-	fmt.Printf("SynapSeq Hub — %d available sequences  (Last updated: %s)\n\n",
-		len(manifest.Entries), manifest.LastUpdated)
+	fmt.Printf("%s %s %s\n\n",
+		cli.Title("SynapSeq Hub"),
+		cli.Accent(fmt.Sprintf("%d available sequences", len(manifest.Entries))),
+		cli.Muted(fmt.Sprintf("(Last updated: %s)", manifest.LastUpdated)))
 
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+	var buf bytes.Buffer
+	w := tabwriter.NewWriter(&buf, 0, 0, 3, ' ', 0)
 	fmt.Fprintln(w, "ID\tAUTHOR\tCATEGORY\tUPDATED")
 
 	for _, e := range manifest.Entries {
@@ -135,6 +141,7 @@ func hubRunList() error {
 	}
 
 	w.Flush()
+	printHubTable(buf.String())
 	return nil
 }
 
@@ -166,13 +173,14 @@ func hubRunSearch(query string) error {
 	}
 
 	if len(results) == 0 {
-		fmt.Printf("No matches found for %q\n", query)
+		fmt.Printf("%s %s\n", cli.Muted("No matches found for"), cli.Accent(fmt.Sprintf("%q", query)))
 		return nil
 	}
 
-	fmt.Printf("SynapSeq Hub - %d matching results for %q\n\n", len(results), query)
+	fmt.Printf("%s %s %s\n\n", cli.Title("SynapSeq Hub"), cli.Accent(fmt.Sprintf("%d matching results", len(results))), cli.Muted(fmt.Sprintf("for %q", query)))
 
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+	var buf bytes.Buffer
+	w := tabwriter.NewWriter(&buf, 0, 0, 3, ' ', 0)
 	fmt.Fprintln(w, "ID\tAUTHOR\tCATEGORY\tUPDATED")
 
 	for _, e := range results {
@@ -185,6 +193,7 @@ func hubRunSearch(query string) error {
 	}
 
 	w.Flush()
+	printHubTable(buf.String())
 	return nil
 }
 
@@ -232,7 +241,7 @@ func hubRunDownload(sequenceID, targetDir string, quiet bool) error {
 	}
 
 	if !quiet {
-		fmt.Printf("Sequence %q and its dependencies have been downloaded to %s\n", entry.Name, targetDir)
+		fmt.Printf("%s %s %s\n", cli.SuccessText("Downloaded"), cli.Accent(fmt.Sprintf("%q", entry.Name)), cli.Muted(fmt.Sprintf("and its dependencies to %s", targetDir)))
 	}
 
 	return nil
@@ -276,16 +285,16 @@ func hubRunInfo(sequenceID string) error {
 		return fmt.Errorf("failed to load sequence. Error\n  %v", err)
 	}
 
-	fmt.Printf("Name:        %s\n", entry.Name)
-	fmt.Printf("Author:      %s\n", entry.Author)
-	fmt.Printf("Category:    %s\n", entry.Category)
-	fmt.Printf("Updated At:  %s\n", entry.UpdatedAt[:10])
+	fmt.Printf("%s %s\n", cli.Label("Name:"), cli.Accent(entry.Name))
+	fmt.Printf("%s %s\n", cli.Label("Author:"), cli.Accent(entry.Author))
+	fmt.Printf("%s %s\n", cli.Label("Category:"), cli.Accent(entry.Category))
+	fmt.Printf("%s %s\n", cli.Label("Updated At:"), cli.Accent(entry.UpdatedAt[:10]))
 
 	dependencies := "\nDependencies: None\n"
 	if len(entry.Dependencies) > 0 {
-		dependencies = "\nDependencies:\n"
+		dependencies = "\n" + cli.Section("Dependencies:") + "\n"
 		for _, dep := range entry.Dependencies {
-			dependencies += fmt.Sprintf("  - %s (%s)\n", dep.Name, dep.Type.String())
+			dependencies += fmt.Sprintf("  - %s %s\n", cli.Accent(dep.Name), cli.Muted(fmt.Sprintf("(%s)", dep.Type.String())))
 		}
 	}
 	fmt.Printf("%s", dependencies)
@@ -293,7 +302,7 @@ func hubRunInfo(sequenceID string) error {
 	description := "\nDescription: No description available.\n"
 	comments := loadedCtx.Comments()
 	if len(comments) > 0 {
-		description = "\nDescription:\n"
+		description = "\n" + cli.Section("Description:") + "\n"
 		for _, comment := range comments {
 			description += fmt.Sprintf("  %s\n", comment)
 		}
@@ -301,4 +310,15 @@ func hubRunInfo(sequenceID string) error {
 	fmt.Printf("%s", description)
 
 	return nil
+}
+
+func printHubTable(table string) {
+	lines := strings.Split(strings.TrimRight(table, "\n"), "\n")
+	if len(lines) == 0 {
+		return
+	}
+	fmt.Println(cli.Section(lines[0]))
+	for _, line := range lines[1:] {
+		fmt.Println(line)
+	}
 }

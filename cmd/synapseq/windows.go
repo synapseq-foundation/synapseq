@@ -16,6 +16,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/synapseq-foundation/synapseq/v4/internal/cli"
 	"github.com/synapseq-foundation/synapseq/v4/internal/fileassoc"
 )
 
@@ -34,7 +35,7 @@ func installWindowsFileAssociation(quiet bool) error {
 	}
 
 	if !quiet {
-		fmt.Println("Successfully installed .spsq file association with SynapSeq.")
+		fmt.Println(cli.SuccessText("Successfully installed .spsq file association with SynapSeq."))
 	}
 	return nil
 }
@@ -46,7 +47,7 @@ func uninstallWindowsFileAssociation(quiet bool) error {
 	}
 
 	if !quiet {
-		fmt.Println("Successfully removed .spsq file association with SynapSeq.")
+		fmt.Println(cli.SuccessText("Successfully removed .spsq file association with SynapSeq."))
 	}
 	return nil
 }
