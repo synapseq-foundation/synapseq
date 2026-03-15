@@ -111,6 +111,8 @@ func TestGetPreviewContent(ts *testing.T) {
 		"Sine",
 		"Square",
 		"Sawtooth",
+		"CH 02 Binaural beat • Sine",
+		"CH 03 Ambiance • Square",
 		"Carrier",
 		"Beat",
 		"Smooth",
