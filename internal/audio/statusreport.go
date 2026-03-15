@@ -16,6 +16,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/fatih/color"
 	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
@@ -24,6 +25,8 @@ import (
 type StatusReporter struct {
 	// Output writer
 	out io.Writer
+	// Whether ANSI colors should be emitted
+	colors bool
 	// To clear the previous line
 	lastStatusWidth int
 	// To detect period change
@@ -33,9 +36,10 @@ type StatusReporter struct {
 }
 
 // NewStatusReporter creates a new status reporter
-func NewStatusReporter(out io.Writer) *StatusReporter {
+func NewStatusReporter(out io.Writer, colors bool) *StatusReporter {
 	return &StatusReporter{
 		out:           out,
+		colors:        colors,
 		lastPeriodIdx: -1,
 	}
 }
@@ -62,10 +66,12 @@ func (sr *StatusReporter) DisplayPeriodChange(r *AudioRenderer, periodIdx int) {
 	}
 
 	// Line 1: Current period (start)
-	line1 := fmt.Sprintf("- %s -> %s (%s)",
-		period.TimeString(),
-		nextPeriod.TimeString(),
-		period.Transition.String())
+	line1 := fmt.Sprintf("%s %s %s %s %s",
+		sr.statusBullet("-"),
+		sr.statusTime(period.TimeString()),
+		sr.statusArrow("->"),
+		sr.statusTime(nextPeriod.TimeString()),
+		sr.statusTransition("("+period.Transition.String()+")"))
 
 	// Line 2: Start tracks (indented)
 	line2 := ""
@@ -76,12 +82,12 @@ func (sr *StatusReporter) DisplayPeriodChange(r *AudioRenderer, periodIdx int) {
 
 		// Start Track
 		if startTrack.Type != t.TrackOff && startTrack.Type != t.TrackSilence {
-			line2 += fmt.Sprintf("\n%s %s", strings.Repeat(" ", 6), startTrack.String())
+			line2 += fmt.Sprintf("\n%s %s", strings.Repeat(" ", 6), sr.statusTrack(startTrack.String()))
 		}
 
 		// End Track (only if different)
 		if !s.IsTrackEqual(&startTrack, &endTrack) {
-			line2 += fmt.Sprintf("\n   ->  %s", endTrack.String())
+			line2 += fmt.Sprintf("\n   %s  %s", sr.statusArrow("->"), sr.statusTrack(endTrack.String()))
 		}
 	}
 
@@ -101,13 +107,15 @@ func (sr *StatusReporter) DisplayStatus(r *AudioRenderer, currentTimeMs int) {
 	ss := (currentTimeMs % 60000) / 1000
 
 	// Create status line
-	status := fmt.Sprintf("  %02d:%02d:%02d", hh, mm, ss)
+	status := sr.statusTime(fmt.Sprintf("%02d:%02d:%02d", hh, mm, ss))
 
 	// Add active tracks from each channel
 	for ch := range s.CountActiveChannels(r.channels[:]) {
 		channel := &r.channels[ch]
-		status += channel.Track.ShortString()
+		status += sr.statusTrack(channel.Track.ShortString())
 	}
+
+	status = "  " + status
 
 	// Clean previous line if necessary
 	clearStr := ""
@@ -143,4 +151,33 @@ func (sr *StatusReporter) FinalStatus() {
 		fmt.Fprintf(sr.out, "%s\r", strings.Repeat(" ", sr.lastStatusWidth))
 		fmt.Fprintf(sr.out, "\n")
 	}
+}
+
+func (sr *StatusReporter) statusTime(text string) string {
+	return sr.statusStyled(text, color.FgCyan, color.Bold)
+}
+
+func (sr *StatusReporter) statusArrow(text string) string {
+	return sr.statusStyled(text, color.FgYellow, color.Bold)
+}
+
+func (sr *StatusReporter) statusTransition(text string) string {
+	return sr.statusStyled(text, color.FgHiBlack)
+}
+
+func (sr *StatusReporter) statusTrack(text string) string {
+	return sr.statusStyled(text, color.FgGreen)
+}
+
+func (sr *StatusReporter) statusBullet(text string) string {
+	return sr.statusStyled(text, color.FgMagenta, color.Bold)
+}
+
+func (sr *StatusReporter) statusStyled(text string, attrs ...color.Attribute) string {
+	if !sr.colors {
+		return text
+	}
+	style := color.New(attrs...)
+	style.EnableColor()
+	return style.Sprint(text)
 }
