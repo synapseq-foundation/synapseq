@@ -227,7 +227,6 @@ func ParseFlags() (*CLIOptions, []string, error) {
 	fs.BoolVar(&opts.Preview, "preview", false, "Render HTML preview timeline")
 	fs.BoolVar(&opts.Quiet, "quiet", false, "Enable quiet mode")
 	fs.BoolVar(&opts.NoColor, "no-color", false, "Disable ANSI colors in CLI output")
-	fs.BoolVar(&opts.NoColor, "no-colors", false, "Disable ANSI colors in CLI output")
 	fs.BoolVar(&opts.Test, "test", false, "Validate syntax without generating output")
 	fs.BoolVar(&opts.ShowHelp, "help", false, "Show help")
 	fs.BoolVar(&opts.ShowManual, "manual", false, "Show the full manual")

@@ -89,12 +89,6 @@ func TestParseFlags(ts *testing.T) {
 			expectedArgs: []string{"input.spsq"},
 			expectError:  false,
 		},
-		{
-			args:         []string{"cmd", "-no-colors", "input.spsq"},
-			expected:     &CLIOptions{NoColor: true},
-			expectedArgs: []string{"input.spsq"},
-			expectError:  false,
-		},
 		// Test flag
 		{
 			args:         []string{"cmd", "-test", "input.spsq"},
