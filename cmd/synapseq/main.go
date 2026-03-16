@@ -217,7 +217,7 @@ func run(opts *cli.CLIOptions, args []string) error {
 	// --- Handle Test mode (no output required)
 	if opts.Test {
 		if !opts.Quiet {
-			fmt.Println("Sequence is valid.")
+			fmt.Println(cli.SuccessText("Sequence is valid."))
 		}
 		return nil
 	}
