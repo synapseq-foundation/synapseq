@@ -30,6 +30,7 @@ import (
 func main() {
 	opts, args, err := cli.ParseFlags()
 	if err != nil {
+		fmt.Fprintln(os.Stderr, formatCLIError(err))
 		os.Exit(1)
 	}
 

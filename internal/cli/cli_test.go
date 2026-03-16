@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/fatih/color"
+	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
 )
 
 var ansiPattern = regexp.MustCompile(`\x1b\[[0-9;]*m`)
@@ -355,6 +356,31 @@ func TestParseFlagsEdgeCases(ts *testing.T) {
 	}
 	if len(args) != 1 || args[0] != "input.spsq" {
 		ts.Errorf("expected args [\"input.spsq\"], got %v", args)
+	}
+}
+
+func TestParseFlagsUnknownFlagReturnsDiagnostic(ts *testing.T) {
+	originalArgs := os.Args
+	defer func() { os.Args = originalArgs }()
+
+	os.Args = []string{"cmd", "-g"}
+	_, _, err := ParseFlags()
+	if err == nil {
+		ts.Fatalf("expected error for unknown flag")
+	}
+
+	diagnostic, ok := diag.As(err)
+	if !ok {
+		ts.Fatalf("expected diagnostic error, got %T: %v", err, err)
+	}
+	if diagnostic.Message != "unknown command-line flag" {
+		ts.Fatalf("unexpected message: %q", diagnostic.Message)
+	}
+	if diagnostic.Found != "-g" {
+		ts.Fatalf("unexpected found value: %q", diagnostic.Found)
+	}
+	if !strings.Contains(diagnostic.Hint, "-help") {
+		ts.Fatalf("unexpected hint: %q", diagnostic.Hint)
 	}
 }
 

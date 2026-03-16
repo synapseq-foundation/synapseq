@@ -14,10 +14,13 @@ package cli
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"runtime"
+	"strings"
 
 	"github.com/fatih/color"
+	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
 	"github.com/synapseq-foundation/synapseq/v4/internal/info"
 )
 
@@ -216,10 +219,13 @@ func ShowVersion() {
 func ParseFlags() (*CLIOptions, []string, error) {
 	opts := &CLIOptions{}
 	fs := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
 
-	fs.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Use -help flag for usage information.\n")
+	if hasNoColorArg(os.Args[1:]) {
+		SetColorEnabled(false)
 	}
+
+	fs.Usage = func() {}
 
 	// General options
 	fs.BoolVar(&opts.ShowVersion, "version", false, "Show version information")
@@ -251,10 +257,53 @@ func ParseFlags() (*CLIOptions, []string, error) {
 
 	err := fs.Parse(os.Args[1:])
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, formatFlagParseError(fs, err)
 	}
 
 	SetColorEnabled(!opts.NoColor)
 
 	return opts, fs.Args(), err
+}
+
+func hasNoColorArg(args []string) bool {
+	for _, arg := range args {
+		if arg == "-no-color" {
+			return true
+		}
+	}
+	return false
+}
+
+func formatFlagParseError(fs *flag.FlagSet, err error) error {
+	if err == nil {
+		return nil
+	}
+
+	message := err.Error()
+	knownFlags := flagNames(fs)
+
+	switch {
+	case strings.HasPrefix(message, "flag provided but not defined: "):
+		found := strings.TrimSpace(strings.TrimPrefix(message, "flag provided but not defined: "))
+		diagnostic := diag.Validation("unknown command-line flag").WithFound(found).WithHint("use -help to see valid command-line options")
+		if suggestion, ok := diag.ClosestMatch(found, knownFlags, diag.DefaultSuggestionDistance(found)); ok {
+			diagnostic.WithSuggestion(fmt.Sprintf("did you mean %q?", suggestion))
+		}
+		return diagnostic
+	case strings.HasPrefix(message, "flag needs an argument: "):
+		found := strings.TrimSpace(strings.TrimPrefix(message, "flag needs an argument: "))
+		return diag.Validation("missing value for command-line flag").WithFound(found).WithHint("pass a value for this flag or use -help to review its syntax")
+	case strings.HasPrefix(message, "invalid boolean value "):
+		return diag.Validation("invalid value for command-line flag").WithHint(message + "; use -help to review accepted flag values")
+	default:
+		return diag.Validation("invalid command-line arguments").WithHint(message + "; use -help for usage information")
+	}
+}
+
+func flagNames(fs *flag.FlagSet) []string {
+	flags := make([]string, 0, 16)
+	fs.VisitAll(func(f *flag.Flag) {
+		flags = append(flags, "-"+f.Name)
+	})
+	return flags
 }
