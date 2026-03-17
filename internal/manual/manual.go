@@ -21,6 +21,8 @@ import (
 	"github.com/synapseq-foundation/synapseq/v4/internal/info"
 )
 
+const manualWidth = 78
+
 // Show prints the SynapSeq manual to the standard color-aware output.
 func Show() {
 	Print(color.Output)
@@ -35,23 +37,97 @@ func Print(w io.Writer) {
 func Render() string {
 	var b strings.Builder
 
-	writeTitle(&b, fmt.Sprintf("SynapSeq Manual %s", info.VERSION))
+	writeTitle(&b, "SYNAPSEQ(1)", fmt.Sprintf("SynapSeq Manual %s", info.VERSION))
+
+	writeSection(&b, "Name")
 	writeParagraph(&b,
-		"SynapSeq is a text-driven audio sequencer. A sequence file usually has three major sections: options, presets, and timeline.",
-		"The parser is strict by design: options belong at the top, presets come next, and timeline entries close the file.",
+		"synapseq - text-driven audio sequencer for brainwave sessions and ambient sound design.",
+	)
+
+	writeSection(&b, "Synopsis")
+	writeCodeBlock(&b,
+		"synapseq [OPTION]... INPUT [OUTPUT]",
+		"synapseq -new TYPE",
+		"synapseq -preview INPUT",
+		"synapseq -play INPUT",
+		"synapseq -test INPUT",
+		"synapseq -hub-update",
+		"synapseq -hub-list",
+		"synapseq -hub-search WORD",
+		"synapseq -hub-info NAME",
+		"synapseq -hub-download NAME [DIR]",
+		"synapseq -hub-get NAME [OUTPUT]",
+		"synapseq -manual",
+		"synapseq -help",
+		"synapseq -version",
+		"synapseq -manual -no-color",
+	)
+	writeParagraph(&b,
+		"For paged reading, use the command that matches your shell environment.",
+	)
+	writeSubsection(&b, "Linux and macOS")
+	writeCodeBlock(&b,
+		"synapseq -manual | less",
+	)
+	writeSubsection(&b, "Windows PowerShell")
+	writeCodeBlock(&b,
+		"synapseq -manual | more",
+	)
+
+	writeSection(&b, "Description")
+	writeParagraph(&b,
+		"SynapSeq is a text-driven audio sequencer for building repeatable brainwave and ambient listening sessions from plain-text score files. Instead of editing waveforms directly, you describe structure, timing, and sound layers in a small domain-specific language and let the renderer generate the final audio.",
+	)
+	writeParagraph(&b,
+		"A typical sequence combines oscillator-based tones, entrainment beats, filtered noise, ambiance layers, waveform selection, and motion effects. These building blocks are arranged into named presets and then placed on a timeline so the session can evolve predictably over minutes or hours.",
+	)
+	writeParagraph(&b,
+		"The parser is strict by design: options belong at the top, presets come next, and timeline entries close the file. This keeps sessions readable, deterministic, and easier to validate before rendering or playback.",
+	)
+	writeParagraph(&b,
+		"SynapSeq can read local files, remote sequence URLs, or standard input. It can render WAV or MP3 output, stream raw PCM to standard output, preview the session as HTML, play directly through ffplay, and fetch published content from the SynapSeq Hub.",
+	)
+	writeParagraph(&b,
+		"For larger libraries, the language supports modular composition through @extends and reusable template presets, making it practical to share preset families across multiple sessions without duplicating track definitions.",
 	)
 
 	writeSection(&b, "Command Line")
 	writeParagraph(&b,
-		"Use the manual directly from the terminal whenever you need a full language reference.",
-	)
-	writeCodeBlock(&b,
-		"synapseq -manual",
-		"synapseq -manual -no-color",
+		"The command line accepts one primary action at a time plus supporting flags. When INPUT is present, it may be a local .spsq file, a URL, or - for standard input. When OUTPUT is omitted, SynapSeq derives a default output path from the input name and target format.",
 	)
 	writeParagraph(&b,
-		"The manual is printed in English and follows the same color rules as the rest of the CLI.",
+		"The following options are available from the CLI.",
 	)
+	writeSubsection(&b, "General Options")
+	writeOption(&b, "-new TYPE", "Create a starter sequence from a built-in template. Supported types are meditation, focus, sleep, relaxation, and example.")
+	writeOption(&b, "-test", "Validate sequence syntax and semantics without generating audio output.")
+	writeOption(&b, "-preview", "Render an HTML timeline preview instead of audio.")
+	writeOption(&b, "-play", "Render and play the result directly with ffplay.")
+	writeOption(&b, "-quiet", "Suppress non-error CLI output.")
+	writeOption(&b, "-no-color", "Disable ANSI colors in CLI output. Useful for pipes, logs, and pagers configured without raw-control support.")
+	writeOption(&b, "-manual", "Print the full manual.")
+	writeOption(&b, "-help", "Show the concise command overview.")
+	writeOption(&b, "-version", "Print version, build, and platform information.")
+	writeParagraph(&b)
+
+	writeSubsection(&b, "Hub Options")
+	writeOption(&b, "-hub-update", "Refresh the local index of sequences available in the SynapSeq Hub.")
+	writeOption(&b, "-hub-clean", "Remove cached Hub data from the local machine.")
+	writeOption(&b, "-hub-list", "List sequences currently available from the local Hub index.")
+	writeOption(&b, "-hub-search WORD", "Search the Hub index for matching sequence names or metadata.")
+	writeOption(&b, "-hub-info NAME", "Show metadata and descriptive details for a Hub sequence.")
+	writeOption(&b, "-hub-download NAME [DIR]", "Download a Hub sequence and its dependencies. If DIR is provided, files are stored there.")
+	writeOption(&b, "-hub-get NAME [OUTPUT]", "Download a Hub sequence and render it in one step. If OUTPUT is provided, it is used as the target file name.")
+	writeParagraph(&b)
+
+	writeSubsection(&b, "External Tool Options")
+	writeOption(&b, "-ffmpeg-path PATH", "Use a specific ffmpeg executable when exporting MP3.")
+	writeOption(&b, "-ffplay-path PATH", "Use a specific ffplay executable when playing audio directly.")
+	writeParagraph(&b)
+
+	writeSubsection(&b, "Windows Options")
+	writeOption(&b, "-install-file-association", "Associate .spsq files with SynapSeq on Windows.")
+	writeOption(&b, "-uninstall-file-association", "Remove the SynapSeq .spsq file association on Windows.")
 
 	writeSection(&b, "File Layout")
 	writeBullet(&b, "Options", "Start with lines beginning with @. They define global settings such as samplerate, volume, ambiance files, and modular imports.")
@@ -78,7 +154,7 @@ func Render() string {
 	writeBullet(&b, "# comment", "Ignored by the parser. Useful for notes and documentation.")
 	writeBullet(&b, "## comment", "Stored as a sequence comment and shown by the CLI before rendering when output is not quiet.")
 
-	writeSection(&b, "Options")
+	writeSection(&b, "Sequence Options")
 	writeBullet(&b, "@samplerate NUMBER", "Set the output sample rate. Default is 44100.")
 	writeBullet(&b, "@volume NUMBER", "Set the global output volume from 0 to 100. Default is 100.")
 	writeBullet(&b, "@ambiance NAME PATH_OR_URL", "Register an ambiance source that can be referenced later by track definitions.")
@@ -229,11 +305,33 @@ func Render() string {
 		"They may not contain timeline entries, and they may not contain another @extends option.",
 	)
 
-	writeSection(&b, "Advanced Examples")
+	writeSection(&b, "Examples")
 	writeParagraph(&b,
-		"The following examples show how the main building blocks combine in real-world usage.",
+		"Start with a minimal session first. Once that structure is clear, add more layers or modular reuse.",
 	)
-	writeBullet(&b, "Reusable template library", "Keep common preset structures in a .spsc file and import them with @extends so multiple sessions can share the same sound design vocabulary.")
+	writeBullet(&b, "Basic session", "A minimal valid file: one preset, one audible section, and silence at the beginning and end.")
+	writeCodeBlock(&b,
+		"@volume 90",
+		"",
+		"focus",
+		"  tone 240 binaural 10 amplitude 15",
+		"",
+		"00:00:00 silence",
+		"00:00:20 focus",
+		"00:00:40 silence",
+	)
+	writeBullet(&b, "Layered preset", "Add noise or ambiance when you want more texture without changing the overall preset structure.")
+	writeCodeBlock(&b,
+		"00:00:00 silence",
+		"deep-rest",
+		"  noise brown smooth 45 amplitude 12",
+		"  tone 180 binaural 6 effect modulation 4 intensity 30 amplitude 16",
+		"  ambiance rain effect pan 0.3 intensity 35 amplitude 22",
+		"",
+		"00:00:20 deep-rest",
+		"00:10:00 silence",
+	)
+	writeBullet(&b, "Reusable templates", "Use @extends and template inheritance when several sessions share the same preset family.")
 	writeCodeBlock(&b,
 		"@extends library/focus-base",
 		"@ambiance rain audio/rain",
@@ -247,65 +345,70 @@ func Render() string {
 		"  track 2 binaural 18",
 		"  track 2 intensity 65",
 	)
-	writeBullet(&b, "Long-form session", "Use several timeline points with smooth transitions to guide the listener through stages without abrupt jumps.")
-	writeCodeBlock(&b,
-		"00:00:00 silence",
-		"00:00:30 focus-light",
-		"00:05:00 focus-light smooth",
-		"00:08:00 focus-deep",
-		"00:18:00 focus-deep smooth",
-		"00:20:00 silence",
-	)
-	writeBullet(&b, "Layered preset", "Blend a beat track with noise and ambiance when you want pitch, texture, and environmental depth at the same time.")
-	writeCodeBlock(&b,
-		"deep-rest",
-		"  noise brown smooth 45 amplitude 12",
-		"  tone 180 binaural 6 effect modulation 4 intensity 30 amplitude 16",
-		"  ambiance rain effect pan 0.3 intensity 35 amplitude 22",
-	)
 
-	writeSection(&b, "Practical Notes")
+	writeSection(&b, "Notes")
 	writeBullet(&b, "Use silence", "A built-in preset named silence is always available and is ideal for the first or last timeline entry.")
 	writeBullet(&b, "Indentation matters", "Preset children must use two leading spaces. A top-level tone/noise/ambiance line is invalid syntax.")
 	writeBullet(&b, "Keep options first", "Once presets or timeline entries start, additional options are rejected.")
 	writeBullet(&b, "Prefer templates for families", "If several presets share the same structure, declare a template and override only what changes.")
+	writeBullet(&b, "Track positions are fixed", "Direct transitions compare tracks by position. Track 1 must stay the same kind of sound across directly connected presets, and the same rule applies to every later track slot.")
+	writeBullet(&b, "Structural changes need silence", "Do not switch a track directly between tone, noise, or ambiance types. If the structure must change, insert the built-in silence preset between those timeline entries.")
+	writeBullet(&b, "Beat, noise, and effect types must match", "Across directly connected presets, keep binaural versus monaural versus isochronic mode unchanged, keep white versus pink versus brown noise unchanged, and keep pan versus modulation versus doppler unchanged.")
+	writeBullet(&b, "Waveforms may change", "Waveform shape is treated as a parameter, not a structural type. It may change between otherwise compatible tone or ambiance tracks.")
 	writeParagraph(&b)
 
-	writeSection(&b, "More Help")
+	writeSection(&b, "See Also")
 	writeParagraph(&b,
 		"Use synapseq -help for a concise command overview, or visit the online documentation for installation guides and broader examples.",
 	)
 	writeCodeBlock(&b,
 		"synapseq -help",
-		info.DOC_URL,
 	)
 
 	return b.String()
 }
 
-func writeTitle(b *strings.Builder, title string) {
+func writeTitle(b *strings.Builder, title, subtitle string) {
 	b.WriteString(cli.Title(title))
+	b.WriteString("\n")
+	b.WriteString(cli.Muted(subtitle))
 	b.WriteString("\n\n")
 }
 
 func writeSection(b *strings.Builder, title string) {
-	b.WriteString(cli.Section(title))
+	b.WriteString(cli.Section(strings.ToUpper(title)))
 	b.WriteString("\n")
+}
+
+func writeSubsection(b *strings.Builder, title string) {
+	b.WriteString("    ")
+	b.WriteString(cli.Label(title))
+	b.WriteString("\n\n")
 }
 
 func writeParagraph(b *strings.Builder, lines ...string) {
 	for _, line := range lines {
-		b.WriteString(line)
-		b.WriteString("\n")
+		if line == "" {
+			continue
+		}
+		writeWrappedLine(b, line, "    ", "    ")
 	}
 	b.WriteString("\n")
 }
 
 func writeBullet(b *strings.Builder, label, description string) {
-	b.WriteString("- ")
+	b.WriteString("    ")
 	b.WriteString(cli.Label(label + ":"))
-	b.WriteString(" ")
-	b.WriteString(description)
+	b.WriteString("\n")
+	writeWrappedLine(b, description, "        ", "        ")
+	b.WriteString("\n")
+}
+
+func writeOption(b *strings.Builder, flag, description string) {
+	b.WriteString("    ")
+	b.WriteString(cli.Label(flag))
+	b.WriteString("\n")
+	writeWrappedLine(b, description, "        ", "        ")
 	b.WriteString("\n")
 }
 
@@ -315,9 +418,54 @@ func writeCodeBlock(b *strings.Builder, lines ...string) {
 			b.WriteString("\n")
 			continue
 		}
-		b.WriteString("  ")
+		b.WriteString("        ")
 		b.WriteString(cli.Command(line))
 		b.WriteString("\n")
+	}
+	b.WriteString("\n")
+}
+
+func writeWrappedLine(b *strings.Builder, text, firstPrefix, continuationPrefix string) {
+	writeWrappedLineWithPrefixes(b, text, firstPrefix, continuationPrefix, len(firstPrefix), len(continuationPrefix))
+}
+
+func writeWrappedLineWithPrefixes(b *strings.Builder, text, firstPrefix, continuationPrefix string, firstWidth, continuationWidth int) {
+	words := strings.Fields(text)
+	if len(words) == 0 {
+		b.WriteString("\n")
+		return
+	}
+
+	prefix := firstPrefix
+	available := manualWidth - firstWidth
+	lineLen := 0
+
+	b.WriteString(prefix)
+	for index, word := range words {
+		wordLen := len(word)
+		separatorLen := 0
+		if lineLen > 0 {
+			separatorLen = 1
+		}
+
+		if lineLen > 0 && lineLen+separatorLen+wordLen > available {
+			b.WriteString("\n")
+			prefix = continuationPrefix
+			available = manualWidth - continuationWidth
+			b.WriteString(prefix)
+			b.WriteString(word)
+			lineLen = wordLen
+			continue
+		}
+
+		if index > 0 && lineLen > 0 {
+			b.WriteString(" ")
+		}
+		b.WriteString(word)
+		lineLen += separatorLen + wordLen
+	}
+	if lineLen == 0 {
+		b.WriteString(strings.Join(words, " "))
 	}
 	b.WriteString("\n")
 }
