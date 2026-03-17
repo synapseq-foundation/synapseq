@@ -198,8 +198,11 @@ func Help() {
 		fmt.Fprintf(color.Output, "  %s  Remove .spsq file association\n\n", Flag("-uninstall-file-association"))
 	}
 
-	fmt.Fprintf(color.Output, "%s\n", Section("Docs:"))
-	fmt.Fprintf(color.Output, "  %s\n", Command(info.DOC_URL))
+	fmt.Fprintf(color.Output, "%s\n", Section("For more information:"))
+	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq -manual"))
+	fmt.Fprintf(color.Output, "    %s\n\n", Muted("Show the full manual with detailed language and usage information"))
+	fmt.Fprintf(color.Output, "  %s\n", Command("https://synapseq.org"))
+	fmt.Fprintf(color.Output, "    %s\n", Muted("Visit the website for documentation, examples, and the latest updates"))
 }
 
 // ShowVersion prints the version information
