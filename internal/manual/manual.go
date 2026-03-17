@@ -153,6 +153,13 @@ func Render() string {
 	writeSection(&b, "Comments")
 	writeBullet(&b, "# comment", "Ignored by the parser. Useful for notes and documentation.")
 	writeBullet(&b, "## comment", "Stored as a sequence comment and shown by the CLI before rendering when output is not quiet.")
+	writeBullet(&b, "Standalone lines only", "Comments must occupy their own lines. Inline comments after options, preset names, track lines, overrides, or timeline entries are invalid syntax.")
+	writeCodeBlock(&b,
+		"@samplerate 48000 # samplerate",
+	)
+	writeParagraph(&b,
+		"The example above is invalid. Write comments only on otherwise empty lines.",
+	)
 
 	writeSection(&b, "Sequence Options")
 	writeBullet(&b, "@samplerate NUMBER", "Set the output sample rate. Default is 44100.")
@@ -303,6 +310,25 @@ func Render() string {
 	writeParagraph(&b,
 		"Files loaded by @extends are modular .spsc files. They may contain options, presets, tracks, and track overrides.",
 		"They may not contain timeline entries, and they may not contain another @extends option.",
+	)
+	writeBullet(&b, "Library file example", "A .spsc file is useful for shared preset libraries. Keep reusable templates or presets there, then import them from your main .spsq session.")
+	writeCodeBlock(&b,
+		"# library/common.spsc",
+		"focus-template as template",
+		"  tone 240 binaural 10 amplitude 12",
+		"  noise pink smooth 25 amplitude 8",
+	)
+	writeBullet(&b, "Main sequence example", "Your main .spsq file can import that library with @extends and then build concrete presets or timeline entries from it.")
+	writeCodeBlock(&b,
+		"@extends library/common",
+		"",
+		"focus-light from focus-template",
+		"  track 1 amplitude 10",
+		"  track 2 amplitude 6",
+		"",
+		"00:00:00 silence",
+		"00:00:20 focus-light",
+		"00:10:00 silence",
 	)
 
 	writeSection(&b, "Examples")

@@ -97,7 +97,13 @@ func TestRenderIncludesCoreSections(ts *testing.T) {
 		"Waveforms may change",
 		"@ambiance rain audio/rain",
 		"00:00:00 silence",
+		"# library/common.spsc",
+		"focus-template as template",
+		"@extends library/common",
 		"@extends library/focus-base",
+		"Standalone lines only",
+		"@samplerate 48000 # samplerate",
+		"The example above is invalid.",
 	}
 
 	for _, check := range checks {

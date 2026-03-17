@@ -116,6 +116,13 @@ focus
 
 - **# comment**: Ignored by the parser. Useful for notes and documentation.
 - **## comment**: Stored as a sequence comment and shown by the CLI before rendering when output is not quiet.
+- **Standalone lines only**: Comments must occupy their own lines. Inline comments after options, preset names, track lines, overrides, or timeline entries are invalid syntax.
+
+```text
+@samplerate 48000 # samplerate
+```
+
+The example above is invalid. Write comments only on otherwise empty lines.
 
 ## Sequence Options
 
@@ -271,6 +278,29 @@ Timeline entries must reference non-template presets. The parser adjusts each pe
 ## Extended Files
 
 Files loaded by @extends are modular .spsc files. They may contain options, presets, tracks, and track overrides. They may not contain timeline entries, and they may not contain another @extends option.
+
+- **Library file example**: A `.spsc` file is useful for shared preset libraries. Keep reusable templates or presets there, then import them from your main `.spsq` session.
+
+```text
+# library/common.spsc
+focus-template as template
+  tone 240 binaural 10 amplitude 12
+  noise pink smooth 25 amplitude 8
+```
+
+- **Main sequence example**: Your main `.spsq` file can import that library with `@extends` and then build concrete presets or timeline entries from it.
+
+```text
+@extends library/common
+
+focus-light from focus-template
+  track 1 amplitude 10
+  track 2 amplitude 6
+
+00:00:00 silence
+00:00:20 focus-light
+00:10:00 silence
+```
 
 ## Examples
 
