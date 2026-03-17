@@ -322,12 +322,12 @@ func Render() string {
 	)
 	writeBullet(&b, "Layered preset", "Add noise or ambiance when you want more texture without changing the overall preset structure.")
 	writeCodeBlock(&b,
-		"00:00:00 silence",
 		"deep-rest",
 		"  noise brown smooth 45 amplitude 12",
 		"  tone 180 binaural 6 effect modulation 4 intensity 30 amplitude 16",
 		"  ambiance rain effect pan 0.3 intensity 35 amplitude 22",
 		"",
+		"00:00:00 silence",
 		"00:00:20 deep-rest",
 		"00:10:00 silence",
 	)
