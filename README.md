@@ -12,85 +12,60 @@
 
 **SynapSeq** is a text-driven audio sequencer for building clear, repeatable brainwave and ambient sessions using a simple domain-specific language, written as SynapSeq sequences (.spsq).
 
-For a local command reference and language overview in Markdown, see [USAGE](USAGE.md). You can also open the terminal manual with `synapseq -manual`.
-
 Visit [synapseq.org](https://synapseq.com) for more information.
 
 ## Quick Start
 
-The recommended way to install SynapSeq is through the platform package manager first. If that is not available for your environment, install the binary from the GitHub releases page.
+The recommended way to install SynapSeq is through the platform package manager.
 
-### Linux and macOS
+### Homebrew (macOS & Linux)
 
-Install with Homebrew:
+Install with [Homebrew](https://brew.sh):
 
 ```bash
 brew tap synapseq-foundation/synapseq
 brew install synapseq
 ```
 
-Or install from GitHub releases:
+### Winget (Windows)
 
-1. Download the archive for your platform from the latest GitHub release.
-2. Extract the archive.
-3. Move the `synapseq` binary to `/usr/local/bin`.
-4. Make sure it is executable.
-
-Example:
-
-```bash
-chmod +x synapseq
-sudo mv synapseq /usr/local/bin/
-synapseq -help
-```
-
-### Windows
-
-Install with winget:
+Install with [Winget](https://learn.microsoft.com/en-us/windows/package-manager/winget/):
 
 ```powershell
 winget update
 winget install synapseq
 ```
 
-Or install from GitHub releases:
+After installation, you can run `synapseq -install-file-association` to associate `.spsq` files with SynapSeq and enable additional Explorer context menu actions.
 
-1. Download the ZIP archive for Windows from the latest GitHub release.
-2. Extract the archive.
-3. Move `synapseq.exe` to a folder that is already in the system `%PATH%`, or add a dedicated folder for SynapSeq to `%PATH%`.
-4. Open a new PowerShell or Command Prompt window and verify the installation.
-5. Run `synapseq -install-file-association` to associate `.spsq` files with SynapSeq and enable additional Explorer context menu actions.
+### Manual Downloads
 
-Example:
+If you prefer to install manually, download the appropriate archive from the latest GitHub release: [v3.5.1](https://github.com/synapseq-foundation/synapseq/releases/tag/v3.5.1).
 
-```powershell
-synapseq -help
-synapseq -install-file-association
-```
+### Usage
+
+After installation on any platform, run `synapseq -manual` to open the built-in manual, or read [USAGE](USAGE.md) in this repository.
 
 ## AI Specification Pack
 
 If you are using SynapSeq with LLMs or prompt pipelines, see [AI](ai/README.md) for the AI specification pack.
 
-It includes:
+## Go API
 
-- [ai/ai-basic.md](ai/ai-basic.md) for output contract and safe syntax generation
-- [ai/ai-compatibility.md](ai/ai-compatibility.md) for transition compatibility rules
-- [ai/ai-concepts.md](ai/ai-concepts.md) for entrainment and session design guidance
+If you want to integrate SynapSeq into a Go project, use the [Go module API](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4/core).
 
 ## Contributing
 
 We welcome contributions!
 
-Please read the [CONTRIBUTING.md](CONTRIBUTING.md) file for guidelines on how to contribute code, bug fixes, and documentation to the project.
+Please read the [CONTRIBUTING](CONTRIBUTING.md) file for guidelines on how to contribute code, bug fixes, and documentation to the project.
 
 ## License
 
-SynapSeq is distributed under the GPL v2 license. See the [COPYING.txt](COPYING.txt) file for details.
+SynapSeq is distributed under the GPL v2 license. See the [COPYING](COPYING.txt) file for details.
 
 ### Third-Party Licenses
 
-SynapSeq makes use of third-party libraries, which remain under their own licenses.  
 All original code in SynapSeq is licensed under the GNU GPL v2, but the following components are included and redistributed under their respective terms:
 
 - **[fatih/color](https://github.com/fatih/color)**  
@@ -135,7 +110,7 @@ Use [GitHub Issues](https://github.com/synapseq-foundation/synapseq/issues) for:
 
 Use [GitHub Discussions](https://github.com/synapseq-foundation/synapseq/discussions) for:
 
-- General questions and support (e.g., "How do I use `@presetlist`?")
+- General questions and support (e.g., "How do I use `@extends`?")
 - Help with your sequences (e.g., "My sequence isn't working, can you help?")
 - Sharing your own sequences and presets with the community
 - Discussing ideas and best practices
