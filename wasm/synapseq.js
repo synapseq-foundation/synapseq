@@ -487,8 +487,6 @@ class SynapSeq {
    * // Load from File object
    * const file = document.getElementById('fileInput').files[0];
    * await synapse.load(file, "text");
-   * // or for JSON format
-   * await synapse.load(file, "json");
    */
   async load(input, format = "text") {
     // Wait for worker to be ready
@@ -500,8 +498,8 @@ class SynapSeq {
       throw new Error("Input is required");
     }
 
-    if (format !== "text" && format !== "json") {
-      throw new Error("Unsupported format: " + format);
+    if (format !== "text") {
+      throw new Error("Unsupported format: " + format + ". Only text is supported.");
     }
 
     this._format = format;
@@ -557,21 +555,6 @@ class SynapSeq {
   }
 
   /**
-   * Extracts sample rate from JSON sequence content
-   * @private
-   * @param {string} jsonStr - JSON string of the sequence
-   * @returns {number} Sample rate in Hz
-   */
-  _extractSampleRateFromJSON(jsonStr) {
-    try {
-      const obj = JSON.parse(jsonStr);
-      return obj?.options?.samplerate ?? 44100;
-    } catch {
-      return 44100;
-    }
-  }
-
-  /**
    * Plays the loaded sequence
    * @returns {Promise<void>}
    * @throws {Error} If no sequence is loaded or worker is not ready
@@ -592,12 +575,7 @@ class SynapSeq {
 
     try {
       // Get sample rate directly from SPSQ text (no need to call WASM)
-      let sampleRate;
-      if (this._format === "json") {
-        sampleRate = this._extractSampleRateFromJSON(this._sequence);
-      } else {
-        sampleRate = this._extractSampleRateFromText(this._sequence);
-      }
+      const sampleRate = this._extractSampleRateFromText(this._sequence);
       this._sampleRate = sampleRate;
 
       // Encode sequence to bytes for streaming
