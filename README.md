@@ -42,6 +42,8 @@ After installation, you can run `synapseq -install-file-association` to associat
 
 If you prefer to install manually, download the appropriate archive from the latest GitHub release: [v3.5.1](https://github.com/synapseq-foundation/synapseq/releases/tag/v3.5.1).
 
+If you want to build SynapSeq from source, see the [Compilation Guide](COMPILE.md).
+
 ### Usage
 
 After installation on any platform, run `synapseq -manual` to open the built-in manual, or read [USAGE](USAGE.md) in this repository.
@@ -53,6 +55,10 @@ If you are using SynapSeq with LLMs or prompt pipelines, see [AI](ai/README.md) 
 ## Go API
 
 If you want to integrate SynapSeq into a Go project, use the [Go module API](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4/core).
+
+## Building from Source
+
+To build SynapSeq from source, follow the instructions in [COMPILE](COMPILE.md) for your platform.
 
 ## Contributing
 
