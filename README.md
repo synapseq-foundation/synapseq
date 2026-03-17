@@ -16,6 +16,58 @@ For a local command reference and language overview in Markdown, see [USAGE](USA
 
 Visit [synapseq.org](https://synapseq.com) for more information.
 
+## Quick Start
+
+The recommended way to install SynapSeq is through the platform package manager first. If that is not available for your environment, install the binary from the GitHub releases page.
+
+### Linux and macOS
+
+Install with Homebrew:
+
+```bash
+brew tap synapseq-foundation/synapseq
+brew install synapseq
+```
+
+Or install from GitHub releases:
+
+1. Download the archive for your platform from the latest GitHub release.
+2. Extract the archive.
+3. Move the `synapseq` binary to `/usr/local/bin`.
+4. Make sure it is executable.
+
+Example:
+
+```bash
+chmod +x synapseq
+sudo mv synapseq /usr/local/bin/
+synapseq -help
+```
+
+### Windows
+
+Install with winget:
+
+```powershell
+winget update
+winget install synapseq
+```
+
+Or install from GitHub releases:
+
+1. Download the ZIP archive for Windows from the latest GitHub release.
+2. Extract the archive.
+3. Move `synapseq.exe` to a folder that is already in the system `%PATH%`, or add a dedicated folder for SynapSeq to `%PATH%`.
+4. Open a new PowerShell or Command Prompt window and verify the installation.
+5. Run `synapseq -install-file-association` to associate `.spsq` files with SynapSeq and enable additional Explorer context menu actions.
+
+Example:
+
+```powershell
+synapseq -help
+synapseq -install-file-association
+```
+
 ## AI Specification Pack
 
 If you are using SynapSeq with LLMs or prompt pipelines, see [AI](ai/README.md) for the AI specification pack.
