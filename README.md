@@ -20,6 +20,16 @@ SynapSeq is a lightweight engine that sequences audio tones to guide brainwave s
 
 🌐 **Visit [synapseq.org](https://synapseq.org/) for installation instructions, documentation, FAQ, and more!**
 
+## AI Specification Pack
+
+If you are using SynapSeq with LLMs or prompt pipelines, see [AI](ai/README.md) for the AI specification pack.
+
+It includes:
+
+- [ai/ai-basic.md](ai/ai-basic.md) for output contract and safe syntax generation
+- [ai/ai-compatibility.md](ai/ai-compatibility.md) for transition compatibility rules
+- [ai/ai-concepts.md](ai/ai-concepts.md) for entrainment and session design guidance
+
 ## Contributing
 
 We welcome contributions!
