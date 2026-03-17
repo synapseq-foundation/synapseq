@@ -74,6 +74,11 @@ func TestParseTrackOverride_Success(ts *testing.T) {
 		Amplitude: t.AmplitudePercentToRaw(15),
 		Waveform:  t.WaveformSquare,
 	}
+	templatePreset.Track[3] = t.Track{
+		Type:        t.TrackPinkNoise,
+		NoiseSmooth: 20,
+		Amplitude:   t.AmplitudePercentToRaw(25),
+	}
 
 	// Create derived preset
 	derivedPreset, err := t.NewPreset("derived", false, templatePreset)
@@ -159,6 +164,16 @@ func TestParseTrackOverride_Success(ts *testing.T) {
 				}
 			},
 		},
+		{
+			name:     "override noise smooth",
+			line:     "  track 4 smooth 45",
+			trackIdx: 3,
+			checkFunc: func(t *testing.T, p *t.Preset) {
+				if p.Track[3].NoiseSmooth != 45 {
+					t.Errorf("expected smooth 45, got %v", p.Track[3].NoiseSmooth)
+				}
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -207,6 +222,11 @@ func TestParseTrackOverride_Errors(ts *testing.T) {
 		Waveform:     t.WaveformSine,
 		Effect:       t.Effect{Type: t.EffectModulation, Intensity: t.IntensityPercentToRaw(60)},
 	}
+	templatePreset.Track[3] = t.Track{
+		Type:        t.TrackBrownNoise,
+		NoiseSmooth: 15,
+		Amplitude:   t.AmplitudePercentToRaw(30),
+	}
 
 	// Create derived preset
 	derivedPreset, err := t.NewPreset("derived", false, templatePreset)
@@ -228,12 +248,14 @@ func TestParseTrackOverride_Errors(ts *testing.T) {
 		{"invalid value", "  track 1 amplitude abc"},
 		{"extra tokens", "  track 1 amplitude 10 extra"},
 		{"tone on ambiance track", "  track 2 tone 300"},
+		{"smooth on non-noise track", "  track 1 smooth 30"},
 		// {"pan on non-ambiance track", "  track 1 pan 200"},
 		{"wrong beat type override", "  track 1 monaural 8"},
 		{"value on modulation effect", "  track 3 modulation -5"},
 		{"modulation on pan effect", "  track 2 modulation 3"},
 		{"invalid amplitude (too high)", "  track 1 amplitude 150"},
 		{"invalid intensity (too high)", "  track 2 intensity 150"},
+		{"invalid smooth (too high)", "  track 4 smooth 150"},
 	}
 
 	for _, tt := range tests {
@@ -283,6 +305,7 @@ func TestPresetInheritance_Integration(ts *testing.T) {
 	}
 	templatePreset.Track[1] = t.Track{
 		Type:      t.TrackPinkNoise,
+		NoiseSmooth: 10,
 		Amplitude: t.AmplitudePercentToRaw(30),
 	}
 
@@ -308,6 +331,7 @@ func TestPresetInheritance_Integration(ts *testing.T) {
 		"  track 1 tone 350",
 		"  track 1 binaural 12",
 		"  track 1 amplitude 25",
+		"  track 2 smooth 35",
 		"  track 2 amplitude 35",
 	}
 
@@ -330,6 +354,9 @@ func TestPresetInheritance_Integration(ts *testing.T) {
 	}
 	if derivedPreset.Track[1].Amplitude != t.AmplitudePercentToRaw(35) {
 		ts.Errorf("expected overridden amplitude for track 2, got %v", derivedPreset.Track[1].Amplitude)
+	}
+	if derivedPreset.Track[1].NoiseSmooth != 35 {
+		ts.Errorf("expected overridden smooth for track 2, got %v", derivedPreset.Track[1].NoiseSmooth)
 	}
 
 	// Verify that template tracks are unchanged

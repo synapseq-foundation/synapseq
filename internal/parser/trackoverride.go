@@ -72,6 +72,7 @@ func (ctx *TextParser) ParseTrackOverride(preset *t.Preset) error {
 		t.KeywordPan,
 		t.KeywordModulation,
 		t.KeywordDoppler,
+		t.KeywordSmooth,
 		t.KeywordAmplitude,
 		t.KeywordIntensity)
 	if err != nil {
@@ -126,6 +127,19 @@ func (ctx *TextParser) ParseTrackOverride(preset *t.Preset) error {
 		}
 
 		preset.Track[idx].Resonance = resonance
+	case t.KeywordSmooth:
+		if track.Type != t.TrackWhiteNoise &&
+			track.Type != t.TrackPinkNoise &&
+			track.Type != t.TrackBrownNoise {
+			return diag.Validation(fmt.Sprintf("cannot set smooth on track %d of type %q", trackIdx, track.Type.String())).WithSpan(kindSpan).WithFound(kind)
+		}
+
+		smooth, err := ctx.Line.NextFloat64Strict()
+		if err != nil {
+			return err
+		}
+
+		preset.Track[idx].NoiseSmooth = smooth
 	case t.KeywordAmplitude:
 		amplitude, err := ctx.Line.NextFloat64Strict()
 		if err != nil {
