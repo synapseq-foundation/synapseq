@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SynapSeq WASM Example</title>
+    <style>
+      :root {
+        --bg: #f3efe6;
+        --panel: rgba(255, 251, 245, 0.88);
+        --panel-strong: #fffaf2;
+        --ink: #1f1b18;
+        --muted: #6d6257;
+        --line: rgba(73, 55, 37, 0.18);
+        --accent: #b14d2a;
+        --accent-strong: #7f2d18;
+        --accent-soft: rgba(177, 77, 42, 0.14);
+        --ok: #2f6b45;
+        --warn: #885b17;
+        --danger: #8b2e2e;
+        --shadow: 0 24px 60px rgba(63, 42, 24, 0.14);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Georgia, "Times New Roman", serif;
+        color: var(--ink);
+        background:
+          radial-gradient(
+            circle at top left,
+            rgba(255, 214, 170, 0.55),
+            transparent 32%
+          ),
+          radial-gradient(
+            circle at top right,
+            rgba(193, 225, 193, 0.4),
+            transparent 28%
+          ),
+          linear-gradient(180deg, #f7f3eb 0%, #efe7d9 100%);
+      }
+
+      .shell {
+        width: min(1100px, calc(100vw - 32px));
+        margin: 32px auto;
+        display: grid;
+        gap: 18px;
+      }
+
+      .hero,
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: var(--panel);
+        backdrop-filter: blur(12px);
+        box-shadow: var(--shadow);
+      }
+
+      .hero {
+        padding: 28px;
+        display: grid;
+        gap: 12px;
+      }
+
+      .eyebrow {
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        font-size: 12px;
+        color: var(--accent-strong);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(34px, 4vw, 56px);
+        line-height: 0.96;
+        font-weight: 600;
+      }
+
+      .hero p {
+        margin: 0;
+        max-width: 70ch;
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1.55;
+      }
+
+      .hero code,
+      .panel code {
+        font-family:
+          Menlo, Monaco, "Cascadia Mono", "SFMono-Regular", monospace;
+        font-size: 0.95em;
+        background: rgba(0, 0, 0, 0.05);
+        padding: 2px 6px;
+        border-radius: 8px;
+      }
+
+      .panel {
+        padding: 22px;
+        display: grid;
+        gap: 16px;
+      }
+
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .label {
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 360px;
+        resize: vertical;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 18px;
+        background: var(--panel-strong);
+        color: var(--ink);
+        font:
+          14px/1.55 Menlo,
+          Monaco,
+          "Cascadia Mono",
+          "SFMono-Regular",
+          monospace;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      }
+
+      textarea:focus {
+        outline: 2px solid rgba(177, 77, 42, 0.25);
+        border-color: rgba(177, 77, 42, 0.35);
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      button {
+        appearance: none;
+        border: 0;
+        border-radius: 999px;
+        padding: 12px 18px;
+        font:
+          600 14px/1 Georgia,
+          "Times New Roman",
+          serif;
+        cursor: pointer;
+        transition:
+          transform 140ms ease,
+          opacity 140ms ease,
+          background 140ms ease;
+      }
+
+      button:hover:not(:disabled) {
+        transform: translateY(-1px);
+      }
+
+      button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
+      .play {
+        background: var(--accent);
+        color: #fff7f2;
+      }
+
+      .stop {
+        background: #ead7cb;
+        color: var(--accent-strong);
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .stat {
+        padding: 14px 16px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.42);
+      }
+
+      .stat strong {
+        display: block;
+        margin-top: 6px;
+        font-size: 18px;
+      }
+
+      progress {
+        width: 100%;
+        height: 14px;
+        appearance: none;
+        border: 0;
+        border-radius: 999px;
+        overflow: hidden;
+        background: rgba(103, 76, 47, 0.13);
+      }
+
+      progress::-webkit-progress-bar {
+        background: rgba(103, 76, 47, 0.13);
+      }
+
+      progress::-webkit-progress-value {
+        background: linear-gradient(90deg, #d67a44, #a53b1c);
+        border-radius: 999px;
+      }
+
+      progress::-moz-progress-bar {
+        background: linear-gradient(90deg, #d67a44, #a53b1c);
+        border-radius: 999px;
+      }
+
+      .meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .status {
+        padding: 14px 16px;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.4);
+        color: var(--ink);
+        display: grid;
+        gap: 6px;
+      }
+
+      .status-title {
+        font-weight: 700;
+      }
+
+      .status-detail {
+        color: inherit;
+        opacity: 0.92;
+        line-height: 1.5;
+        white-space: pre-line;
+      }
+
+      .status[data-tone="warning"] {
+        background: rgba(207, 160, 67, 0.14);
+        color: var(--warn);
+        border-color: rgba(136, 91, 23, 0.2);
+      }
+
+      .status[data-tone="error"] {
+        background: rgba(173, 72, 72, 0.12);
+        color: var(--danger);
+        border-color: rgba(139, 46, 46, 0.24);
+      }
+
+      .status[data-tone="success"] {
+        background: rgba(66, 132, 90, 0.12);
+        color: var(--ok);
+        border-color: rgba(47, 107, 69, 0.22);
+      }
+
+      @media (max-width: 720px) {
+        .shell {
+          width: min(100vw - 20px, 1100px);
+          margin: 10px auto 24px;
+        }
+
+        .hero,
+        .panel {
+          border-radius: 20px;
+        }
+
+        .stats {
+          grid-template-columns: 1fr;
+        }
+
+        .meta {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <div class="eyebrow">SynapSeq WASM Demo</div>
+        <h1>Local Runtime Example</h1>
+        <p>
+          This example loads <code>./synapseq.wasm</code> and
+          <code>./wasm_exec.js</code> from this directory. If those files are
+          missing, run <code>make wasm</code> from the repository root before
+          opening this page through a local HTTP server.
+        </p>
+      </section>
+
+      <section class="panel">
+        <div class="row">
+          <div>
+            <div class="label">SPSQ Editor</div>
+          </div>
+          <div class="controls">
+            <button id="playButton" class="play" type="button">Play</button>
+            <button id="stopButton" class="stop" type="button" disabled>
+              Stop
+            </button>
+          </div>
+        </div>
+
+        <textarea id="sequenceEditor" spellcheck="false"></textarea>
+
+        <div class="stats">
+          <div class="stat">
+            <div class="label">State</div>
+            <strong id="stateValue">idle</strong>
+          </div>
+          <div class="stat">
+            <div class="label">Elapsed</div>
+            <strong id="elapsedValue">00:00</strong>
+          </div>
+          <div class="stat">
+            <div class="label">Duration</div>
+            <strong id="durationValue">00:00</strong>
+          </div>
+        </div>
+
+        <progress id="progressBar" value="0" max="1"></progress>
+
+        <div class="meta">
+          <span id="progressLabel">0%</span>
+          <span
+            >Open this page over HTTP or HTTPS, not <code>file://</code>.</span
+          >
+        </div>
+
+        <div id="statusBox" class="status" data-tone="warning">
+          <div id="statusTitle" class="status-title">Ready</div>
+          <div id="statusDetail" class="status-detail">
+            Press Play to load the sequence and start playback.
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="./synapseq.js"></script>
+    <script>
+      const playButton = document.getElementById("playButton");
+      const stopButton = document.getElementById("stopButton");
+      const sequenceEditor = document.getElementById("sequenceEditor");
+      const stateValue = document.getElementById("stateValue");
+      const elapsedValue = document.getElementById("elapsedValue");
+      const durationValue = document.getElementById("durationValue");
+      const progressBar = document.getElementById("progressBar");
+      const progressLabel = document.getElementById("progressLabel");
+      const statusBox = document.getElementById("statusBox");
+      const statusTitle = document.getElementById("statusTitle");
+      const statusDetail = document.getElementById("statusDetail");
+
+      const DEFAULT_SEQUENCE = `@samplerate 44100
+@volume 75
+
+alpha_light
+  noise pink amplitude 18
+  tone 220 binaural 10 amplitude 10
+
+alpha_deep
+  noise pink amplitude 24
+  tone 220 binaural 8 amplitude 12
+
+00:00:00 silence
+00:00:10 alpha_light
+00:02:30 alpha_deep smooth
+00:07:30 alpha_deep ease-out
+00:08:00 silence`;
+
+      const synapseq = new SynapSeq({
+        wasmPath: "./synapseq.wasm",
+        wasmExecPath: "./wasm_exec.js",
+      });
+
+      let progressTimer = null;
+      let totalDurationSeconds = 0;
+      let endingNaturally = false;
+
+      function setStatus(title, tone = "warning", detail = "") {
+        statusTitle.textContent = title;
+        statusDetail.textContent = detail;
+        statusBox.dataset.tone = tone;
+      }
+
+      function formatClock(totalSeconds) {
+        const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+        const hours = Math.floor(safeSeconds / 3600);
+        const minutes = Math.floor((safeSeconds % 3600) / 60);
+        const seconds = safeSeconds % 60;
+
+        if (hours > 0) {
+          return [hours, minutes, seconds]
+            .map((value) => String(value).padStart(2, "0"))
+            .join(":");
+        }
+
+        return [minutes, seconds]
+          .map((value) => String(value).padStart(2, "0"))
+          .join(":");
+      }
+
+      function parseSequenceDuration(sequenceText) {
+        const lines = sequenceText.split(/\r?\n/);
+        let lastTimestamp = 0;
+
+        for (const line of lines) {
+          const match = line.trim().match(/^(\d{2}):(\d{2}):(\d{2})\s+/);
+          if (!match) {
+            continue;
+          }
+
+          const hours = Number(match[1]);
+          const minutes = Number(match[2]);
+          const seconds = Number(match[3]);
+          lastTimestamp = hours * 3600 + minutes * 60 + seconds;
+        }
+
+        return lastTimestamp;
+      }
+
+      function refreshProgress() {
+        const elapsed = synapseq.getCurrentTime();
+        const boundedElapsed = Math.min(
+          elapsed,
+          totalDurationSeconds || elapsed,
+        );
+        const ratio =
+          totalDurationSeconds > 0
+            ? Math.min(boundedElapsed / totalDurationSeconds, 1)
+            : 0;
+
+        stateValue.textContent = synapseq.getState();
+        elapsedValue.textContent = formatClock(boundedElapsed);
+        durationValue.textContent = formatClock(totalDurationSeconds);
+        progressBar.value = ratio;
+        progressLabel.textContent = `${Math.round(ratio * 100)}%`;
+      }
+
+      function startProgressLoop() {
+        stopProgressLoop();
+        progressTimer = window.setInterval(refreshProgress, 100);
+      }
+
+      function stopProgressLoop() {
+        if (progressTimer !== null) {
+          window.clearInterval(progressTimer);
+          progressTimer = null;
+        }
+      }
+
+      function setButtons(isPlaying) {
+        playButton.disabled = isPlaying;
+        stopButton.disabled = !isPlaying;
+      }
+
+      function resetProgressView() {
+        stateValue.textContent = synapseq.getState();
+        elapsedValue.textContent = "00:00";
+        durationValue.textContent = formatClock(totalDurationSeconds);
+        progressBar.value = 0;
+        progressLabel.textContent = "0%";
+      }
+
+      async function ensureLocalAssetsReachable() {
+        try {
+          const [wasmResponse, execResponse] = await Promise.all([
+            fetch("./synapseq.wasm", { method: "HEAD", cache: "no-store" }),
+            fetch("./wasm_exec.js", { method: "HEAD", cache: "no-store" }),
+          ]);
+
+          if (!wasmResponse.ok || !execResponse.ok) {
+            throw new Error("Local WASM assets were not found.");
+          }
+        } catch (error) {
+          throw new Error(
+            "Local WASM files are missing or unreachable.\nRun `make wasm` from the repository root and serve this directory over HTTP.",
+          );
+        }
+      }
+
+      synapseq.onplaying = () => {
+        setButtons(true);
+        setStatus(
+          "Playback started",
+          "success",
+          "The sequence is now playing.",
+        );
+        startProgressLoop();
+      };
+
+      synapseq.onstopped = () => {
+        stopProgressLoop();
+        setButtons(false);
+        stateValue.textContent = synapseq.getState();
+        if (endingNaturally) {
+          endingNaturally = false;
+          return;
+        }
+        setStatus(
+          "Playback stopped",
+          "warning",
+          "Playback was stopped before the end of the sequence.",
+        );
+      };
+
+      synapseq.onended = () => {
+        endingNaturally = true;
+        stopProgressLoop();
+        refreshProgress();
+        progressBar.value = 1;
+        progressLabel.textContent = "100%";
+        setButtons(false);
+        setStatus(
+          "Playback finished",
+          "success",
+          "The sequence reached its final timeline entry.",
+        );
+      };
+
+      synapseq.onerror = ({ error }) => {
+        stopProgressLoop();
+        setButtons(false);
+        setStatus(
+          "Playback error",
+          "error",
+          `${error.message}\n\nIf local files are missing, run \`make wasm\` from the repository root.`,
+        );
+      };
+
+      playButton.addEventListener("click", async () => {
+        try {
+          const sequenceText = sequenceEditor.value;
+          totalDurationSeconds = parseSequenceDuration(sequenceText);
+          durationValue.textContent = formatClock(totalDurationSeconds);
+          progressBar.max = 1;
+          progressBar.value = 0;
+          progressLabel.textContent = "0%";
+
+          await ensureLocalAssetsReachable();
+          setStatus(
+            "Preparing playback",
+            "warning",
+            "Loading the sequence text and initializing the local WASM runtime.",
+          );
+          await synapseq.load(sequenceText, "text");
+          await synapseq.play();
+        } catch (error) {
+          stopProgressLoop();
+          setButtons(false);
+          setStatus("Unable to start playback", "error", error.message);
+        }
+      });
+
+      stopButton.addEventListener("click", () => {
+        synapseq.stop();
+        resetProgressView();
+      });
+
+      sequenceEditor.value = DEFAULT_SEQUENCE;
+      totalDurationSeconds = parseSequenceDuration(sequenceEditor.value);
+      durationValue.textContent = formatClock(totalDurationSeconds);
+      resetProgressView();
+    </script>
+  </body>
+</html>
