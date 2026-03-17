@@ -88,6 +88,23 @@
         line-height: 1.55;
       }
 
+      .build-info {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
+      .build-chip {
+        padding: 7px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.45);
+      }
+
       .hero code,
       .panel code {
         font-family:
@@ -305,6 +322,9 @@
           missing, run <code>make wasm</code> from the repository root before
           opening this page through a local HTTP server.
         </p>
+        <div id="buildInfo" class="build-info" aria-live="polite">
+          <span class="build-chip">WASM build: loading...</span>
+        </div>
       </section>
 
       <section class="panel">
@@ -368,6 +388,7 @@
       const statusBox = document.getElementById("statusBox");
       const statusTitle = document.getElementById("statusTitle");
       const statusDetail = document.getElementById("statusDetail");
+      const buildInfo = document.getElementById("buildInfo");
 
       const DEFAULT_SEQUENCE = `@samplerate 44100
 @volume 75
@@ -497,6 +518,59 @@ alpha_deep
         }
       }
 
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function setBuildInfoLoading() {
+        buildInfo.innerHTML =
+          '<span class="build-chip">WASM build: loading...</span>';
+      }
+
+      function setBuildInfoUnavailable(reason) {
+        buildInfo.innerHTML = `<span class="build-chip">WASM build: unavailable</span><span>${escapeHtml(reason)}</span>`;
+      }
+
+      function setBuildInfo(version, buildDate, hash) {
+        const shortHash = hash ? hash.slice(0, 12) : "unknown";
+        buildInfo.innerHTML =
+          `<span class="build-chip">Version: ${escapeHtml(version || "unknown")}</span>` +
+          `<span class="build-chip">Build date: ${escapeHtml(buildDate || "unknown")}</span>` +
+          `<span class="build-chip">Commit: ${escapeHtml(shortHash)}</span>`;
+      }
+
+      async function loadBuildMetadata() {
+        setBuildInfoLoading();
+
+        try {
+          await ensureLocalAssetsReachable();
+
+          const timeoutPromise = new Promise((_, reject) => {
+            window.setTimeout(() => {
+              reject(new Error("Timed out while reading WASM metadata."));
+            }, 8000);
+          });
+
+          const [version, buildDate, hash] = await Promise.race([
+            Promise.all([
+              synapseq.getVersion(),
+              synapseq.getBuildDate(),
+              synapseq.getHash(),
+            ]),
+            timeoutPromise,
+          ]);
+
+          setBuildInfo(version, buildDate, hash);
+        } catch (error) {
+          setBuildInfoUnavailable(error.message);
+        }
+      }
+
       synapseq.onplaying = () => {
         setButtons(true);
         setStatus(
@@ -579,6 +653,7 @@ alpha_deep
       totalDurationSeconds = parseSequenceDuration(sequenceEditor.value);
       durationValue.textContent = formatClock(totalDurationSeconds);
       resetProgressView();
+      loadBuildMetadata();
     </script>
   </body>
 </html>
