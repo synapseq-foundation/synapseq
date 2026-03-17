@@ -1,12 +1,6 @@
 <h1 align="center">SynapSeq</h1>
 
 <p align="center">
-  <a href="https://synapseq.org/">Home</a> |
-  <a href="https://hub.synapseq.org/">Examples</a> |
-  <a href="https://synapseq.org/docs">Documentation</a>
-</p>
-
-<p align="center">
   <p align="center">
   <a href="https://github.com/synapseq-foundation/synapseq/releases/latest"><img src="https://img.shields.io/github/v/release/synapseq-foundation/synapseq?color=blue&logo=github" alt="Release"></a>
   <a href="COPYING.txt"><img src="https://img.shields.io/badge/license-GPL%20v2-blue.svg?logo=open-source-initiative&logoColor=white" alt="License"></a>
@@ -16,11 +10,11 @@
 
 <p align="center"><strong>Synapse-Sequenced Brainwave Generator</strong></p>
 
-SynapSeq is a lightweight engine that sequences audio tones to guide brainwave states like relaxation, focus, and meditation using a simple text-based format.
+**SynapSeq** is a text-driven audio sequencer for building clear, repeatable brainwave and ambient sessions using a simple domain-specific language, written as SynapSeq sequences (.spsq).
 
-🌐 **Visit [synapseq.org](https://synapseq.org/) for installation instructions, documentation, FAQ, and more!**
+For a local command reference and language overview in Markdown, see [USAGE](USAGE.md). You can also open the terminal manual with `synapseq -manual`.
 
-For a local command reference and language overview in Markdown, see [USAGE.md](USAGE.md). You can also open the terminal manual with `synapseq -manual`.
+Visit [synapseq.org](https://synapseq.com) for more information.
 
 ## AI Specification Pack
 
@@ -47,27 +41,29 @@ SynapSeq is distributed under the GPL v2 license. See the [COPYING.txt](COPYING.
 SynapSeq makes use of third-party libraries, which remain under their own licenses.  
 All original code in SynapSeq is licensed under the GNU GPL v2, but the following components are included and redistributed under their respective terms:
 
+- **[fatih/color](https://github.com/fatih/color)**  
+  License: MIT  
+  Used for colorized terminal output.
+
 - **[beep](https://github.com/gopxl/beep)**  
   License: MIT  
   Used for audio encoding/decoding.
 
-- **[go-yaml](https://github.com/goccy/go-yaml)**  
+- **[golang.org/x/sys](https://pkg.go.dev/golang.org/x/sys)**  
+  License: BSD 3-Clause  
+  Used for platform-specific system integration.
+
+- **[go-colorable](https://github.com/mattn/go-colorable)**  
   License: MIT  
-  Used for YAML parsing and processing.
+  Used indirectly for cross-platform ANSI color support.
+
+- **[go-isatty](https://github.com/mattn/go-isatty)**  
+  License: MIT  
+  Used indirectly for terminal capability detection.
 
 - **[pkg/errors](https://github.com/pkg/errors)**  
   License: BSD 2-Clause  
-  Used indirectly via `beep` for error wrapping and stack trace utilities.
-
-- **[google/uuid](https://github.com/google/uuid)**  
-  License: BSD 3-Clause  
-  Copyright © 2009-2014 Google Inc.  
-  Used for UUID generation and unique identifier handling.
-
-- **[golang.org/x/sys/windows/registry](https://pkg.go.dev/golang.org/x/sys/windows/registry)**  
-  License: BSD 3-Clause
-  Copyright 2009 The Go Authors.
-  Used for Windows registry access and manipulation.
+  Used indirectly for error wrapping and stack trace utilities.
 
 All third-party copyright notices and licenses are preserved in this repository in compliance with their original terms.
 
