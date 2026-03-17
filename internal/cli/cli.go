@@ -79,49 +79,57 @@ func SetColorEnabled(enabled bool) {
 	color.NoColor = !enabled
 }
 
+func warmRGB(r, g, b int, attrs ...color.Attribute) *color.Color {
+	c := color.RGB(r, g, b)
+	if len(attrs) > 0 {
+		c.Add(attrs...)
+	}
+	return c
+}
+
 // Title formats top-level headings.
 func Title(text string) string {
-	return color.New(color.FgCyan, color.Bold).Sprint(text)
+	return warmRGB(177, 77, 42, color.Bold).Sprint(text)
 }
 
 // Section formats section headings.
 func Section(text string) string {
-	return color.New(color.FgYellow, color.Bold).Sprint(text)
+	return warmRGB(160, 113, 38, color.Bold).Sprint(text)
 }
 
 // Command formats shell commands and paths.
 func Command(text string) string {
-	return color.New(color.FgGreen).Sprint(text)
+	return warmRGB(47, 107, 69).Sprint(text)
 }
 
 // Flag formats command-line flags.
 func Flag(text string) string {
-	return color.New(color.FgMagenta, color.Bold).Sprint(text)
+	return warmRGB(177, 77, 42, color.Bold).Sprint(text)
 }
 
 // Muted formats secondary explanatory text.
 func Muted(text string) string {
-	return color.New(color.FgHiBlack).Sprint(text)
+	return warmRGB(107, 98, 89).Sprint(text)
 }
 
 // ErrorText formats error text.
 func ErrorText(text string) string {
-	return color.New(color.FgRed, color.Bold).Sprint(text)
+	return warmRGB(139, 46, 46, color.Bold).Sprint(text)
 }
 
 // SuccessText formats success text.
 func SuccessText(text string) string {
-	return color.New(color.FgGreen, color.Bold).Sprint(text)
+	return warmRGB(47, 107, 69, color.Bold).Sprint(text)
 }
 
 // Label formats field labels.
 func Label(text string) string {
-	return color.New(color.FgBlue, color.Bold).Sprint(text)
+	return warmRGB(127, 45, 24, color.Bold).Sprint(text)
 }
 
 // Accent formats highlighted values.
 func Accent(text string) string {
-	return color.New(color.FgCyan).Sprint(text)
+	return warmRGB(177, 77, 42).Sprint(text)
 }
 
 // Help prints the help message
