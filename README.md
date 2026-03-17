@@ -56,6 +56,10 @@ If you are using SynapSeq with LLMs or prompt pipelines, see [AI](ai/README.md) 
 
 If you want to integrate SynapSeq into a Go project, use the [Go module API](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4/core).
 
+## WASM API
+
+If you want to integrate SynapSeq into a browser-based application, see the [WASM JavaScript API Reference](wasm/README.md).
+
 ## Building from Source
 
 To build SynapSeq from source, follow the instructions in [COMPILE](COMPILE.md) for your platform.
