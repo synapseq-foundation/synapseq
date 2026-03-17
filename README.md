@@ -20,6 +20,8 @@ SynapSeq is a lightweight engine that sequences audio tones to guide brainwave s
 
 🌐 **Visit [synapseq.org](https://synapseq.org/) for installation instructions, documentation, FAQ, and more!**
 
+For a local command reference and language overview in Markdown, see [USAGE.md](USAGE.md). You can also open the terminal manual with `synapseq -manual`.
+
 ## AI Specification Pack
 
 If you are using SynapSeq with LLMs or prompt pipelines, see [AI](ai/README.md) for the AI specification pack.
