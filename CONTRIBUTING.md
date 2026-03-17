@@ -1,30 +1,28 @@
 # Contributing to SynapSeq
 
 First off, thank you for considering contributing to **SynapSeq**!
+
 This project grows stronger with community support, whether through code, docs, bug reports, build scripts, or new ideas.
 
 ## TL;DR (Quick Summary)
 
-The `main` branch contains the latest Go (V3) codebase.  
-All pull requests (PRs) should target the `development` branch.  
-Sequence files (`.spsq`) -> contribute to the [SynapSeq Hub Repository](https://github.com/synapseq-foundation/synapseq-hub)
+The `main` branch contains the latest Go (V4) codebase.  
+All pull requests (PRs) should target the `development` branch.
 
-The legacy C code (V2, inherited from SBaGen) is available in the `v2` branch. If you wish to view, modify, or fork the old version, use that branch.
+The legacy C code (V2, inherited from SBaGen) is available in the `v2` branch. If you wish to view or fork the old version, use that branch. **No new contributions will be accepted to the `v2` branch.** It is frozen for historical reference.
 
 ---
 
 ## Contribution Policy
 
-### Version 3.x (Go)
-
-- The `main` branch contains the latest Go (V3) codebase.
+- The `main` branch contains the latest Go (V4) codebase.
 - All new features, bug fixes, and improvements should be submitted as PRs to the `development` branch.
 - Follow Go best practices and maintain clean, readable code.
 - Ensure backward compatibility when possible.
 
-#### Git Flow Workflow
+### Git Flow Workflow
 
-SynapSeq V3 follows the **Git Flow** branching model:
+SynapSeq V4 follows the **Git Flow** branching model:
 
 **Main Branches:**
 
@@ -80,18 +78,11 @@ SynapSeq V3 follows the **Git Flow** branching model:
 
 **Important:** Always create PRs to the `development` branch for regular contributions. Only hotfixes should target `main`.
 
-### Version 2.x (C, legacy)
-
-- The legacy C codebase (V2, inherited from SBaGen) is available in the `v2` branch.
-- No new features will be accepted for V2. Only maintenance or forks should use this branch.
-
 ---
 
 ## Contributing Sequence Files (`.spsq`)
 
 If you'd like to share your own `.spsq` sequence files with the community, please contribute them to the [SynapSeq Hub Repository](https://github.com/synapseq-foundation/synapseq-hub).
-
-**Important:** All sequence files contributed to the Hub are licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) (Creative Commons Attribution-ShareAlike 4.0 International). By contributing your sequences, you agree to share them under this license, allowing others to use, modify, and share your work with proper attribution.
 
 This process is separate from code contributions to the main SynapSeq project.
 
@@ -144,28 +135,30 @@ Example test locations:
 
 Before opening a PR, please make sure:
 
-- [ ] Your PR targets the correct branch (`development` for Go V3, `v2` for legacy C code).
+- [ ] Your PR targets the correct branch (`development` for regular contributions, `main` for hotfixes).
 - [ ] You wrote clear, descriptive commit messages (see above).
 - [ ] All tests pass successfully (`make test`).
 - [ ] You added tests for new features or bug fixes.
 - [ ] Your changes are limited to the scope of the PR (no unrelated edits).
-- [ ] Code follows Go best practices and conventions (for V3 contributions).
+- [ ] Code follows Go best practices and conventions (for V4 contributions).
 - [ ] Documentation is updated if your changes affect user-facing features.
 
 ---
 
 ## Not Sure? Open an Issue First!
 
-If you're not sure whether your contribution fits, **open an issue**.  
+If you're not sure whether your contribution fits, **open an issue**.
+
 We'll be happy to discuss your idea before you start coding, saving you time and aligning with the project's roadmap.
 
 ---
 
 ## License
 
-By contributing to SynapSeq, you agree that your contributions will be licensed under the same license as the project.  
+By contributing to SynapSeq, you agree that your contributions will be licensed under the same license as the project.
+
 Please ensure you have the right to submit your code or content under these terms.
 
 ---
 
-Thank you for helping make SynapSeq better! Even small contributions - fixing typos, improving docs, or sharing ideas - help this project grow.
+Thank you for helping make SynapSeq better! Even small contributions; fixing typos, improving docs, or sharing ideas, help this project grow.
