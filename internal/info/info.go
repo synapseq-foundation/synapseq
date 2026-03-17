@@ -18,8 +18,6 @@ const (
 	AUTHOR_URL = "https://synapseq.org"
 	// Repository URL
 	REPOSITORY = "https://github.com/synapseq-foundation/synapseq"
-	// Documentation URL
-	DOC_URL = "https://synapseq.org/docs"
 )
 
 var (
