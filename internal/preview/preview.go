@@ -24,7 +24,7 @@ import (
 //go:embed *.html
 var files embed.FS
 
-var previewTemplate = template.Must(template.ParseFS(files, "index.html"))
+var previewTemplate = template.Must(template.ParseFS(files, "preview.html"))
 
 type previewTemplateData struct {
 	Title              string

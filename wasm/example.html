@@ -4,21 +4,54 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>SynapSeq WASM Example</title>
+    <script>
+      (() => {
+        const storedTheme = localStorage.getItem("synapseq-theme");
+        const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)")
+          .matches
+          ? "dark"
+          : "light";
+        document.documentElement.setAttribute(
+          "data-theme",
+          storedTheme || preferredTheme,
+        );
+      })();
+    </script>
     <style>
       :root {
-        --bg: #f3efe6;
-        --panel: rgba(255, 251, 245, 0.88);
-        --panel-strong: #fffaf2;
-        --ink: #1f1b18;
-        --muted: #6d6257;
-        --line: rgba(73, 55, 37, 0.18);
+        color-scheme: light;
+        --bg: #f4efe5;
+        --panel: rgba(255, 252, 246, 0.86);
+        --panel-strong: rgba(255, 250, 241, 0.98);
+        --text: #201a15;
+        --muted: #6b6259;
+        --line: rgba(32, 26, 21, 0.12);
+        --line-strong: rgba(32, 26, 21, 0.18);
         --accent: #b14d2a;
         --accent-strong: #7f2d18;
         --accent-soft: rgba(177, 77, 42, 0.14);
         --ok: #2f6b45;
         --warn: #885b17;
         --danger: #8b2e2e;
-        --shadow: 0 24px 60px rgba(63, 42, 24, 0.14);
+        --shadow: 0 24px 80px rgba(51, 37, 23, 0.16);
+      }
+
+      html[data-theme="dark"] {
+        color-scheme: dark;
+        --bg: #161311;
+        --panel: rgba(31, 26, 23, 0.82);
+        --panel-strong: rgba(38, 32, 28, 0.96);
+        --text: #f3eadf;
+        --muted: #b8aa9a;
+        --line: rgba(243, 234, 223, 0.12);
+        --line-strong: rgba(243, 234, 223, 0.18);
+        --accent: #c96a42;
+        --accent-strong: #efb08d;
+        --accent-soft: rgba(201, 106, 66, 0.18);
+        --ok: #58a06a;
+        --warn: #c89a46;
+        --danger: #cc6d6d;
+        --shadow: 0 24px 80px rgba(0, 0, 0, 0.32);
       }
 
       * {
@@ -28,35 +61,50 @@
       body {
         margin: 0;
         min-height: 100vh;
-        font-family: Georgia, "Times New Roman", serif;
-        color: var(--ink);
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        color: var(--text);
         background:
           radial-gradient(
             circle at top left,
-            rgba(255, 214, 170, 0.55),
-            transparent 32%
+            rgba(15, 118, 110, 0.18),
+            transparent 24%
           ),
           radial-gradient(
             circle at top right,
-            rgba(193, 225, 193, 0.4),
-            transparent 28%
+            rgba(180, 83, 9, 0.16),
+            transparent 20%
           ),
-          linear-gradient(180deg, #f7f3eb 0%, #efe7d9 100%);
+          linear-gradient(180deg, #fbf6eb 0%, var(--bg) 100%);
+      }
+
+      html[data-theme="dark"] body {
+        background:
+          radial-gradient(
+            circle at top left,
+            rgba(15, 118, 110, 0.14),
+            transparent 26%
+          ),
+          radial-gradient(
+            circle at top right,
+            rgba(180, 83, 9, 0.14),
+            transparent 22%
+          ),
+          linear-gradient(180deg, #1c1714 0%, var(--bg) 100%);
       }
 
       .shell {
-        width: min(1100px, calc(100vw - 32px));
-        margin: 32px auto;
+        width: min(1100px, calc(100vw - 40px));
+        margin: 32px auto 24px;
         display: grid;
-        gap: 18px;
+        gap: 20px;
       }
 
       .hero,
       .panel {
         border: 1px solid var(--line);
-        border-radius: 24px;
+        border-radius: 28px;
         background: var(--panel);
-        backdrop-filter: blur(12px);
+        backdrop-filter: blur(14px);
         box-shadow: var(--shadow);
       }
 
@@ -66,26 +114,73 @@
         gap: 12px;
       }
 
+      .hero-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .theme-switcher {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .theme-button {
+        appearance: none;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 10px 14px;
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--text);
+        font:
+          600 13px/1 "Avenir Next",
+          "Segoe UI",
+          sans-serif;
+        cursor: pointer;
+        transition:
+          transform 140ms ease,
+          background 140ms ease,
+          border-color 140ms ease,
+          color 140ms ease;
+      }
+
+      .theme-button:hover {
+        transform: translateY(-1px);
+      }
+
+      .theme-button.is-active {
+        background: var(--accent-soft);
+        border-color: rgba(177, 77, 42, 0.28);
+        color: var(--accent-strong);
+      }
+
+      html[data-theme="dark"] .theme-button.is-active {
+        border-color: rgba(201, 106, 66, 0.34);
+      }
+
       .eyebrow {
-        letter-spacing: 0.18em;
+        letter-spacing: 0.22em;
         text-transform: uppercase;
         font-size: 12px;
-        color: var(--accent-strong);
+        color: var(--muted);
       }
 
       h1 {
         margin: 0;
-        font-size: clamp(34px, 4vw, 56px);
-        line-height: 0.96;
-        font-weight: 600;
+        font-size: clamp(36px, 6vw, 68px);
+        line-height: 0.94;
+        font-weight: 700;
+        letter-spacing: -0.05em;
       }
 
       .hero p {
         margin: 0;
-        max-width: 70ch;
+        max-width: 56ch;
         color: var(--muted);
-        font-size: 17px;
-        line-height: 1.55;
+        font-size: 16px;
+        line-height: 1.7;
       }
 
       .build-info {
@@ -99,10 +194,14 @@
       }
 
       .build-chip {
-        padding: 7px 10px;
+        padding: 8px 12px;
         border-radius: 999px;
         border: 1px solid var(--line);
-        background: rgba(255, 255, 255, 0.45);
+        background: rgba(32, 26, 21, 0.05);
+      }
+
+      html[data-theme="dark"] .build-chip {
+        background: rgba(255, 255, 255, 0.05);
       }
 
       .hero code,
@@ -110,13 +209,18 @@
         font-family:
           Menlo, Monaco, "Cascadia Mono", "SFMono-Regular", monospace;
         font-size: 0.95em;
-        background: rgba(0, 0, 0, 0.05);
+        background: rgba(32, 26, 21, 0.06);
         padding: 2px 6px;
         border-radius: 8px;
       }
 
+      html[data-theme="dark"] .hero code,
+      html[data-theme="dark"] .panel code {
+        background: rgba(255, 255, 255, 0.06);
+      }
+
       .panel {
-        padding: 22px;
+        padding: 24px;
         display: grid;
         gap: 16px;
       }
@@ -144,7 +248,7 @@
         border-radius: 18px;
         padding: 18px;
         background: var(--panel-strong);
-        color: var(--ink);
+        color: var(--text);
         font:
           14px/1.55 Menlo,
           Monaco,
@@ -154,9 +258,18 @@
         box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
       }
 
+      html[data-theme="dark"] textarea {
+        box-shadow: inset 0 1px 0 rgba(243, 234, 223, 0.06);
+      }
+
       textarea:focus {
-        outline: 2px solid rgba(177, 77, 42, 0.25);
-        border-color: rgba(177, 77, 42, 0.35);
+        outline: 2px solid rgba(177, 77, 42, 0.2);
+        border-color: rgba(177, 77, 42, 0.28);
+      }
+
+      html[data-theme="dark"] textarea:focus {
+        outline: 2px solid rgba(201, 106, 66, 0.24);
+        border-color: rgba(201, 106, 66, 0.34);
       }
 
       .controls {
@@ -171,9 +284,9 @@
         border-radius: 999px;
         padding: 12px 18px;
         font:
-          600 14px/1 Georgia,
-          "Times New Roman",
-          serif;
+          600 14px/1 "Avenir Next",
+          "Segoe UI",
+          sans-serif;
         cursor: pointer;
         transition:
           transform 140ms ease,
@@ -196,27 +309,40 @@
       }
 
       .stop {
-        background: #ead7cb;
-        color: var(--accent-strong);
+        background: rgba(32, 26, 21, 0.06);
+        color: var(--text);
+        border: 1px solid var(--line);
+      }
+
+      html[data-theme="dark"] .stop {
+        background: rgba(255, 255, 255, 0.05);
       }
 
       .stats {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 12px;
+        gap: 14px;
       }
 
       .stat {
-        padding: 14px 16px;
+        padding: 18px;
         border: 1px solid var(--line);
-        border-radius: 18px;
-        background: rgba(255, 255, 255, 0.42);
+        border-radius: 20px;
+        background: var(--panel-strong);
       }
 
       .stat strong {
         display: block;
-        margin-top: 6px;
-        font-size: 18px;
+        margin-top: 10px;
+        font-size: clamp(22px, 4vw, 34px);
+        line-height: 1;
+        letter-spacing: -0.04em;
+      }
+
+      .stat .label {
+        display: block;
+        font-size: 12px;
+        letter-spacing: 0.18em;
       }
 
       progress {
@@ -226,11 +352,19 @@
         border: 0;
         border-radius: 999px;
         overflow: hidden;
-        background: rgba(103, 76, 47, 0.13);
+        background: rgba(32, 26, 21, 0.08);
+      }
+
+      html[data-theme="dark"] progress {
+        background: rgba(255, 255, 255, 0.08);
       }
 
       progress::-webkit-progress-bar {
-        background: rgba(103, 76, 47, 0.13);
+        background: rgba(32, 26, 21, 0.08);
+      }
+
+      html[data-theme="dark"] progress::-webkit-progress-bar {
+        background: rgba(255, 255, 255, 0.08);
       }
 
       progress::-webkit-progress-value {
@@ -252,13 +386,17 @@
       }
 
       .status {
-        padding: 14px 16px;
-        border-radius: 18px;
+        padding: 18px;
+        border-radius: 20px;
         border: 1px solid var(--line);
         background: rgba(255, 255, 255, 0.4);
-        color: var(--ink);
+        color: var(--text);
         display: grid;
         gap: 6px;
+      }
+
+      html[data-theme="dark"] .status {
+        background: rgba(255, 255, 255, 0.04);
       }
 
       .status-title {
@@ -308,13 +446,31 @@
         .meta {
           flex-direction: column;
         }
+
+        .hero-top {
+          flex-direction: column;
+        }
       }
     </style>
   </head>
   <body>
     <main class="shell">
       <section class="hero">
-        <div class="eyebrow">SynapSeq WASM Demo</div>
+        <div class="hero-top">
+          <div class="eyebrow">SynapSeq WASM Demo</div>
+          <div class="theme-switcher" aria-label="Theme switcher">
+            <button
+              class="theme-button"
+              data-theme-button="light"
+              type="button"
+            >
+              Light
+            </button>
+            <button class="theme-button" data-theme-button="dark" type="button">
+              Dark
+            </button>
+          </div>
+        </div>
         <h1>Local Runtime Example</h1>
         <p>
           This example loads <code>./synapseq.wasm</code> and
@@ -389,6 +545,8 @@
       const statusTitle = document.getElementById("statusTitle");
       const statusDetail = document.getElementById("statusDetail");
       const buildInfo = document.getElementById("buildInfo");
+      const root = document.documentElement;
+      const themeButtons = document.querySelectorAll("[data-theme-button]");
 
       const DEFAULT_SEQUENCE = `@samplerate 44100
 @volume 75
@@ -544,6 +702,16 @@ alpha_deep
           `<span class="build-chip">Commit: ${escapeHtml(shortHash)}</span>`;
       }
 
+      function setTheme(theme) {
+        root.setAttribute("data-theme", theme);
+        localStorage.setItem("synapseq-theme", theme);
+        themeButtons.forEach((button) => {
+          const isActive = button.dataset.themeButton === theme;
+          button.classList.toggle("is-active", isActive);
+          button.setAttribute("aria-pressed", isActive ? "true" : "false");
+        });
+      }
+
       async function loadBuildMetadata() {
         setBuildInfoLoading();
 
@@ -649,10 +817,17 @@ alpha_deep
         resetProgressView();
       });
 
+      themeButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          setTheme(button.dataset.themeButton);
+        });
+      });
+
       sequenceEditor.value = DEFAULT_SEQUENCE;
       totalDurationSeconds = parseSequenceDuration(sequenceEditor.value);
       durationValue.textContent = formatClock(totalDurationSeconds);
       resetProgressView();
+      setTheme(root.getAttribute("data-theme") || "light");
       loadBuildMetadata();
     </script>
   </body>

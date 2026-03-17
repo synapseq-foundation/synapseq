@@ -4,14 +4,35 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ .Title }}</title>
+    <script>
+      (() => {
+        const storedTheme = localStorage.getItem("synapseq-theme");
+        const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)")
+          .matches
+          ? "dark"
+          : "light";
+        document.documentElement.setAttribute(
+          "data-theme",
+          storedTheme || preferredTheme,
+        );
+      })();
+    </script>
     <style>
       :root {
+        color-scheme: light;
         --bg: #f4efe5;
         --panel: rgba(255, 252, 246, 0.86);
         --panel-strong: rgba(255, 250, 241, 0.98);
         --text: #201a15;
         --muted: #6b6259;
         --line: rgba(32, 26, 21, 0.12);
+        --line-strong: rgba(32, 26, 21, 0.18);
+        --accent: #b14d2a;
+        --accent-strong: #7f2d18;
+        --accent-soft: rgba(177, 77, 42, 0.14);
+        --ok: #2f6b45;
+        --warn: #885b17;
+        --danger: #8b2e2e;
         --shadow: 0 24px 80px rgba(51, 37, 23, 0.16);
         --pure: #4f46e5;
         --binaural: #0f766e;
@@ -21,6 +42,24 @@
         --ambiance: #047857;
         --silence: #6b7280;
         --off: #94a3b8;
+      }
+
+      html[data-theme="dark"] {
+        color-scheme: dark;
+        --bg: #161311;
+        --panel: rgba(31, 26, 23, 0.82);
+        --panel-strong: rgba(38, 32, 28, 0.96);
+        --text: #f3eadf;
+        --muted: #b8aa9a;
+        --line: rgba(243, 234, 223, 0.12);
+        --line-strong: rgba(243, 234, 223, 0.18);
+        --accent: #c96a42;
+        --accent-strong: #efb08d;
+        --accent-soft: rgba(201, 106, 66, 0.18);
+        --ok: #58a06a;
+        --warn: #c89a46;
+        --danger: #cc6d6d;
+        --shadow: 0 24px 80px rgba(0, 0, 0, 0.32);
       }
 
       * {
@@ -44,6 +83,21 @@
             transparent 20%
           ),
           linear-gradient(180deg, #fbf6eb 0%, var(--bg) 100%);
+      }
+
+      html[data-theme="dark"] body {
+        background:
+          radial-gradient(
+            circle at top left,
+            rgba(15, 118, 110, 0.14),
+            transparent 26%
+          ),
+          radial-gradient(
+            circle at top right,
+            rgba(180, 83, 9, 0.14),
+            transparent 22%
+          ),
+          linear-gradient(180deg, #1c1714 0%, var(--bg) 100%);
       }
 
       .shell {
@@ -86,6 +140,50 @@
         text-overflow: ellipsis;
       }
 
+      .navbar-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .theme-switcher {
+        display: flex;
+        gap: 8px;
+      }
+
+      .theme-button {
+        appearance: none;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--text);
+        font: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1;
+        cursor: pointer;
+        transition:
+          transform 140ms ease,
+          background 140ms ease,
+          border-color 140ms ease,
+          color 140ms ease;
+      }
+
+      .theme-button:hover {
+        transform: translateY(-1px);
+      }
+
+      .theme-button.is-active {
+        background: var(--accent-soft);
+        border-color: rgba(177, 77, 42, 0.28);
+        color: var(--accent-strong);
+      }
+
+      html[data-theme="dark"] .theme-button.is-active {
+        border-color: rgba(201, 106, 66, 0.34);
+      }
+
       .navbar-link {
         display: inline-flex;
         align-items: center;
@@ -93,8 +191,8 @@
         border-radius: 999px;
         color: var(--text);
         text-decoration: none;
-        background: rgba(32, 26, 21, 0.06);
-        border: 1px solid rgba(32, 26, 21, 0.08);
+        background: rgba(255, 255, 255, 0.45);
+        border: 1px solid var(--line);
         font-size: 13px;
         font-weight: 600;
         line-height: 1;
@@ -102,13 +200,15 @@
         transition:
           transform 140ms ease,
           background 140ms ease,
-          border-color 140ms ease;
+          border-color 140ms ease,
+          color 140ms ease;
       }
 
       .navbar-link:hover {
         transform: translateY(-1px);
-        background: rgba(32, 26, 21, 0.1);
-        border-color: rgba(32, 26, 21, 0.14);
+        background: var(--accent-soft);
+        border-color: rgba(177, 77, 42, 0.28);
+        color: var(--accent-strong);
       }
 
       .hero {
@@ -121,7 +221,7 @@
       .panel {
         background: var(--panel);
         backdrop-filter: blur(14px);
-        border: 1px solid rgba(255, 255, 255, 0.7);
+        border: 1px solid var(--line);
         border-radius: 28px;
         box-shadow: var(--shadow);
       }
@@ -216,7 +316,15 @@
           rgba(255, 255, 255, 0.66),
           rgba(255, 255, 255, 0.34)
         );
-        border: 1px solid rgba(32, 26, 21, 0.08);
+        border: 1px solid var(--line);
+      }
+
+      html[data-theme="dark"] .graph-shell {
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.08),
+          rgba(255, 255, 255, 0.02)
+        );
       }
 
       .graph-toolbar {
@@ -252,7 +360,12 @@
         transition:
           background 140ms ease,
           color 140ms ease,
+          border-color 140ms ease,
           transform 140ms ease;
+      }
+
+      html[data-theme="dark"] .graph-tab {
+        background: rgba(255, 255, 255, 0.05);
       }
 
       .graph-tab:hover {
@@ -260,8 +373,8 @@
       }
 
       .graph-tab.is-active {
-        background: rgba(32, 26, 21, 0.9);
-        color: #f8f2e8;
+        background: var(--accent-strong);
+        color: #fff7f2;
       }
 
       .graph-metric-view {
@@ -304,10 +417,14 @@
         padding: 8px 12px;
         border-radius: 999px;
         background: rgba(32, 26, 21, 0.05);
-        border: 1px solid rgba(32, 26, 21, 0.08);
+        border: 1px solid var(--line);
         color: var(--muted);
         font-size: 12px;
         line-height: 1;
+      }
+
+      html[data-theme="dark"] .graph-legend-item {
+        background: rgba(255, 255, 255, 0.05);
       }
 
       .graph-legend-swatch {
@@ -347,6 +464,23 @@
         overflow: hidden;
       }
 
+      html[data-theme="dark"] .graph {
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 18%),
+          repeating-linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.06) 0,
+            rgba(255, 255, 255, 0.06) 1px,
+            transparent 1px,
+            transparent 58px
+          ),
+          linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.08),
+            rgba(255, 255, 255, 0.02)
+          );
+      }
+
       .graph svg {
         display: block;
         width: 100%;
@@ -362,7 +496,11 @@
         color: var(--muted);
         text-align: center;
         padding: 24px;
-        border: 1px dashed rgba(32, 26, 21, 0.12);
+        border: 1px dashed var(--line-strong);
+      }
+
+      html[data-theme="dark"] .graph-empty {
+        background: rgba(255, 255, 255, 0.04);
       }
 
       .series-line {
@@ -392,6 +530,10 @@
         background: rgba(32, 26, 21, 0.08);
       }
 
+      html[data-theme="dark"] .graph-ruler .tick {
+        background: rgba(243, 234, 223, 0.08);
+      }
+
       .graph-ruler .tick span {
         position: absolute;
         bottom: 8px;
@@ -403,6 +545,10 @@
         font-family: "Menlo", "SFMono-Regular", monospace;
         font-size: 11px;
         letter-spacing: 0.02em;
+      }
+
+      html[data-theme="dark"] .graph-ruler .tick span {
+        background: rgba(38, 32, 28, 0.94);
       }
 
       .segment-band {
@@ -420,6 +566,10 @@
         border-radius: 999px;
         opacity: 0.88;
         box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.42);
+      }
+
+      html[data-theme="dark"] .segment-band .band {
+        box-shadow: inset 0 0 0 1px rgba(243, 234, 223, 0.18);
       }
 
       .node-markers {
@@ -453,6 +603,10 @@
         font-size: 11px;
       }
 
+      html[data-theme="dark"] .node-marker span {
+        background: rgba(38, 32, 28, 0.94);
+      }
+
       .segment-grid,
       .node-grid {
         display: grid;
@@ -473,7 +627,7 @@
         padding: 18px;
         border-radius: 22px;
         background: var(--panel-strong);
-        border: 1px solid rgba(32, 26, 21, 0.08);
+        border: 1px solid var(--line);
       }
 
       .segment-card h3,
@@ -501,6 +655,10 @@
         font-size: 12px;
       }
 
+      html[data-theme="dark"] .pill {
+        background: rgba(255, 255, 255, 0.05);
+      }
+
       .segment-summary,
       .node-summary {
         margin: 12px 0 0;
@@ -520,7 +678,12 @@
         padding: 14px;
         border-radius: 18px;
         background: rgba(32, 26, 21, 0.04);
-        border: 1px solid rgba(32, 26, 21, 0.06);
+        border: 1px solid var(--line);
+      }
+
+      html[data-theme="dark"] .segment-item,
+      html[data-theme="dark"] .track-card {
+        background: rgba(255, 255, 255, 0.04);
       }
 
       .item-head,
@@ -562,6 +725,12 @@
         padding: 10px 12px;
         border-radius: 14px;
         background: rgba(255, 255, 255, 0.74);
+        border: 1px solid rgba(32, 26, 21, 0.06);
+      }
+
+      html[data-theme="dark"] .meta-box {
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(243, 234, 223, 0.08);
       }
 
       .meta-box span {
@@ -625,6 +794,11 @@
           gap: 4px;
         }
 
+        .navbar-actions {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
         .hero {
           grid-template-columns: 1fr;
         }
@@ -675,14 +849,28 @@
           <p class="navbar-brand">SynapSeq</p>
           <p class="navbar-subtitle">Synapse-Sequenced Brainwave Generator</p>
         </div>
-        <a
-          class="navbar-link"
-          href="https://synapseq.org"
-          target="_blank"
-          rel="noreferrer"
-        >
-          synapseq.org
-        </a>
+        <div class="navbar-actions">
+          <div class="theme-switcher" aria-label="Theme switcher">
+            <button
+              class="theme-button"
+              data-theme-button="light"
+              type="button"
+            >
+              Light
+            </button>
+            <button class="theme-button" data-theme-button="dark" type="button">
+              Dark
+            </button>
+          </div>
+          <a
+            class="navbar-link"
+            href="https://synapseq.org"
+            target="_blank"
+            rel="noreferrer"
+          >
+            synapseq.org
+          </a>
+        </div>
       </nav>
 
       <section class="hero">
@@ -971,6 +1159,27 @@
       if (defaultGraphTab) {
         setGraphMetric(defaultGraphTab.dataset.graphTarget);
       }
+
+      const root = document.documentElement;
+      const themeButtons = document.querySelectorAll("[data-theme-button]");
+
+      const setTheme = (theme) => {
+        root.setAttribute("data-theme", theme);
+        localStorage.setItem("synapseq-theme", theme);
+        themeButtons.forEach((button) => {
+          const isActive = button.dataset.themeButton === theme;
+          button.classList.toggle("is-active", isActive);
+          button.setAttribute("aria-pressed", isActive ? "true" : "false");
+        });
+      };
+
+      themeButtons.forEach((button) => {
+        button.addEventListener("click", () =>
+          setTheme(button.dataset.themeButton),
+        );
+      });
+
+      setTheme(root.getAttribute("data-theme") || "light");
     </script>
   </body>
 </html>
