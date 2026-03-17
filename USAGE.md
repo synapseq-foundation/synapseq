@@ -369,7 +369,7 @@ focus-deep from focus-template
 
 ## See Also
 
-Use synapseq -help for a concise command overview, or visit the online documentation for installation guides and broader examples.
+Use synapseq -help for a concise command overview, or visit the website for more resources, examples, and the latest updates.
 
 ```text
 synapseq -help

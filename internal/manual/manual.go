@@ -387,7 +387,7 @@ func Render() string {
 
 	writeSection(&b, "See Also")
 	writeParagraph(&b,
-		"Use synapseq -help for a concise command overview, or visit the online documentation for installation guides and broader examples.",
+		"Use synapseq -help for a concise command overview, or visit the website for more resources, examples, and the latest updates.",
 	)
 	writeCodeBlock(&b,
 		"synapseq -help",
