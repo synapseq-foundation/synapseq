@@ -265,6 +265,7 @@ func Render() string {
 	)
 	writeBullet(&b, "tone VALUE", "Change the carrier frequency of an inherited tone track.")
 	writeBullet(&b, "binaural|monaural|isochronic VALUE", "Change the beat value of an inherited matching beat track.")
+	writeBullet(&b, "smooth VALUE", "Change the smooth amount of an inherited noise track.")
 	writeBullet(&b, "pan|modulation|doppler VALUE", "Change the effect value when that effect already exists on the inherited track.")
 	writeBullet(&b, "intensity VALUE", "Change effect intensity.")
 	writeBullet(&b, "amplitude VALUE", "Change the track amplitude.")
@@ -273,6 +274,7 @@ func Render() string {
 		"  track 1 amplitude 30",
 		"  track 2 tone 250",
 		"  track 2 binaural 18",
+		"  track 3 smooth 40",
 		"  track 2 intensity 75",
 	)
 

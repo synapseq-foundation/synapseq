@@ -72,6 +72,8 @@ func TestRenderIncludesCoreSections(ts *testing.T) {
 		"pan",
 		"doppler",
 		"TRACK OVERRIDES",
+		"smooth VALUE",
+		"track 3 smooth 40",
 		"TIMELINE",
 		"steady",
 		"ease-in",

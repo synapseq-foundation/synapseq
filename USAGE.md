@@ -232,6 +232,7 @@ Track overrides are only valid inside presets created with from TEMPLATE_NAME. T
 
 - **tone VALUE**: Change the carrier frequency of an inherited tone track.
 - **binaural|monaural|isochronic VALUE**: Change the beat value of an inherited matching beat track.
+- **smooth VALUE**: Change the smooth amount of an inherited noise track.
 - **pan|modulation|doppler VALUE**: Change the effect value when that effect already exists on the inherited track.
 - **intensity VALUE**: Change effect intensity.
 - **amplitude VALUE**: Change the track amplitude.
@@ -241,6 +242,7 @@ focus-strong from focus-base
   track 1 amplitude 30
   track 2 tone 250
   track 2 binaural 18
+  track 3 smooth 40
   track 2 intensity 75
 ```
 
