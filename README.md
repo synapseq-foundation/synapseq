@@ -60,10 +60,6 @@ If you want to integrate SynapSeq into a Go project, use the [Go module API](htt
 
 If you want to integrate SynapSeq into a browser-based application, see the [WASM JavaScript API Reference](wasm/README.md).
 
-## Building from Source
-
-To build SynapSeq from source, follow the instructions in [COMPILE](COMPILE.md) for your platform.
-
 ## Contributing
 
 We welcome contributions!
