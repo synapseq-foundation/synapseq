@@ -9,10 +9,9 @@
  * See the file COPYING.txt for details.
  */
 
-package ds
+package palette
 
-// RGBColor stores a terminal-friendly RGB token derived from the SynapSeq design system.
-// The value is packed as 0xRRGGBB so it can be declared as a constant.
+// RGBColor stores a packed RGB token as 0xRRGGBB.
 type RGBColor uint32
 
 func (c RGBColor) R() int {
@@ -28,7 +27,7 @@ func (c RGBColor) B() int {
 }
 
 const (
-	// CLI and terminal tokens approximate the warm SynapSeq design system palette.
+	// Terminal color tokens derived from the SynapSeq palette.
 	Terracotta     RGBColor = 0xb14d2a
 	TerracottaDark RGBColor = 0x7f2d18
 	Ochre          RGBColor = 0xa07126

@@ -17,7 +17,7 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
-	"github.com/synapseq-foundation/synapseq/v4/internal/ds"
+	"github.com/synapseq-foundation/synapseq/v4/internal/palette"
 	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
@@ -154,7 +154,7 @@ func (sr *StatusReporter) FinalStatus() {
 	}
 }
 
-func (sr *StatusReporter) statusRGB(text string, token ds.RGBColor, attrs ...color.Attribute) string {
+func (sr *StatusReporter) statusRGB(text string, token palette.RGBColor, attrs ...color.Attribute) string {
 	if !sr.colors {
 		return text
 	}
@@ -167,21 +167,21 @@ func (sr *StatusReporter) statusRGB(text string, token ds.RGBColor, attrs ...col
 }
 
 func (sr *StatusReporter) statusTime(text string) string {
-	return sr.statusRGB(text, ds.Terracotta, color.Bold)
+	return sr.statusRGB(text, palette.Terracotta, color.Bold)
 }
 
 func (sr *StatusReporter) statusArrow(text string) string {
-	return sr.statusRGB(text, ds.Ochre, color.Bold)
+	return sr.statusRGB(text, palette.Ochre, color.Bold)
 }
 
 func (sr *StatusReporter) statusTransition(text string) string {
-	return sr.statusRGB(text, ds.MutedWarm)
+	return sr.statusRGB(text, palette.MutedWarm)
 }
 
 func (sr *StatusReporter) statusTrack(text string) string {
-	return sr.statusRGB(text, ds.Green)
+	return sr.statusRGB(text, palette.Green)
 }
 
 func (sr *StatusReporter) statusBullet(text string) string {
-	return sr.statusRGB(text, ds.TerracottaDark, color.Bold)
+	return sr.statusRGB(text, palette.TerracottaDark, color.Bold)
 }

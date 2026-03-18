@@ -21,8 +21,8 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
-	"github.com/synapseq-foundation/synapseq/v4/internal/ds"
 	"github.com/synapseq-foundation/synapseq/v4/internal/info"
+	"github.com/synapseq-foundation/synapseq/v4/internal/palette"
 )
 
 // CLIOptions holds command-line options
@@ -80,7 +80,7 @@ func SetColorEnabled(enabled bool) {
 	color.NoColor = !enabled
 }
 
-func warmRGB(token ds.RGBColor, attrs ...color.Attribute) *color.Color {
+func warmRGB(token palette.RGBColor, attrs ...color.Attribute) *color.Color {
 	c := color.RGB(token.R(), token.G(), token.B())
 	if len(attrs) > 0 {
 		c.Add(attrs...)
@@ -90,47 +90,47 @@ func warmRGB(token ds.RGBColor, attrs ...color.Attribute) *color.Color {
 
 // Title formats top-level headings.
 func Title(text string) string {
-	return warmRGB(ds.Terracotta, color.Bold).Sprint(text)
+	return warmRGB(palette.Terracotta, color.Bold).Sprint(text)
 }
 
 // Section formats section headings.
 func Section(text string) string {
-	return warmRGB(ds.Ochre, color.Bold).Sprint(text)
+	return warmRGB(palette.Ochre, color.Bold).Sprint(text)
 }
 
 // Command formats shell commands and paths.
 func Command(text string) string {
-	return warmRGB(ds.Green).Sprint(text)
+	return warmRGB(palette.Green).Sprint(text)
 }
 
 // Flag formats command-line flags.
 func Flag(text string) string {
-	return warmRGB(ds.Terracotta, color.Bold).Sprint(text)
+	return warmRGB(palette.Terracotta, color.Bold).Sprint(text)
 }
 
 // Muted formats secondary explanatory text.
 func Muted(text string) string {
-	return warmRGB(ds.MutedWarm).Sprint(text)
+	return warmRGB(palette.MutedWarm).Sprint(text)
 }
 
 // ErrorText formats error text.
 func ErrorText(text string) string {
-	return warmRGB(ds.DangerRed, color.Bold).Sprint(text)
+	return warmRGB(palette.DangerRed, color.Bold).Sprint(text)
 }
 
 // SuccessText formats success text.
 func SuccessText(text string) string {
-	return warmRGB(ds.Green, color.Bold).Sprint(text)
+	return warmRGB(palette.Green, color.Bold).Sprint(text)
 }
 
 // Label formats field labels.
 func Label(text string) string {
-	return warmRGB(ds.TerracottaDark, color.Bold).Sprint(text)
+	return warmRGB(palette.TerracottaDark, color.Bold).Sprint(text)
 }
 
 // Accent formats highlighted values.
 func Accent(text string) string {
-	return warmRGB(ds.Terracotta).Sprint(text)
+	return warmRGB(palette.Terracotta).Sprint(text)
 }
 
 // Help prints the help message
