@@ -1,5 +1,5 @@
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -19,6 +19,10 @@ const (
 type Channel struct {
 	// Current track setting (updated from current period)
 	Track Track
+	// Waveform morph state for transitions within the current period
+	WaveformStart WaveformType
+	WaveformEnd   WaveformType
+	WaveformAlpha float64
 	// Track type
 	Type TrackType
 	// Current amplitude state
@@ -27,4 +31,6 @@ type Channel struct {
 	Increment [2]int
 	// Offset into waveform table (for tones, offset + increment into sine table * 65536)
 	Offset [2]int
+
+	Effect EffectState
 }

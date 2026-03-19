@@ -1,5 +1,5 @@
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -20,7 +20,7 @@ import (
 	"strings"
 	"testing"
 
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // writeTempFile creates a temporary file with the given content
@@ -63,48 +63,6 @@ func TestGetFile_LocalFile_Text(ts *testing.T) {
 	}
 }
 
-func TestGetFile_LocalFile_JSON(ts *testing.T) {
-	content := []byte(`{"periods": []}`)
-	path := writeTempFile(ts, "test.json", content)
-
-	got, err := GetFile(path, t.FormatJSON)
-	if err != nil {
-		ts.Fatalf("GetFile() error: %v", err)
-	}
-
-	if !bytes.Equal(got, content) {
-		ts.Errorf("expected %q, got %q", content, got)
-	}
-}
-
-func TestGetFile_LocalFile_XML(ts *testing.T) {
-	content := []byte(`<sequence></sequence>`)
-	path := writeTempFile(ts, "test.xml", content)
-
-	got, err := GetFile(path, t.FormatXML)
-	if err != nil {
-		ts.Fatalf("GetFile() error: %v", err)
-	}
-
-	if !bytes.Equal(got, content) {
-		ts.Errorf("expected %q, got %q", content, got)
-	}
-}
-
-func TestGetFile_LocalFile_YAML(ts *testing.T) {
-	content := []byte("periods:\n  - time: 0\n")
-	path := writeTempFile(ts, "test.yaml", content)
-
-	got, err := GetFile(path, t.FormatYAML)
-	if err != nil {
-		ts.Fatalf("GetFile() error: %v", err)
-	}
-
-	if !bytes.Equal(got, content) {
-		ts.Errorf("expected %q, got %q", content, got)
-	}
-}
-
 func TestGetFile_LocalFile_NotFound(ts *testing.T) {
 	path := filepath.Join(ts.TempDir(), "missing.spsq")
 
@@ -137,12 +95,12 @@ func TestGetFile_LocalFile_Truncate_Text(ts *testing.T) {
 	}
 }
 
-func TestGetFile_LocalFile_Truncate_Structured(ts *testing.T) {
-	const maxSize = t.MaxStructuredFileSize
+func TestGetFile_LocalFile_Truncate_WAV(ts *testing.T) {
+	const maxSize = t.MaxWavFileSize
 	bigContent := makeBigContent(100, int(maxSize+4096))
-	path := writeTempFile(ts, "big.json", bigContent)
+	path := writeTempFile(ts, "big.wav", bigContent)
 
-	got, err := GetFile(path, t.FormatJSON)
+	got, err := GetFile(path, t.FormatWAV)
 	if err != nil {
 		ts.Fatalf("GetFile() error: %v", err)
 	}
@@ -225,63 +183,6 @@ func TestGetFile_HTTP_Text(ts *testing.T) {
 	defer srv.Close()
 
 	got, err := GetFile(srv.URL+"/test.spsq", t.FormatText)
-	if err != nil {
-		ts.Fatalf("GetFile() error: %v", err)
-	}
-
-	if !bytes.Equal(got, content) {
-		ts.Errorf("expected %q, got %q", content, got)
-	}
-}
-
-func TestGetFile_HTTP_JSON(ts *testing.T) {
-	content := []byte(`{"test": true}`)
-
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write(content)
-	}))
-	defer srv.Close()
-
-	got, err := GetFile(srv.URL+"/test.json", t.FormatJSON)
-	if err != nil {
-		ts.Fatalf("GetFile() error: %v", err)
-	}
-
-	if !bytes.Equal(got, content) {
-		ts.Errorf("expected %q, got %q", content, got)
-	}
-}
-
-func TestGetFile_HTTP_XML(ts *testing.T) {
-	content := []byte(`<test></test>`)
-
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/xml")
-		_, _ = w.Write(content)
-	}))
-	defer srv.Close()
-
-	got, err := GetFile(srv.URL+"/test.xml", t.FormatXML)
-	if err != nil {
-		ts.Fatalf("GetFile() error: %v", err)
-	}
-
-	if !bytes.Equal(got, content) {
-		ts.Errorf("expected %q, got %q", content, got)
-	}
-}
-
-func TestGetFile_HTTP_YAML(ts *testing.T) {
-	content := []byte("test: true\n")
-
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/yaml")
-		_, _ = w.Write(content)
-	}))
-	defer srv.Close()
-
-	got, err := GetFile(srv.URL+"/test.yaml", t.FormatYAML)
 	if err != nil {
 		ts.Fatalf("GetFile() error: %v", err)
 	}

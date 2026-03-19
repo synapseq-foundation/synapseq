@@ -1,5 +1,5 @@
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -18,10 +18,6 @@ const (
 	AUTHOR_URL = "https://synapseq.org"
 	// Repository URL
 	REPOSITORY = "https://github.com/synapseq-foundation/synapseq"
-	// Hub repository URL
-	HUB_REPOSITORY = "https://github.com/synapseq-foundation/synapseq-hub"
-	// Documentation URL
-	DOC_URL = "https://synapseq.org/docs"
 )
 
 var (

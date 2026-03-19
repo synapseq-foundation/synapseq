@@ -1,5 +1,5 @@
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -14,7 +14,8 @@ package parser
 import (
 	"testing"
 
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 func TestHasTrackOverride(ts *testing.T) {
@@ -60,12 +61,11 @@ func TestParseTrackOverride_Success(ts *testing.T) {
 		Waveform:  t.WaveformSine,
 	}
 	templatePreset.Track[1] = t.Track{
-		Type:      t.TrackBackground,
-		Carrier:   200,
-		Resonance: 5,
-		Amplitude: t.AmplitudePercentToRaw(40),
-		Waveform:  t.WaveformSine,
-		Effect:    t.Effect{Type: t.EffectSpin, Intensity: t.IntensityPercentToRaw(75)},
+		Type:         t.TrackAmbiance,
+		AmbianceName: "rain",
+		Amplitude:    t.AmplitudePercentToRaw(40),
+		Waveform:     t.WaveformSine,
+		Effect:       t.Effect{Type: t.EffectPan, Value: 5, Intensity: t.IntensityPercentToRaw(75)},
 	}
 	templatePreset.Track[2] = t.Track{
 		Type:      t.TrackMonauralBeat,
@@ -73,6 +73,11 @@ func TestParseTrackOverride_Success(ts *testing.T) {
 		Resonance: 8,
 		Amplitude: t.AmplitudePercentToRaw(15),
 		Waveform:  t.WaveformSquare,
+	}
+	templatePreset.Track[3] = t.Track{
+		Type:        t.TrackPinkNoise,
+		NoiseSmooth: 20,
+		Amplitude:   t.AmplitudePercentToRaw(25),
 	}
 
 	// Create derived preset
@@ -119,22 +124,22 @@ func TestParseTrackOverride_Success(ts *testing.T) {
 			},
 		},
 		{
-			name:     "override background spin width",
-			line:     "  track 2 spin 250",
+			name:     "override ambiance pan value",
+			line:     "  track 2 pan 5",
 			trackIdx: 1,
 			checkFunc: func(t *testing.T, p *t.Preset) {
-				if p.Track[1].Carrier != 250 {
-					t.Errorf("expected spin width 250, got %v", p.Track[1].Carrier)
+				if p.Track[1].Effect.Value != 5 {
+					t.Errorf("expected pan value 5, got %v", p.Track[1].Effect.Value)
 				}
 			},
 		},
 		{
-			name:     "override background spin rate",
-			line:     "  track 2 rate 7",
+			name:     "override ambiance pan rate",
+			line:     "  track 2 pan 7",
 			trackIdx: 1,
 			checkFunc: func(t *testing.T, p *t.Preset) {
-				if p.Track[1].Resonance != 7 {
-					t.Errorf("expected spin rate 7, got %v", p.Track[1].Resonance)
+				if p.Track[1].Effect.Value != 7 {
+					t.Errorf("expected pan rate 7, got %v", p.Track[1].Effect.Value)
 				}
 			},
 		},
@@ -156,6 +161,16 @@ func TestParseTrackOverride_Success(ts *testing.T) {
 			checkFunc: func(t *testing.T, p *t.Preset) {
 				if p.Track[2].Resonance != 10 {
 					t.Errorf("expected resonance 10, got %v", p.Track[2].Resonance)
+				}
+			},
+		},
+		{
+			name:     "override noise smooth",
+			line:     "  track 4 smooth 45",
+			trackIdx: 3,
+			checkFunc: func(t *testing.T, p *t.Preset) {
+				if p.Track[3].NoiseSmooth != 45 {
+					t.Errorf("expected smooth 45, got %v", p.Track[3].NoiseSmooth)
 				}
 			},
 		},
@@ -191,19 +206,26 @@ func TestParseTrackOverride_Errors(ts *testing.T) {
 		Waveform:  t.WaveformSine,
 	}
 	templatePreset.Track[1] = t.Track{
-		Type:      t.TrackBackground,
-		Carrier:   200,
-		Resonance: 5,
-		Amplitude: t.AmplitudePercentToRaw(40),
-		Waveform:  t.WaveformSine,
-		Effect:    t.Effect{Type: t.EffectSpin, Intensity: t.IntensityPercentToRaw(75)},
+		Type:         t.TrackAmbiance,
+		AmbianceName: "rain",
+		Carrier:      200,
+		Resonance:    5,
+		Amplitude:    t.AmplitudePercentToRaw(40),
+		Waveform:     t.WaveformSine,
+		Effect:       t.Effect{Type: t.EffectPan, Intensity: t.IntensityPercentToRaw(75)},
 	}
 	templatePreset.Track[2] = t.Track{
-		Type:      t.TrackBackground,
-		Resonance: 2.5,
-		Amplitude: t.AmplitudePercentToRaw(40),
-		Waveform:  t.WaveformSine,
-		Effect:    t.Effect{Type: t.EffectPulse, Intensity: t.IntensityPercentToRaw(60)},
+		Type:         t.TrackAmbiance,
+		AmbianceName: "river",
+		Resonance:    2.5,
+		Amplitude:    t.AmplitudePercentToRaw(40),
+		Waveform:     t.WaveformSine,
+		Effect:       t.Effect{Type: t.EffectModulation, Intensity: t.IntensityPercentToRaw(60)},
+	}
+	templatePreset.Track[3] = t.Track{
+		Type:        t.TrackBrownNoise,
+		NoiseSmooth: 15,
+		Amplitude:   t.AmplitudePercentToRaw(30),
 	}
 
 	// Create derived preset
@@ -225,13 +247,15 @@ func TestParseTrackOverride_Errors(ts *testing.T) {
 		{"missing value", "  track 1 amplitude"},
 		{"invalid value", "  track 1 amplitude abc"},
 		{"extra tokens", "  track 1 amplitude 10 extra"},
-		{"tone on background track", "  track 2 tone 300"},
-		{"spin on non-background track", "  track 1 spin 200"},
+		{"tone on ambiance track", "  track 2 tone 300"},
+		{"smooth on non-noise track", "  track 1 smooth 30"},
+		// {"pan on non-ambiance track", "  track 1 pan 200"},
 		{"wrong beat type override", "  track 1 monaural 8"},
-		{"rate on pulse effect", "  track 3 rate 5"},
-		{"pulse on spin effect", "  track 2 pulse 3"},
+		{"value on modulation effect", "  track 3 modulation -5"},
+		{"modulation on pan effect", "  track 2 modulation 3"},
 		{"invalid amplitude (too high)", "  track 1 amplitude 150"},
 		{"invalid intensity (too high)", "  track 2 intensity 150"},
+		{"invalid smooth (too high)", "  track 4 smooth 150"},
 	}
 
 	for _, tt := range tests {
@@ -281,6 +305,7 @@ func TestPresetInheritance_Integration(ts *testing.T) {
 	}
 	templatePreset.Track[1] = t.Track{
 		Type:      t.TrackPinkNoise,
+		NoiseSmooth: 10,
 		Amplitude: t.AmplitudePercentToRaw(30),
 	}
 
@@ -306,6 +331,7 @@ func TestPresetInheritance_Integration(ts *testing.T) {
 		"  track 1 tone 350",
 		"  track 1 binaural 12",
 		"  track 1 amplitude 25",
+		"  track 2 smooth 35",
 		"  track 2 amplitude 35",
 	}
 
@@ -329,9 +355,51 @@ func TestPresetInheritance_Integration(ts *testing.T) {
 	if derivedPreset.Track[1].Amplitude != t.AmplitudePercentToRaw(35) {
 		ts.Errorf("expected overridden amplitude for track 2, got %v", derivedPreset.Track[1].Amplitude)
 	}
+	if derivedPreset.Track[1].NoiseSmooth != 35 {
+		ts.Errorf("expected overridden smooth for track 2, got %v", derivedPreset.Track[1].NoiseSmooth)
+	}
 
 	// Verify that template tracks are unchanged
 	if templatePreset.Track[0].Carrier != 300 {
 		ts.Errorf("template should remain unchanged, expected carrier 300, got %v", templatePreset.Track[0].Carrier)
+	}
+}
+
+func TestParseTrackOverrideKeywordTypoDiagnostic(ts *testing.T) {
+	templatePreset, err := t.NewPreset("base", true, nil)
+	if err != nil {
+		ts.Fatalf("failed to create template: %v", err)
+	}
+	templatePreset.Track[0] = t.Track{
+		Type:      t.TrackBinauralBeat,
+		Carrier:   300,
+		Resonance: 10,
+		Amplitude: t.AmplitudePercentToRaw(20),
+		Waveform:  t.WaveformSine,
+	}
+
+	derivedPreset, err := t.NewPreset("derived", false, templatePreset)
+	if err != nil {
+		ts.Fatalf("failed to create derived preset: %v", err)
+	}
+
+	ctx := NewTextParser("  track 1 amplitud 10")
+	err = ctx.ParseTrackOverride(derivedPreset)
+	if err == nil {
+		ts.Fatal("expected override diagnostic")
+	}
+
+	diagnostic, ok := diag.As(err)
+	if !ok {
+		ts.Fatalf("expected diag.Diagnostic, got %T", err)
+	}
+	if diagnostic.Found != "amplitud" {
+		ts.Fatalf("expected found token amplitud, got %q", diagnostic.Found)
+	}
+	if diagnostic.Suggestion != "did you mean \"amplitude\"?" {
+		ts.Fatalf("expected amplitude suggestion, got %q", diagnostic.Suggestion)
+	}
+	if diagnostic.Span.Column != 11 || diagnostic.Span.EndColumn != 19 {
+		ts.Fatalf("expected override span 11..19, got %d..%d", diagnostic.Span.Column, diagnostic.Span.EndColumn)
 	}
 }

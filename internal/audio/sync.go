@@ -1,5 +1,5 @@
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -14,8 +14,10 @@ package audio
 import (
 	"math"
 
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
+
+const defaultSyncWindowMs = 1000
 
 // sync synchronizes the audio renderer state with the current time
 func (r *AudioRenderer) sync(timeMs int, periodIdx int) {
@@ -24,103 +26,157 @@ func (r *AudioRenderer) sync(timeMs int, periodIdx int) {
 	}
 
 	period := r.periods[periodIdx]
-	nextTime := timeMs + 1000 // Default next time
+	alpha := r.transitionAlpha(r.interpolationProgress(timeMs, periodIdx), period.Transition)
+
+	for ch := range r.channels {
+		r.syncChannel(ch, periodIdx, period, alpha)
+	}
+}
+
+func (r *AudioRenderer) interpolationProgress(timeMs int, periodIdx int) float64 {
+	period := r.periods[periodIdx]
+	return clampUnit(float64(timeMs-period.Time) / float64(r.nextPeriodTime(periodIdx, timeMs)-period.Time))
+}
+
+func (r *AudioRenderer) nextPeriodTime(periodIdx int, timeMs int) int {
 	if periodIdx+1 < len(r.periods) {
-		nextTime = r.periods[periodIdx+1].Time
+		return r.periods[periodIdx+1].Time
 	}
 
-	// Calculate interpolation factor (0.0 to 1.0)
-	progress := float64(timeMs-period.Time) / float64(nextTime-period.Time)
-	// Clamp progress between 0 and 1
-	if progress < 0 {
-		progress = 0
+	return timeMs + defaultSyncWindowMs
+}
+
+func (r *AudioRenderer) transitionAlpha(progress float64, transition t.TransitionType) float64 {
+	alpha := progress
+
+	switch transition {
+	case t.TransitionEaseOut:
+		alpha = math.Log1p(math.Expm1(t.TransitionCurveK)*progress) / t.TransitionCurveK
+	case t.TransitionEaseIn:
+		alpha = math.Expm1(t.TransitionCurveK*progress) / math.Expm1(t.TransitionCurveK)
+	case t.TransitionSmooth:
+		raw := 1.0 / (1.0 + math.Exp(-t.TransitionCurveK*(progress-0.5)))
+		min := 1.0 / (1.0 + math.Exp(t.TransitionCurveK*0.5))
+		max := 1.0 / (1.0 + math.Exp(-t.TransitionCurveK*0.5))
+		alpha = (raw - min) / (max - min)
 	}
-	if progress > 1 {
-		progress = 1
+
+	return alpha
+}
+
+func (r *AudioRenderer) syncChannel(ch int, periodIdx int, period t.Period, alpha float64) {
+	channel := &r.channels[ch]
+	track := interpolateTrack(period.TrackStart[ch], period.TrackEnd[ch], alpha)
+	previousTrackType := channel.Type
+	previousEffectType := channel.Track.Effect.Type
+
+	channel.Track = track
+	channel.WaveformStart = period.TrackStart[ch].Waveform
+	channel.WaveformEnd = period.TrackEnd[ch].Waveform
+	channel.WaveformAlpha = alpha
+	r.updateAmbianceIndex(ch, periodIdx, track.Type)
+	r.resetRuntimeState(channel, previousTrackType, previousEffectType)
+	r.configureEffectState(channel)
+	r.configureTrackSignal(channel)
+}
+
+func interpolateTrack(start, end t.Track, alpha float64) t.Track {
+	return t.Track{
+		Type:         start.Type,
+		Amplitude:    t.AmplitudeType(lerpFloat64(float64(start.Amplitude), float64(end.Amplitude), alpha)),
+		Carrier:      lerpFloat64(start.Carrier, end.Carrier, alpha),
+		Resonance:    lerpFloat64(start.Resonance, end.Resonance, alpha),
+		NoiseSmooth:  lerpFloat64(start.NoiseSmooth, end.NoiseSmooth, alpha),
+		Waveform:     start.Waveform,
+		AmbianceName: start.AmbianceName,
+		Effect: t.Effect{
+			Type:      start.Effect.Type,
+			Value:     lerpFloat64(start.Effect.Value, end.Effect.Value, alpha),
+			Intensity: t.IntensityType(lerpFloat64(float64(start.Effect.Intensity), float64(end.Effect.Intensity), alpha)),
+		},
+	}
+}
+
+func (r *AudioRenderer) updateAmbianceIndex(ch int, periodIdx int, trackType t.TrackType) {
+	if trackType == t.TrackAmbiance {
+		r.channelAmbianceIndex[ch] = r.periodAmbianceStart[periodIdx][ch]
+		return
 	}
 
-	// Update each channel
-	for ch := range t.NumberOfChannels {
-		if ch >= len(r.channels) || ch >= len(period.TrackStart) {
-			return // Bounds protection
-		}
+	r.channelAmbianceIndex[ch] = -1
+}
 
-		channel := &r.channels[ch]
-		tr0 := period.TrackStart[ch]
-		tr1 := period.TrackEnd[ch]
-
-		// Interpolate channel parameters
-		alpha := progress
-		switch period.Transition {
-		case t.TransitionEaseOut:
-			alpha = math.Log1p(math.Expm1(t.TransitionCurveK)*progress) / t.TransitionCurveK
-		case t.TransitionEaseIn:
-			alpha = math.Expm1(t.TransitionCurveK*progress) / math.Expm1(t.TransitionCurveK)
-		case t.TransitionSmooth:
-			// Normalized sigmoid
-			raw := 1.0 / (1.0 + math.Exp(-t.TransitionCurveK*(progress-0.5)))
-			min := 1.0 / (1.0 + math.Exp(t.TransitionCurveK*0.5))
-			max := 1.0 / (1.0 + math.Exp(-t.TransitionCurveK*0.5))
-			alpha = (raw - min) / (max - min)
-		}
-
-		channel.Track.Type = tr0.Type
-		channel.Track.Effect.Type = tr0.Effect.Type
-		channel.Track.Amplitude = t.AmplitudeType(float64(tr0.Amplitude)*(1-alpha) + float64(tr1.Amplitude)*alpha)
-		channel.Track.Carrier = tr0.Carrier*(1-alpha) + tr1.Carrier*alpha
-		channel.Track.Resonance = tr0.Resonance*(1-alpha) + tr1.Resonance*alpha
-		channel.Track.Waveform = tr0.Waveform
-		channel.Track.Intensity = t.IntensityType(float64(tr0.Intensity)*(1-alpha) + float64(tr1.Intensity)*alpha)
-		// Reset offsets if track type has changed
-		if channel.Type != channel.Track.Type {
-			channel.Type = channel.Track.Type
-			channel.Offset[0] = 0
-			channel.Offset[1] = 0
-		}
-
-		switch channel.Track.Type {
-		case t.TrackPureTone:
-			channel.Amplitude[0] = int(channel.Track.Amplitude)
-			channel.Increment[0] = int(channel.Track.Carrier / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)
-		case t.TrackBinauralBeat:
-			freq1 := channel.Track.Carrier + channel.Track.Resonance/2
-			freq2 := channel.Track.Carrier - channel.Track.Resonance/2
-			channel.Amplitude[0] = int(channel.Track.Amplitude)
-			channel.Amplitude[1] = int(channel.Track.Amplitude)
-			channel.Increment[0] = int(freq1 / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)
-			channel.Increment[1] = int(freq2 / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)
-		case t.TrackMonauralBeat:
-			freqHigh := channel.Track.Carrier + channel.Track.Resonance/2
-			freqLow := channel.Track.Carrier - channel.Track.Resonance/2
-			channel.Amplitude[0] = int(channel.Track.Amplitude)
-			channel.Increment[0] = int(freqHigh / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)
-			channel.Increment[1] = int(freqLow / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)
-		case t.TrackIsochronicBeat:
-			channel.Amplitude[0] = int(channel.Track.Amplitude)
-			channel.Increment[0] = int(channel.Track.Carrier / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)
-			channel.Increment[1] = int(channel.Track.Resonance / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)
-		case t.TrackWhiteNoise, t.TrackPinkNoise, t.TrackBrownNoise:
-			channel.Amplitude[0] = int(channel.Track.Amplitude)
-		case t.TrackBackground:
-			channel.Amplitude[0] = int(channel.Track.Amplitude)
-
-			switch channel.Track.Effect.Type {
-			case t.EffectSpin:
-				channel.Increment[0] = int(channel.Track.Resonance / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)
-
-				spinCarrierMax := 127.0 / 1e-6 / float64(r.SampleRate)
-				clampedCarrier := channel.Track.Carrier
-
-				if clampedCarrier > spinCarrierMax {
-					clampedCarrier = spinCarrierMax
-				}
-				if clampedCarrier < -spinCarrierMax {
-					clampedCarrier = -spinCarrierMax
-				}
-				channel.Increment[1] = int(clampedCarrier * 1e-6 * float64(r.SampleRate) * float64(1<<24) / float64(t.WaveTableAmplitude))
-			case t.EffectPulse:
-				channel.Increment[1] = int(channel.Track.Resonance / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)
-			}
-		}
+func (r *AudioRenderer) resetRuntimeState(channel *t.Channel, previousTrackType t.TrackType, previousEffectType t.EffectType) {
+	if previousTrackType != channel.Track.Type {
+		channel.Offset = [2]int{}
 	}
+	channel.Type = channel.Track.Type
+
+	if previousEffectType != channel.Track.Effect.Type {
+		channel.Effect.Offset = 0
+		channel.Effect.ModulationGain = 0
+		channel.Effect.ModulationInitialized = false
+		channel.Effect.PanPosition = 0
+		channel.Effect.PanInitialized = false
+	}
+}
+
+func (r *AudioRenderer) configureEffectState(channel *t.Channel) {
+	channel.Effect.Increment = 0
+	if channel.Track.Effect.Type == t.EffectOff {
+		return
+	}
+
+	channel.Effect.Increment = r.frequencyToIncrement(channel.Track.Effect.Value)
+}
+
+func (r *AudioRenderer) configureTrackSignal(channel *t.Channel) {
+	channel.Amplitude = [2]int{}
+	channel.Increment = [2]int{}
+
+	amplitude := int(channel.Track.Amplitude)
+
+	switch channel.Track.Type {
+	case t.TrackPureTone:
+		channel.Amplitude[0] = amplitude
+		channel.Increment[0] = r.frequencyToIncrement(channel.Track.Carrier)
+	case t.TrackBinauralBeat:
+		freq1 := channel.Track.Carrier + channel.Track.Resonance/2
+		freq2 := channel.Track.Carrier - channel.Track.Resonance/2
+		channel.Amplitude[0] = amplitude
+		channel.Amplitude[1] = amplitude
+		channel.Increment[0] = r.frequencyToIncrement(freq1)
+		channel.Increment[1] = r.frequencyToIncrement(freq2)
+	case t.TrackMonauralBeat:
+		freqHigh := channel.Track.Carrier + channel.Track.Resonance/2
+		freqLow := channel.Track.Carrier - channel.Track.Resonance/2
+		channel.Amplitude[0] = amplitude
+		channel.Increment[0] = r.frequencyToIncrement(freqHigh)
+		channel.Increment[1] = r.frequencyToIncrement(freqLow)
+	case t.TrackIsochronicBeat:
+		channel.Amplitude[0] = amplitude
+		channel.Increment[0] = r.frequencyToIncrement(channel.Track.Carrier)
+		channel.Increment[1] = r.frequencyToIncrement(channel.Track.Resonance)
+	case t.TrackWhiteNoise, t.TrackPinkNoise, t.TrackBrownNoise, t.TrackAmbiance:
+		channel.Amplitude[0] = amplitude
+	}
+}
+
+func (r *AudioRenderer) frequencyToIncrement(frequency float64) int {
+	return int(frequency / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)
+}
+
+func lerpFloat64(start, end, alpha float64) float64 {
+	return start + (end-start)*alpha
+}
+
+func clampUnit(value float64) float64 {
+	if value < 0 {
+		return 0
+	}
+	if value > 1 {
+		return 1
+	}
+
+	return value
 }

@@ -1,5 +1,5 @@
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -12,7 +12,7 @@
 package shared
 
 import (
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // Equal checks if two track configurations are identical
@@ -22,5 +22,5 @@ func IsTrackEqual(tr1, tr2 *t.Track) bool {
 		tr1.Carrier == tr2.Carrier &&
 		tr1.Resonance == tr2.Resonance &&
 		tr1.Waveform == tr2.Waveform &&
-		tr1.Intensity == tr2.Intensity
+		tr1.Effect.Intensity == tr2.Effect.Intensity
 }

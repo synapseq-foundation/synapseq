@@ -1,5 +1,5 @@
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -14,7 +14,7 @@ package shared
 import (
 	"testing"
 
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 func TestCountActiveChannels(ts *testing.T) {
@@ -65,7 +65,7 @@ func TestCountActiveChannels(ts *testing.T) {
 			chs: func() []t.Channel {
 				chs := make([]t.Channel, 8)
 				chs[1].Track.Type = t.TrackBinauralBeat
-				chs[6].Track.Type = t.TrackBackground
+				chs[6].Track.Type = t.TrackAmbiance
 				return chs
 			}(),
 			expected: 7,
@@ -85,7 +85,7 @@ func TestCountActiveChannels(ts *testing.T) {
 			name: "last off but previous active",
 			chs: func() []t.Channel {
 				chs := make([]t.Channel, 6)
-				chs[4].Track.Type = t.TrackBackground
+				chs[4].Track.Type = t.TrackAmbiance
 				return chs
 			}(),
 			expected: 5,

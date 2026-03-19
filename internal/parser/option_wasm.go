@@ -1,7 +1,7 @@
 //go:build wasm
 
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -15,10 +15,10 @@ package parser
 
 import (
 	"fmt"
-	"strings"
 
-	s "github.com/synapseq-foundation/synapseq/v3/internal/shared"
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
+	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // HasOption checks if the first element is an option
@@ -32,81 +32,92 @@ func (ctx *TextParser) HasOption() bool {
 	return string(ln[0]) == t.KeywordOption
 }
 
-// ParseOption extracts and applies the option from the elements
-func (ctx *TextParser) ParseOption(options *t.SequenceOptions) error {
-	ln := ctx.Line.Raw
+// ParseOption extracts and returns raw parsed option values.
+func (ctx *TextParser) ParseOption(_ string) (*t.ParseOptions, error) {
 	tok, ok := ctx.Line.NextToken()
 	if !ok {
-		return fmt.Errorf("expected option, got EOF: %s", ln)
+		return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "option")
 	}
+	span, _ := ctx.Line.LastTokenSpan()
 
 	if string(tok[0]) != t.KeywordOption {
-		return fmt.Errorf("expected option. Received: %s", tok)
+		return nil, diag.Parse("expected option").WithSpan(span).WithFound(tok)
 	}
 
 	option := tok[1:]
 	if len(option) == 0 {
-		return fmt.Errorf("expected option name: %s", ln)
+		return nil, diag.Parse("expected option name").WithSpan(span).WithFound(tok)
+	}
+
+	parsed := t.NewParseOptions()
+	validOptions := []string{
+		t.KeywordOptionSampleRate,
+		t.KeywordOptionVolume,
+		t.KeywordOptionAmbiance,
+		t.KeywordOptionExtends,
 	}
 
 	switch option {
 	case t.KeywordOptionSampleRate:
-		sampleRate, err := ctx.Line.NextIntStrict()
-		if err != nil {
-			return fmt.Errorf("samplerate: %v", err)
+		value, ok := ctx.Line.NextToken()
+		if !ok {
+			return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "samplerate value")
 		}
-		options.SampleRate = sampleRate
+
+		parsed.Values[t.KeywordOptionSampleRate] = value
 	case t.KeywordOptionVolume:
-		volume, err := ctx.Line.NextIntStrict()
-		if err != nil {
-			return fmt.Errorf("volume: %v", err)
-		}
-		options.Volume = volume
-	case t.KeywordOptionBackground, t.KeywordOptionPresetList:
-		_, ok := ctx.Line.NextToken()
+		value, ok := ctx.Line.NextToken()
 		if !ok {
-			return fmt.Errorf("expected path: %s", ln)
+			return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "volume value")
 		}
 
-		content := strings.Join(ctx.Line.Tokens[1:], " ")
+		parsed.Values[t.KeywordOptionVolume] = value
+	case t.KeywordOptionAmbiance:
+		name, ok := ctx.Line.NextToken()
+		if !ok {
+			return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "ambiance name")
+		}
+		nameSpan, _ := ctx.Line.LastTokenSpan()
+
+		if err := s.IsValidNamedRef(name); err != nil {
+			return nil, diag.Validation(err.Error()).WithSpan(nameSpan).WithFound(name).WithCause(err)
+		}
+
+		content, ok := ctx.Line.NextToken()
+		if !ok {
+			return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "ambiance URL")
+		}
+		contentSpan, _ := ctx.Line.LastTokenSpan()
+
 		if !s.IsRemoteFile(content) {
-			return fmt.Errorf("file paths are not supported in WASM for background or preset list: %s", content)
+			return nil, diag.Validation("WASM only supports remote URLs for ambiance audio").WithSpan(contentSpan).WithFound(content)
 		}
 
-		if option == t.KeywordBackground {
-			options.BackgroundPath = content
-		} else {
-			options.PresetList = append(options.PresetList, content)
-		}
-	case t.KeywordOptionGainLevel:
-		gainLevel, ok := ctx.Line.NextToken()
+		parsed.Ambiance[name] = content
+	case t.KeywordOptionExtends:
+		content, ok := ctx.Line.NextToken()
 		if !ok {
-			return fmt.Errorf("expected gain level: %s", ln)
+			return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "extends URL")
+		}
+		contentSpan, _ := ctx.Line.LastTokenSpan()
+
+		if !s.IsRemoteFile(content) {
+			return nil, diag.Validation("WASM only supports remote URLs for extends").WithSpan(contentSpan).WithFound(content)
 		}
 
-		switch gainLevel {
-		case t.KeywordOff:
-			options.GainLevel = t.GainLevelOff
-		case t.KeywordOptionGainLevelHigh:
-			options.GainLevel = t.GainLevelHigh
-		case t.KeywordOptionGainLevelMedium:
-			options.GainLevel = t.GainLevelMedium
-		case t.KeywordOptionGainLevelLow:
-			options.GainLevel = t.GainLevelLow
-		default:
-			return fmt.Errorf("invalid gain level: %q", gainLevel)
-		}
+		parsed.Extends = append(parsed.Extends, content)
 	default:
-		return fmt.Errorf("invalid option: %q", option)
-	}
-
-	// If the option is not background, ensure no extra tokens are present
-	if option != t.KeywordOptionBackground {
-		unknown, ok := ctx.Line.Peek()
-		if ok {
-			return fmt.Errorf("unexpected token after option definition: %q", unknown)
+		diagnostic := diag.Parse("invalid option").WithSpan(span).WithFound(option).WithExpected(validOptions...)
+		if suggestion, ok := diag.ClosestMatch(option, validOptions, diag.DefaultSuggestionDistance(option)); ok {
+			diagnostic.WithSuggestion(fmt.Sprintf("did you mean %q?", suggestion))
 		}
+		return nil, diagnostic
 	}
 
-	return nil
+	if unknown, ok := ctx.Line.Peek(); ok {
+		unknownSpan, _ := ctx.Line.PeekSpan()
+		return nil, diag.Parse("unexpected token after option definition").WithSpan(unknownSpan).WithFound(unknown)
+	}
+
+	return parsed, nil
 }

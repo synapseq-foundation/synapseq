@@ -1,0 +1,196 @@
+# SynapSeq Example File
+#
+# This file demonstrates most features of the SynapSeq language.
+# Uncomment sections and experiment with them.
+#
+# Run this file with:
+#   synapseq example.spsq
+
+
+# ============================================================
+# GLOBAL OPTIONS
+# ============================================================
+
+# Set overall output volume (0–100)
+#@volume 90
+
+# Set sample rate (default: 44100)
+#@samplerate 44100
+
+# Add a ambiance audio file (considering the audio/rain.wav file exists)
+#@ambiance rain audio/rain
+
+# Add a ambiance audio file from a URL
+#@ambiance ocean https://example.com/ocean.wav
+
+# Add other ambiance audio files as needed
+#@ambiance forest audio/forest
+
+# Add a configuration file for presets, templates or options
+# (considering the config/options.spsc file exists)
+#@extends config/options
+
+# Add a configuration file from a URL
+#@extends https://example.com/config.spsc
+
+# Add other configuration files as needed
+#@extends config/presets
+
+# ============================================================
+# PRESETS
+# ============================================================
+
+# A preset groups tones, noise, and ambiance together.
+
+alpha
+  noise pink amplitude 30
+  tone 200 binaural 10 amplitude 15
+
+beta
+  noise pink amplitude 25
+  tone 240 binaural 16 amplitude 15
+
+theta
+  noise pink amplitude 40
+  tone 180 binaural 6 amplitude 18
+
+# ============================================================
+# TONE
+# ===========================================================
+
+#tone-set-binaural
+#  tone 300 binaural 10 amplitude 8
+
+#tone-set-monaural
+#  tone 300 monaural 8 amplitude 10
+
+#tone-set-isochronic
+#  tone 300 isochronic 10 amplitude 8
+
+# ============================================================
+# NOISE
+# ===========================================================
+
+#alpha-brown
+#  noise brown amplitude 30
+#  tone 200 binaural 10 amplitude 15
+
+#alpha-pink
+#  noise pink amplitude 30
+#  tone 200 binaural 10 amplitude 15
+
+#alpha-white
+#  noise white amplitude 30
+#  tone 200 binaural 10 amplitude 15
+
+# ============================================================
+# AMBIANCE
+# ============================================================
+
+#alpha
+#  ambiance rain amplitude 30
+#  tone 200 binaural 10 amplitude 15
+
+#beta
+#  ambiance rain amplitude 25
+#  tone 240 binaural 16 amplitude 15
+
+#theta
+#  ambiance rain amplitude 40
+#  tone 180 binaural 6 amplitude 18
+
+# ============================================================
+# WAVEFORMS
+# ============================================================
+
+# You can change the waveform of tones.
+
+#sine-example
+#  waveform sine tone 300 isochronic 10 amplitude 8
+
+#square-example
+#  waveform square tone 300 isochronic 10 amplitude 8
+
+#triangle-example
+#  waveform triangle tone 250 monaural 8 amplitude 10
+
+#sawtooth-example
+#  waveform sawtooth tone 250 monaural 8 amplitude 10
+
+# ============================================================
+# EFFECTS
+# ============================================================
+
+#tone-pan
+#  tone 300 isochronic 10 effect pan .5 intensity 75 amplitude 40
+
+#tone-modulation
+#  tone 300 binaural 10 effect modulation 10 intensity 50 amplitude 40
+
+#tone-doppler
+#  tone 300 binaural 10 effect doppler .9 intensity 80 amplitude 40
+
+#tone-pure-pan
+#  tone 300 effect pan .5 intensity 40 amplitude 40
+
+#tone-pure-modulation
+#  tone 300 effect modulation 10 intensity 30 amplitude 40
+
+#tone-pure-doppler
+#  tone 300 effect doppler .9 intensity 60 amplitude 40
+
+#noise-pan
+#  noise white effect pan .5 intensity 60 amplitude 30
+
+#noise-modulation
+#  noise white effect modulation 5 intensity 40 amplitude 20
+
+#ambiance-pan
+#  ambiance rain effect pan .5 intensity 60 amplitude 30
+
+#ambiance-modulation
+#  ambiance rain effect modulation 5 intensity 40 amplitude 20
+
+# ============================================================
+# TEMPLATE INHERITANCE
+# ============================================================
+
+# Templates allow reusable sound structures.
+
+#base-focus as template
+#  noise white amplitude 25
+#  tone 240 binaural 16 amplitude 15
+
+#focus-strong from base-focus (track 1 is noise, track 2 is tone ...)
+#  track 1 amplitude 35
+
+# ============================================================
+# TIMELINE
+# ============================================================
+
+# The timeline controls when presets are played.
+
+# Format:
+#   hh:mm:ss preset-name [transition]
+
+# Transition types:
+#   steady (default)
+#   ease-in
+#   ease-out
+#   smooth
+
+
+# ============================================================
+# MINIMAL WORKING EXAMPLE
+# ============================================================
+
+# This section runs by default so the file produces audio.
+
+00:00:00 silence
+00:00:20 alpha
+00:05:00 alpha smooth
+00:08:00 beta
+00:12:00 beta smooth
+00:15:00 theta
+00:19:30 theta
+00:20:00 silence

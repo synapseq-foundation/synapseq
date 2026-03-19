@@ -1,7 +1,7 @@
 //go:build !wasm
 
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -15,34 +15,18 @@ package parser
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
-	s "github.com/synapseq-foundation/synapseq/v3/internal/shared"
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
+	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
-// getFullPath resolves the full path of a given file path
-func getFullPath(path, basePath string) (string, error) {
-	if strings.HasPrefix(path, "~") {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return "", err
-		}
-		expanded := filepath.Join(homeDir, strings.TrimPrefix(path, "~"))
-		return filepath.Clean(expanded), nil
-	}
+var windowsDrivePathPattern = regexp.MustCompile(`^[a-zA-Z]:`)
 
-	if filepath.IsAbs(path) {
-		return filepath.Clean(path), nil
-	}
-
-	fullPath := filepath.Join(basePath, path)
-	return filepath.Clean(fullPath), nil
-}
-
-// HasOption checks if the first element is an option
+// HasOption checks if the first element is an option.
 func (ctx *TextParser) HasOption() bool {
 	ln := ctx.Line.Raw
 
@@ -53,91 +37,136 @@ func (ctx *TextParser) HasOption() bool {
 	return string(ln[0]) == t.KeywordOption
 }
 
-// ParseOption extracts and applies the option from the elements
-func (ctx *TextParser) ParseOption(options *t.SequenceOptions, filePath string) error {
-	ln := ctx.Line.Raw
-	tok, ok := ctx.Line.NextToken()
-	if !ok {
-		return fmt.Errorf("expected option, got EOF: %s", ln)
+// resolveLocalOptionFile resolves a local modular file path relative to dirPath.
+func resolveLocalOptionFile(dirPath, content, ext, optionName string) (string, error) {
+	if content == "" {
+		return "", fmt.Errorf("expected path for %s option", optionName)
 	}
 
+	if content == "-" {
+		return "", fmt.Errorf("stdin (-) is not supported for %s option", optionName)
+	}
+
+	if strings.Contains(content, "\\") {
+		return "", fmt.Errorf("invalid path separator '\\'. Use '/' in %s option paths", optionName)
+	}
+
+	if strings.HasPrefix(content, "/") {
+		return "", fmt.Errorf("absolute paths are not allowed in %s option paths", optionName)
+	}
+
+	if windowsDrivePathPattern.MatchString(content) {
+		return "", fmt.Errorf("drive paths are not allowed in %s option paths", optionName)
+	}
+
+	cleanPath := filepath.Clean(content)
+	if cleanPath == "." || cleanPath == ".." || strings.HasPrefix(cleanPath, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("parent directory traversal is not allowed in %s option paths", optionName)
+	}
+
+	if filepath.Ext(cleanPath) != "" {
+		return "", fmt.Errorf("%s local path must not include file extension", optionName)
+	}
+
+	return filepath.Join(dirPath, cleanPath) + ext, nil
+}
+
+// ParseOption extracts and returns raw parsed option values.
+func (ctx *TextParser) ParseOption(dirPath string) (*t.ParseOptions, error) {
+	tok, ok := ctx.Line.NextToken()
+	if !ok {
+		return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "option")
+	}
+	span, _ := ctx.Line.LastTokenSpan()
+
 	if string(tok[0]) != t.KeywordOption {
-		return fmt.Errorf("expected option. Received: %s", tok)
+		return nil, diag.Parse("expected option").WithSpan(span).WithFound(tok)
 	}
 
 	option := tok[1:]
 	if len(option) == 0 {
-		return fmt.Errorf("expected option name: %s", ln)
+		return nil, diag.Parse("expected option name").WithSpan(span).WithFound(tok)
+	}
+
+	parsed := t.NewParseOptions()
+	validOptions := []string{
+		t.KeywordOptionSampleRate,
+		t.KeywordOptionVolume,
+		t.KeywordOptionAmbiance,
+		t.KeywordOptionExtends,
 	}
 
 	switch option {
 	case t.KeywordOptionSampleRate:
-		sampleRate, err := ctx.Line.NextIntStrict()
-		if err != nil {
-			return fmt.Errorf("samplerate: %v", err)
-		}
-		options.SampleRate = sampleRate
-	case t.KeywordOptionVolume:
-		volume, err := ctx.Line.NextIntStrict()
-		if err != nil {
-			return fmt.Errorf("volume: %v", err)
-		}
-		options.Volume = volume
-	case t.KeywordOptionBackground, t.KeywordOptionPresetList:
-		_, ok := ctx.Line.NextToken()
+		value, ok := ctx.Line.NextToken()
 		if !ok {
-			return fmt.Errorf("expected path: %s", ln)
+			return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "samplerate value")
 		}
 
-		content := strings.Join(ctx.Line.Tokens[1:], " ")
-
-		if content == "-" {
-			return fmt.Errorf("stdin (-) is not supported for background or preset list")
+		parsed.Values[t.KeywordOptionSampleRate] = value
+	case t.KeywordOptionVolume:
+		value, ok := ctx.Line.NextToken()
+		if !ok {
+			return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "volume value")
 		}
+
+		parsed.Values[t.KeywordOptionVolume] = value
+	case t.KeywordOptionAmbiance:
+		name, ok := ctx.Line.NextToken()
+		if !ok {
+			return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "ambiance name")
+		}
+		nameSpan, _ := ctx.Line.LastTokenSpan()
+
+		if err := s.IsValidNamedRef(name); err != nil {
+			return nil, diag.Validation(err.Error()).WithSpan(nameSpan).WithFound(name).WithCause(err)
+		}
+
+		content, ok := ctx.Line.NextToken()
+		if !ok {
+			return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "ambiance path")
+		}
+		contentSpan, _ := ctx.Line.LastTokenSpan()
 
 		fullPath := content
 		if !s.IsRemoteFile(content) {
 			var err error
-			fullPath, err = getFullPath(content, filePath)
+			fullPath, err = resolveLocalOptionFile(dirPath, content, ".wav", "ambiance")
 			if err != nil {
-				return fmt.Errorf("path: %v", err)
+				return nil, diag.Validation(err.Error()).WithSpan(contentSpan).WithFound(content).WithCause(err)
 			}
 		}
 
-		if option == t.KeywordBackground {
-			options.BackgroundPath = fullPath
-		} else {
-			options.PresetList = append(options.PresetList, fullPath)
-		}
-	case t.KeywordOptionGainLevel:
-		gainLevel, ok := ctx.Line.NextToken()
+		parsed.Ambiance[name] = fullPath
+	case t.KeywordOptionExtends:
+		content, ok := ctx.Line.NextToken()
 		if !ok {
-			return fmt.Errorf("expected gain level: %s", ln)
+			return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "extends path")
+		}
+		contentSpan, _ := ctx.Line.LastTokenSpan()
+
+		fullPath := content
+		if !s.IsRemoteFile(content) {
+			var err error
+			fullPath, err = resolveLocalOptionFile(dirPath, content, ".spsc", "extends")
+			if err != nil {
+				return nil, diag.Validation(err.Error()).WithSpan(contentSpan).WithFound(content).WithCause(err)
+			}
 		}
 
-		switch gainLevel {
-		case t.KeywordOff:
-			options.GainLevel = t.GainLevelOff
-		case t.KeywordOptionGainLevelHigh:
-			options.GainLevel = t.GainLevelHigh
-		case t.KeywordOptionGainLevelMedium:
-			options.GainLevel = t.GainLevelMedium
-		case t.KeywordOptionGainLevelLow:
-			options.GainLevel = t.GainLevelLow
-		default:
-			return fmt.Errorf("invalid gain level: %q", gainLevel)
-		}
+		parsed.Extends = append(parsed.Extends, fullPath)
 	default:
-		return fmt.Errorf("invalid option: %q", option)
-	}
-
-	// If the option is not background, ensure no extra tokens are present
-	if option != t.KeywordOptionBackground {
-		unknown, ok := ctx.Line.Peek()
-		if ok {
-			return fmt.Errorf("unexpected token after option definition: %q", unknown)
+		diagnostic := diag.Parse("invalid option").WithSpan(span).WithFound(option).WithExpected(validOptions...)
+		if suggestion, ok := diag.ClosestMatch(option, validOptions, diag.DefaultSuggestionDistance(option)); ok {
+			diagnostic.WithSuggestion(fmt.Sprintf("did you mean %q?", suggestion))
 		}
+		return nil, diagnostic
 	}
 
-	return nil
+	if unknown, ok := ctx.Line.Peek(); ok {
+		unknownSpan, _ := ctx.Line.PeekSpan()
+		return nil, diag.Parse("unexpected token after option definition").WithSpan(unknownSpan).WithFound(unknown)
+	}
+
+	return parsed, nil
 }

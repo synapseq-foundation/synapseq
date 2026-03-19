@@ -1,7 +1,5 @@
-//go:build !nohub
-
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -17,7 +15,7 @@ import (
 	"encoding/json"
 	"os"
 
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // GetManifest retrieves and parses the Hub manifest file from the cache

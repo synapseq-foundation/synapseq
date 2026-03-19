@@ -1,5 +1,5 @@
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -14,7 +14,7 @@ package shared
 import (
 	"testing"
 
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 func TestIsTrackEqual(ts *testing.T) {
@@ -124,22 +124,22 @@ func TestIsTrackEqual(ts *testing.T) {
 			eq: false,
 		},
 		{
-			name: "background effect type ignored",
+			name: "ambiance effect type ignored",
 			a: &t.Track{
-				Type:      t.TrackBackground,
+				Type:      t.TrackAmbiance,
 				Carrier:   200,
 				Resonance: 5,
 				Amplitude: t.AmplitudePercentToRaw(40),
 				Waveform:  t.WaveformSine,
-				Effect:    t.Effect{Type: t.EffectSpin, Intensity: t.IntensityPercentToRaw(60)},
+				Effect:    t.Effect{Type: t.EffectPan, Intensity: t.IntensityPercentToRaw(60)},
 			},
 			b: &t.Track{
-				Type:      t.TrackBackground,
+				Type:      t.TrackAmbiance,
 				Carrier:   200,
 				Resonance: 5,
 				Amplitude: t.AmplitudePercentToRaw(40),
 				Waveform:  t.WaveformSine,
-				Effect:    t.Effect{Type: t.EffectPulse, Intensity: t.IntensityPercentToRaw(60)},
+				Effect:    t.Effect{Type: t.EffectModulation, Intensity: t.IntensityPercentToRaw(60)},
 			},
 			eq: true,
 		},

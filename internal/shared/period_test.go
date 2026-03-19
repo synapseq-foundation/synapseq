@@ -1,5 +1,5 @@
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -14,7 +14,7 @@ package shared
 import (
 	"testing"
 
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 func TestAdjustPeriods_NormalCopy(ts *testing.T) {
@@ -86,12 +86,12 @@ func TestAdjustPeriods_FadeOutToSilence(ts *testing.T) {
 	var last, next t.Period
 
 	last.TrackStart[0] = t.Track{
-		Type:      t.TrackBackground,
+		Type:      t.TrackAmbiance,
 		Carrier:   200,
 		Resonance: 5,
 		Amplitude: t.AmplitudePercentToRaw(50),
 		Waveform:  t.WaveformSquare,
-		Effect:    t.Effect{Type: t.EffectSpin, Intensity: t.IntensityPercentToRaw(70)},
+		Effect:    t.Effect{Type: t.EffectPan, Intensity: t.IntensityPercentToRaw(70)},
 	}
 	last.TrackEnd[0] = last.TrackStart[0]
 	next.TrackStart[0] = t.Track{
@@ -107,11 +107,41 @@ func TestAdjustPeriods_FadeOutToSilence(ts *testing.T) {
 	if next.TrackStart[0].Type != t.TrackSilence ||
 		next.TrackStart[0].Carrier != 200 ||
 		next.TrackStart[0].Resonance != 5 ||
-		next.TrackStart[0].Intensity != t.IntensityPercentToRaw(70) {
+		next.TrackStart[0].Effect.Intensity != t.IntensityPercentToRaw(70) {
 		ts.Fatalf("fade-out not applied as expected: %+v", next.TrackStart[0])
 	}
 	if last.TrackEnd[0] != next.TrackStart[0] {
 		ts.Fatalf("carry-forward mismatch after fade-out: last.TrackEnd != next.TrackStart\nlast=%+v\nnext=%+v", last.TrackEnd[0], next.TrackStart[0])
+	}
+}
+
+func TestAdjustPeriods_AllowsWaveformChangeWhileOn(ts *testing.T) {
+	var last, next t.Period
+
+	last.TrackStart[0] = t.Track{
+		Type:      t.TrackBinauralBeat,
+		Amplitude: t.AmplitudePercentToRaw(10),
+		Waveform:  t.WaveformSine,
+	}
+	last.TrackEnd[0] = t.Track{
+		Type:      t.TrackBinauralBeat,
+		Amplitude: t.AmplitudePercentToRaw(10),
+		Waveform:  t.WaveformSine,
+	}
+	next.TrackStart[0] = t.Track{
+		Type:      t.TrackBinauralBeat,
+		Amplitude: t.AmplitudePercentToRaw(12),
+		Waveform:  t.WaveformTriangle,
+	}
+
+	if err := AdjustPeriods(&last, &next); err != nil {
+		ts.Fatalf("unexpected error when changing waveform: %v", err)
+	}
+	if last.TrackEnd[0].Waveform != t.WaveformTriangle {
+		ts.Fatalf("waveform was not carried forward: got %v", last.TrackEnd[0].Waveform)
+	}
+	if last.TrackEnd[0] != next.TrackStart[0] {
+		ts.Fatalf("carry-forward mismatch after waveform change: last.TrackEnd != next.TrackStart\nlast=%+v\nnext=%+v", last.TrackEnd[0], next.TrackStart[0])
 	}
 }
 
@@ -146,14 +176,9 @@ func TestAdjustPeriods_Errors(ts *testing.T) {
 			tr2:  t.Track{Type: t.TrackMonauralBeat, Amplitude: t.AmplitudePercentToRaw(12), Waveform: t.WaveformSine},
 		},
 		{
-			name: "change waveform while on",
-			tr1:  t.Track{Type: t.TrackBinauralBeat, Amplitude: t.AmplitudePercentToRaw(10), Waveform: t.WaveformSine},
-			tr2:  t.Track{Type: t.TrackBinauralBeat, Amplitude: t.AmplitudePercentToRaw(12), Waveform: t.WaveformTriangle},
-		},
-		{
-			name: "change effect type while on (background)",
-			tr1:  t.Track{Type: t.TrackBackground, Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectSpin}},
-			tr2:  t.Track{Type: t.TrackBackground, Amplitude: t.AmplitudePercentToRaw(25), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectPulse}},
+			name: "change effect type while on (ambiance)",
+			tr1:  t.Track{Type: t.TrackAmbiance, Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectPan}},
+			tr2:  t.Track{Type: t.TrackAmbiance, Amplitude: t.AmplitudePercentToRaw(25), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectModulation}},
 		},
 	}
 

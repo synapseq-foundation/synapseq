@@ -1,5 +1,5 @@
 /*/*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -13,29 +13,29 @@
  *
  * @class SynapSeq
  * @example
- * const synapse = new SynapSeq();
- * await synapse.load(content);
- * await synapse.play();
+ * const synapseq = new SynapSeq();
+ * await synapseq.load(content);
+ * await synapseq.play();
  */
 class SynapSeq {
   /**
    * Creates a new SynapSeq instance
    * @constructor
    * @param {Object} options - Configuration options
-   * @param {string} [options.wasmPath='synapseq.wasm'] - Path or URL to the WASM file
-   * @param {string} [options.wasmExecPath='wasm_exec.js'] - Path or URL to the wasm_exec.js file
+   * @param {string} [options.wasmPath='https://synapseq.org/lib/synapseq.wasm'] - Path or URL to the WASM file
+   * @param {string} [options.wasmExecPath='https://synapseq.org/lib/wasm_exec.js'] - Path or URL to the wasm_exec.js file
    * @example
-   * // Use local files (default)
-   * const synapse = new SynapSeq();
+   * // Use the official hosted runtime (default)
+   * const synapseq = new SynapSeq();
    *
    * // Use custom paths
-   * const synapse = new SynapSeq({
+   * const synapseq = new SynapSeq({
    *   wasmPath: './dist/synapseq.wasm',
    *   wasmExecPath: './dist/wasm_exec.js'
    * });
    *
    * // Use remote CDN
-   * const synapse = new SynapSeq({
+   * const synapseq = new SynapSeq({
    *   wasmPath: 'https://cdn.example.com/synapseq.wasm',
    *   wasmExecPath: 'https://cdn.example.com/wasm_exec.js'
    * });
@@ -45,13 +45,15 @@ class SynapSeq {
      * @private
      * @type {string}
      */
-    this._wasmPath = options.wasmPath || "synapseq.wasm";
+    this._wasmPath =
+      options.wasmPath || "https://synapseq.org/lib/synapseq.wasm";
 
     /**
      * @private
      * @type {string}
      */
-    this._wasmExecPath = options.wasmExecPath || "wasm_exec.js";
+    this._wasmExecPath =
+      options.wasmExecPath || "https://synapseq.org/lib/wasm_exec.js";
 
     /**
      * @private
@@ -167,7 +169,7 @@ class SynapSeq {
             const go = new Go();
             const result = await WebAssembly.instantiateStreaming(
               fetch(absoluteWasmPath),
-              go.importObject
+              go.importObject,
             );
 
             go.run(result.instance);
@@ -207,7 +209,7 @@ class SynapSeq {
                   type: "chunk",
                   chunk: chunk,
                 },
-                [chunk.buffer]
+                [chunk.buffer],
               );
             };
 
@@ -229,7 +231,7 @@ class SynapSeq {
               onDone,
               onError,
               contentBytes,
-              format
+              format,
             );
           } catch (error) {
             self.postMessage({
@@ -285,7 +287,7 @@ class SynapSeq {
           typeof window !== "undefined"
             ? window.location.href.substring(
                 0,
-                window.location.href.lastIndexOf("/") + 1
+                window.location.href.lastIndexOf("/") + 1,
               )
             : "";
 
@@ -372,7 +374,7 @@ class SynapSeq {
     }
 
     this._audioContext = new (window.AudioContext || window.webkitAudioContext)(
-      { sampleRate: sampleRate }
+      { sampleRate: sampleRate },
     );
 
     // Create AudioWorklet processor inline
@@ -482,13 +484,11 @@ class SynapSeq {
    * @throws {Error} If input is invalid or worker is not ready
    * @example
    * // Load from string
-   * await synapse.load('# Presets\nalpha\n  tone 250 isochronic 8');
+   * await synapseq.load('# Presets\nalpha\n  tone 250 isochronic 8');
    *
    * // Load from File object
    * const file = document.getElementById('fileInput').files[0];
-   * await synapse.load(file, "text");
-   * // or for JSON format
-   * await synapse.load(file, "json");
+   * await synapseq.load(file, "text");
    */
   async load(input, format = "text") {
     // Wait for worker to be ready
@@ -500,8 +500,10 @@ class SynapSeq {
       throw new Error("Input is required");
     }
 
-    if (format !== "text" && format !== "json") {
-      throw new Error("Unsupported format: " + format);
+    if (format !== "text") {
+      throw new Error(
+        "Unsupported format: " + format + ". Only text is supported.",
+      );
     }
 
     this._format = format;
@@ -557,26 +559,11 @@ class SynapSeq {
   }
 
   /**
-   * Extracts sample rate from JSON sequence content
-   * @private
-   * @param {string} jsonStr - JSON string of the sequence
-   * @returns {number} Sample rate in Hz
-   */
-  _extractSampleRateFromJSON(jsonStr) {
-    try {
-      const obj = JSON.parse(jsonStr);
-      return obj?.options?.samplerate ?? 44100;
-    } catch {
-      return 44100;
-    }
-  }
-
-  /**
    * Plays the loaded sequence
    * @returns {Promise<void>}
    * @throws {Error} If no sequence is loaded or worker is not ready
    * @example
-   * await synapse.play();
+   * await synapseq.play();
    */
   async play() {
     if (!this._workerReady) {
@@ -592,12 +579,7 @@ class SynapSeq {
 
     try {
       // Get sample rate directly from SPSQ text (no need to call WASM)
-      let sampleRate;
-      if (this._format === "json") {
-        sampleRate = this._extractSampleRateFromJSON(this._sequence);
-      } else {
-        sampleRate = this._extractSampleRateFromText(this._sequence);
-      }
+      const sampleRate = this._extractSampleRateFromText(this._sequence);
       this._sampleRate = sampleRate;
 
       // Encode sequence to bytes for streaming
@@ -612,7 +594,7 @@ class SynapSeq {
         "stream-processor",
         {
           outputChannelCount: [2],
-        }
+        },
       );
 
       // Listen for end event
@@ -652,7 +634,7 @@ class SynapSeq {
    * Stops the currently playing sequence
    * @returns {void}
    * @example
-   * synapse.stop();
+   * synapseq.stop();
    */
   stop() {
     if (this._isStreaming && this._audioWorkletNode) {
@@ -669,7 +651,7 @@ class SynapSeq {
    * Gets the current playback position in seconds
    * @returns {number} Current time in seconds since playback started
    * @example
-   * const currentTime = synapse.getCurrentTime();
+   * const currentTime = synapseq.getCurrentTime();
    */
   getCurrentTime() {
     if (!this._isStreaming || !this._audioContext) {
@@ -682,7 +664,7 @@ class SynapSeq {
    * Gets the current playback state
    * @returns {string} One of: 'idle', 'playing', 'stopped'
    * @example
-   * const state = synapse.getState();
+   * const state = synapseq.getState();
    */
   getState() {
     if (this._isStreaming) {
@@ -695,8 +677,8 @@ class SynapSeq {
    * Checks if a sequence is currently loaded
    * @returns {boolean} True if a sequence is loaded
    * @example
-   * if (synapse.isLoaded()) {
-   *   await synapse.play();
+   * if (synapseq.isLoaded()) {
+   *   await synapseq.play();
    * }
    */
   isLoaded() {
@@ -707,7 +689,7 @@ class SynapSeq {
    * Gets the sample rate of the loaded sequence
    * @returns {number} Sample rate in Hz
    * @example
-   * const sampleRate = synapse.getSampleRate();
+   * const sampleRate = synapseq.getSampleRate();
    * console.log('Sample Rate:', sampleRate, 'Hz');
    */
   getSampleRate() {
@@ -718,8 +700,8 @@ class SynapSeq {
    * Checks if the worker is ready
    * @returns {boolean} True if worker is initialized and ready
    * @example
-   * if (synapse.isReady()) {
-   *   await synapse.load(sequence);
+   * if (synapseq.isReady()) {
+   *   await synapseq.load(sequence);
    * }
    */
   isReady() {
@@ -730,7 +712,7 @@ class SynapSeq {
    * Gets the SynapSeq version
    * @returns {string} The version string
    * @example
-   * const version = synapse.getVersion();
+   * const version = synapseq.getVersion();
    * console.log('SynapSeq Version:', version);
    */
   async getVersion() {
@@ -744,7 +726,7 @@ class SynapSeq {
    * Gets the build date of the SynapSeq WASM
    * @returns {string} The build date string
    * @example
-   * const buildDate = synapse.getBuildDate();
+   * const buildDate = synapseq.getBuildDate();
    * console.log('SynapSeq Build Date:', buildDate);
    */
   async getBuildDate() {
@@ -758,7 +740,7 @@ class SynapSeq {
    * Gets the hash of the SynapSeq WASM build
    * @returns {string} The hash string
    * @example
-   * const hash = synapse.getHash();
+   * const hash = synapseq.getHash();
    * console.log('SynapSeq Hash:', hash);
    */
   async getHash() {
@@ -771,7 +753,7 @@ class SynapSeq {
   /**
    * Cleans up resources and terminates the worker
    * @example
-   * synapse.destroy();
+   * synapseq.destroy();
    */
   destroy() {
     this.stop();
@@ -795,7 +777,7 @@ class SynapSeq {
    * Event handler called when sequence is loaded
    * @type {Function|null}
    * @example
-   * synapse.onloaded = () => console.log('Sequence loaded');
+   * synapseq.onloaded = () => console.log('Sequence loaded');
    */
   onloaded = null;
 
@@ -803,7 +785,7 @@ class SynapSeq {
    * Event handler called when audio generation starts
    * @type {Function|null}
    * @example
-   * synapse.ongenerating = () => console.log('Generating audio...');
+   * synapseq.ongenerating = () => console.log('Generating audio...');
    */
   ongenerating = null;
 
@@ -811,7 +793,7 @@ class SynapSeq {
    * Event handler called when playback starts
    * @type {Function|null}
    * @example
-   * synapse.onplaying = () => console.log('Now playing');
+   * synapseq.onplaying = () => console.log('Now playing');
    */
   onplaying = null;
 
@@ -819,7 +801,7 @@ class SynapSeq {
    * Event handler called when playback is stopped
    * @type {Function|null}
    * @example
-   * synapse.onstopped = () => console.log('Stopped');
+   * synapseq.onstopped = () => console.log('Stopped');
    */
   onstopped = null;
 
@@ -827,7 +809,7 @@ class SynapSeq {
    * Event handler called when playback ends naturally
    * @type {Function|null}
    * @example
-   * synapse.onended = () => console.log('Playback finished');
+   * synapseq.onended = () => console.log('Playback finished');
    */
   onended = null;
 
@@ -835,7 +817,7 @@ class SynapSeq {
    * Event handler called when an error occurs
    * @type {Function|null}
    * @example
-   * synapse.onerror = (detail) => console.error('Error:', detail.error);
+   * synapseq.onerror = (detail) => console.error('Error:', detail.error);
    */
   onerror = null;
 }

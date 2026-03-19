@@ -1,7 +1,7 @@
 //go:build !wasm
 
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -14,88 +14,97 @@
 package core
 
 import (
-	seq "github.com/synapseq-foundation/synapseq/v3/internal/sequence"
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	"fmt"
+	"maps"
+
+	preview "github.com/synapseq-foundation/synapseq/v4/internal/preview"
+	seq "github.com/synapseq-foundation/synapseq/v4/internal/sequence"
 )
 
-// LoadSequence loads the sequence from the input file based on the specified format
-func (ac *AppContext) LoadSequence() error {
-	var err error
-	if ac.format == t.FormatText {
-		ac.sequence, err = seq.LoadTextSequence(ac.inputFile)
-	} else {
-		ac.sequence, err = seq.LoadStructuredSequence(ac.inputFile, ac.format)
-	}
-
+// Load loads the sequence from the input file.
+func (ac *AppContext) Load(path string) (*LoadedContext, error) {
+	sequence, err := seq.LoadTextSequence(path)
 	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// Comments returns the comments from the loaded sequence
-func (ac *AppContext) Comments() []string {
-	if ac.sequence == nil {
-		return nil
-	}
-	return ac.sequence.Comments
-}
-
-// SampleRate returns the sample rate from the loaded sequence options
-func (ac *AppContext) SampleRate() int {
-	if ac.sequence == nil || ac.sequence.Options == nil {
-		return 0
+		return nil, err
 	}
 
-	return ac.sequence.Options.SampleRate
+	return &LoadedContext{
+		appCtx:   ac,
+		sequence: sequence,
+	}, nil
 }
 
-// PresetList returns the preset list from the loaded sequence options
-func (ac *AppContext) PresetList() []string {
-	if ac.sequence == nil || ac.sequence.Options == nil {
+// Comments returns a defensive copy of sequence comments.
+func (lc *LoadedContext) Comments() []string {
+	if lc.sequence == nil || len(lc.sequence.Comments) == 0 {
 		return []string{}
 	}
 
-	return ac.sequence.Options.PresetList
+	comments := make([]string, len(lc.sequence.Comments))
+	copy(comments, lc.sequence.Comments)
+
+	return comments
 }
 
-// Volume returns the volume from the loaded sequence options
-func (ac *AppContext) Volume() int {
-	if ac.sequence == nil || ac.sequence.Options == nil {
+// SampleRate returns the sample rate from the loaded sequence options.
+func (lc *LoadedContext) SampleRate() int {
+	if lc.sequence == nil || lc.sequence.Options == nil {
 		return 0
 	}
 
-	return ac.sequence.Options.Volume
+	return lc.sequence.Options.SampleRate
 }
 
-// GainLevel returns the gain level from the loaded sequence options.
-// Gain levels:
-// 0 = 0 dB,
-// 3 = -3 dB,
-// 9 = -9 dB,
-// 18 = -18 dB
-func (ac *AppContext) GainLevel() int {
-	if ac.sequence == nil || ac.sequence.Options == nil {
+// Extends returns a defensive copy of extends list.
+func (lc *LoadedContext) Extends() []string {
+	if lc.sequence == nil || lc.sequence.Options == nil || len(lc.sequence.Options.Extends) == 0 {
+		return []string{}
+	}
+
+	extends := make([]string, len(lc.sequence.Options.Extends))
+	copy(extends, lc.sequence.Options.Extends)
+
+	return extends
+}
+
+// Volume returns the volume from the loaded sequence options.
+func (lc *LoadedContext) Volume() int {
+	if lc.sequence == nil || lc.sequence.Options == nil {
 		return 0
 	}
 
-	return int(ac.sequence.Options.GainLevel)
+	return lc.sequence.Options.Volume
 }
 
-// BackgroundPath returns the background audio path from the loaded sequence options
-func (ac *AppContext) BackgroundPath() string {
-	if ac.sequence == nil || ac.sequence.Options == nil {
-		return ""
+// Ambiance returns a defensive copy of ambiance map.
+func (lc *LoadedContext) Ambiance() map[string]string {
+	if lc.sequence == nil || lc.sequence.Options == nil || len(lc.sequence.Options.Ambiance) == 0 {
+		return map[string]string{}
 	}
 
-	return ac.sequence.Options.BackgroundPath
+	ambiance := make(map[string]string, len(lc.sequence.Options.Ambiance))
+	maps.Copy(ambiance, lc.sequence.Options.Ambiance)
+
+	return ambiance
 }
 
-// RawContent returns the raw content of the loaded sequence
-func (ac *AppContext) RawContent() []byte {
-	if ac.sequence == nil {
-		return nil
+// RawContent returns a defensive copy of raw content.
+func (lc *LoadedContext) RawContent() []byte {
+	if lc.sequence == nil || len(lc.sequence.RawContent) == 0 {
+		return []byte{}
 	}
 
-	return ac.sequence.RawContent
+	raw := make([]byte, len(lc.sequence.RawContent))
+	copy(raw, lc.sequence.RawContent)
+
+	return raw
+}
+
+// Preview renders the loaded sequence as an HTML preview.
+func (lc *LoadedContext) Preview() ([]byte, error) {
+	if lc.sequence == nil {
+		return nil, fmt.Errorf("sequence is nil")
+	}
+
+	return preview.GetPreviewContent(lc.sequence.Periods)
 }

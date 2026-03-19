@@ -1,5 +1,5 @@
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -14,7 +14,8 @@ package parser
 import (
 	"testing"
 
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 func TestHasTimeline(ts *testing.T) {
@@ -271,5 +272,58 @@ func TestParseTimeline_TemplatePresetNotAllowed(ts *testing.T) {
 				ts.Errorf("%s: expected non-nil period for line '%s'", test.name, test.line)
 			}
 		}
+	}
+}
+
+func TestParseTimelineTransitionDiagnostic(ts *testing.T) {
+	var presets []t.Preset
+	alpha, err := t.NewPreset("alpha", false, nil)
+	if err != nil {
+		ts.Fatalf("unexpected error creating preset 'alpha': %v", err)
+	}
+	presets = append(presets, *alpha)
+
+	ctx := NewTextParser("00:00:05 alpha smooh")
+	_, err = ctx.ParseTimeline(&presets)
+	if err == nil {
+		ts.Fatal("expected transition diagnostic")
+	}
+
+	diagnostic, ok := diag.As(err)
+	if !ok {
+		ts.Fatalf("expected diag.Diagnostic, got %T", err)
+	}
+	if diagnostic.Found != "smooh" {
+		ts.Fatalf("expected found transition smooh, got %q", diagnostic.Found)
+	}
+	if diagnostic.Suggestion != "did you mean \"smooth\"?" {
+		ts.Fatalf("expected smooth suggestion, got %q", diagnostic.Suggestion)
+	}
+	if diagnostic.Span.Column != 16 || diagnostic.Span.EndColumn != 21 {
+		ts.Fatalf("expected transition span 17..22, got %d..%d", diagnostic.Span.Column, diagnostic.Span.EndColumn)
+	}
+}
+
+func TestParseTimelineMissingPresetDiagnostic(ts *testing.T) {
+	var presets []t.Preset
+	ctx := NewTextParser("00:00:05")
+
+	_, err := ctx.ParseTimeline(&presets)
+	if err == nil {
+		ts.Fatal("expected missing preset diagnostic")
+	}
+
+	diagnostic, ok := diag.As(err)
+	if !ok {
+		ts.Fatalf("expected diag.Diagnostic, got %T", err)
+	}
+	if diagnostic.Message != "unexpected end of line" {
+		ts.Fatalf("expected EOF message, got %q", diagnostic.Message)
+	}
+	if len(diagnostic.Expected) != 1 || diagnostic.Expected[0] != "preset name" {
+		ts.Fatalf("expected preset name expectation, got %#v", diagnostic.Expected)
+	}
+	if diagnostic.Span.Column != 9 || diagnostic.Span.EndColumn != 10 {
+		ts.Fatalf("expected EOF span 9..10, got %d..%d", diagnostic.Span.Column, diagnostic.Span.EndColumn)
 	}
 }

@@ -1,0 +1,54 @@
+# SynapSeq Template
+# Sleep Session (20 minutes)
+#
+# This example demonstrates:
+# - gradual transition toward sleep
+# - multiple presets
+# - smooth transitions
+# - timeline structure
+#
+# Run this file with:
+# synapseq sleep.spsq
+
+
+# --------------------------
+# Presets
+# --------------------------
+
+# Relaxation (alpha range)
+relax
+  noise brown amplitude 35
+  tone 200 binaural 10 amplitude 15
+
+# Drowsy state (theta)
+drowsy
+  noise brown amplitude 40
+  tone 180 binaural 6 amplitude 18
+
+# Deep sleep (delta)
+deep-sleep
+  noise brown amplitude 45
+  tone 150 binaural 3 amplitude 20
+
+
+# --------------------------
+# Timeline
+# --------------------------
+
+# Fade in
+00:00:00 silence
+00:00:30 relax
+
+# Relaxation phase
+00:05:00 relax smooth
+00:08:00 drowsy
+
+# Transition to sleep
+00:12:00 drowsy smooth
+00:16:00 deep-sleep
+
+# Maintain deep sleep
+00:19:30 deep-sleep
+
+# Fade out
+00:20:00 silence

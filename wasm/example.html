@@ -1,0 +1,834 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SynapSeq WASM Example</title>
+    <script>
+      (() => {
+        const storedTheme = localStorage.getItem("synapseq-theme");
+        const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)")
+          .matches
+          ? "dark"
+          : "light";
+        document.documentElement.setAttribute(
+          "data-theme",
+          storedTheme || preferredTheme,
+        );
+      })();
+    </script>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f4efe5;
+        --panel: rgba(255, 252, 246, 0.86);
+        --panel-strong: rgba(255, 250, 241, 0.98);
+        --text: #201a15;
+        --muted: #6b6259;
+        --line: rgba(32, 26, 21, 0.12);
+        --line-strong: rgba(32, 26, 21, 0.18);
+        --accent: #b14d2a;
+        --accent-strong: #7f2d18;
+        --accent-soft: rgba(177, 77, 42, 0.14);
+        --ok: #2f6b45;
+        --warn: #885b17;
+        --danger: #8b2e2e;
+        --shadow: 0 24px 80px rgba(51, 37, 23, 0.16);
+      }
+
+      html[data-theme="dark"] {
+        color-scheme: dark;
+        --bg: #161311;
+        --panel: rgba(31, 26, 23, 0.82);
+        --panel-strong: rgba(38, 32, 28, 0.96);
+        --text: #f3eadf;
+        --muted: #b8aa9a;
+        --line: rgba(243, 234, 223, 0.12);
+        --line-strong: rgba(243, 234, 223, 0.18);
+        --accent: #c96a42;
+        --accent-strong: #efb08d;
+        --accent-soft: rgba(201, 106, 66, 0.18);
+        --ok: #58a06a;
+        --warn: #c89a46;
+        --danger: #cc6d6d;
+        --shadow: 0 24px 80px rgba(0, 0, 0, 0.32);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(
+            circle at top left,
+            rgba(15, 118, 110, 0.18),
+            transparent 24%
+          ),
+          radial-gradient(
+            circle at top right,
+            rgba(180, 83, 9, 0.16),
+            transparent 20%
+          ),
+          linear-gradient(180deg, #fbf6eb 0%, var(--bg) 100%);
+      }
+
+      html[data-theme="dark"] body {
+        background:
+          radial-gradient(
+            circle at top left,
+            rgba(15, 118, 110, 0.14),
+            transparent 26%
+          ),
+          radial-gradient(
+            circle at top right,
+            rgba(180, 83, 9, 0.14),
+            transparent 22%
+          ),
+          linear-gradient(180deg, #1c1714 0%, var(--bg) 100%);
+      }
+
+      .shell {
+        width: min(1100px, calc(100vw - 40px));
+        margin: 32px auto 24px;
+        display: grid;
+        gap: 20px;
+      }
+
+      .hero,
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        background: var(--panel);
+        backdrop-filter: blur(14px);
+        box-shadow: var(--shadow);
+      }
+
+      .hero {
+        padding: 28px;
+        display: grid;
+        gap: 12px;
+      }
+
+      .hero-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .theme-switcher {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .theme-button {
+        appearance: none;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 10px 14px;
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--text);
+        font:
+          600 13px/1 "Avenir Next",
+          "Segoe UI",
+          sans-serif;
+        cursor: pointer;
+        transition:
+          transform 140ms ease,
+          background 140ms ease,
+          border-color 140ms ease,
+          color 140ms ease;
+      }
+
+      .theme-button:hover {
+        transform: translateY(-1px);
+      }
+
+      .theme-button.is-active {
+        background: var(--accent-soft);
+        border-color: rgba(177, 77, 42, 0.28);
+        color: var(--accent-strong);
+      }
+
+      html[data-theme="dark"] .theme-button.is-active {
+        border-color: rgba(201, 106, 66, 0.34);
+      }
+
+      .eyebrow {
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(36px, 6vw, 68px);
+        line-height: 0.94;
+        font-weight: 700;
+        letter-spacing: -0.05em;
+      }
+
+      .hero p {
+        margin: 0;
+        max-width: 56ch;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.7;
+      }
+
+      .build-info {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
+      .build-chip {
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: rgba(32, 26, 21, 0.05);
+      }
+
+      html[data-theme="dark"] .build-chip {
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .hero code,
+      .panel code {
+        font-family:
+          Menlo, Monaco, "Cascadia Mono", "SFMono-Regular", monospace;
+        font-size: 0.95em;
+        background: rgba(32, 26, 21, 0.06);
+        padding: 2px 6px;
+        border-radius: 8px;
+      }
+
+      html[data-theme="dark"] .hero code,
+      html[data-theme="dark"] .panel code {
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      .panel {
+        padding: 24px;
+        display: grid;
+        gap: 16px;
+      }
+
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .label {
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 360px;
+        resize: vertical;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 18px;
+        background: var(--panel-strong);
+        color: var(--text);
+        font:
+          14px/1.55 Menlo,
+          Monaco,
+          "Cascadia Mono",
+          "SFMono-Regular",
+          monospace;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      }
+
+      html[data-theme="dark"] textarea {
+        box-shadow: inset 0 1px 0 rgba(243, 234, 223, 0.06);
+      }
+
+      textarea:focus {
+        outline: 2px solid rgba(177, 77, 42, 0.2);
+        border-color: rgba(177, 77, 42, 0.28);
+      }
+
+      html[data-theme="dark"] textarea:focus {
+        outline: 2px solid rgba(201, 106, 66, 0.24);
+        border-color: rgba(201, 106, 66, 0.34);
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      button {
+        appearance: none;
+        border: 0;
+        border-radius: 999px;
+        padding: 12px 18px;
+        font:
+          600 14px/1 "Avenir Next",
+          "Segoe UI",
+          sans-serif;
+        cursor: pointer;
+        transition:
+          transform 140ms ease,
+          opacity 140ms ease,
+          background 140ms ease;
+      }
+
+      button:hover:not(:disabled) {
+        transform: translateY(-1px);
+      }
+
+      button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
+      .play {
+        background: var(--accent);
+        color: #fff7f2;
+      }
+
+      .stop {
+        background: rgba(32, 26, 21, 0.06);
+        color: var(--text);
+        border: 1px solid var(--line);
+      }
+
+      html[data-theme="dark"] .stop {
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .stat {
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        background: var(--panel-strong);
+      }
+
+      .stat strong {
+        display: block;
+        margin-top: 10px;
+        font-size: clamp(22px, 4vw, 34px);
+        line-height: 1;
+        letter-spacing: -0.04em;
+      }
+
+      .stat .label {
+        display: block;
+        font-size: 12px;
+        letter-spacing: 0.18em;
+      }
+
+      progress {
+        width: 100%;
+        height: 14px;
+        appearance: none;
+        border: 0;
+        border-radius: 999px;
+        overflow: hidden;
+        background: rgba(32, 26, 21, 0.08);
+      }
+
+      html[data-theme="dark"] progress {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      progress::-webkit-progress-bar {
+        background: rgba(32, 26, 21, 0.08);
+      }
+
+      html[data-theme="dark"] progress::-webkit-progress-bar {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      progress::-webkit-progress-value {
+        background: linear-gradient(90deg, #d67a44, #a53b1c);
+        border-radius: 999px;
+      }
+
+      progress::-moz-progress-bar {
+        background: linear-gradient(90deg, #d67a44, #a53b1c);
+        border-radius: 999px;
+      }
+
+      .meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .status {
+        padding: 18px;
+        border-radius: 20px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.4);
+        color: var(--text);
+        display: grid;
+        gap: 6px;
+      }
+
+      html[data-theme="dark"] .status {
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      .status-title {
+        font-weight: 700;
+      }
+
+      .status-detail {
+        color: inherit;
+        opacity: 0.92;
+        line-height: 1.5;
+        white-space: pre-line;
+      }
+
+      .status[data-tone="warning"] {
+        background: rgba(207, 160, 67, 0.14);
+        color: var(--warn);
+        border-color: rgba(136, 91, 23, 0.2);
+      }
+
+      .status[data-tone="error"] {
+        background: rgba(173, 72, 72, 0.12);
+        color: var(--danger);
+        border-color: rgba(139, 46, 46, 0.24);
+      }
+
+      .status[data-tone="success"] {
+        background: rgba(66, 132, 90, 0.12);
+        color: var(--ok);
+        border-color: rgba(47, 107, 69, 0.22);
+      }
+
+      @media (max-width: 720px) {
+        .shell {
+          width: min(100vw - 20px, 1100px);
+          margin: 10px auto 24px;
+        }
+
+        .hero,
+        .panel {
+          border-radius: 20px;
+        }
+
+        .stats {
+          grid-template-columns: 1fr;
+        }
+
+        .meta {
+          flex-direction: column;
+        }
+
+        .hero-top {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <div class="hero-top">
+          <div class="eyebrow">SynapSeq WASM Demo</div>
+          <div class="theme-switcher" aria-label="Theme switcher">
+            <button
+              class="theme-button"
+              data-theme-button="light"
+              type="button"
+            >
+              Light
+            </button>
+            <button class="theme-button" data-theme-button="dark" type="button">
+              Dark
+            </button>
+          </div>
+        </div>
+        <h1>Local Runtime Example</h1>
+        <p>
+          This example loads <code>./synapseq.wasm</code> and
+          <code>./wasm_exec.js</code> from this directory. If those files are
+          missing, run <code>make wasm</code> from the repository root before
+          opening this page through a local HTTP server.
+        </p>
+        <div id="buildInfo" class="build-info" aria-live="polite">
+          <span class="build-chip">WASM build: loading...</span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="row">
+          <div>
+            <div class="label">SPSQ Editor</div>
+          </div>
+          <div class="controls">
+            <button id="playButton" class="play" type="button">Play</button>
+            <button id="stopButton" class="stop" type="button" disabled>
+              Stop
+            </button>
+          </div>
+        </div>
+
+        <textarea id="sequenceEditor" spellcheck="false"></textarea>
+
+        <div class="stats">
+          <div class="stat">
+            <div class="label">State</div>
+            <strong id="stateValue">idle</strong>
+          </div>
+          <div class="stat">
+            <div class="label">Elapsed</div>
+            <strong id="elapsedValue">00:00</strong>
+          </div>
+          <div class="stat">
+            <div class="label">Duration</div>
+            <strong id="durationValue">00:00</strong>
+          </div>
+        </div>
+
+        <progress id="progressBar" value="0" max="1"></progress>
+
+        <div class="meta">
+          <span id="progressLabel">0%</span>
+          <span
+            >Open this page over HTTP or HTTPS, not <code>file://</code>.</span
+          >
+        </div>
+
+        <div id="statusBox" class="status" data-tone="warning">
+          <div id="statusTitle" class="status-title">Ready</div>
+          <div id="statusDetail" class="status-detail">
+            Press Play to load the sequence and start playback.
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="./synapseq.js"></script>
+    <script>
+      const playButton = document.getElementById("playButton");
+      const stopButton = document.getElementById("stopButton");
+      const sequenceEditor = document.getElementById("sequenceEditor");
+      const stateValue = document.getElementById("stateValue");
+      const elapsedValue = document.getElementById("elapsedValue");
+      const durationValue = document.getElementById("durationValue");
+      const progressBar = document.getElementById("progressBar");
+      const progressLabel = document.getElementById("progressLabel");
+      const statusBox = document.getElementById("statusBox");
+      const statusTitle = document.getElementById("statusTitle");
+      const statusDetail = document.getElementById("statusDetail");
+      const buildInfo = document.getElementById("buildInfo");
+      const root = document.documentElement;
+      const themeButtons = document.querySelectorAll("[data-theme-button]");
+
+      const DEFAULT_SEQUENCE = `@samplerate 44100
+@volume 75
+
+alpha_light
+  noise pink amplitude 18
+  tone 220 binaural 10 amplitude 10
+
+alpha_deep
+  noise pink amplitude 24
+  tone 220 binaural 8 amplitude 12
+
+00:00:00 silence
+00:00:10 alpha_light
+00:02:30 alpha_deep smooth
+00:07:30 alpha_deep ease-out
+00:08:00 silence`;
+
+      const synapseq = new SynapSeq({
+        wasmPath: "./synapseq.wasm",
+        wasmExecPath: "./wasm_exec.js",
+      });
+
+      let progressTimer = null;
+      let totalDurationSeconds = 0;
+      let endingNaturally = false;
+
+      function setStatus(title, tone = "warning", detail = "") {
+        statusTitle.textContent = title;
+        statusDetail.textContent = detail;
+        statusBox.dataset.tone = tone;
+      }
+
+      function formatClock(totalSeconds) {
+        const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+        const hours = Math.floor(safeSeconds / 3600);
+        const minutes = Math.floor((safeSeconds % 3600) / 60);
+        const seconds = safeSeconds % 60;
+
+        if (hours > 0) {
+          return [hours, minutes, seconds]
+            .map((value) => String(value).padStart(2, "0"))
+            .join(":");
+        }
+
+        return [minutes, seconds]
+          .map((value) => String(value).padStart(2, "0"))
+          .join(":");
+      }
+
+      function parseSequenceDuration(sequenceText) {
+        const lines = sequenceText.split(/\r?\n/);
+        let lastTimestamp = 0;
+
+        for (const line of lines) {
+          const match = line.trim().match(/^(\d{2}):(\d{2}):(\d{2})\s+/);
+          if (!match) {
+            continue;
+          }
+
+          const hours = Number(match[1]);
+          const minutes = Number(match[2]);
+          const seconds = Number(match[3]);
+          lastTimestamp = hours * 3600 + minutes * 60 + seconds;
+        }
+
+        return lastTimestamp;
+      }
+
+      function refreshProgress() {
+        const elapsed = synapseq.getCurrentTime();
+        const boundedElapsed = Math.min(
+          elapsed,
+          totalDurationSeconds || elapsed,
+        );
+        const ratio =
+          totalDurationSeconds > 0
+            ? Math.min(boundedElapsed / totalDurationSeconds, 1)
+            : 0;
+
+        stateValue.textContent = synapseq.getState();
+        elapsedValue.textContent = formatClock(boundedElapsed);
+        durationValue.textContent = formatClock(totalDurationSeconds);
+        progressBar.value = ratio;
+        progressLabel.textContent = `${Math.round(ratio * 100)}%`;
+      }
+
+      function startProgressLoop() {
+        stopProgressLoop();
+        progressTimer = window.setInterval(refreshProgress, 100);
+      }
+
+      function stopProgressLoop() {
+        if (progressTimer !== null) {
+          window.clearInterval(progressTimer);
+          progressTimer = null;
+        }
+      }
+
+      function setButtons(isPlaying) {
+        playButton.disabled = isPlaying;
+        stopButton.disabled = !isPlaying;
+      }
+
+      function resetProgressView() {
+        stateValue.textContent = synapseq.getState();
+        elapsedValue.textContent = "00:00";
+        durationValue.textContent = formatClock(totalDurationSeconds);
+        progressBar.value = 0;
+        progressLabel.textContent = "0%";
+      }
+
+      async function ensureLocalAssetsReachable() {
+        try {
+          const [wasmResponse, execResponse] = await Promise.all([
+            fetch("./synapseq.wasm", { method: "HEAD", cache: "no-store" }),
+            fetch("./wasm_exec.js", { method: "HEAD", cache: "no-store" }),
+          ]);
+
+          if (!wasmResponse.ok || !execResponse.ok) {
+            throw new Error("Local WASM assets were not found.");
+          }
+        } catch (error) {
+          throw new Error(
+            "Local WASM files are missing or unreachable.\nRun `make wasm` from the repository root and serve this directory over HTTP.",
+          );
+        }
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function setBuildInfoLoading() {
+        buildInfo.innerHTML =
+          '<span class="build-chip">WASM build: loading...</span>';
+      }
+
+      function setBuildInfoUnavailable(reason) {
+        buildInfo.innerHTML = `<span class="build-chip">WASM build: unavailable</span><span>${escapeHtml(reason)}</span>`;
+      }
+
+      function setBuildInfo(version, buildDate, hash) {
+        const shortHash = hash ? hash.slice(0, 12) : "unknown";
+        buildInfo.innerHTML =
+          `<span class="build-chip">Version: ${escapeHtml(version || "unknown")}</span>` +
+          `<span class="build-chip">Build date: ${escapeHtml(buildDate || "unknown")}</span>` +
+          `<span class="build-chip">Commit: ${escapeHtml(shortHash)}</span>`;
+      }
+
+      function setTheme(theme) {
+        root.setAttribute("data-theme", theme);
+        localStorage.setItem("synapseq-theme", theme);
+        themeButtons.forEach((button) => {
+          const isActive = button.dataset.themeButton === theme;
+          button.classList.toggle("is-active", isActive);
+          button.setAttribute("aria-pressed", isActive ? "true" : "false");
+        });
+      }
+
+      async function loadBuildMetadata() {
+        setBuildInfoLoading();
+
+        try {
+          await ensureLocalAssetsReachable();
+
+          const timeoutPromise = new Promise((_, reject) => {
+            window.setTimeout(() => {
+              reject(new Error("Timed out while reading WASM metadata."));
+            }, 8000);
+          });
+
+          const [version, buildDate, hash] = await Promise.race([
+            Promise.all([
+              synapseq.getVersion(),
+              synapseq.getBuildDate(),
+              synapseq.getHash(),
+            ]),
+            timeoutPromise,
+          ]);
+
+          setBuildInfo(version, buildDate, hash);
+        } catch (error) {
+          setBuildInfoUnavailable(error.message);
+        }
+      }
+
+      synapseq.onplaying = () => {
+        setButtons(true);
+        setStatus(
+          "Playback started",
+          "success",
+          "The sequence is now playing.",
+        );
+        startProgressLoop();
+      };
+
+      synapseq.onstopped = () => {
+        stopProgressLoop();
+        setButtons(false);
+        stateValue.textContent = synapseq.getState();
+        if (endingNaturally) {
+          endingNaturally = false;
+          return;
+        }
+        setStatus(
+          "Playback stopped",
+          "warning",
+          "Playback was stopped before the end of the sequence.",
+        );
+      };
+
+      synapseq.onended = () => {
+        endingNaturally = true;
+        stopProgressLoop();
+        refreshProgress();
+        progressBar.value = 1;
+        progressLabel.textContent = "100%";
+        setButtons(false);
+        setStatus(
+          "Playback finished",
+          "success",
+          "The sequence reached its final timeline entry.",
+        );
+      };
+
+      synapseq.onerror = ({ error }) => {
+        stopProgressLoop();
+        setButtons(false);
+        setStatus(
+          "Playback error",
+          "error",
+          `${error.message}\n\nIf local files are missing, run \`make wasm\` from the repository root.`,
+        );
+      };
+
+      playButton.addEventListener("click", async () => {
+        try {
+          const sequenceText = sequenceEditor.value;
+          totalDurationSeconds = parseSequenceDuration(sequenceText);
+          durationValue.textContent = formatClock(totalDurationSeconds);
+          progressBar.max = 1;
+          progressBar.value = 0;
+          progressLabel.textContent = "0%";
+
+          await ensureLocalAssetsReachable();
+          setStatus(
+            "Preparing playback",
+            "warning",
+            "Loading the sequence text and initializing the local WASM runtime.",
+          );
+          await synapseq.load(sequenceText, "text");
+          await synapseq.play();
+        } catch (error) {
+          stopProgressLoop();
+          setButtons(false);
+          setStatus("Unable to start playback", "error", error.message);
+        }
+      });
+
+      stopButton.addEventListener("click", () => {
+        synapseq.stop();
+        resetProgressView();
+      });
+
+      themeButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          setTheme(button.dataset.themeButton);
+        });
+      });
+
+      sequenceEditor.value = DEFAULT_SEQUENCE;
+      totalDurationSeconds = parseSequenceDuration(sequenceEditor.value);
+      durationValue.textContent = formatClock(totalDurationSeconds);
+      resetProgressView();
+      setTheme(root.getAttribute("data-theme") || "light");
+      loadBuildMetadata();
+    </script>
+  </body>
+</html>
