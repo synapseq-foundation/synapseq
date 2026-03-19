@@ -35,7 +35,7 @@ type LoadedContext struct {
 func NewAppContext() *AppContext {
 	return &AppContext{
 		statusOutput: nil,
-		statusColors: true,
+		statusColors: false,
 	}
 }
 
