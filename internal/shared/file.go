@@ -1,5 +1,5 @@
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -19,7 +19,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // readFile reads a file from the given reader up to maxSize bytes
@@ -79,10 +79,8 @@ func GetFile(filePath string, typ t.FileFormat) ([]byte, error) {
 	switch typ {
 	case t.FormatText:
 		maxSize = t.MaxTextFileSize
-	case t.FormatJSON, t.FormatXML, t.FormatYAML:
-		maxSize = t.MaxStructuredFileSize
 	case t.FormatWAV:
-		maxSize = t.MaxBackgroundFileSize
+		maxSize = t.MaxWavFileSize
 	}
 
 	if maxSize == 0 {

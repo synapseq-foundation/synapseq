@@ -1,7 +1,7 @@
-//go:build !wasm
+//go:build !js && !wasm
 
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -14,18 +14,18 @@
 package main
 
 import (
-	synapseq "github.com/synapseq-foundation/synapseq/v3/core"
-	"github.com/synapseq-foundation/synapseq/v3/external"
+	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
+	"github.com/synapseq-foundation/synapseq/v4/external"
 )
 
 // externalPlay invokes utility tool to play from streaming audio input
-func externalPlay(ffplayPath string, appCtx *synapseq.AppContext) error {
+func externalPlay(ffplayPath string, loadedCtx *synapseq.LoadedContext) error {
 	ffplay, err := external.NewFFPlay(ffplayPath)
 	if err != nil {
 		return err
 	}
 
-	if err := ffplay.Play(appCtx); err != nil {
+	if err := ffplay.Play(loadedCtx); err != nil {
 		return err
 	}
 
@@ -33,42 +33,13 @@ func externalPlay(ffplayPath string, appCtx *synapseq.AppContext) error {
 }
 
 // externalMp3 encodes streaming PCM into an MP3 file using external utility
-func externalMp3(ffmpegPath string, appCtx *synapseq.AppContext) error {
+func externalMp3(ffmpegPath string, loadedCtx *synapseq.LoadedContext, outputFile string) error {
 	ffmpeg, err := external.NewFFmpeg(ffmpegPath)
 	if err != nil {
 		return err
 	}
 
-	if err := ffmpeg.Convert(appCtx, "mp3"); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// externalExtractTextSequence extracts text sequence from input file using ffprobe
-func externalExtractTextSequence(ffprobePath string, inputFile string) (string, error) {
-	ffprobe, err := external.NewFFprobe(ffprobePath)
-	if err != nil {
-		return "", err
-	}
-
-	content, err := ffprobe.ExtractTextSequence(inputFile)
-	if err != nil {
-		return "", err
-	}
-
-	return content, nil
-}
-
-// externalSaveExtractedTextSequence saves extracted text sequence to output file using ffprobe
-func externalSaveExtractedTextSequence(ffprobePath, inputFile, outputFile string) error {
-	ffprobe, err := external.NewFFprobe(ffprobePath)
-	if err != nil {
-		return err
-	}
-
-	if err := ffprobe.SaveExtractedTextSequence(inputFile, outputFile); err != nil {
+	if err := ffmpeg.Convert(loadedCtx, outputFile, "mp3"); err != nil {
 		return err
 	}
 

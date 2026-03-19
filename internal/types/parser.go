@@ -1,5 +1,5 @@
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -10,6 +10,12 @@
  */
 
 package types
+
+import (
+	"fmt"
+	"maps"
+	"strconv"
+)
 
 const (
 	// Represents an off state
@@ -24,18 +30,10 @@ const (
 	KeywordOptionSampleRate = "samplerate"
 	// Represents a volume option
 	KeywordOptionVolume = "volume"
-	// Represents a background option
-	KeywordOptionBackground = "background"
-	// Represents a presetlist option
-	KeywordOptionPresetList = "presetlist"
-	// Represents a gain level option
-	KeywordOptionGainLevel = "gainlevel"
-	// Represents a low gain level option
-	KeywordOptionGainLevelLow = "low"
-	// Represents a medium gain level option
-	KeywordOptionGainLevelMedium = "medium"
-	// Represents a high gain level option
-	KeywordOptionGainLevelHigh = "high"
+	// Represents an ambiance option
+	KeywordOptionAmbiance = "ambiance"
+	// Represents an extends option
+	KeywordOptionExtends = "extends"
 	// Represents a waveform option
 	KeywordWaveform = "waveform"
 	// Represents a sine wave
@@ -64,18 +62,14 @@ const (
 	KeywordPink = "pink"
 	// Represents a brown noise
 	KeywordBrown = "brown"
-	// Represents a spin noise effect
-	KeywordSpin = "spin"
-	// Represents a width parameter
-	KeywordWidth = "width"
-	// Represents a rate parameter
-	KeywordRate = "rate"
+	// Represents a pan effect
+	KeywordPan = "pan"
 	// Represents an effect
 	KeywordEffect = "effect"
-	// Represents a background sound
-	KeywordBackground = "background"
-	// Represents a pulse
-	KeywordPulse = "pulse"
+	// Represents an ambiance sound
+	KeywordAmbiance = "ambiance"
+	// Represents a modulation effect
+	KeywordModulation = "modulation"
 	// Represents an intensity parameter
 	KeywordIntensity = "intensity"
 	// Represents an pure tone
@@ -96,7 +90,87 @@ const (
 	KeywordAs = "as"
 	// Represents a template preset
 	KeywordTemplate = "template"
+	// Represents a doppler effect
+	KeywordDoppler = "doppler"
+	// Represents a smooth
+	KeywordSmooth = "smooth"
 )
+
+// ParseOptions stores raw option values parsed from text input
+type ParseOptions struct {
+	Values   map[string]string
+	Ambiance map[string]string
+	Extends  []string
+}
+
+// NewParseOptions creates an empty ParseOptions instance
+func NewParseOptions() *ParseOptions {
+	return &ParseOptions{
+		Values:   make(map[string]string),
+		Ambiance: make(map[string]string),
+		Extends:  []string{},
+	}
+}
+
+// Merge merges parsed option values into the current instance
+func (po *ParseOptions) Merge(other *ParseOptions) {
+	if po == nil || other == nil {
+		return
+	}
+
+	if po.Values == nil {
+		po.Values = make(map[string]string)
+	}
+	if po.Ambiance == nil {
+		po.Ambiance = make(map[string]string)
+	}
+	if po.Extends == nil {
+		po.Extends = []string{}
+	}
+
+	maps.Copy(po.Values, other.Values)
+	maps.Copy(po.Ambiance, other.Ambiance)
+	po.Extends = append(po.Extends, other.Extends...)
+}
+
+// Build converts parsed raw options into validated SequenceOptions
+func (po *ParseOptions) Build() (*SequenceOptions, error) {
+	options := &SequenceOptions{
+		SampleRate: 44100,
+		Volume:     100,
+		Ambiance:   make(map[string]string),
+		Extends:    []string{},
+	}
+
+	if po == nil {
+		return options, nil
+	}
+
+	if value, ok := po.Values[KeywordOptionSampleRate]; ok {
+		sampleRate, err := strconv.Atoi(value)
+		if err != nil {
+			return nil, fmt.Errorf("invalid samplerate value %q", value)
+		}
+		options.SampleRate = sampleRate
+	}
+
+	if value, ok := po.Values[KeywordOptionVolume]; ok {
+		volume, err := strconv.Atoi(value)
+		if err != nil {
+			return nil, fmt.Errorf("invalid volume value %q", value)
+		}
+		options.Volume = volume
+	}
+
+	maps.Copy(options.Ambiance, po.Ambiance)
+	options.Extends = append(options.Extends, po.Extends...)
+
+	if err := options.Validate(); err != nil {
+		return nil, err
+	}
+
+	return options, nil
+}
 
 // Parser defines the interface for parsing different content types
 type Parser interface {
@@ -116,7 +190,7 @@ type Parser interface {
 	// ParseComment parses a comment content
 	ParseComment() string
 	// ParseOption parses an option content
-	ParseOption(*SequenceOptions, string) error
+	ParseOption(string) (*ParseOptions, error)
 	// ParsePreset parses a preset content
 	ParsePreset(*[]Preset) (*Preset, error)
 	// ParseTrack parses a track content

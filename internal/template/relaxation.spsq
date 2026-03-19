@@ -1,0 +1,54 @@
+# SynapSeq Template
+# Relaxation Session (20 minutes)
+#
+# This example demonstrates:
+# - simple presets
+# - alpha relaxation tones
+# - smooth transitions
+# - timeline structure
+#
+# Run this file with:
+# synapseq relaxation.spsq
+
+
+# --------------------------
+# Presets
+# --------------------------
+
+# Light relaxation
+relax-light
+  noise brown amplitude 30
+  tone 220 binaural 12 amplitude 12
+
+# Comfortable relaxation
+relax
+  noise brown amplitude 35
+  tone 200 binaural 10 amplitude 15
+
+# Deep relaxation (still awake)
+relax-deep
+  noise brown amplitude 40
+  tone 180 binaural 8 amplitude 18
+
+
+# --------------------------
+# Timeline
+# --------------------------
+
+# Start with a gentle fade-in
+00:00:00 silence
+00:00:30 relax-light
+
+# Gradually relax
+00:05:00 relax-light smooth
+00:08:00 relax
+
+# Deeper relaxation
+00:12:00 relax smooth
+00:16:00 relax-deep
+
+# Maintain relaxation
+00:19:30 relax-deep
+
+# Fade out
+00:20:00 silence

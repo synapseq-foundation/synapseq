@@ -1,5 +1,5 @@
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -13,12 +13,19 @@ package audio
 
 import (
 	"bytes"
+	"regexp"
 	"strings"
 	"testing"
 
-	s "github.com/synapseq-foundation/synapseq/v3/internal/shared"
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
+
+var ansiRegexp = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
+func stripANSI(text string) string {
+	return ansiRegexp.ReplaceAllString(text, "")
+}
 
 func TestStatusReporter_DisplayPeriodChange_PrintsStartAndDash(ts *testing.T) {
 	var p0, p1 t.Period
@@ -33,7 +40,7 @@ func TestStatusReporter_DisplayPeriodChange_PrintsStartAndDash(ts *testing.T) {
 	r := &AudioRenderer{periods: []t.Period{p0, p1}, AudioRendererOptions: &AudioRendererOptions{}}
 
 	var buf bytes.Buffer
-	sr := NewStatusReporter(&buf)
+	sr := NewStatusReporter(&buf, false)
 	sr.DisplayPeriodChange(r, 0)
 	out := buf.String()
 
@@ -69,7 +76,7 @@ func TestStatusReporter_DisplayPeriodChange_ShowsEndTrackWhenChanged(ts *testing
 
 	r := &AudioRenderer{periods: []t.Period{p0, p1}, AudioRendererOptions: &AudioRendererOptions{}}
 	var buf bytes.Buffer
-	sr := NewStatusReporter(&buf)
+	sr := NewStatusReporter(&buf, false)
 	sr.DisplayPeriodChange(r, 0)
 	out := buf.String()
 
@@ -94,7 +101,7 @@ func TestStatusReporter_CheckPeriodChange_DetectsTransitions(ts *testing.T) {
 
 	r := &AudioRenderer{periods: []t.Period{p0, p1, p2}, AudioRendererOptions: &AudioRendererOptions{}}
 	var buf bytes.Buffer
-	sr := NewStatusReporter(&buf)
+	sr := NewStatusReporter(&buf, false)
 	sr.CheckPeriodChange(r, 0)
 
 	out1 := buf.String()
@@ -114,5 +121,31 @@ func TestStatusReporter_CheckPeriodChange_DetectsTransitions(ts *testing.T) {
 	out3 := buf.String()
 	if !strings.Contains(out3, "- "+p1.TimeString()) {
 		ts.Fatalf("expected period 1 output after change: %q", out3)
+	}
+}
+
+func TestStatusReporter_DisplayPeriodChange_UsesANSIWhenEnabled(ts *testing.T) {
+	var p0, p1 t.Period
+	p0.Time = 0
+	p1.Time = 1000
+
+	track := t.Track{Type: t.TrackBinauralBeat, Carrier: 100, Resonance: 5, Amplitude: t.AmplitudePercentToRaw(10), Waveform: t.WaveformSine}
+	p0.TrackStart[0] = track
+	p0.TrackEnd[0] = track
+
+	r := &AudioRenderer{periods: []t.Period{p0, p1}, AudioRendererOptions: &AudioRendererOptions{Colors: true}}
+
+	var buf bytes.Buffer
+	sr := NewStatusReporter(&buf, true)
+	sr.DisplayPeriodChange(r, 0)
+	out := buf.String()
+
+	if !strings.Contains(out, "\x1b[") {
+		ts.Fatalf("expected ANSI colors in output, got: %q", out)
+	}
+
+	plain := stripANSI(out)
+	if !strings.Contains(plain, "- "+p0.TimeString()+" -> "+p1.TimeString()+" ("+p0.Transition.String()+")") {
+		ts.Fatalf("unexpected plain output after stripping ANSI: %q", plain)
 	}
 }

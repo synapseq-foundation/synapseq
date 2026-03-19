@@ -1,5 +1,5 @@
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -16,7 +16,8 @@ import (
 	"strings"
 	"testing"
 
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 func TestHasTrack(ts *testing.T) {
@@ -32,9 +33,10 @@ func TestHasTrack(ts *testing.T) {
 		Amplitude: t.AmplitudePercentToRaw(30),
 	}).String()
 
-	trLnBackground := (&t.Track{
-		Type:      t.TrackBackground,
-		Amplitude: t.AmplitudePercentToRaw(50),
+	trLnAmbiance := (&t.Track{
+		Type:         t.TrackAmbiance,
+		AmbianceName: "rain",
+		Amplitude:    t.AmplitudePercentToRaw(50),
 	}).String()
 
 	tests := []struct {
@@ -43,7 +45,7 @@ func TestHasTrack(ts *testing.T) {
 	}{
 		{fmt.Sprintf("  %s", trLnTone), true},
 		{fmt.Sprintf("  %s", trLnNoise), true},
-		{fmt.Sprintf("  %s", trLnBackground), true},
+		{fmt.Sprintf("  %s", trLnAmbiance), true},
 		{fmt.Sprintf(" %s", trLnTone), false},
 		{fmt.Sprintf("   %s", trLnTone), false},
 		{trLnTone, false},
@@ -162,47 +164,71 @@ func TestParseTrack_Noise(ts *testing.T) {
 	}
 }
 
-func TestParseTrack_Background(ts *testing.T) {
-	trs := []*t.Track{
-		{
-			Type:      t.TrackBackground,
-			Amplitude: t.AmplitudePercentToRaw(50),
-		},
-		{
-			Type:      t.TrackBackground,
-			Carrier:   200,
-			Resonance: 5,
-			Effect:    t.Effect{Type: t.EffectSpin, Intensity: t.IntensityPercentToRaw(75)},
-			Amplitude: t.AmplitudePercentToRaw(50),
-		},
-		{
-			Type:      t.TrackBackground,
-			Resonance: 2.5,
-			Effect:    t.Effect{Type: t.EffectPulse, Intensity: t.IntensityPercentToRaw(60)},
-			Amplitude: t.AmplitudePercentToRaw(40),
-		},
-		{
-			Type:      t.TrackBackground,
-			Resonance: 2.5,
-			Effect:    t.Effect{Type: t.EffectPulse, Intensity: t.IntensityPercentToRaw(60)},
-			Amplitude: t.AmplitudePercentToRaw(40),
-			Waveform:  t.WaveformSquare,
-		},
-		{
-			Type:      t.TrackBackground,
-			Amplitude: t.AmplitudePercentToRaw(33),
-		},
-	}
-
+func TestParseTrack_Ambiance(ts *testing.T) {
 	tests := []struct {
 		line      string
 		wantTrack t.Track
 	}{
-		{trs[0].String(), *trs[0]},
-		{trs[1].String(), *trs[1]},
-		{trs[2].String(), *trs[2]},
-		{trs[3].String(), *trs[3]},
-		{trs[4].String(), *trs[4]},
+		{
+			line: "ambiance rain amplitude 50",
+			wantTrack: t.Track{
+				Type:         t.TrackAmbiance,
+				AmbianceName: "rain",
+				Amplitude:    t.AmplitudePercentToRaw(50),
+				Waveform:     t.WaveformSine,
+			},
+		},
+		{
+			line: "ambiance beach effect pan 10 intensity 75 amplitude 50",
+			wantTrack: t.Track{
+				Type:         t.TrackAmbiance,
+				AmbianceName: "beach",
+				Effect: t.Effect{
+					Type:      t.EffectPan,
+					Value:     10,
+					Intensity: t.IntensityPercentToRaw(75),
+				},
+				Amplitude: t.AmplitudePercentToRaw(50),
+				Waveform:  t.WaveformSine,
+			},
+		},
+		{
+			line: "ambiance music effect modulation 2.5 intensity 60 amplitude 40",
+			wantTrack: t.Track{
+				Type:         t.TrackAmbiance,
+				AmbianceName: "music",
+				Effect: t.Effect{
+					Type:      t.EffectModulation,
+					Value:     2.5,
+					Intensity: t.IntensityPercentToRaw(60),
+				},
+				Amplitude: t.AmplitudePercentToRaw(40),
+				Waveform:  t.WaveformSine,
+			},
+		},
+		{
+			line: "waveform square ambiance river effect modulation 2.5 intensity 60 amplitude 40",
+			wantTrack: t.Track{
+				Type:         t.TrackAmbiance,
+				AmbianceName: "river",
+				Effect: t.Effect{
+					Type:      t.EffectModulation,
+					Value:     2.5,
+					Intensity: t.IntensityPercentToRaw(60),
+				},
+				Amplitude: t.AmplitudePercentToRaw(40),
+				Waveform:  t.WaveformSquare,
+			},
+		},
+		{
+			line: "ambiance stream_01 amplitude 33",
+			wantTrack: t.Track{
+				Type:         t.TrackAmbiance,
+				AmbianceName: "stream_01",
+				Amplitude:    t.AmplitudePercentToRaw(33),
+				Waveform:     t.WaveformSine,
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -223,11 +249,11 @@ func TestParseTrack_Errors(ts *testing.T) {
 		"  tone 300 binaural amplitude 10",
 		"  tone 300 unknown 10 amplitude 10",
 		"  noise white amplitude",
-		"  background spin 200 rate five intensity 75 amplitude 50",
-		"  background pulse 2.5 intensity sixty amplitude 40",
-		"  background amplitude 50 extra",
+		"  ambiance spin 200 rate five intensity 75 amplitude 50",
+		"  ambiance pulse effect modulation 2.5 intensity sixty amplitude 40",
+		"  ambiance amplitude 50 extra",
 		"  tone 300 binaural 10 amplitude 120",
-		"  background pulse 2.5 intensity 150 amplitude 40",
+		"  ambiance pulse effect modulation 2.5 intensity 150 amplitude 40",
 		"  unknown something",
 	}
 
@@ -237,5 +263,28 @@ func TestParseTrack_Errors(ts *testing.T) {
 		if err == nil {
 			ts.Errorf("For line '%s', expected error but got none", line)
 		}
+	}
+}
+
+func TestParseTrack_TypoDiagnostic(ts *testing.T) {
+	ctx := NewTextParser("tone 300 binaual 10 amplitude 10")
+
+	_, err := ctx.ParseTrack()
+	if err == nil {
+		ts.Fatal("expected typo diagnostic")
+	}
+
+	diagnostic, ok := diag.As(err)
+	if !ok {
+		ts.Fatalf("expected diag.Diagnostic, got %T", err)
+	}
+	if diagnostic.Found != "binaual" {
+		ts.Fatalf("expected found token binaual, got %q", diagnostic.Found)
+	}
+	if diagnostic.Suggestion != "did you mean \"binaural\"?" {
+		ts.Fatalf("expected binaural suggestion, got %q", diagnostic.Suggestion)
+	}
+	if diagnostic.Span.Column != 10 || diagnostic.Span.EndColumn != 17 {
+		ts.Fatalf("expected typo at 10..17, got %d..%d", diagnostic.Span.Column, diagnostic.Span.EndColumn)
 	}
 }

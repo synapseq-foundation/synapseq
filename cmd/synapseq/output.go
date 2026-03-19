@@ -1,7 +1,7 @@
-//go:build !wasm
+//go:build !js && !wasm
 
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -17,13 +17,15 @@ import (
 	"fmt"
 	"os"
 
-	synapseq "github.com/synapseq-foundation/synapseq/v3/core"
+	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
+	"github.com/synapseq-foundation/synapseq/v4/internal/cli"
 )
 
 // OutputOptions defines options for processing sequence output
 type outputOptions struct {
 	OutputFile       string
 	Quiet            bool
+	Preview          bool
 	Play             bool
 	Mp3              bool
 	UnsafeNoMetadata bool
@@ -32,38 +34,52 @@ type outputOptions struct {
 }
 
 // processSequenceOutput processes the output of a loaded sequence
-func processSequenceOutput(appCtx *synapseq.AppContext, opts *outputOptions) error {
-	// --- Handle Stream mode (output = "-")
-	if opts.OutputFile == "-" {
-		return appCtx.Stream(os.Stdout)
-	}
-
-	// --- Unsafe mode
-	if opts.UnsafeNoMetadata {
-		var err error
-		appCtx, err = appCtx.WithUnsafeNoMetadata()
+func processSequenceOutput(loadedCtx *synapseq.LoadedContext, opts *outputOptions) error {
+	if opts.Preview {
+		content, err := loadedCtx.Preview()
 		if err != nil {
 			return err
 		}
+
+		if opts.OutputFile == "-" {
+			fmt.Println(string(content))
+			return nil
+		}
+
+		if err := os.WriteFile(opts.OutputFile, content, 0644); err != nil {
+			return fmt.Errorf("failed to write preview HTML: %v", err)
+		}
+
+		if !opts.Quiet {
+			fmt.Printf("%s %s\n", cli.SuccessText("Preview generated:"), cli.Accent(fmt.Sprintf("%q", opts.OutputFile)))
+			fmt.Printf("%s\n", cli.Muted("Open the file in a web browser to view the sequence preview."))
+		}
+
+		return nil
+	}
+
+	// --- Handle Stream mode (output = "-")
+	if opts.OutputFile == "-" {
+		return loadedCtx.Stream(os.Stdout)
 	}
 
 	// --- Print comments
 	if !opts.Quiet {
-		for _, c := range appCtx.Comments() {
-			fmt.Fprintf(os.Stderr, "> %s\n", c)
+		for _, c := range loadedCtx.Comments() {
+			fmt.Fprintf(os.Stderr, "%s %s\n", cli.Label(">"), cli.Muted(c))
 		}
 	}
 
 	// --- Handle Play using external ffplay
 	if opts.Play {
-		return externalPlay(opts.FFplayPath, appCtx)
+		return externalPlay(opts.FFplayPath, loadedCtx)
 	}
 
 	// --- Handle MP3 output using external ffmpeg
 	if opts.Mp3 {
-		return externalMp3(opts.FFmpegPath, appCtx)
+		return externalMp3(opts.FFmpegPath, loadedCtx, opts.OutputFile)
 	}
 
 	// Default: Render to WAV
-	return appCtx.WAV()
+	return loadedCtx.WAV(opts.OutputFile)
 }

@@ -1,5 +1,5 @@
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -14,7 +14,8 @@ package parser
 import (
 	"fmt"
 
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // HasTrackOverride checks if the current line is a track override definition
@@ -38,29 +39,29 @@ func (ctx *TextParser) HasTrackOverride() bool {
 // ParseTrackOverride applies track overrides to the given preset
 func (ctx *TextParser) ParseTrackOverride(preset *t.Preset) error {
 	if preset == nil || preset.From == nil {
-		return fmt.Errorf("cannot override tracks on a preset without a 'from' source")
+		return diag.Validation("cannot override tracks on a preset without a 'from' source")
 	}
 
-	ln := ctx.Line.Raw
 	_, ok := ctx.Line.NextToken()
 	if !ok {
-		return fmt.Errorf("expected 'track' keyword, got EOF: %s", ln)
+		return diag.UnexpectedEOF(ctx.Line.EOFSpan(), t.KeywordTrack)
 	}
 
 	trackIdx, err := ctx.Line.NextIntStrict()
 	if err != nil {
-		return fmt.Errorf("expected track index after 'track': %s", ln)
+		return err
 	}
+	trackSpan, _ := ctx.Line.LastTokenSpan()
 
 	if trackIdx <= 0 || trackIdx >= t.NumberOfChannels {
-		return fmt.Errorf("track index out of range (1-%d): %d", t.NumberOfChannels-1, trackIdx)
+		return diag.Validation(fmt.Sprintf("track index out of range (1-%d): %d", t.NumberOfChannels-1, trackIdx)).WithSpan(trackSpan).WithFound(fmt.Sprintf("%d", trackIdx))
 	}
 
 	idx := trackIdx - 1 // Convert to 0-based index
 	from := preset.From
 
 	if from.Track[idx].Type == t.TrackOff {
-		return fmt.Errorf("cannot override track %d which is off in the template preset %q", trackIdx, from.String())
+		return diag.Validation(fmt.Sprintf("cannot override track %d which is off in the template preset %q", trackIdx, from.String())).WithSpan(trackSpan).WithFound(fmt.Sprintf("%d", trackIdx))
 	}
 
 	kind, err := ctx.Line.NextExpectOneOf(
@@ -68,95 +69,106 @@ func (ctx *TextParser) ParseTrackOverride(preset *t.Preset) error {
 		t.KeywordBinaural,
 		t.KeywordMonaural,
 		t.KeywordIsochronic,
-		t.KeywordSpin,
-		t.KeywordPulse,
-		t.KeywordRate,
+		t.KeywordPan,
+		t.KeywordModulation,
+		t.KeywordDoppler,
+		t.KeywordSmooth,
 		t.KeywordAmplitude,
 		t.KeywordIntensity)
 	if err != nil {
-		return fmt.Errorf(
-			"expected one of %q, %q, %q, %q, %q, %q, %q, %q: %s",
-			t.KeywordTone,
-			t.KeywordBinaural,
-			t.KeywordMonaural,
-			t.KeywordIsochronic,
-			t.KeywordSpin,
-			t.KeywordPulse,
-			t.KeywordRate,
-			t.KeywordAmplitude,
-			ln)
+		return err
 	}
+	kindSpan, _ := ctx.Line.LastTokenSpan()
+
+	track := preset.Track[idx]
 
 	switch kind {
-	case t.KeywordTone, t.KeywordSpin:
-		track := preset.Track[idx]
-
-		if kind == t.KeywordTone && track.Type == t.TrackBackground {
-			return fmt.Errorf("background track %d cannot have a tone carrier", trackIdx)
-		}
-		if kind == t.KeywordSpin && track.Type != t.TrackBackground {
-			return fmt.Errorf("track %d must be a background track to set spin width, it is %q", trackIdx, track.Type.String())
-		}
-		if kind == t.KeywordSpin && track.Effect.Type != t.EffectSpin {
-			return fmt.Errorf("spin width can only be set on track %d with spin effect, it is %q", trackIdx, track.Effect.Type.String())
+	case t.KeywordTone:
+		if track.Type == t.TrackAmbiance ||
+			track.Type == t.TrackWhiteNoise ||
+			track.Type == t.TrackPinkNoise ||
+			track.Type == t.TrackBrownNoise {
+			return diag.Validation(fmt.Sprintf("cannot set tone frequency on track %d of type %q", trackIdx, track.Type.String())).WithSpan(kindSpan).WithFound(kind)
 		}
 
 		carrier, err := ctx.Line.NextFloat64Strict()
 		if err != nil {
-			return fmt.Errorf("carrier: %w", err)
+			return err
 		}
 
 		preset.Track[idx].Carrier = carrier
-	case t.KeywordBinaural, t.KeywordMonaural, t.KeywordIsochronic, t.KeywordRate, t.KeywordPulse:
-		track := preset.Track[idx]
-
-		// Validate that the track type matches the keyword being set
-		if (kind == t.KeywordBinaural && track.Type != t.TrackBinauralBeat) ||
-			(kind == t.KeywordMonaural && track.Type != t.TrackMonauralBeat) ||
-			(kind == t.KeywordIsochronic && track.Type != t.TrackIsochronicBeat) ||
-			(kind == t.KeywordRate && track.Type != t.TrackBackground) ||
-			(kind == t.KeywordPulse && track.Type != t.TrackBackground) {
-			return fmt.Errorf("cannot change track %d type to %q, it is %q", trackIdx, kind, track.Type.String())
+	case t.KeywordPan, t.KeywordModulation, t.KeywordDoppler:
+		if kind == t.KeywordPan && track.Effect.Type != t.EffectPan {
+			return diag.Validation(fmt.Sprintf("pan can only be set on track %d with pan effect, it is %q", trackIdx, track.Effect.Type.String())).WithSpan(kindSpan).WithFound(kind)
+		}
+		if kind == t.KeywordModulation && track.Effect.Type != t.EffectModulation {
+			return diag.Validation(fmt.Sprintf("modulation rate can only be set on track %d with modulation effect, it is %q", trackIdx, track.Effect.Type.String())).WithSpan(kindSpan).WithFound(kind)
+		}
+		if kind == t.KeywordDoppler && track.Effect.Type != t.EffectDoppler {
+			return diag.Validation(fmt.Sprintf("doppler speed can only be set on track %d with doppler effect, it is %q", trackIdx, track.Effect.Type.String())).WithSpan(kindSpan).WithFound(kind)
 		}
 
-		// Validate that the effect type matches the keyword being set
-		if (kind == t.KeywordRate && track.Effect.Type != t.EffectSpin) ||
-			(kind == t.KeywordPulse && track.Effect.Type != t.EffectPulse) {
-			return fmt.Errorf("cannot change track %d effect to %q, it is %q", trackIdx, kind, track.Effect.Type.String())
+		effectValue, err := ctx.Line.NextFloat64Strict()
+		if err != nil {
+			return err
+		}
+
+		preset.Track[idx].Effect.Value = effectValue
+	case t.KeywordBinaural, t.KeywordMonaural, t.KeywordIsochronic:
+		if (kind == t.KeywordBinaural && track.Type != t.TrackBinauralBeat) ||
+			(kind == t.KeywordMonaural && track.Type != t.TrackMonauralBeat) ||
+			(kind == t.KeywordIsochronic && track.Type != t.TrackIsochronicBeat) {
+			return diag.Validation(fmt.Sprintf("cannot change track %d type to %q, it is %q", trackIdx, kind, track.Type.String())).WithSpan(kindSpan).WithFound(kind)
 		}
 
 		resonance, err := ctx.Line.NextFloat64Strict()
 		if err != nil {
-			return fmt.Errorf("resonance: %w", err)
+			return err
 		}
 
 		preset.Track[idx].Resonance = resonance
+	case t.KeywordSmooth:
+		if track.Type != t.TrackWhiteNoise &&
+			track.Type != t.TrackPinkNoise &&
+			track.Type != t.TrackBrownNoise {
+			return diag.Validation(fmt.Sprintf("cannot set smooth on track %d of type %q", trackIdx, track.Type.String())).WithSpan(kindSpan).WithFound(kind)
+		}
+
+		smooth, err := ctx.Line.NextFloat64Strict()
+		if err != nil {
+			return err
+		}
+
+		preset.Track[idx].NoiseSmooth = smooth
 	case t.KeywordAmplitude:
 		amplitude, err := ctx.Line.NextFloat64Strict()
 		if err != nil {
-			return fmt.Errorf("amplitude: %w", err)
+			return err
 		}
 
 		preset.Track[idx].Amplitude = t.AmplitudePercentToRaw(amplitude)
 	case t.KeywordIntensity:
 		intensity, err := ctx.Line.NextFloat64Strict()
 		if err != nil {
-			return fmt.Errorf("intensity: %w", err)
+			return err
 		}
 
 		preset.Track[idx].Effect.Intensity = t.IntensityPercentToRaw(intensity)
 	default:
-		return fmt.Errorf("unexpected keyword: %s", kind)
+		return diag.Parse("unexpected keyword").WithSpan(kindSpan).WithFound(kind)
 	}
 
 	unknown, ok := ctx.Line.Peek()
 	if ok {
-		return fmt.Errorf("unexpected token after track override definition: %q", unknown)
+		unknownSpan, _ := ctx.Line.PeekSpan()
+		return diag.Parse("unexpected token after track override definition").WithSpan(unknownSpan).WithFound(unknown)
 	}
 
-	// Validate the updated track
 	if err := preset.Track[idx].Validate(); err != nil {
-		return fmt.Errorf("invalid track %d after override: %w", trackIdx, err)
+		if span, ok := ctx.Line.LastTokenSpan(); ok {
+			return diag.Validation(fmt.Sprintf("invalid track %d after override: %v", trackIdx, err)).WithSpan(span).WithCause(err)
+		}
+		return err
 	}
 
 	return nil

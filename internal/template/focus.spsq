@@ -1,0 +1,53 @@
+# SynapSeq Template
+# Focus Session (20 minutes)
+#
+# This example demonstrates:
+# - beta frequencies for concentration
+# - gradual transition into focus
+# - simple preset structure
+#
+# Run this file with:
+# synapseq focus.spsq
+
+
+# --------------------------
+# Presets
+# --------------------------
+
+# Light focus (beta low)
+focus-light
+  noise white amplitude 5
+  tone 220 binaural 14 amplitude 12
+
+# Active focus
+focus
+  noise white amplitude 10
+  tone 240 binaural 16 amplitude 15
+
+# Deep concentration
+focus-deep
+  noise white amplitude 15
+  tone 260 binaural 18 amplitude 18
+
+
+# --------------------------
+# Timeline
+# --------------------------
+
+# Gentle fade-in
+00:00:00 silence
+00:00:20 focus-light
+
+# Ramp into concentration
+00:04:00 focus-light smooth
+00:07:00 focus
+
+# Deep focus phase
+00:12:00 focus smooth
+00:16:00 focus-deep
+
+# Maintain concentration
+00:19:30 focus-deep
+
+# Fade out
+00:20:00 silence

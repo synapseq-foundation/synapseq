@@ -1,7 +1,7 @@
 //go:build !wasm
 
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -17,9 +17,11 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 
-	synapseq "github.com/synapseq-foundation/synapseq/v3/core"
+	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
+	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
 )
 
 // newUtility creates a new baseUtility instance after validating the utility path
@@ -35,7 +37,7 @@ func newUtility(utilPath string) (*baseUtility, error) {
 // utilityPath checks and returns the absolute path of the given utility executable
 func utilityPath(utilPath string) (string, error) {
 	if utilPath == "" {
-		return "", fmt.Errorf("utility path cannot be empty")
+		return "", diag.Validation("external utility path cannot be empty").WithHint("pass a utility name from PATH or a custom executable path")
 	}
 
 	filePath, err := exec.LookPath(utilPath)
@@ -46,9 +48,9 @@ func utilityPath(utilPath string) (string, error) {
 	fileInfo, err := os.Stat(utilPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return "", fmt.Errorf("executable not found at custom path: %s", utilPath)
+			return "", diag.Validation(fmt.Sprintf("external utility not found: %s", utilPath)).WithHint("install the utility or pass a valid executable path")
 		}
-		return "", fmt.Errorf("error checking path: %s, error: %v", utilPath, err)
+		return "", diag.Wrap(diag.KindIO, fmt.Sprintf("failed to inspect external utility path: %s", utilPath), err).WithHint("check file permissions and that the path is accessible")
 	}
 
 	if fileInfo.Mode().IsRegular() {
@@ -57,14 +59,14 @@ func utilityPath(utilPath string) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("file at path is not executable: %s", utilPath)
+	return "", diag.Validation(fmt.Sprintf("external utility is not executable: %s", utilPath)).WithHint("mark the file as executable or point to the correct binary")
 }
 
-// startPipeCmd starts the given command and pipes appCtx streaming audio to its stdin
-func startPipeCmd(cmd *exec.Cmd, appCtx *synapseq.AppContext) error {
+// startPipeCmd starts the given command and pipes loadedCtx streaming audio to its stdin.
+func startPipeCmd(cmd *exec.Cmd, loadedCtx *synapseq.LoadedContext) error {
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		return err
+		return diag.Wrap(diag.KindIO, fmt.Sprintf("failed to prepare stdin pipe for %s", utilityDisplayName(cmd)), err)
 	}
 
 	cmd.Stdout = os.Stdout
@@ -72,22 +74,29 @@ func startPipeCmd(cmd *exec.Cmd, appCtx *synapseq.AppContext) error {
 
 	if err := cmd.Start(); err != nil {
 		stdin.Close()
-		return err
+		return diag.Wrap(diag.KindIO, fmt.Sprintf("failed to start %s", utilityDisplayName(cmd)), err).WithHint("confirm that the external utility exists and can be executed in this environment")
 	}
 
-	streamErr := appCtx.Stream(stdin)
+	streamErr := loadedCtx.Stream(stdin)
 
 	stdin.Close()
 
 	waitErr := cmd.Wait()
 
 	if streamErr != nil {
-		return streamErr
+		return diag.Wrap(diag.KindIO, fmt.Sprintf("failed while streaming audio to %s", utilityDisplayName(cmd)), streamErr)
 	}
 
 	if waitErr != nil {
-		return waitErr
+		return diag.Wrap(diag.KindIO, fmt.Sprintf("%s exited with an error", utilityDisplayName(cmd)), waitErr).WithHint("see the external utility output above for details")
 	}
 
 	return nil
+}
+
+func utilityDisplayName(cmd *exec.Cmd) string {
+	if cmd == nil || cmd.Path == "" {
+		return "external utility"
+	}
+	return filepath.Base(cmd.Path)
 }

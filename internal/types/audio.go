@@ -1,5 +1,5 @@
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -17,30 +17,6 @@ const (
 	WaveTableAmplitude = 0x7FFFF // Amplitude of wave in wave-table
 	PhasePrecision     = 65536   // Phase precision (1/65536 of a cycle)
 )
-
-// Gain level (-20db, -16db, -12db, -6db, 0db) for background audio
-type GainLevel int
-
-const (
-	GainLevelOff    GainLevel = 0  // No attenuation (0dB) - full background volume
-	GainLevelHigh   GainLevel = 3  // -3dB - slightly attenuated
-	GainLevelMedium GainLevel = 9  // -9dB - balanced background
-	GainLevelLow    GainLevel = 18 // -18dB - subtle background
-)
-
-// String returns the string representation of the GainLevel
-func (g GainLevel) String() string {
-	switch g {
-	case GainLevelHigh:
-		return KeywordOptionGainLevelHigh
-	case GainLevelMedium:
-		return KeywordOptionGainLevelMedium
-	case GainLevelLow:
-		return KeywordOptionGainLevelLow
-	default:
-		return KeywordOff
-	}
-}
 
 type AmplitudeType float64 // Amplitude level (0-4096 for 0-100%)
 

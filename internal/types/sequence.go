@@ -1,5 +1,5 @@
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -27,12 +27,10 @@ type SequenceOptions struct {
 	SampleRate int
 	// Volume level (0-100 for 0-100%)
 	Volume int
-	// Path to the background audio file
-	BackgroundPath string
-	// List of preset configuration files
-	PresetList []string
-	// Gain level (20, 16, 12, 6, 0) for audio processing
-	GainLevel GainLevel
+	// List of ambiance audio files
+	Ambiance map[string]string
+	// List of configuration for options and presets to extend from
+	Extends []string
 }
 
 // Validate checks if the sequence options are valid

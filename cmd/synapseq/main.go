@@ -1,7 +1,7 @@
-//go:build !wasm
+//go:build !js && !wasm
 
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -19,21 +19,90 @@ import (
 	"path/filepath"
 	"strings"
 
-	synapseq "github.com/synapseq-foundation/synapseq/v3/core"
-	"github.com/synapseq-foundation/synapseq/v3/internal/cli"
+	"github.com/fatih/color"
+	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
+	"github.com/synapseq-foundation/synapseq/v4/internal/cli"
+	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
+	"github.com/synapseq-foundation/synapseq/v4/internal/manual"
 )
 
 // main is the entry point of the SynapSeq application
 func main() {
 	opts, args, err := cli.ParseFlags()
 	if err != nil {
+		fmt.Fprintln(os.Stderr, formatCLIError(err))
 		os.Exit(1)
 	}
 
 	if err := run(opts, args); err != nil {
-		fmt.Fprintf(os.Stderr, "synapseq: %v\n", err)
+		fmt.Fprintln(os.Stderr, formatCLIError(err))
 		os.Exit(1)
 	}
+}
+
+func formatCLIError(err error) string {
+	if diagnostic, ok := diag.As(err); ok {
+		var lines []string
+		location := formatDiagnosticLocation(diagnostic)
+		if location != "" {
+			lines = append(lines, cli.ErrorText("synapseq:")+" "+cli.Accent(location)+": "+cli.ErrorText(diagnostic.Message))
+		} else {
+			lines = append(lines, cli.ErrorText("synapseq:")+" "+cli.ErrorText(diagnostic.Message))
+		}
+
+		if diagnostic.Span.LineText != "" {
+			lines = append(lines, color.New(color.FgWhite).Sprint(diagnostic.Span.LineText))
+			lines = append(lines, cli.ErrorText(strings.Repeat(" ", diagnostic.Span.Column-1)+strings.Repeat("^", max(1, diagnostic.Span.EndColumn-diagnostic.Span.Column))))
+		}
+		if diagnostic.Found != "" {
+			lines = append(lines, cli.Label("found:")+" "+cli.Accent(fmt.Sprintf("%q", diagnostic.Found)))
+		}
+		if len(diagnostic.Expected) > 0 {
+			lines = append(lines, cli.Label("expected:")+" "+formatExpectedList(diagnostic.Expected))
+		}
+		if diagnostic.Suggestion != "" {
+			lines = append(lines, cli.SuccessText(diagnostic.Suggestion))
+		}
+		if diagnostic.Hint != "" {
+			lines = append(lines, cli.Muted(diagnostic.Hint))
+		}
+
+		return strings.Join(lines, "\n")
+	}
+	return cli.ErrorText("synapseq:") + " " + err.Error()
+}
+
+func formatDiagnosticLocation(diagnostic *diag.Diagnostic) string {
+	if diagnostic == nil {
+		return ""
+	}
+	span := diagnostic.Span
+	switch {
+	case span.File != "" && span.Line > 0 && span.Column > 0:
+		return fmt.Sprintf("%s:%d:%d", span.File, span.Line, span.Column)
+	case span.Line > 0 && span.Column > 0:
+		return fmt.Sprintf("line %d:%d", span.Line, span.Column)
+	case span.Line > 0:
+		return fmt.Sprintf("line %d", span.Line)
+	case span.File != "":
+		return span.File
+	default:
+		return ""
+	}
+}
+
+func formatExpectedList(values []string) string {
+	colored := make([]string, len(values))
+	for i, value := range values {
+		colored[i] = cli.Accent(fmt.Sprintf("%q", value))
+	}
+	if len(colored) == 1 {
+		return colored[0]
+	}
+	if len(colored) == 2 {
+		return colored[0] + " or " + colored[1]
+	}
+	return strings.Join(colored[:len(colored)-1], ", ") + ", or " + colored[len(colored)-1]
 }
 
 // run executes the main application logic based on CLI options and arguments
@@ -41,6 +110,11 @@ func run(opts *cli.CLIOptions, args []string) error {
 	// --version
 	if opts.ShowVersion {
 		cli.ShowVersion()
+		return nil
+	}
+
+	if opts.ShowManual {
+		manual.Show()
 		return nil
 	}
 
@@ -97,6 +171,15 @@ func run(opts *cli.CLIOptions, args []string) error {
 		return uninstallWindowsFileAssociation(opts.Quiet)
 	}
 
+	// --new template generation
+	if opts.New != "" {
+		outputFile := opts.New + ".spsq"
+		if len(args) == 1 {
+			outputFile = args[0]
+		}
+		return generateTemplate(opts.New, outputFile)
+	}
+
 	// --help or missing args
 	if opts.ShowHelp || len(args) == 0 {
 		cli.Help()
@@ -107,134 +190,51 @@ func run(opts *cli.CLIOptions, args []string) error {
 		return fmt.Errorf("invalid number of flags\nUse -help for usage information")
 	}
 
-	// Determine output format
+	// Default: process input file and generate output
 	outputFormat := "wav"
-	if opts.Mp3 {
-		outputFormat = "mp3"
+	if opts.Preview {
+		outputFormat = "html"
 	}
 
 	inputFile := args[0]
 	outputFile := getDefaultOutputFile(inputFile, outputFormat)
 	if len(args) == 2 {
 		outputFile = args[1]
+		outputFormat = strings.ToLower(filepath.Ext(outputFile))
 	}
 
-	// --- Handle Extract mode
-	if opts.ExtractTextSequence {
-		if opts.Mp3 {
-			if outputFile == "-" {
-				content, err := externalExtractTextSequence(opts.FFprobePath, inputFile)
-				if err != nil {
-					return fmt.Errorf("failed to extract text sequence. Error\n  %w", err)
-				}
-				fmt.Println(content)
-				return nil
-			}
-
-			outputFile = getDefaultOutputFile(inputFile, "spsq")
-			if err := externalSaveExtractedTextSequence(opts.FFprobePath, inputFile, outputFile); err != nil {
-				return fmt.Errorf("failed to extract text sequence. Error\n  %w", err)
-			}
-
-			if !opts.Quiet {
-				fmt.Println("Extraction completed successfully.")
-			}
-
-			return nil
-		}
-
-		if outputFile == "-" {
-			content, err := synapseq.Extract(inputFile)
-			if err != nil {
-				return fmt.Errorf("failed to extract text sequence. Error\n  %w", err)
-			}
-			fmt.Println(content)
-			return nil
-		}
-
-		outputFile = getDefaultOutputFile(inputFile, "spsq")
-		if err := synapseq.SaveExtracted(inputFile, outputFile); err != nil {
-			return fmt.Errorf("failed to extract text sequence. Error\n  %w", err)
-		}
-
-		if !opts.Quiet {
-			fmt.Println("Extraction completed successfully.")
-		}
-		return nil
-	}
-
-	// Detect format flags
-	format := detectFormat(opts)
-
-	appCtx, err := synapseq.NewAppContext(inputFile, outputFile, format)
-	if err != nil {
-		return err
-	}
+	appCtx := synapseq.NewAppContext()
 
 	if !opts.Quiet && outputFile != "-" {
-		appCtx = appCtx.WithVerbose(os.Stderr)
+		appCtx = appCtx.WithVerbose(os.Stderr, !opts.NoColor)
 	}
 
 	// Load sequence file
-	if err := appCtx.LoadSequence(); err != nil {
+	loadedCtx, err := appCtx.Load(inputFile)
+	if err != nil {
 		return err
 	}
 
 	// --- Handle Test mode (no output required)
 	if opts.Test {
 		if !opts.Quiet {
-			fmt.Println("Sequence is valid.")
-		}
-		return nil
-	}
-
-	// --- Handle Convert mode
-	if opts.ConvertToText {
-		if outputFile == "-" {
-			content, err := appCtx.Text()
-			if err != nil {
-				return fmt.Errorf("failed to convert to text. Error\n  %w", err)
-			}
-			fmt.Println(content)
-			return nil
-		}
-
-		if err := appCtx.SaveText(); err != nil {
-			return fmt.Errorf("failed to convert to text. Error\n  %w", err)
-		}
-
-		if !opts.Quiet {
-			fmt.Println("Conversion completed successfully.")
+			fmt.Println(cli.SuccessText("Sequence is valid."))
 		}
 		return nil
 	}
 
 	// --- Process output using centralized handler
 	outputOpts := &outputOptions{
-		OutputFile:       outputFile,
-		Quiet:            opts.Quiet,
-		Play:             opts.Play,
-		Mp3:              opts.Mp3,
-		UnsafeNoMetadata: opts.UnsafeNoMetadata,
-		FFplayPath:       opts.FFplayPath,
-		FFmpegPath:       opts.FFmpegPath,
+		OutputFile: outputFile,
+		Quiet:      opts.Quiet,
+		Preview:    opts.Preview,
+		Play:       opts.Play,
+		Mp3:        outputFormat == ".mp3",
+		FFplayPath: opts.FFplayPath,
+		FFmpegPath: opts.FFmpegPath,
 	}
 
-	return processSequenceOutput(appCtx, outputOpts)
-}
-
-// detectFormat detects the input format based on CLI options
-func detectFormat(opts *cli.CLIOptions) string {
-	switch {
-	case opts.FormatJSON:
-		return "json"
-	case opts.FormatXML:
-		return "xml"
-	case opts.FormatYAML:
-		return "yaml"
-	default:
-		return "text"
-	}
+	return processSequenceOutput(loadedCtx, outputOpts)
 }
 
 // getDefaultOutputFile generates a default output filename based on the input filename

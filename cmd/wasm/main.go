@@ -1,7 +1,7 @@
 //go:build wasm
 
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -17,10 +17,10 @@ import (
 	"fmt"
 	"syscall/js"
 
-	"github.com/synapseq-foundation/synapseq/v3/internal/audio"
-	"github.com/synapseq-foundation/synapseq/v3/internal/info"
-	"github.com/synapseq-foundation/synapseq/v3/internal/sequence"
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	"github.com/synapseq-foundation/synapseq/v4/internal/audio"
+	"github.com/synapseq-foundation/synapseq/v4/internal/info"
+	"github.com/synapseq-foundation/synapseq/v4/internal/sequence"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // streamPcm(onChunk, onDone, onError, spsqUint8Array)
@@ -58,22 +58,6 @@ func streamPcm(this js.Value, args []js.Value) interface{} {
 				}
 
 				content := args[3]
-				format := args[4].String()
-
-				var formatType t.FileFormat
-				switch format {
-				case "text":
-					formatType = t.FormatText
-				case "json":
-					formatType = t.FormatJSON
-				case "xml":
-					formatType = t.FormatXML
-				case "yaml":
-					formatType = t.FormatYAML
-				default:
-					reject.Invoke("unsupported sequence format: " + format)
-					return
-				}
 
 				raw := make([]byte, content.Length())
 				js.CopyBytesToGo(raw, content)
@@ -81,12 +65,7 @@ func streamPcm(this js.Value, args []js.Value) interface{} {
 				var seq *t.Sequence
 				var err error
 
-				if formatType == t.FormatText {
-					seq, err = sequence.LoadTextSequence(raw)
-				} else {
-					seq, err = sequence.LoadStructuredSequence(raw, formatType)
-				}
-
+				seq, err = sequence.LoadTextSequence(raw)
 				if err != nil {
 					onError.Invoke(err.Error())
 					reject.Invoke(err.Error())
@@ -94,10 +73,10 @@ func streamPcm(this js.Value, args []js.Value) interface{} {
 				}
 
 				renderer, err := audio.NewAudioRenderer(seq.Periods, &audio.AudioRendererOptions{
-					SampleRate:     seq.Options.SampleRate,
-					Volume:         seq.Options.Volume,
-					GainLevel:      seq.Options.GainLevel,
-					BackgroundPath: seq.Options.BackgroundPath,
+					SampleRate: seq.Options.SampleRate,
+					Volume:     seq.Options.Volume,
+					Ambiance:   seq.Options.Ambiance,
+					Colors:     false,
 				})
 				if err != nil {
 					onError.Invoke(err.Error())

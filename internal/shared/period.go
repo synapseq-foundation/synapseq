@@ -1,5 +1,5 @@
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -14,7 +14,8 @@ package shared
 import (
 	"fmt"
 
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // AdjustPeriods adjusts the tracks in the overlapping periods
@@ -27,25 +28,35 @@ func AdjustPeriods(last, next *t.Period) error {
 		// Apply Fade-In
 		if tr0.Type == t.TrackSilence {
 			tr0.Type = tr2.Type
-			tr0.Effect.Type = tr2.Effect.Type
 			tr0.Carrier = tr2.Carrier
 			tr0.Resonance = tr2.Resonance
 			tr0.Amplitude = 0
-			tr0.Intensity = tr2.Intensity
+			tr0.NoiseSmooth = tr2.NoiseSmooth
 			tr0.Waveform = tr2.Waveform
+			tr0.Effect.Type = tr2.Effect.Type
+			tr0.Effect.Value = tr2.Effect.Value
+			tr0.Effect.Intensity = tr2.Effect.Intensity
+			tr0.AmbianceName = tr2.AmbianceName
 		}
 
 		// Apply Fade-Out
 		if tr2.Type == t.TrackSilence {
 			tr2.Carrier = tr1.Carrier
 			tr2.Resonance = tr1.Resonance
-			tr2.Intensity = tr1.Intensity
+			tr2.NoiseSmooth = tr1.NoiseSmooth
+			tr2.Effect.Intensity = tr1.Effect.Intensity
+			tr2.Effect.Value = tr1.Effect.Value
+			tr2.Effect.Type = tr1.Effect.Type
+			tr2.AmbianceName = tr1.AmbianceName
+			tr2.Waveform = tr1.Waveform
 		}
 
 		// Validate if previus period has a track on and next period turn it off or vice-versa
 		if (tr1.Type != t.TrackOff && tr1.Type != t.TrackSilence && tr2.Type == t.TrackOff) ||
 			(tr1.Type == t.TrackOff && tr2.Type != t.TrackOff && tr2.Type != t.TrackSilence) {
-			return fmt.Errorf("channel %d cannot be turned off or on directly, use silence instead: %s --> %s", ch+1, tr1.Type.String(), tr2.Type.String())
+			return diag.Validation(
+				fmt.Sprintf("channel %d cannot switch directly between an active track and off on consecutive timeline entries: %s -> %s", ch+1, tr1.Type.String(), tr2.Type.String()),
+			).WithHint("the current timeline entry conflicts with the previous one on this channel; insert a silence entry between them")
 		}
 
 		// Determine if both periods have a track on
@@ -53,26 +64,35 @@ func AdjustPeriods(last, next *t.Period) error {
 			tr1.Type != t.TrackSilence &&
 			tr2.Type != t.TrackOff &&
 			tr2.Type != t.TrackSilence {
-			// No slide alowed between different track types, waveforms, or effect types
+			// No slide allowed between different track types, effect types, or ambiance sources.
 			if tr1.Type != tr2.Type {
-				return fmt.Errorf("channel %d cannot change track type directly, use silence instead: %s --> %s", ch+1, tr1.Type.String(), tr2.Type.String())
-			}
-			if tr1.Waveform != tr2.Waveform {
-				return fmt.Errorf("channel %d cannot change waveform directly, use silence instead: %s --> %s", ch+1, tr1.Waveform.String(), tr2.Waveform.String())
+				return diag.Validation(
+					fmt.Sprintf("channel %d cannot move directly from %s to %s on consecutive timeline entries", ch+1, tr1.Type.String(), tr2.Type.String()),
+				).WithHint("the current timeline entry reuses this channel with an incompatible track type; insert a silence entry between the two presets")
 			}
 			if tr1.Effect.Type != tr2.Effect.Type {
-				return fmt.Errorf("channel %d cannot change effect type directly, use silence instead: %s --> %s", ch+1, tr1.Effect.Type.String(), tr2.Effect.Type.String())
+				return diag.Validation(
+					fmt.Sprintf("channel %d cannot move directly from %s effect to %s effect on consecutive timeline entries", ch+1, tr1.Effect.Type.String(), tr2.Effect.Type.String()),
+				).WithHint("the current timeline entry reuses this channel with an incompatible effect; insert a silence entry between the two presets")
+			}
+			if tr1.AmbianceName != tr2.AmbianceName {
+				return diag.Validation(
+					fmt.Sprintf("channel %d cannot move directly from ambiance %q to %q on consecutive timeline entries", ch+1, tr1.AmbianceName, tr2.AmbianceName),
+				).WithHint("the current timeline entry reuses this channel with a different ambiance source; insert a silence entry between the two presets")
 			}
 		}
 
 		// Carry forward the track settings from the end of the last period to the start of the next period
 		tr1.Type = tr2.Type
 		tr1.Effect.Type = tr2.Effect.Type
+		tr1.Effect.Value = tr2.Effect.Value
 		tr1.Carrier = tr2.Carrier
 		tr1.Resonance = tr2.Resonance
 		tr1.Amplitude = tr2.Amplitude
-		tr1.Intensity = tr2.Intensity
+		tr1.NoiseSmooth = tr2.NoiseSmooth
+		tr1.Effect.Intensity = tr2.Effect.Intensity
 		tr1.Waveform = tr2.Waveform
+		tr1.AmbianceName = tr2.AmbianceName
 	}
 	return nil
 }

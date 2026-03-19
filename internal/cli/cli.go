@@ -1,5 +1,5 @@
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -14,34 +14,41 @@ package cli
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"runtime"
+	"strings"
 
-	"github.com/synapseq-foundation/synapseq/v3/internal/info"
+	"github.com/fatih/color"
+	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
+	"github.com/synapseq-foundation/synapseq/v4/internal/info"
+	"github.com/synapseq-foundation/synapseq/v4/internal/palette"
 )
 
 // CLIOptions holds command-line options
 type CLIOptions struct {
 	// Show version information and exit
 	ShowVersion bool
+	// New starter sequence template type
+	New string
+	// Preview mode, renders HTML timeline instead of audio
+	Preview bool
 	// Quiet mode, suppress non-error output
 	Quiet bool
 	// Test mode, validate syntax without generating output
 	Test bool
 	// Show help message and exit
 	ShowHelp bool
-	// Read input as JSON format
-	FormatJSON bool
-	// Read input as XML format
-	FormatXML bool
-	// Read input as YAML format
-	FormatYAML bool
-	// Extract text sequence from WAV file
-	ExtractTextSequence bool
-	// Do not embed metadata in output WAV file
-	UnsafeNoMetadata bool
-	// Convert to text from json/xml/yaml
-	ConvertToText bool
+	// Show full manual and exit
+	ShowManual bool
+	// Disable ANSI colors in CLI output
+	NoColor bool
+	// Windows file association installation
+	InstallFileAssociation bool
+	// Clean Windows file association removal
+	UninstallFileAssociation bool
+	// Play (with ffplay)
+	Play bool
 	// Hub update index of available sequences
 	HubUpdate bool
 	// Hub clean up local cache
@@ -56,14 +63,6 @@ type CLIOptions struct {
 	HubInfo string
 	// Hub get sequence
 	HubGet string
-	// Windows file association installation
-	InstallFileAssociation bool
-	// Clean Windows file association removal
-	UninstallFileAssociation bool
-	// Play (with ffplay)
-	Play bool
-	// Mp3 output format (with ffmpeg)
-	Mp3 bool
 	// Path to ffplay executable
 	FFplayPath string
 	// Path to ffmpeg executable
@@ -72,72 +71,159 @@ type CLIOptions struct {
 	FFprobePath string
 }
 
+func init() {
+	SetColorEnabled(true)
+}
+
+// SetColorEnabled enables or disables ANSI colors for CLI output.
+func SetColorEnabled(enabled bool) {
+	color.NoColor = !enabled
+}
+
+func warmRGB(token palette.RGBColor, attrs ...color.Attribute) *color.Color {
+	c := color.RGB(token.R(), token.G(), token.B())
+	if len(attrs) > 0 {
+		c.Add(attrs...)
+	}
+	return c
+}
+
+// Title formats top-level headings.
+func Title(text string) string {
+	return warmRGB(palette.Terracotta, color.Bold).Sprint(text)
+}
+
+// Section formats section headings.
+func Section(text string) string {
+	return warmRGB(palette.Ochre, color.Bold).Sprint(text)
+}
+
+// Command formats shell commands and paths.
+func Command(text string) string {
+	return warmRGB(palette.Green).Sprint(text)
+}
+
+// Flag formats command-line flags.
+func Flag(text string) string {
+	return warmRGB(palette.Terracotta, color.Bold).Sprint(text)
+}
+
+// Muted formats secondary explanatory text.
+func Muted(text string) string {
+	return warmRGB(palette.MutedWarm).Sprint(text)
+}
+
+// ErrorText formats error text.
+func ErrorText(text string) string {
+	return warmRGB(palette.DangerRed, color.Bold).Sprint(text)
+}
+
+// SuccessText formats success text.
+func SuccessText(text string) string {
+	return warmRGB(palette.Green, color.Bold).Sprint(text)
+}
+
+// Label formats field labels.
+func Label(text string) string {
+	return warmRGB(palette.TerracottaDark, color.Bold).Sprint(text)
+}
+
+// Accent formats highlighted values.
+func Accent(text string) string {
+	return warmRGB(palette.Terracotta).Sprint(text)
+}
+
 // Help prints the help message
 func Help() {
-	fmt.Printf("SynapSeq - Synapse-Sequenced Brainwave Generator, version %s\n", info.VERSION)
-	fmt.Printf("(c) 2025-2026 %s, %s\n", info.AUTHOR, info.AUTHOR_URL)
-	fmt.Printf("Released under the GNU GPL v2. See file COPYING for details.\n\n")
+	fmt.Fprintf(color.Output, "%s\n\n", Title(fmt.Sprintf("SynapSeq %s - Text-Driven Audio Sequencer for Brainwave Entrainment", info.VERSION)))
 
-	fmt.Printf("Usage: synapseq [options] <input> <output>\n\n")
+	fmt.Fprintf(color.Output, "%s\n", Section("Usage:"))
+	fmt.Fprintf(color.Output, "  %s\n\n", Command("synapseq [options] <input> [output]"))
 
-	fmt.Printf("INPUT formats:\n")
-	fmt.Printf("    Local file path:     path/to/sequence.spsq\n")
-	fmt.Printf("    Standard input:      -\n")
-	fmt.Printf("    HTTP/HTTPS URL:      https://example.com/sequence.spsq\n")
-	fmt.Printf("    Structured formats:  Use -json, -xml, or -yaml flags\n\n")
+	fmt.Fprintf(color.Output, "%s\n", Section("Quick start:"))
+	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq session.spsq"))
+	fmt.Fprintf(color.Output, "    %s\n\n", Muted("Generate session.wav in the current folder"))
+	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq session.spsq relax.wav"))
+	fmt.Fprintf(color.Output, "    %s\n\n", Muted("Generate a WAV file with a custom name"))
+	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq -test session.spsq"))
+	fmt.Fprintf(color.Output, "    %s\n\n", Muted("Validate the sequence without generating audio"))
+	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq -play session.spsq"))
+	fmt.Fprintf(color.Output, "    %s\n\n", Muted("Play the sequence directly with ffplay"))
+	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq -preview session.spsq"))
+	fmt.Fprintf(color.Output, "    %s\n\n", Muted("Generate session.html with a visual timeline preview"))
+	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq session.spsq relax.mp3"))
+	fmt.Fprintf(color.Output, "    %s\n\n", Muted("Export to MP3 with ffmpeg"))
+	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq -new meditation"))
+	fmt.Fprintf(color.Output, "    %s\n\n", Muted("Create a new sequence file from the meditation template"))
+	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq -manual"))
+	fmt.Fprintf(color.Output, "    %s\n\n", Muted("Print the full language and usage manual"))
 
-	fmt.Printf("OUTPUT formats:\n")
-	fmt.Printf("    WAV file:            path/to/output.wav\n")
-	fmt.Printf("    Standard output:     - (raw PCM, 16-bit stereo)\n\n")
+	fmt.Fprintf(color.Output, "%s\n", Section("Input:"))
+	fmt.Fprintf(color.Output, "  local file        %s\n", Command("path/to/sequence.spsq"))
+	fmt.Fprintf(color.Output, "  URL               %s\n", Command("https://example.com/sequence.spsq"))
+	fmt.Fprintf(color.Output, "  standard input    %s\n\n", Command("-"))
 
-	fmt.Printf("Main options:\n")
-	fmt.Printf("  -json          		Read input as JSON format\n")
-	fmt.Printf("  -xml           		Read input as XML format\n")
-	fmt.Printf("  -yaml          		Read input as YAML format\n")
-	fmt.Printf("  -quiet         		Suppress non-error output\n")
-	fmt.Printf("  -test          		Validate syntax without generating output\n")
-	fmt.Printf("  -extract       		Extract text sequence from WAV file\n")
-	fmt.Printf("  -convert       		Convert to text from json/xml/yaml\n")
-	fmt.Printf("  -unsafe-no-metadata  	  	Do not embed metadata in output WAV file\n")
-	fmt.Printf("  -version       		Show version information\n")
-	fmt.Printf("  -help         		Show this help message\n\n")
+	fmt.Fprintf(color.Output, "%s\n", Section("Output:"))
+	fmt.Fprintf(color.Output, "  omitted           %s\n", Muted("defaults to <input>.wav"))
+	fmt.Fprintf(color.Output, "  WAV file          %s\n", Command("path/to/output.wav"))
+	fmt.Fprintf(color.Output, "  MP3 file          %s\n", Command("path/to/output.mp3"))
+	fmt.Fprintf(color.Output, "  standard output   %s\n\n", Muted("-   raw PCM (16-bit stereo)"))
 
-	fmt.Printf("External tool options:\n")
-	fmt.Printf("  -play          		Play audio using ffplay\n")
-	fmt.Printf("  -mp3 				Output MP3 format (requires ffmpeg)\n")
-	fmt.Printf("  -ffmpeg-path  		Path to ffmpeg executable (default: ffmpeg)\n")
-	fmt.Printf("  -ffplay-path  		Path to ffplay executable (default: ffplay)\n")
-	fmt.Printf("  -ffprobe-path  		Path to ffprobe executable (default: ffprobe)\n\n")
+	fmt.Fprintf(color.Output, "%s\n", Section("Most common options:"))
+	fmt.Fprintf(color.Output, "  %s TYPE         Template type: meditation, focus, sleep, relaxation, example\n", Flag("-new"))
+	fmt.Fprintf(color.Output, "  %s             Check syntax only\n", Flag("-test"))
+	fmt.Fprintf(color.Output, "  %s          Render an HTML preview timeline\n", Flag("-preview"))
+	fmt.Fprintf(color.Output, "  %s             Play audio using ffplay\n", Flag("-play"))
+	fmt.Fprintf(color.Output, "  %s            Suppress non-error output\n", Flag("-quiet"))
+	fmt.Fprintf(color.Output, "  %s         Disable ANSI colors in CLI output\n", Flag("-no-color"))
+	fmt.Fprintf(color.Output, "  %s           Show the full manual\n", Flag("-manual"))
+	fmt.Fprintf(color.Output, "  %s          Show version information\n", Flag("-version"))
+	fmt.Fprintf(color.Output, "  %s             Show this help message\n\n", Flag("-help"))
 
-	if info.HUB_ENABLED {
-		fmt.Printf("Hub options:\n")
-		fmt.Printf("  -hub-update      		Update index of available sequences\n")
-		fmt.Printf("  -hub-clean      		Clean up local cache\n")
-		fmt.Printf("  -hub-list       		List available sequences\n")
-		fmt.Printf("  -hub-search     		Search sequences\n")
-		fmt.Printf("  -hub-download       		Download sequence and dependencies\n")
-		fmt.Printf("  -hub-info       		Show information about a sequence\n")
-		fmt.Printf("  -hub-get       		Get sequence\n\n")
-	}
+	fmt.Fprintf(color.Output, "%s\n", Section("Hub:"))
+	fmt.Fprintf(color.Output, "  %s\n\n", Muted("Run -hub-update once before using other -hub-* commands."))
+	fmt.Fprintf(color.Output, "  %s                     List available sequences\n", Flag("-hub-list"))
+	fmt.Fprintf(color.Output, "  %s WORD              Search the Hub\n", Flag("-hub-search"))
+	fmt.Fprintf(color.Output, "  %s NAME                Show information about a sequence\n", Flag("-hub-info"))
+	fmt.Fprintf(color.Output, "  %s NAME [DIR]      Download a sequence and dependencies\n", Flag("-hub-download"))
+	fmt.Fprintf(color.Output, "  %s NAME [OUTPUT]        Download and generate in one step\n", Flag("-hub-get"))
+	fmt.Fprintf(color.Output, "  %s                   Update the local Hub index\n", Flag("-hub-update"))
+	fmt.Fprintf(color.Output, "  %s                    Clean up local Hub cache\n\n", Flag("-hub-clean"))
+
+	fmt.Fprintf(color.Output, "%s\n", Section("Hub examples:"))
+	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq -hub-update"))
+	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq -hub-search calm-state"))
+	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq -hub-download calm-state"))
+	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq -hub-get calm-state calm-state.wav"))
+	fmt.Fprintf(color.Output, "  %s\n\n", Command("synapseq -hub-get calm-state calm-state.mp3"))
+
+	fmt.Fprintf(color.Output, "%s\n", Section("Advanced:"))
+	fmt.Fprintf(color.Output, "  %s PATH   Path to ffmpeg executable\n", Flag("-ffmpeg-path"))
+	fmt.Fprintf(color.Output, "  %s PATH   Path to ffplay executable\n\n", Flag("-ffplay-path"))
 
 	if runtime.GOOS == "windows" {
-		fmt.Printf("Windows-specific options:\n")
-		fmt.Printf("  -install-file-association  	Associate .spsq files with SynapSeq\n")
-		fmt.Printf("  -uninstall-file-association	Remove .spsq file association\n\n")
+		fmt.Fprintf(color.Output, "%s\n", Section("Windows-specific options:"))
+		fmt.Fprintf(color.Output, "  %s    Associate .spsq files with SynapSeq\n", Flag("-install-file-association"))
+		fmt.Fprintf(color.Output, "  %s  Remove .spsq file association\n\n", Flag("-uninstall-file-association"))
 	}
 
-	fmt.Printf("For detailed documentation:\n")
-	fmt.Printf("  %s\n", info.DOC_URL)
+	fmt.Fprintf(color.Output, "%s\n", Section("For more information:"))
+	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq -manual"))
+	fmt.Fprintf(color.Output, "    %s\n\n", Muted("Show the full manual with detailed language and usage information"))
+	fmt.Fprintf(color.Output, "  %s\n", Command("https://synapseq.org"))
+	fmt.Fprintf(color.Output, "    %s\n", Muted("Visit the website for documentation, examples, and the latest updates"))
 }
 
 // ShowVersion prints the version information
 func ShowVersion() {
-	fmt.Printf("SynapSeq %s (%s) built %s for %s/%s\n",
-		info.VERSION,
-		info.GIT_COMMIT,
-		info.BUILD_DATE,
-		runtime.GOOS,
-		runtime.GOARCH,
+	fmt.Fprintf(
+		color.Output,
+		"%s %s %s %s %s\n",
+		Title("SynapSeq"),
+		Accent(info.VERSION),
+		Muted(fmt.Sprintf("(%s)", info.GIT_COMMIT)),
+		Label("built"),
+		Command(fmt.Sprintf("%s for %s/%s", info.BUILD_DATE, runtime.GOOS, runtime.GOARCH)),
 	)
 }
 
@@ -145,10 +231,23 @@ func ShowVersion() {
 func ParseFlags() (*CLIOptions, []string, error) {
 	opts := &CLIOptions{}
 	fs := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
 
-	fs.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Use -help flag for usage information.\n")
+	if hasNoColorArg(os.Args[1:]) {
+		SetColorEnabled(false)
 	}
+
+	fs.Usage = func() {}
+
+	// General options
+	fs.BoolVar(&opts.ShowVersion, "version", false, "Show version information")
+	fs.StringVar(&opts.New, "new", "", "Template type: meditation, focus, sleep, relaxation, example")
+	fs.BoolVar(&opts.Preview, "preview", false, "Render HTML preview timeline")
+	fs.BoolVar(&opts.Quiet, "quiet", false, "Enable quiet mode")
+	fs.BoolVar(&opts.NoColor, "no-color", false, "Disable ANSI colors in CLI output")
+	fs.BoolVar(&opts.Test, "test", false, "Validate syntax without generating output")
+	fs.BoolVar(&opts.ShowHelp, "help", false, "Show help")
+	fs.BoolVar(&opts.ShowManual, "manual", false, "Show the full manual")
 
 	// Hub options
 	fs.BoolVar(&opts.HubUpdate, "hub-update", false, "Update index of available sequences")
@@ -159,29 +258,64 @@ func ParseFlags() (*CLIOptions, []string, error) {
 	fs.StringVar(&opts.HubInfo, "hub-info", "", "Show information about a sequence")
 	fs.StringVar(&opts.HubGet, "hub-get", "", "Get sequence")
 
-	// General options
-	fs.BoolVar(&opts.ShowVersion, "version", false, "Show version information")
-	fs.BoolVar(&opts.FormatJSON, "json", false, "Read input as JSON format")
-	fs.BoolVar(&opts.FormatXML, "xml", false, "Read input as XML format")
-	fs.BoolVar(&opts.FormatYAML, "yaml", false, "Read input as YAML format")
-	fs.BoolVar(&opts.Quiet, "quiet", false, "Enable quiet mode")
-	fs.BoolVar(&opts.Test, "test", false, "Validate syntax without generating output")
-	fs.BoolVar(&opts.ExtractTextSequence, "extract", false, "Extract text sequence from WAV file")
-	fs.BoolVar(&opts.UnsafeNoMetadata, "unsafe-no-metadata", false, "Do not embed metadata in output WAV file")
-	fs.BoolVar(&opts.ConvertToText, "convert", false, "Convert to text from json/xml/yaml")
-	fs.BoolVar(&opts.ShowHelp, "help", false, "Show help")
-
 	// External tool options
 	fs.BoolVar(&opts.Play, "play", false, "Play audio using ffplay")
-	fs.BoolVar(&opts.Mp3, "mp3", false, "Output MP3 format (requires ffmpeg)")
 	fs.StringVar(&opts.FFmpegPath, "ffmpeg-path", "", "Path to ffmpeg executable")
 	fs.StringVar(&opts.FFplayPath, "ffplay-path", "", "Path to ffplay executable")
-	fs.StringVar(&opts.FFprobePath, "ffprobe-path", "", "Path to ffprobe executable")
 
 	// Windows-specific options
 	fs.BoolVar(&opts.InstallFileAssociation, "install-file-association", false, "Associate .spsq files with SynapSeq (Windows only)")
 	fs.BoolVar(&opts.UninstallFileAssociation, "uninstall-file-association", false, "Remove .spsq file association (Windows only)")
 
 	err := fs.Parse(os.Args[1:])
+	if err != nil {
+		return nil, nil, formatFlagParseError(fs, err)
+	}
+
+	SetColorEnabled(!opts.NoColor)
+
 	return opts, fs.Args(), err
+}
+
+func hasNoColorArg(args []string) bool {
+	for _, arg := range args {
+		if arg == "-no-color" {
+			return true
+		}
+	}
+	return false
+}
+
+func formatFlagParseError(fs *flag.FlagSet, err error) error {
+	if err == nil {
+		return nil
+	}
+
+	message := err.Error()
+	knownFlags := flagNames(fs)
+
+	switch {
+	case strings.HasPrefix(message, "flag provided but not defined: "):
+		found := strings.TrimSpace(strings.TrimPrefix(message, "flag provided but not defined: "))
+		diagnostic := diag.Validation("unknown command-line flag").WithFound(found).WithHint("use -help to see valid command-line options")
+		if suggestion, ok := diag.ClosestMatch(found, knownFlags, diag.DefaultSuggestionDistance(found)); ok {
+			diagnostic.WithSuggestion(fmt.Sprintf("did you mean %q?", suggestion))
+		}
+		return diagnostic
+	case strings.HasPrefix(message, "flag needs an argument: "):
+		found := strings.TrimSpace(strings.TrimPrefix(message, "flag needs an argument: "))
+		return diag.Validation("missing value for command-line flag").WithFound(found).WithHint("pass a value for this flag or use -help to review its syntax")
+	case strings.HasPrefix(message, "invalid boolean value "):
+		return diag.Validation("invalid value for command-line flag").WithHint(message + "; use -help to review accepted flag values")
+	default:
+		return diag.Validation("invalid command-line arguments").WithHint(message + "; use -help for usage information")
+	}
+}
+
+func flagNames(fs *flag.FlagSet) []string {
+	flags := make([]string, 0, 16)
+	fs.VisitAll(func(f *flag.Flag) {
+		flags = append(flags, "-"+f.Name)
+	})
+	return flags
 }

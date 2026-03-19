@@ -1,7 +1,7 @@
 //go:build !wasm
 
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
@@ -19,7 +19,8 @@ import (
 	"strings"
 	"testing"
 
-	t "github.com/synapseq-foundation/synapseq/v3/internal/types"
+	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 func writeSeqFile(tst *testing.T, content string) string {
@@ -30,6 +31,21 @@ func writeSeqFile(tst *testing.T, content string) string {
 		tst.Fatalf("write temp sequence: %v", err)
 	}
 	return p
+}
+
+func writeRelFile(tst *testing.T, dir, relPath, content string) string {
+	tst.Helper()
+
+	path := filepath.Join(dir, relPath)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		tst.Fatalf("mkdir temp rel file dir: %v", err)
+	}
+
+	if err := os.WriteFile(path, []byte(strings.TrimSpace(content)+"\n"), 0o600); err != nil {
+		tst.Fatalf("write temp rel file: %v", err)
+	}
+
+	return path
 }
 
 func eqTrackGotWant(got, want t.Track) bool {
@@ -71,8 +87,7 @@ func TestLoadTextSequence_Success(ts *testing.T) {
 # Options
 @samplerate 48000
 @volume 80
-@background testdata/noise.wav
-@gainlevel high
+@ambiance testnoise testdata/noise
 
 # Presets
 alpha
@@ -88,7 +103,7 @@ beta
 00:01:00 beta
 `
 	path := writeSeqFile(ts, seq)
-	bgPath := filepath.Join(filepath.Dir(path), "testdata", "noise.wav")
+	abPath := filepath.Join(filepath.Dir(path), "testdata", "noise.wav")
 
 	result, err := LoadTextSequence(path)
 	if err != nil {
@@ -96,11 +111,11 @@ beta
 	}
 
 	opts := result.Options
-	if opts.SampleRate != 48000 || opts.Volume != 80 || opts.GainLevel != t.GainLevelHigh {
+	if opts.SampleRate != 48000 || opts.Volume != 80 {
 		ts.Fatalf("unexpected options: %+v", *opts)
 	}
-	if opts.BackgroundPath != bgPath {
-		ts.Fatalf("unexpected background path: got %q want %q", opts.BackgroundPath, bgPath)
+	if opts.Ambiance["testnoise"] != abPath {
+		ts.Fatalf("unexpected ambiance path: got %q want %q", opts.Ambiance["testnoise"], abPath)
 	}
 
 	periods := result.Periods
@@ -199,6 +214,38 @@ alpha
 	_, err := LoadTextSequence(path)
 	if err == nil {
 		ts.Fatalf("expected error for background track without background option")
+	}
+}
+
+func TestLoadTextSequence_TrackDiagnosticIncludesSource(ts *testing.T) {
+	seq := `
+alpha
+  tone 300 binaual 10 amplitude 20
+00:00:00 alpha
+00:01:00 alpha
+`
+	path := writeSeqFile(ts, seq)
+
+	_, err := LoadTextSequence(path)
+	if err == nil {
+		ts.Fatal("expected parse error")
+	}
+
+	diagnostic, ok := diag.As(err)
+	if !ok {
+		ts.Fatalf("expected diag.Diagnostic, got %T", err)
+	}
+	if diagnostic.Span.File != path {
+		ts.Fatalf("expected source file %q, got %q", path, diagnostic.Span.File)
+	}
+	if diagnostic.Span.Line != 2 {
+		ts.Fatalf("expected source line 2, got %d", diagnostic.Span.Line)
+	}
+	if diagnostic.Span.Column != 12 || diagnostic.Span.EndColumn != 19 {
+		ts.Fatalf("expected typo at 12..19, got %d..%d", diagnostic.Span.Column, diagnostic.Span.EndColumn)
+	}
+	if diagnostic.Suggestion != "did you mean \"binaural\"?" {
+		ts.Fatalf("expected typo suggestion, got %q", diagnostic.Suggestion)
 	}
 }
 
@@ -312,10 +359,10 @@ alpha
 	}
 }
 
-func TestLoadTextSequence_LoadsExternalPreset(ts *testing.T) {
+func TestLoadTextSequence_LoadsExternalPresetViaExtends(ts *testing.T) {
 	dir := ts.TempDir()
 
-	presetRel := "external-presets.spsq"
+	presetRel := "external-presets.spsc"
 	presetPath := filepath.Join(dir, presetRel)
 	presetContent := `
 # Presets
@@ -327,21 +374,15 @@ preparation
 		ts.Fatalf("write external presets: %v", err)
 	}
 
-	seqContent := "# Options\n@presetlist " + presetRel + "\n\n# Timeline\n00:00:00 preparation\n00:01:00 preparation\n"
+	seqContent := "# Options\n@extends external-presets\n\n# Timeline\n00:00:00 preparation\n00:01:00 preparation\n"
 	seqPath := filepath.Join(dir, "seq.spsq")
 	if err := os.WriteFile(seqPath, []byte(strings.TrimSpace(seqContent)+"\n"), 0o600); err != nil {
 		ts.Fatalf("write temp sequence: %v", err)
 	}
 
-	oldwd, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
-		ts.Fatalf("chdir to temp dir: %v", err)
-	}
-	defer func() { _ = os.Chdir(oldwd) }()
-
 	result, err := LoadTextSequence(seqPath)
 	if err != nil {
-		ts.Fatalf("LoadTextSequence with external presets error: %v", err)
+		ts.Fatalf("LoadTextSequence with external extends error: %v", err)
 	}
 
 	if len(result.Periods) != 2 {
@@ -364,5 +405,82 @@ preparation
 	}
 	if !hasTrack(result.Periods[1].TrackStart, wantNoise) || !hasTrack(result.Periods[1].TrackStart, wantTone) {
 		ts.Fatalf("missing preparation tracks in period[1]: %+v", result.Periods[1].TrackStart)
+	}
+}
+
+func TestLoadTextSequence_ExtendsOverrideOptionsByOrder(ts *testing.T) {
+	dir := ts.TempDir()
+
+	writeRelFile(ts, dir, "config/base.spsc", `
+@samplerate 44100
+
+alpha
+  tone 100 binaural 1 amplitude 1
+`)
+
+	writeRelFile(ts, dir, "config/override.spsc", `
+@samplerate 48000
+`)
+
+	seqPath := writeRelFile(ts, dir, "seq.spsq", `
+@extends config/base
+@extends config/override
+
+00:00:00 alpha
+00:01:00 alpha
+`)
+
+	result, err := LoadTextSequence(seqPath)
+	if err != nil {
+		ts.Fatalf("LoadTextSequence with ordered extends error: %v", err)
+	}
+
+	if result.Options.SampleRate != 48000 {
+		ts.Fatalf("expected SampleRate=48000 after ordered extends override, got %d", result.Options.SampleRate)
+	}
+}
+
+func TestLoadTextSequence_MergesAmbianceFromExtendsAndMainFile(ts *testing.T) {
+	dir := ts.TempDir()
+
+	writeRelFile(ts, dir, "packs/forest.spsc", `
+@ambiance forest audio/forest
+
+alpha
+  ambiance forest amplitude 20
+`)
+
+	writeRelFile(ts, dir, "packs/river.spsc", `
+@ambiance river audio/river
+`)
+
+	seqPath := writeRelFile(ts, dir, "seq.spsq", `
+@extends packs/forest
+@extends packs/river
+@ambiance wind audio/wind
+
+00:00:00 alpha
+00:01:00 alpha
+`)
+
+	result, err := LoadTextSequence(seqPath)
+	if err != nil {
+		ts.Fatalf("LoadTextSequence with merged ambiance error: %v", err)
+	}
+
+	want := map[string]string{
+		"forest": filepath.Join(dir, "packs", "audio", "forest.wav"),
+		"river":  filepath.Join(dir, "packs", "audio", "river.wav"),
+		"wind":   filepath.Join(dir, "audio", "wind.wav"),
+	}
+
+	if len(result.Options.Ambiance) != len(want) {
+		ts.Fatalf("expected %d ambiance entries, got %d: %+v", len(want), len(result.Options.Ambiance), result.Options.Ambiance)
+	}
+
+	for name, path := range want {
+		if result.Options.Ambiance[name] != path {
+			ts.Fatalf("expected ambiance %q to resolve to %q, got %q", name, path, result.Options.Ambiance[name])
+		}
 	}
 }
