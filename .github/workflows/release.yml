@@ -126,16 +126,17 @@ jobs:
           cp wasm/synapseq.wasm "temp-${pkg_name}/"
           cp wasm/synapseq.js "temp-${pkg_name}/"
           cp wasm/wasm_exec.js "temp-${pkg_name}/"
+          cp wasm/example.html "temp-${pkg_name}/"
 
           # Generate SHA256 checksums for WASM files
           cd "temp-${pkg_name}"
-          sha256sum synapseq.wasm synapseq.js wasm_exec.js > checksums.txt
+          sha256sum synapseq.wasm synapseq.js wasm_exec.js example.html > checksums.txt
           cd ..
           echo "✓ SHA256 checksums generated for WASM files"
 
           # Create ZIP package
           cd "temp-${pkg_name}"
-          zip "../packages/${pkg_name}.zip" synapseq.wasm synapseq.js wasm_exec.js checksums.txt
+          zip "../packages/${pkg_name}.zip" synapseq.wasm synapseq.js wasm_exec.js example.html checksums.txt
           cd ..
 
           # Clean up temporary directory
