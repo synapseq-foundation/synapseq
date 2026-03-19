@@ -15,7 +15,7 @@ MINOR_VERSION 			 := $(shell echo $(VERSION) | cut -d. -f2)
 PATCH_VERSION 			 := $(shell echo $(VERSION) | cut -d. -f3)
 GO_VERSION_INFO_CMD 	 := github.com/josephspurrier/goversioninfo/cmd/goversioninfo@v1.5.0
 GO_VERSION_INFO_CMD_ARGS := -company="SynapSeq Foundation <synapseq.org>" \
-							-description="Synapse-Sequenced Brainwave Generator" \
+							-description="Text-Driven Audio Sequencer for Brainwave Entrainment" \
 					  		-copyright="GPL v2" \
 					  		-original-name="$(BIN_NAME).exe" \
 							-product-name="SynapSeq" \
