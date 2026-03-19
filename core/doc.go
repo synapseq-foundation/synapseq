@@ -1,6 +1,6 @@
 /*
 Package core provides the application context and core functionality
-for the SynapSeq brainwave generator.
+for the SynapSeq text-driven audio sequencer for brainwave entrainment.
 
 # Overview
 

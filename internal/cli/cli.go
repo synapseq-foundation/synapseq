@@ -135,7 +135,7 @@ func Accent(text string) string {
 
 // Help prints the help message
 func Help() {
-	fmt.Fprintf(color.Output, "%s\n\n", Title(fmt.Sprintf("SynapSeq %s - Synapse-Sequenced Brainwave Generator", info.VERSION)))
+	fmt.Fprintf(color.Output, "%s\n\n", Title(fmt.Sprintf("SynapSeq %s - Text-Driven Audio Sequencer for Brainwave Entrainment", info.VERSION)))
 
 	fmt.Fprintf(color.Output, "%s\n", Section("Usage:"))
 	fmt.Fprintf(color.Output, "  %s\n\n", Command("synapseq [options] <input> [output]"))

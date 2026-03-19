@@ -8,7 +8,7 @@
 </p>
 </p>
 
-<p align="center"><strong>Synapse-Sequenced Brainwave Generator</strong></p>
+<p align="center"><strong>Text-Driven Audio Sequencer for Brainwave Entrainment</strong></p>
 
 **SynapSeq** is a text-driven audio sequencer for building clear, repeatable brainwave and ambient sessions using a simple domain-specific language, written as SynapSeq sequences (.spsq).
 
