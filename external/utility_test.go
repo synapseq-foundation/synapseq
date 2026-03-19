@@ -1,7 +1,7 @@
 //go:build !wasm
 
 /*
- * SynapSeq - Synapse-Sequenced Brainwave Generator
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
  * Copyright (c) 2025-2026 SynapSeq Foundation
