@@ -1,6 +1,6 @@
 # SynapSeq Manual
 
-Version 4.0.0
+Version 4.0.1
 
 ## Name
 
@@ -13,6 +13,7 @@ synapseq [OPTION]... INPUT [OUTPUT]
 synapseq -new TYPE
 synapseq -preview INPUT
 synapseq -play INPUT
+synapseq -mp3 INPUT
 synapseq -test INPUT
 synapseq -hub-update
 synapseq -hub-list
@@ -64,6 +65,7 @@ The following options are available from the CLI.
 - **-test**: Validate sequence syntax and semantics without generating audio output.
 - **-preview**: Render an HTML timeline preview instead of audio.
 - **-play**: Render and play the result directly with ffplay.
+- **-mp3**: Render the sequence as an MP3 file.
 - **-quiet**: Suppress non-error CLI output.
 - **-no-color**: Disable ANSI colors in CLI output. Useful for pipes, logs, and pagers configured without raw-control support.
 - **-manual**: Print the full manual.

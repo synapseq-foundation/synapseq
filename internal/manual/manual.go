@@ -50,6 +50,7 @@ func Render() string {
 		"synapseq -new TYPE",
 		"synapseq -preview INPUT",
 		"synapseq -play INPUT",
+		"synapseq -mp3 INPUT",
 		"synapseq -test INPUT",
 		"synapseq -hub-update",
 		"synapseq -hub-list",
@@ -103,6 +104,7 @@ func Render() string {
 	writeOption(&b, "-test", "Validate sequence syntax and semantics without generating audio output.")
 	writeOption(&b, "-preview", "Render an HTML timeline preview instead of audio.")
 	writeOption(&b, "-play", "Render and play the result directly with ffplay.")
+	writeOption(&b, "-mp3", "Render the sequence as an MP3 file.")
 	writeOption(&b, "-quiet", "Suppress non-error CLI output.")
 	writeOption(&b, "-no-color", "Disable ANSI colors in CLI output. Useful for pipes, logs, and pagers configured without raw-control support.")
 	writeOption(&b, "-manual", "Print the full manual.")
