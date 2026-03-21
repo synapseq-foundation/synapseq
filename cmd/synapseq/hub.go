@@ -77,6 +77,9 @@ func hubRunGet(sequenceId, outputFile string, opts *cli.CLIOptions) error {
 	if opts.Preview {
 		outputFormat = ".html"
 	}
+	if opts.Mp3 {
+		outputFormat = ".mp3"
+	}
 	if outputFile == "" {
 		outputFile = entry.Name + outputFormat
 	} else {
@@ -99,7 +102,7 @@ func hubRunGet(sequenceId, outputFile string, opts *cli.CLIOptions) error {
 		Quiet:      opts.Quiet,
 		Preview:    opts.Preview,
 		Play:       opts.Play,
-		Mp3:        outputFormat == ".mp3",
+		Mp3:        outputFormat == ".mp3" || opts.Mp3,
 		FFplayPath: opts.FFplayPath,
 		FFmpegPath: opts.FFmpegPath,
 	}
