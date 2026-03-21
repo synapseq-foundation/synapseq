@@ -63,6 +63,8 @@ type CLIOptions struct {
 	HubInfo string
 	// Hub get sequence
 	HubGet string
+	// Mp3 export with ffmpeg
+	Mp3 bool
 	// Path to ffplay executable
 	FFplayPath string
 	// Path to ffmpeg executable
@@ -106,6 +108,10 @@ func Command(text string) string {
 // Flag formats command-line flags.
 func Flag(text string) string {
 	return warmRGB(palette.Terracotta, color.Bold).Sprint(text)
+}
+
+func FlagColumn(text string, width int) string {
+	return Flag(fmt.Sprintf("%-*s", width, text))
 }
 
 // Muted formats secondary explanatory text.
@@ -153,6 +159,8 @@ func Help() {
 	fmt.Fprintf(color.Output, "    %s\n\n", Muted("Generate session.html with a visual timeline preview"))
 	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq session.spsq relax.mp3"))
 	fmt.Fprintf(color.Output, "    %s\n\n", Muted("Export to MP3 with ffmpeg"))
+	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq -mp3 session.spsq"))
+	fmt.Fprintf(color.Output, "    %s\n\n", Muted("Export to MP3 with ffmpeg using default output name"))
 	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq -new meditation"))
 	fmt.Fprintf(color.Output, "    %s\n\n", Muted("Create a new sequence file from the meditation template"))
 	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq -manual"))
@@ -170,25 +178,26 @@ func Help() {
 	fmt.Fprintf(color.Output, "  standard output   %s\n\n", Muted("-   raw PCM (16-bit stereo)"))
 
 	fmt.Fprintf(color.Output, "%s\n", Section("Most common options:"))
-	fmt.Fprintf(color.Output, "  %s TYPE         Template type: meditation, focus, sleep, relaxation, example\n", Flag("-new"))
-	fmt.Fprintf(color.Output, "  %s             Check syntax only\n", Flag("-test"))
-	fmt.Fprintf(color.Output, "  %s          Render an HTML preview timeline\n", Flag("-preview"))
-	fmt.Fprintf(color.Output, "  %s             Play audio using ffplay\n", Flag("-play"))
-	fmt.Fprintf(color.Output, "  %s            Suppress non-error output\n", Flag("-quiet"))
-	fmt.Fprintf(color.Output, "  %s         Disable ANSI colors in CLI output\n", Flag("-no-color"))
-	fmt.Fprintf(color.Output, "  %s           Show the full manual\n", Flag("-manual"))
-	fmt.Fprintf(color.Output, "  %s          Show version information\n", Flag("-version"))
-	fmt.Fprintf(color.Output, "  %s             Show this help message\n\n", Flag("-help"))
+	fmt.Fprintf(color.Output, "  %sTemplate type: meditation, focus, sleep, relaxation, example\n", FlagColumn("-new TYPE", 18))
+	fmt.Fprintf(color.Output, "  %sCheck syntax only\n", FlagColumn("-test", 18))
+	fmt.Fprintf(color.Output, "  %sRender an HTML preview timeline\n", FlagColumn("-preview", 18))
+	fmt.Fprintf(color.Output, "  %sPlay audio using ffplay\n", FlagColumn("-play", 18))
+	fmt.Fprintf(color.Output, "  %sExport to MP3 with ffmpeg\n", FlagColumn("-mp3", 18))
+	fmt.Fprintf(color.Output, "  %sSuppress non-error output\n", FlagColumn("-quiet", 18))
+	fmt.Fprintf(color.Output, "  %sDisable ANSI colors in CLI output\n", FlagColumn("-no-color", 18))
+	fmt.Fprintf(color.Output, "  %sShow the full manual\n", FlagColumn("-manual", 18))
+	fmt.Fprintf(color.Output, "  %sShow version information\n", FlagColumn("-version", 18))
+	fmt.Fprintf(color.Output, "  %sShow this help message\n\n", FlagColumn("-help", 18))
 
 	fmt.Fprintf(color.Output, "%s\n", Section("Hub:"))
 	fmt.Fprintf(color.Output, "  %s\n\n", Muted("Run -hub-update once before using other -hub-* commands."))
-	fmt.Fprintf(color.Output, "  %s                     List available sequences\n", Flag("-hub-list"))
-	fmt.Fprintf(color.Output, "  %s WORD              Search the Hub\n", Flag("-hub-search"))
-	fmt.Fprintf(color.Output, "  %s NAME                Show information about a sequence\n", Flag("-hub-info"))
-	fmt.Fprintf(color.Output, "  %s NAME [DIR]      Download a sequence and dependencies\n", Flag("-hub-download"))
-	fmt.Fprintf(color.Output, "  %s NAME [OUTPUT]        Download and generate in one step\n", Flag("-hub-get"))
-	fmt.Fprintf(color.Output, "  %s                   Update the local Hub index\n", Flag("-hub-update"))
-	fmt.Fprintf(color.Output, "  %s                    Clean up local Hub cache\n\n", Flag("-hub-clean"))
+	fmt.Fprintf(color.Output, "  %s List available sequences\n", FlagColumn("-hub-list", 24))
+	fmt.Fprintf(color.Output, "  %s Search the Hub\n", FlagColumn("-hub-search WORD", 24))
+	fmt.Fprintf(color.Output, "  %s Show information about a sequence\n", FlagColumn("-hub-info NAME", 24))
+	fmt.Fprintf(color.Output, "  %s Download a sequence and dependencies\n", FlagColumn("-hub-download NAME [DIR]", 24))
+	fmt.Fprintf(color.Output, "  %s Download and generate in one step\n", FlagColumn("-hub-get NAME [OUTPUT]", 24))
+	fmt.Fprintf(color.Output, "  %s Update the local Hub index\n", FlagColumn("-hub-update", 24))
+	fmt.Fprintf(color.Output, "  %s Clean up local Hub cache\n\n", FlagColumn("-hub-clean", 24))
 
 	fmt.Fprintf(color.Output, "%s\n", Section("Hub examples:"))
 	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq -hub-update"))
@@ -198,13 +207,13 @@ func Help() {
 	fmt.Fprintf(color.Output, "  %s\n\n", Command("synapseq -hub-get calm-state calm-state.mp3"))
 
 	fmt.Fprintf(color.Output, "%s\n", Section("Advanced:"))
-	fmt.Fprintf(color.Output, "  %s PATH   Path to ffmpeg executable\n", Flag("-ffmpeg-path"))
-	fmt.Fprintf(color.Output, "  %s PATH   Path to ffplay executable\n\n", Flag("-ffplay-path"))
+	fmt.Fprintf(color.Output, "  %sPath to ffmpeg executable\n", FlagColumn("-ffmpeg-path PATH", 22))
+	fmt.Fprintf(color.Output, "  %sPath to ffplay executable\n\n", FlagColumn("-ffplay-path PATH", 22))
 
 	if runtime.GOOS == "windows" {
 		fmt.Fprintf(color.Output, "%s\n", Section("Windows-specific options:"))
-		fmt.Fprintf(color.Output, "  %s    Associate .spsq files with SynapSeq\n", Flag("-install-file-association"))
-		fmt.Fprintf(color.Output, "  %s  Remove .spsq file association\n\n", Flag("-uninstall-file-association"))
+		fmt.Fprintf(color.Output, "  %sAssociate .spsq files with SynapSeq\n", FlagColumn("-install-file-association", 30))
+		fmt.Fprintf(color.Output, "  %sRemove .spsq file association\n\n", FlagColumn("-uninstall-file-association", 30))
 	}
 
 	fmt.Fprintf(color.Output, "%s\n", Section("For more information:"))
@@ -260,6 +269,7 @@ func ParseFlags() (*CLIOptions, []string, error) {
 
 	// External tool options
 	fs.BoolVar(&opts.Play, "play", false, "Play audio using ffplay")
+	fs.BoolVar(&opts.Mp3, "mp3", false, "Export to MP3 with ffmpeg")
 	fs.StringVar(&opts.FFmpegPath, "ffmpeg-path", "", "Path to ffmpeg executable")
 	fs.StringVar(&opts.FFplayPath, "ffplay-path", "", "Path to ffplay executable")
 
