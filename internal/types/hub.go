@@ -51,7 +51,7 @@ func (at HubActionTracking) String() string {
 // HubDependency represents a dependency for a Hub entry
 type HubDependency struct {
 	Type        HubDependencyType `json:"type"`
-	Name        string            `json:"name"`
+	ID          string            `json:"id"`
 	DownloadUrl string            `json:"download_url"`
 }
 
