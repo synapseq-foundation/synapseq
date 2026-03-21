@@ -56,7 +56,7 @@ func HubDownload(entry *t.HubEntry, action t.HubActionTracking) (string, error) 
 		return "", err
 	}
 
-	sequencePath := filepath.Join(path, entry.Name+".spsq")
+	sequencePath := filepath.Join(path, entry.ID+".spsq")
 	if _, err := os.Stat(sequencePath); err == nil {
 		return sequencePath, nil
 	}
@@ -64,40 +64,40 @@ func HubDownload(entry *t.HubEntry, action t.HubActionTracking) (string, error) 
 	for _, dep := range entry.Dependencies {
 		var depPath string
 		if dep.Type == t.HubDependencyTypeAmbiance {
-			depPath = filepath.Join(path, dep.Name+".wav")
+			depPath = filepath.Join(path, dep.ID+".wav")
 		} else {
-			depPath = filepath.Join(path, dep.Name+".spsc")
+			depPath = filepath.Join(path, dep.ID+".spsc")
 		}
 
 		resp, err := http.Get(dep.DownloadUrl)
 		if err != nil {
-			return "", fmt.Errorf("error downloading dependency %s: %v", dep.Name, err)
+			return "", fmt.Errorf("error downloading dependency %s: %v", dep.ID, err)
 		}
 		defer resp.Body.Close()
 
 		data, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return "", fmt.Errorf("error reading dependency %s: %v", dep.Name, err)
+			return "", fmt.Errorf("error reading dependency %s: %v", dep.ID, err)
 		}
 
 		if err = os.WriteFile(depPath, data, 0644); err != nil {
-			return "", fmt.Errorf("error saving dependency %s: %v", dep.Name, err)
+			return "", fmt.Errorf("error saving dependency %s: %v", dep.ID, err)
 		}
 	}
 
 	resp, err := http.Get(entry.DownloadUrl)
 	if err != nil {
-		return "", fmt.Errorf("error downloading sequence %s: %v", entry.Name, err)
+		return "", fmt.Errorf("error downloading sequence %s: %v", entry.ID, err)
 	}
 	defer resp.Body.Close()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("error reading sequence %s: %v", entry.Name, err)
+		return "", fmt.Errorf("error reading sequence %s: %v", entry.ID, err)
 	}
 
 	if err = os.WriteFile(sequencePath, data, 0644); err != nil {
-		return "", fmt.Errorf("error saving sequence %s: %v", entry.Name, err)
+		return "", fmt.Errorf("error saving sequence %s: %v", entry.ID, err)
 	}
 
 	return sequencePath, nil

@@ -239,12 +239,12 @@ func hubRunDownload(sequenceID, targetDir string, quiet bool) error {
 		return fmt.Errorf("failed to download sequence from hub. Error\n  %v", err)
 	}
 
-	if err := s.CopyDir(filepath.Dir(seqFile), filepath.Join(targetDir, entry.Name)); err != nil {
+	if err := s.CopyDir(filepath.Dir(seqFile), filepath.Join(targetDir, entry.ID)); err != nil {
 		return fmt.Errorf("failed to copy files to target directory. Error\n  %v", err)
 	}
 
 	if !quiet {
-		fmt.Printf("%s %s %s\n", cli.SuccessText("Downloaded"), cli.Accent(fmt.Sprintf("%q", entry.Name)), cli.Muted(fmt.Sprintf("and its dependencies to %s", targetDir)))
+		fmt.Printf("%s %s %s\n", cli.SuccessText("Downloaded"), cli.Accent(fmt.Sprintf("%q", entry.ID)), cli.Muted(fmt.Sprintf("and its dependencies to %s", targetDir)))
 	}
 
 	return nil
@@ -297,7 +297,7 @@ func hubRunInfo(sequenceID string) error {
 	if len(entry.Dependencies) > 0 {
 		dependencies = "\n" + cli.Section("Dependencies:") + "\n"
 		for _, dep := range entry.Dependencies {
-			dependencies += fmt.Sprintf("  - %s %s\n", cli.Accent(dep.Name), cli.Muted(fmt.Sprintf("(%s)", dep.Type.String())))
+			dependencies += fmt.Sprintf("  - %s %s\n", cli.Accent(dep.ID), cli.Muted(fmt.Sprintf("(%s)", dep.Type.String())))
 		}
 	}
 	fmt.Printf("%s", dependencies)
