@@ -48,10 +48,6 @@ If you want to build SynapSeq from source, see the [Compilation Guide](COMPILE.m
 
 After installation on any platform, run `synapseq -manual` to open the built-in manual, or read [USAGE](USAGE.md) in this repository.
 
-## AI Specification Pack
-
-If you are using SynapSeq with LLMs or prompt pipelines, see [AI](ai/README.md) for the AI specification pack.
-
 ## Go API
 
 If you want to integrate SynapSeq into a Go project, use the [Go module API](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4/core).
