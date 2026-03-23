@@ -41,7 +41,7 @@ func HubGet(sequenceID string) (*t.HubEntry, error) {
 }
 
 // HubDownload downloads a sequence and its dependencies from the Hub
-func HubDownload(entry *t.HubEntry, action t.HubActionTracking) (string, error) {
+func HubDownload(entry *t.HubEntry) (string, error) {
 	if entry == nil {
 		return "", fmt.Errorf("hub entry is nil")
 	}
