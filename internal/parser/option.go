@@ -124,7 +124,8 @@ func (ctx *TextParser) ParseOption(dirPath string) (*t.ParseOptions, error) {
 
 		content, ok := ctx.Line.NextToken()
 		if !ok {
-			return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "ambiance path")
+			content = name // allow shorthand ambiance name as path
+			// return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "ambiance path")
 		}
 		contentSpan, _ := ctx.Line.LastTokenSpan()
 
