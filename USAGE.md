@@ -4,7 +4,9 @@ Version 4.0.2
 
 ## Name
 
-SynapSeq is a text-driven audio sequencer for brainwave sessions and ambient sound design.
+### synapseq
+
+text-driven audio sequencer for brainwave sessions and ambient sound design
 
 ## Synopsis
 
@@ -16,6 +18,7 @@ synapseq -play INPUT
 synapseq -mp3 INPUT
 synapseq -test INPUT
 synapseq -hub-update
+synapseq -hub-clean
 synapseq -hub-list
 synapseq -hub-search WORD
 synapseq -hub-info NAME
@@ -27,15 +30,15 @@ synapseq -version
 synapseq -manual -no-color
 ```
 
-For paged reading, use the command that matches your shell environment.
+### Paged Reading
 
-### Linux and macOS
+#### Linux and macOS
 
 ```text
 synapseq -manual | less
 ```
 
-### Windows PowerShell
+#### Windows PowerShell
 
 ```text
 synapseq -manual | more
@@ -43,335 +46,504 @@ synapseq -manual | more
 
 ## Description
 
-SynapSeq is a text-driven audio sequencer for building repeatable brainwave and ambient listening sessions from plain-text score files. Instead of editing waveforms directly, you describe structure, timing, and sound layers in a small domain-specific language and let the renderer generate the final audio.
+SynapSeq parses a line-oriented score language and renders deterministic audio. Ordering is strict. Options must appear first. Presets must appear next. Timeline entries must appear last.
 
-A typical sequence combines oscillator-based tones, entrainment beats, filtered noise, ambiance layers, waveform selection, and motion effects. These building blocks are arranged into named presets and then placed on a timeline so the session can evolve predictably over minutes or hours.
+INPUT may be a local .spsq file, a sequence URL, or -. Output is WAV by default. -mp3 selects MP3. -preview selects HTML. -play selects direct playback. -test validates only.
 
-The parser is strict by design: options belong at the top, presets come next, and timeline entries close the file. This keeps sessions readable, deterministic, and easier to validate before rendering or playback.
+## Options
 
-SynapSeq can read local files, remote sequence URLs, or standard input. It can render WAV or MP3 output, stream raw PCM to standard output, preview the session as HTML, play directly through ffplay, and fetch published content from the SynapSeq Hub.
+### Rules
 
-For larger libraries, the language supports modular composition through @extends and reusable template presets, making it practical to share preset families across multiple sessions without duplicating track definitions.
+one primary action per command
+INPUT required except when not applicable
+OUTPUT optional
+derived output path when OUTPUT is omitted
 
-## Command Line
+### General
 
-The command line accepts one primary action at a time plus supporting flags. When INPUT is present, it may be a local .spsq file, a URL, or - for standard input. When OUTPUT is omitted, SynapSeq derives a default output path from the input name and target format.
+#### -new TYPE
 
-The following options are available from the CLI.
+create a starter sequence
 
-### General Options
+#### TYPE
 
-- **-new TYPE**: Create a starter sequence from a built-in template. Supported types are meditation, focus, sleep, relaxation, and example.
-- **-test**: Validate sequence syntax and semantics without generating audio output.
-- **-preview**: Render an HTML timeline preview instead of audio.
-- **-play**: Render and play the result directly with ffplay.
-- **-mp3**: Render the sequence as an MP3 file.
-- **-quiet**: Suppress non-error CLI output.
-- **-no-color**: Disable ANSI colors in CLI output. Useful for pipes, logs, and pagers configured without raw-control support.
-- **-manual**: Print the full manual.
-- **-help**: Show the concise command overview.
-- **-version**: Print version, build, and platform information.
-
-### Hub Options
-
-- **-hub-update**: Refresh the local index of sequences available in the SynapSeq Hub.
-- **-hub-clean**: Remove cached Hub data from the local machine.
-- **-hub-list**: List sequences currently available from the local Hub index.
-- **-hub-search WORD**: Search the Hub index for matching sequence names or metadata.
-- **-hub-info NAME**: Show metadata and descriptive details for a Hub sequence.
-- **-hub-download NAME [DIR]**: Download a Hub sequence and its dependencies. If DIR is provided, files are stored there.
-- **-hub-get NAME [OUTPUT]**: Download a Hub sequence and render it in one step. If OUTPUT is provided, it is used as the target file name.
-
-### External Tool Options
-
-- **-ffmpeg-path PATH**: Use a specific ffmpeg executable when exporting MP3.
-- **-ffplay-path PATH**: Use a specific ffplay executable when playing audio directly.
-
-### Windows Options
-
-- **-install-file-association**: Associate .spsq files with SynapSeq on Windows.
-- **-uninstall-file-association**: Remove the SynapSeq .spsq file association on Windows.
-
-## File Layout
-
-- **Options**: Start with lines beginning with @. They define global settings such as samplerate, volume, ambiance files, and modular imports.
-- **Presets**: Define named sound setups. A preset line has no indentation. Tracks under that preset must start with exactly two spaces.
-- **Timeline**: Schedule presets over time using HH:MM:SS. Timeline entries are always top-level lines with no indentation.
-
-The first timeline entry must start at 00:00:00, times must be strictly increasing, and a valid sequence needs at least two periods.
-
-```text
-@volume 90
-@samplerate 44100
-
+meditation
 focus
-  noise white amplitude 10
-  tone 240 binaural 16 amplitude 15
+sleep
+relaxation
+example
 
-00:00:00 silence
-00:00:20 focus
-00:19:30 focus
-00:20:00 silence
-```
+#### -test
 
-## Comments
+validate syntax and semantics only
 
-- **# comment**: Ignored by the parser. Useful for notes and documentation.
-- **## comment**: Stored as a sequence comment and shown by the CLI before rendering when output is not quiet.
-- **Standalone lines only**: Comments must occupy their own lines. Inline comments after options, preset names, track lines, overrides, or timeline entries are invalid syntax.
+#### -preview
 
-```text
-@samplerate 48000 # samplerate
-```
+render HTML preview
 
-The example above is invalid. Write comments only on otherwise empty lines.
+#### -play
 
-## Sequence Options
+render and play through ffplay
 
-- **@samplerate NUMBER**: Set the output sample rate. Default is 44100.
-- **@volume NUMBER**: Set the global output volume from 0 to 100. Default is 100.
-- **@ambiance NAME PATH_OR_URL**: Register an ambiance source that can be referenced later by track definitions.
-- **@extends PATH_OR_URL**: Load presets and options from a modular .spsc file before the main sequence is built.
+#### -mp3
 
-For local @ambiance and @extends paths, use relative paths with forward slashes and omit the file extension. Local ambiance paths resolve to .wav and local extends paths resolve to .spsc.
+render MP3 output
 
-Absolute paths, parent traversal, Windows drive prefixes, and stdin are rejected for local modular paths.
+#### -quiet
 
-```text
-@volume 85
-@samplerate 48000
-@ambiance rain audio/rain
-@ambiance ocean https://example.com/ocean.wav
-@extends library/common
-```
+suppress non-error CLI output
 
-## Preset Names
+#### -no-color
 
-Named references should be short and predictable. A preset or ambiance name must start with a letter, may contain letters, digits, underscores, or dashes, and may not exceed 20 characters.
+disable ANSI color output
 
-Use lowercase names consistently. Presets are normalized to lowercase internally.
+#### -manual
 
-## Presets
+print full manual
 
-- **Regular preset**: A plain top-level name creates a new preset.
-- **Template preset**: Use as template to define a reusable base that cannot appear directly in the timeline.
-- **Inherited preset**: Use from TEMPLATE_NAME to clone a template preset and then override selected track fields.
+#### -help
 
-```text
-focus-base as template
-  noise white amplitude 15
-  tone 240 binaural 14 amplitude 12
+print concise command overview
 
-focus-deep from focus-base
-  track 1 amplitude 25
-  track 2 binaural 18
-```
+#### -version
 
-A preset that inherits from a template cannot define new track lines. It must use track overrides instead.
+print version build and platform information
 
-## Track Definitions
+### Hub
 
-Track lines belong under a preset and must start with exactly two spaces. SynapSeq allocates tracks automatically in declaration order.
+#### -hub-update
 
-- **Pure tone**: `tone CARRIER amplitude LEVEL`
-- **Beat tone**: `tone CARRIER binaural|monaural|isochronic BEAT amplitude LEVEL`
-- **Noise**: `noise white|pink|brown [smooth VALUE] amplitude LEVEL`
-- **Ambiance**: `ambiance NAME amplitude LEVEL`
+refresh local Hub index
 
-Amplitude is required on every concrete track definition. Tone carrier and beat values are positive numbers. Noise smooth ranges from 0 to 100.
+#### -hub-clean
 
-```text
-alpha
-  tone 300 amplitude 10
-  tone 220 binaural 8 amplitude 14
-  noise pink smooth 35 amplitude 20
-  ambiance rain amplitude 25
-```
+remove cached Hub data
 
-## Sound Concepts
+#### -hub-list
 
-- **tone**: A steady audible carrier frequency with no beat component. Use it when you want a plain oscillator without binaural, monaural, or isochronic pulsing.
-- **binaural**: A beat created by feeding slightly different frequencies to the left and right channels. In SynapSeq syntax, the number after binaural is the beat frequency, not the carrier.
-- **monaural**: A beat produced by combining close frequencies into a single perceived pulse before it reaches the ears. It still uses a carrier plus a beat value, but behaves differently from binaural playback.
-- **isochronic**: A rhythmic single-tone pulse where the sound is sharply gated on and off. Use it when you want a clearly defined pulse rather than two interacting tones.
-- **noise**: A broadband texture instead of a pitched oscillator. White, pink, and brown noise differ in spectral balance, and smooth controls how gently the noise evolves over time.
-- **ambiance**: A named WAV file or remote WAV resource mixed into the preset. Ambiance is useful for rain, drones, environmental beds, and other non-synth layers.
+list sequences from local Hub index
 
-A practical rule: tone defines the audible pitch, binaural or other beat keywords define how that pitch is modulated or split, amplitude controls loudness, and optional effects add movement.
+#### -hub-search WORD
 
-## Waveforms
+search local Hub index
 
-You can prefix tone and ambiance tracks with waveform to change the oscillator shape. Valid values are sine, square, triangle, and sawtooth.
+#### -hub-info NAME
 
-```text
-shape-demo
-  waveform triangle tone 250 monaural 8 amplitude 10
-  waveform square ambiance rain amplitude 20
-```
-
-## Effects
-
-Effects are optional and appear before amplitude. All effects require a value and an intensity percentage.
-
-- **pan**: Moves the sound across the stereo field over time. The effect value controls the pan rate and intensity controls how far the movement is pushed.
-- **modulation**: Applies cyclic amplitude movement. The effect value acts as the modulation rate and intensity controls how deep the volume swing becomes.
-- **doppler**: Applies motion-based pitch and stereo movement for tone tracks. It is available only on tone-based tracks and is useful for a drifting or orbiting sensation.
-- **Tone effects**: pan, modulation, and doppler are valid for tone-based tracks.
-- **Noise effects**: pan and modulation are valid for noise tracks.
-- **Ambiance effects**: pan and modulation are valid for ambiance tracks.
-
-```text
-fx-demo
-  tone 300 binaural 10 effect modulation 6 intensity 40 amplitude 18
-  tone 220 effect doppler 0.9 intensity 70 amplitude 14
-  noise white effect pan 0.5 intensity 60 amplitude 12
-  ambiance rain effect modulation 4 intensity 35 amplitude 20
-```
+print Hub sequence metadata
 
-## Track Overrides
+#### -hub-download NAME [DIR]
 
-Track overrides are only valid inside presets created with from TEMPLATE_NAME. The syntax is 1-based: track 1 targets the first inherited track.
+download sequence and dependencies
 
-- **tone VALUE**: Change the carrier frequency of an inherited tone track.
-- **binaural|monaural|isochronic VALUE**: Change the beat value of an inherited matching beat track.
-- **smooth VALUE**: Change the smooth amount of an inherited noise track.
-- **pan|modulation|doppler VALUE**: Change the effect value when that effect already exists on the inherited track.
-- **intensity VALUE**: Change effect intensity.
-- **amplitude VALUE**: Change the track amplitude.
-
-```text
-focus-strong from focus-base
-  track 1 amplitude 30
-  track 2 tone 250
-  track 2 binaural 18
-  track 3 smooth 40
-  track 2 intensity 75
-```
+DIR optional
 
-## Timeline
+#### -hub-get NAME [OUTPUT]
 
-- **Format**: `HH:MM:SS PRESET_NAME [TRANSITION]`
-- **Default transition**: `steady`
-- **Other transitions**: `ease-in, ease-out, smooth`
+download and render sequence
 
-Timeline entries must reference non-template presets. The parser adjusts each period against the next one to build transitions and track interpolation.
+OUTPUT optional
 
-- **steady**: Hold the current preset values without applying an easing curve. This is the neutral transition and the default when you omit the transition keyword.
-- **ease-in**: Start the transition gently and accelerate into the target state. Useful when you want the next section to arrive progressively rather than immediately.
-- **ease-out**: Move quickly at first and then settle more gently as the next state is reached. Useful for soft landings near the end of a section.
-- **smooth**: Apply a balanced easing curve across the whole transition. This is usually the best choice for gradual meditative ramps.
-- **Compatibility rule**: Consecutive timeline entries cannot reuse the same channel with an incompatible track type, effect type, or ambiance source.
-- **Silence bridge**: If you need to switch a channel from one incompatible sound design to another, insert a silence preset between those timeline entries.
-- **Direct on/off changes**: A channel should not jump directly between an active track and off; use silence as the bridge state.
+### External Tools
 
-```text
-00:00:00 silence
-00:00:20 focus-light
-00:04:00 focus-light smooth
-00:07:00 focus
-00:19:30 focus
-00:20:00 silence
+#### -ffmpeg-path PATH
 
-# Good: incompatible presets are separated by silence
-00:00:00 silence
-00:00:15 doppler-preset
-00:00:30 silence
-00:00:45 pan-preset
-```
+use specific ffmpeg executable
 
-## Extended Files
+#### -ffplay-path PATH
 
-Files loaded by @extends are modular .spsc files. They may contain options, presets, tracks, and track overrides. They may not contain timeline entries, and they may not contain another @extends option.
+use specific ffplay executable
 
-- **Library file example**: A `.spsc` file is useful for shared preset libraries. Keep reusable templates or presets there, then import them from your main `.spsq` session.
+### Windows
 
-```text
-# library/common.spsc
-focus-template as template
-  tone 240 binaural 10 amplitude 12
-  noise pink smooth 25 amplitude 8
-```
+#### -install-file-association
 
-- **Main sequence example**: Your main `.spsq` file can import that library with `@extends` and then build concrete presets or timeline entries from it.
+associate .spsq files with SynapSeq
 
-```text
-@extends library/common
+#### -uninstall-file-association
 
-focus-light from focus-template
-  track 1 amplitude 10
-  track 2 amplitude 6
+remove .spsq file association
 
-00:00:00 silence
-00:00:20 focus-light
-00:10:00 silence
-```
+## Sequence File
 
-## Examples
+### File Type
 
-Start with a minimal session first. Once that structure is clear, add more layers or modular reuse.
+plain-text .spsq
+parsed top to bottom
 
-### Basic Session
+### Order
 
-A minimal valid file: one preset, one audible section, and silence at the beginning and end.
+options
+presets
+timeline
 
-```text
-@volume 90
+### Top Level
 
-focus
-  tone 240 binaural 10 amplitude 15
+no indentation
+preset declarations must start in column 1
+timeline entries must start in column 1
 
-00:00:00 silence
-00:00:20 focus
-00:00:40 silence
-```
+### Preset Body
 
-### Layered Preset
+exactly two leading spaces required
+track definitions use this indentation
+track overrides use this indentation
 
-Add noise or ambiance when you want more texture without changing the overall preset structure.
+### Options
 
-```text
-deep-rest
-  noise brown smooth 45 amplitude 12
-  tone 180 binaural 6 effect modulation 4 intensity 30 amplitude 16
-  ambiance rain effect pan 0.3 intensity 35 amplitude 22
+valid only before first preset
+valid only before first timeline entry
 
-00:00:00 silence
-00:00:20 deep-rest
-00:10:00 silence
-```
+### Timeline
 
-### Reusable Templates
+#### Syntax
 
-Use @extends and template inheritance when several sessions share the same preset family.
+HH:MM:SS PRESET_NAME [TRANSITION]
 
-```text
-@extends library/focus-base
-@ambiance rain audio/rain
+#### Time
 
-focus-light from focus-template
-  track 1 amplitude 8
-  track 2 binaural 12
+HH:MM:SS required
 
-focus-deep from focus-template
-  track 1 amplitude 18
-  track 2 binaural 18
-  track 2 intensity 65
-```
+#### Rules
+
+top-level lines only
+first entry zero time
+strictly increasing
+at least two periods
+non-template preset only
+
+#### TRANSITION
+
+steady ease-in ease-out smooth
+
+### Comments
+
+#### # comment
+
+ignored
+
+#### ## comment
+
+stored and printed unless -quiet is set
+
+#### Rules
+
+full line only
+inline comment not permitted
+
+### Global Options
+
+#### @samplerate NUMBER
+
+default 44100
+
+#### @volume NUMBER
+
+range 0 to 100
+
+default 100
+
+#### @ambiance NAME PATH_OR_URL
+
+register named ambiance source
+
+#### @extends PATH_OR_URL
+
+load modular .spsc content before main file
+
+### Local Paths
+
+relative only
+forward slashes only
+no extension
+ambiance resolves to .wav
+extends resolves to .spsc
+absolute path not permitted
+parent traversal not permitted
+Windows drive prefix not permitted
+stdin not permitted
+
+### Identifiers
+
+first character must be a letter
+remaining characters may be letters digits underscores dashes
+maximum length 20
+preset references are case-insensitive
+preset names normalize to lowercase
+
+### Preset Declarations
+
+NAME
+NAME as template
+NAME from TEMPLATE_NAME
+
+### Template Rules
+
+template preset cannot appear on timeline
+
+### Inheritance Rules
+
+inherited preset cannot define new track lines
+inherited preset may contain track overrides only
+
+### Track Syntax
+
+tone CARRIER amplitude LEVEL
+tone CARRIER binaural|monaural|isochronic BEAT amplitude LEVEL
+noise white|pink|brown [smooth VALUE] amplitude LEVEL
+ambiance NAME amplitude LEVEL
+
+### Track Rules
+
+amplitude required
+carrier positive only
+beat positive only
+smooth 0 to 100 only
+waveform prefix allowed on tone track
+waveform prefix allowed on ambiance track
+effect TYPE VALUE intensity PERCENT appears before amplitude
+
+### Waveforms
+
+waveform VALUE
+waveform VALUE
+
+#### VALUE
+
+sine square triangle sawtooth
+sine square triangle sawtooth
+
+### Effects
+
+effect TYPE VALUE intensity PERCENT
+effect TYPE VALUE intensity PERCENT
+
+#### TYPE
+
+pan modulation doppler
+pan modulation doppler
+
+#### Allowed
+
+##### tone
+
+pan modulation doppler
+pan modulation doppler
+
+##### noise
+
+pan modulation
+pan modulation
+
+##### ambiance
+
+pan modulation
+pan modulation
+
+### Track Overrides
+
+#### Scope
+
+inherited presets only
+inherited presets only
+
+#### Index
+
+1-based
+1-based
+
+#### Syntax
+
+track N tone VALUE
+track N binaural|monaural|isochronic VALUE
+track N smooth VALUE
+track N pan|modulation|doppler VALUE
+track N intensity VALUE
+track N amplitude VALUE
+track N tone VALUE
+track N binaural|monaural|isochronic VALUE
+track N smooth VALUE
+track N pan|modulation|doppler VALUE
+track N intensity VALUE
+track N amplitude VALUE
+
+#### Rules
+
+matching existing effect type only
+matching existing effect type only
+
+### Extended Files
+
+#### type
+
+.spsc
+.spsc
+
+#### Allowed
+
+options
+presets
+tracks
+track overrides
+options
+presets
+tracks
+track overrides
+
+#### Not Permitted
+
+timeline entries
+nested @extends
+timeline entries
+nested @extends
+
+## Compatibility
+
+### Scope
+
+checked between consecutive timeline entries
+checked per channel
+channels match by track declaration order
+checked between consecutive timeline entries
+checked per channel
+channels match by track declaration order
+
+### Required Matches
+
+#### track kind
+
+tone only with tone
+noise only with noise
+ambiance only with ambiance
+tone only with tone
+noise only with noise
+ambiance only with ambiance
+
+#### beat mode
+
+binaural only with binaural
+monaural only with monaural
+isochronic only with isochronic
+binaural only with binaural
+monaural only with monaural
+isochronic only with isochronic
+
+#### noise color
+
+white only with white
+pink only with pink
+brown only with brown
+white only with white
+pink only with pink
+brown only with brown
+
+#### effect type
+
+pan only with pan
+modulation only with modulation
+doppler only with doppler
+pan only with pan
+modulation only with modulation
+doppler only with doppler
+
+#### ambiance source
+
+same source only
+same source only
+
+### Not Permitted
+
+active track to off
+off to active track
+direct switch between incompatible track kinds
+direct switch between incompatible effect types
+direct switch between different ambiance sources
+active track to off
+off to active track
+direct switch between incompatible track kinds
+direct switch between incompatible effect types
+direct switch between different ambiance sources
+
+### Allowed
+
+waveform change between otherwise compatible tone tracks
+waveform change between otherwise compatible ambiance tracks
+waveform change between otherwise compatible tone tracks
+waveform change between otherwise compatible ambiance tracks
+
+### Bridge
+
+use built-in silence preset between incompatible states
+use built-in silence preset between incompatible states
+
+## Common Errors
+
+#### Option after preset or timeline
+
+move all @options to file start
+
+#### Indented top-level line
+
+remove indentation from preset declarations and timeline entries
+
+#### Wrong preset indentation
+
+use exactly two leading spaces for preset body lines
+
+#### Inline comment
+
+move comment to its own line
+
+#### Template on timeline
+
+replace template with concrete preset
+
+#### First timeline entry not zero time
+
+set first entry to zero time
+
+#### Non-increasing timeline
+
+reorder entries into strictly increasing time order
+
+#### Single period only
+
+add a second timeline entry
+
+#### New track in inherited preset
+
+remove track definition
+
+use track override only
+
+#### Incompatible direct transition
+
+insert silence between presets
+
+#### Invalid local path
+
+use relative path
+
+use forward slashes
+
+omit extension
 
 ## Notes
 
-- **Use silence**: A built-in preset named silence is always available and is ideal for the first or last timeline entry.
-- **Indentation matters**: Preset children must use two leading spaces. A top-level tone/noise/ambiance line is invalid syntax.
-- **Keep options first**: Once presets or timeline entries start, additional options are rejected.
-- **Prefer templates for families**: If several presets share the same structure, declare a template and override only what changes.
-- **Track positions are fixed**: Direct transitions compare tracks by position. Track 1 must stay the same kind of sound across directly connected presets, and the same rule applies to every later track slot.
-- **Structural changes need silence**: Do not switch a track directly between tone, noise, or ambiance types. If the structure must change, insert the built-in silence preset between those timeline entries.
-- **Beat, noise, and effect types must match**: Across directly connected presets, keep binaural versus monaural versus isochronic mode unchanged, keep white versus pink versus brown noise unchanged, and keep pan versus modulation versus doppler unchanged.
-- **Waveforms may change**: Waveform shape is treated as a parameter, not a structural type. It may change between otherwise compatible tone or ambiance tracks.
+#### silence
+
+built-in preset
+
+always available
+
+#### Channels
+
+assigned by track declaration order
+
+#### Reuse
+
+@extends loads reusable .spsc content
 
 ## See Also
-
-Use synapseq -help for a concise command overview, or visit the website for more resources, examples, and the latest updates.
 
 ```text
 synapseq -help
