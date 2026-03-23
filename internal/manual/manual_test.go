@@ -38,10 +38,15 @@ func TestRenderIncludesCoreSections(ts *testing.T) {
 		"NAME",
 		"SYNOPSIS",
 		"DESCRIPTION",
+		"OPTIONS",
+		"SEQUENCE FILE",
+		"COMPATIBILITY",
+		"COMMON ERRORS",
 		"synapseq [OPTION]... INPUT [OUTPUT]",
+		"synapseq -hub-clean",
 		"synapseq -hub-download NAME [DIR]",
 		"synapseq -hub-get NAME [OUTPUT]",
-		"FILE LAYOUT",
+		"Paged reading",
 		"-new TYPE",
 		"-test",
 		"-preview",
@@ -52,7 +57,6 @@ func TestRenderIncludesCoreSections(ts *testing.T) {
 		"-help",
 		"-version",
 		"-hub-update",
-		"-hub-clean",
 		"-hub-list",
 		"-hub-search WORD",
 		"-hub-info NAME",
@@ -60,52 +64,44 @@ func TestRenderIncludesCoreSections(ts *testing.T) {
 		"-ffplay-path PATH",
 		"-install-file-association",
 		"-uninstall-file-association",
-		"repeatable",
-		"ambient listening sessions",
-		"Options",
-		"SEQUENCE OPTIONS",
-		"Presets",
-		"TRACK DEFINITIONS",
-		"SOUND CONCEPTS",
+		"line-oriented score language",
+		"Timeline entries must appear last.",
+		"INPUT may be a local .spsq file",
+		"Rules",
+		"Global options",
+		"Identifiers",
+		"Preset declarations",
+		"Track syntax",
 		"binaural",
 		"isochronic",
 		"pan",
 		"doppler",
-		"TRACK OVERRIDES",
+		"Track overrides",
 		"smooth VALUE",
-		"track 3 smooth 40",
-		"TIMELINE",
+		"Timeline",
 		"steady",
 		"ease-in",
 		"ease-out",
-		"smooth",
-		"Compatibility rule",
-		"Silence bridge",
-		"incompatible track type",
+		"beat mode",
+		"track kind",
 		"effect type",
 		"ambiance source",
-		"EXTENDED FILES",
-		"EXAMPLES",
+		"Extended files",
 		"SEE ALSO",
-		"synapseq -manual",
 		"synapseq -manual | less",
 		"synapseq -manual | more",
-		"Basic session",
-		"00:00:40 silence",
-		"Reusable templates",
-		"Track positions are fixed",
-		"Structural changes need silence",
-		"Beat, noise, and effect types must match",
-		"Waveforms may change",
-		"@ambiance rain audio/rain",
-		"00:00:00 silence",
-		"# library/common.spsc",
-		"focus-template as template",
-		"@extends library/common",
-		"@extends library/focus-base",
-		"Standalone lines only",
-		"@samplerate 48000 # samplerate",
-		"The example above is invalid.",
+		"plain-text .spsq",
+		"VALUE",
+		"Allowed",
+		"Bridge",
+		"Rules",
+		"Inline comment",
+		"Option after preset or timeline",
+		"New track in inherited preset",
+		"Invalid local path",
+		"HH MM SS required",
+		"tone only with tone",
+		"same source only",
 	}
 
 	for _, check := range checks {
@@ -115,6 +111,40 @@ func TestRenderIncludesCoreSections(ts *testing.T) {
 	}
 	if strings.Contains(manual, "\x1b[") {
 		ts.Fatalf("expected manual without ANSI colors when color is disabled, got: %q", manual)
+	}
+
+	removed := []string{
+		"EXAMPLES",
+		"Basic session",
+		"Reusable templates",
+		"00:00:40 silence",
+		"@extends library/focus-base",
+		"@ambiance rain audio/rain",
+		"# library/common.spsc",
+		"TRACK KEYWORDS",
+		"focus-base as template",
+		"track 3 smooth 40",
+		"@extends library/common",
+		"@samplerate 48000 # samplerate",
+		"The example above is invalid.",
+		"COMMAND LINE",
+		"SEQUENCE OPTIONS",
+		"PRESET NAMES",
+		"PRESETS",
+		"Compatibility rule",
+		"Silence bridge",
+		"Standalone lines only",
+		"Track Definitions",
+		"->",
+		":",
+		"00:00:00",
+		"HH:MM:SS",
+	}
+
+	for _, check := range removed {
+		if strings.Contains(manual, check) {
+			ts.Fatalf("expected manual to omit %q, got:\n%s", check, manual)
+		}
 	}
 }
 
@@ -130,7 +160,7 @@ func TestRenderEmitsANSIWhenEnabled(ts *testing.T) {
 	}
 
 	plain := stripANSI(manual)
-	if !strings.Contains(plain, "COMMAND LINE") {
+	if !strings.Contains(plain, "OPTIONS") {
 		ts.Fatalf("expected stripped manual to keep text content, got: %q", plain)
 	}
 }
