@@ -103,6 +103,26 @@ func TestParseTrackOverride_Success(ts *testing.T) {
 			},
 		},
 		{
+			name:     "override tone carrier relative increase",
+			line:     "  track 1 tone +50",
+			trackIdx: 0,
+			checkFunc: func(t *testing.T, p *t.Preset) {
+				if p.Track[0].Carrier != 350 {
+					t.Errorf("expected carrier 350, got %v", p.Track[0].Carrier)
+				}
+			},
+		},
+		{
+			name:     "override tone carrier relative decrease",
+			line:     "  track 1 tone -100",
+			trackIdx: 0,
+			checkFunc: func(t *testing.T, p *t.Preset) {
+				if p.Track[0].Carrier != 200 {
+					t.Errorf("expected carrier 200, got %v", p.Track[0].Carrier)
+				}
+			},
+		},
+		{
 			name:     "override binaural resonance",
 			line:     "  track 1 binaural 12",
 			trackIdx: 0,
@@ -113,11 +133,53 @@ func TestParseTrackOverride_Success(ts *testing.T) {
 			},
 		},
 		{
+			name:     "override binaural resonance relative increase",
+			line:     "  track 1 binaural +5",
+			trackIdx: 0,
+			checkFunc: func(t *testing.T, p *t.Preset) {
+				if p.Track[0].Resonance != 15 {
+					t.Errorf("expected resonance 15, got %v", p.Track[0].Resonance)
+				}
+			},
+		},
+		{
+			name:     "override binaural resonance relative decrease",
+			line:     "  track 1 binaural -3",
+			trackIdx: 0,
+			checkFunc: func(t *testing.T, p *t.Preset) {
+				if p.Track[0].Resonance != 7 {
+					t.Errorf("expected resonance 7, got %v", p.Track[0].Resonance)
+				}
+			},
+		},
+		{
 			name:     "override amplitude",
 			line:     "  track 1 amplitude 30",
 			trackIdx: 0,
 			checkFunc: func(ts *testing.T, p *t.Preset) {
 				expected := t.AmplitudePercentToRaw(30)
+				if p.Track[0].Amplitude != expected {
+					ts.Errorf("expected amplitude %v, got %v", expected, p.Track[0].Amplitude)
+				}
+			},
+		},
+		{
+			name:     "override amplitude relative increase",
+			line:     "  track 1 amplitude +10",
+			trackIdx: 0,
+			checkFunc: func(ts *testing.T, p *t.Preset) {
+				expected := t.AmplitudePercentToRaw(30)
+				if p.Track[0].Amplitude != expected {
+					ts.Errorf("expected amplitude %v, got %v", expected, p.Track[0].Amplitude)
+				}
+			},
+		},
+		{
+			name:     "override amplitude relative decrease",
+			line:     "  track 1 amplitude -5",
+			trackIdx: 0,
+			checkFunc: func(ts *testing.T, p *t.Preset) {
+				expected := t.AmplitudePercentToRaw(15)
 				if p.Track[0].Amplitude != expected {
 					ts.Errorf("expected amplitude %v, got %v", expected, p.Track[0].Amplitude)
 				}
@@ -144,11 +206,53 @@ func TestParseTrackOverride_Success(ts *testing.T) {
 			},
 		},
 		{
+			name:     "override ambiance pan relative increase",
+			line:     "  track 2 pan +3",
+			trackIdx: 1,
+			checkFunc: func(t *testing.T, p *t.Preset) {
+				if p.Track[1].Effect.Value != 8 {
+					t.Errorf("expected pan value 8, got %v", p.Track[1].Effect.Value)
+				}
+			},
+		},
+		{
+			name:     "override ambiance pan relative decrease",
+			line:     "  track 2 pan -2",
+			trackIdx: 1,
+			checkFunc: func(t *testing.T, p *t.Preset) {
+				if p.Track[1].Effect.Value != 3 {
+					t.Errorf("expected pan value 3, got %v", p.Track[1].Effect.Value)
+				}
+			},
+		},
+		{
 			name:     "override effect intensity",
 			line:     "  track 2 intensity 80",
 			trackIdx: 1,
 			checkFunc: func(ts *testing.T, p *t.Preset) {
 				expected := t.IntensityPercentToRaw(80)
+				if p.Track[1].Effect.Intensity != expected {
+					ts.Errorf("expected intensity %v, got %v", expected, p.Track[1].Effect.Intensity)
+				}
+			},
+		},
+		{
+			name:     "override effect intensity relative increase",
+			line:     "  track 2 intensity +5",
+			trackIdx: 1,
+			checkFunc: func(ts *testing.T, p *t.Preset) {
+				expected := t.IntensityPercentToRaw(80)
+				if p.Track[1].Effect.Intensity != expected {
+					ts.Errorf("expected intensity %v, got %v", expected, p.Track[1].Effect.Intensity)
+				}
+			},
+		},
+		{
+			name:     "override effect intensity relative decrease",
+			line:     "  track 2 intensity -15",
+			trackIdx: 1,
+			checkFunc: func(ts *testing.T, p *t.Preset) {
+				expected := t.IntensityPercentToRaw(60)
 				if p.Track[1].Effect.Intensity != expected {
 					ts.Errorf("expected intensity %v, got %v", expected, p.Track[1].Effect.Intensity)
 				}
@@ -165,12 +269,42 @@ func TestParseTrackOverride_Success(ts *testing.T) {
 			},
 		},
 		{
+			name:     "override monaural resonance relative increase",
+			line:     "  track 3 monaural +2",
+			trackIdx: 2,
+			checkFunc: func(t *testing.T, p *t.Preset) {
+				if p.Track[2].Resonance != 10 {
+					t.Errorf("expected resonance 10, got %v", p.Track[2].Resonance)
+				}
+			},
+		},
+		{
 			name:     "override noise smooth",
 			line:     "  track 4 smooth 45",
 			trackIdx: 3,
 			checkFunc: func(t *testing.T, p *t.Preset) {
 				if p.Track[3].NoiseSmooth != 45 {
 					t.Errorf("expected smooth 45, got %v", p.Track[3].NoiseSmooth)
+				}
+			},
+		},
+		{
+			name:     "override noise smooth relative increase",
+			line:     "  track 4 smooth +15",
+			trackIdx: 3,
+			checkFunc: func(t *testing.T, p *t.Preset) {
+				if p.Track[3].NoiseSmooth != 35 {
+					t.Errorf("expected smooth 35, got %v", p.Track[3].NoiseSmooth)
+				}
+			},
+		},
+		{
+			name:     "override noise smooth relative decrease",
+			line:     "  track 4 smooth -5",
+			trackIdx: 3,
+			checkFunc: func(t *testing.T, p *t.Preset) {
+				if p.Track[3].NoiseSmooth != 15 {
+					t.Errorf("expected smooth 15, got %v", p.Track[3].NoiseSmooth)
 				}
 			},
 		},
@@ -304,9 +438,9 @@ func TestPresetInheritance_Integration(ts *testing.T) {
 		Waveform:  t.WaveformSine,
 	}
 	templatePreset.Track[1] = t.Track{
-		Type:      t.TrackPinkNoise,
+		Type:        t.TrackPinkNoise,
 		NoiseSmooth: 10,
-		Amplitude: t.AmplitudePercentToRaw(30),
+		Amplitude:   t.AmplitudePercentToRaw(30),
 	}
 
 	presets = append(presets, *templatePreset)
@@ -328,11 +462,11 @@ func TestPresetInheritance_Integration(ts *testing.T) {
 
 	// Step 3: Apply overrides
 	overrides := []string{
-		"  track 1 tone 350",
-		"  track 1 binaural 12",
-		"  track 1 amplitude 25",
-		"  track 2 smooth 35",
-		"  track 2 amplitude 35",
+		"  track 1 tone +50",
+		"  track 1 binaural +2",
+		"  track 1 amplitude +5",
+		"  track 2 smooth +25",
+		"  track 2 amplitude +5",
 	}
 
 	for _, line := range overrides {

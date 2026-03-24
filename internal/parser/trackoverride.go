@@ -13,6 +13,7 @@ package parser
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
@@ -91,9 +92,15 @@ func (ctx *TextParser) ParseTrackOverride(preset *t.Preset) error {
 			return diag.Validation(fmt.Sprintf("cannot set tone frequency on track %d of type %q", trackIdx, track.Type.String())).WithSpan(kindSpan).WithFound(kind)
 		}
 
+		rawValue, _ := ctx.Line.Peek()
+
 		carrier, err := ctx.Line.NextFloat64Strict()
 		if err != nil {
 			return err
+		}
+
+		if strings.HasPrefix(rawValue, "+") || strings.HasPrefix(rawValue, "-") {
+			carrier = from.Track[idx].Carrier + carrier
 		}
 
 		preset.Track[idx].Carrier = carrier
@@ -108,9 +115,15 @@ func (ctx *TextParser) ParseTrackOverride(preset *t.Preset) error {
 			return diag.Validation(fmt.Sprintf("doppler speed can only be set on track %d with doppler effect, it is %q", trackIdx, track.Effect.Type.String())).WithSpan(kindSpan).WithFound(kind)
 		}
 
+		rawValue, _ := ctx.Line.Peek()
+
 		effectValue, err := ctx.Line.NextFloat64Strict()
 		if err != nil {
 			return err
+		}
+
+		if strings.HasPrefix(rawValue, "+") || strings.HasPrefix(rawValue, "-") {
+			effectValue = from.Track[idx].Effect.Value + effectValue
 		}
 
 		preset.Track[idx].Effect.Value = effectValue
@@ -121,9 +134,15 @@ func (ctx *TextParser) ParseTrackOverride(preset *t.Preset) error {
 			return diag.Validation(fmt.Sprintf("cannot change track %d type to %q, it is %q", trackIdx, kind, track.Type.String())).WithSpan(kindSpan).WithFound(kind)
 		}
 
+		rawValue, _ := ctx.Line.Peek()
+
 		resonance, err := ctx.Line.NextFloat64Strict()
 		if err != nil {
 			return err
+		}
+
+		if strings.HasPrefix(rawValue, "+") || strings.HasPrefix(rawValue, "-") {
+			resonance = from.Track[idx].Resonance + resonance
 		}
 
 		preset.Track[idx].Resonance = resonance
@@ -134,23 +153,41 @@ func (ctx *TextParser) ParseTrackOverride(preset *t.Preset) error {
 			return diag.Validation(fmt.Sprintf("cannot set smooth on track %d of type %q", trackIdx, track.Type.String())).WithSpan(kindSpan).WithFound(kind)
 		}
 
+		rawValue, _ := ctx.Line.Peek()
+
 		smooth, err := ctx.Line.NextFloat64Strict()
 		if err != nil {
 			return err
 		}
 
+		if strings.HasPrefix(rawValue, "+") || strings.HasPrefix(rawValue, "-") {
+			smooth = from.Track[idx].NoiseSmooth + smooth
+		}
+
 		preset.Track[idx].NoiseSmooth = smooth
 	case t.KeywordAmplitude:
+		rawValue, _ := ctx.Line.Peek()
+
 		amplitude, err := ctx.Line.NextFloat64Strict()
 		if err != nil {
 			return err
 		}
 
+		if strings.HasPrefix(rawValue, "+") || strings.HasPrefix(rawValue, "-") {
+			amplitude = from.Track[idx].Amplitude.ToPercent() + amplitude
+		}
+
 		preset.Track[idx].Amplitude = t.AmplitudePercentToRaw(amplitude)
 	case t.KeywordIntensity:
+		rawValue, _ := ctx.Line.Peek()
+
 		intensity, err := ctx.Line.NextFloat64Strict()
 		if err != nil {
 			return err
+		}
+
+		if strings.HasPrefix(rawValue, "+") || strings.HasPrefix(rawValue, "-") {
+			intensity = from.Track[idx].Effect.Intensity.ToPercent() + intensity
 		}
 
 		preset.Track[idx].Effect.Intensity = t.IntensityPercentToRaw(intensity)
