@@ -14,6 +14,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -66,10 +67,34 @@ func formatCLIError(err error) string {
 		if diagnostic.Hint != "" {
 			lines = append(lines, cli.Muted(diagnostic.Hint))
 		}
+		if cause := formatDiagnosticCause(diagnostic); cause != "" {
+			lines = append(lines, cli.Label("cause:")+" "+cause)
+		}
 
 		return strings.Join(lines, "\n")
 	}
 	return cli.ErrorText("synapseq:") + " " + err.Error()
+}
+
+func formatDiagnosticCause(diagnostic *diag.Diagnostic) string {
+	if diagnostic == nil {
+		return ""
+	}
+
+	seen := map[string]struct{}{}
+	for cause := diagnostic.Cause; cause != nil; cause = errors.Unwrap(cause) {
+		text := strings.TrimSpace(cause.Error())
+		if text == "" || text == diagnostic.Message {
+			continue
+		}
+		if _, ok := seen[text]; ok {
+			continue
+		}
+		seen[text] = struct{}{}
+		return text
+	}
+
+	return ""
 }
 
 func formatDiagnosticLocation(diagnostic *diag.Diagnostic) string {

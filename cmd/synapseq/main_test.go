@@ -65,3 +65,36 @@ func TestFormatCLIErrorFallback(ts *testing.T) {
 		ts.Fatalf("unexpected fallback formatting: %q", formatted)
 	}
 }
+
+func TestFormatCLIErrorDiagnosticCause(ts *testing.T) {
+	clistyle.SetColorEnabled(false)
+	defer clistyle.SetColorEnabled(true)
+
+	err := diag.Wrap(diag.KindIO, "failed while streaming audio to ffplay", errors.New("failed to load ambiance file [0] (/tmp/rain.wav): error opening file: open /tmp/rain.wav: no such file or directory"))
+
+	formatted := formatCLIError(err)
+
+	checks := []string{
+		"synapseq: failed while streaming audio to ffplay",
+		"cause: failed to load ambiance file [0] (/tmp/rain.wav): error opening file: open /tmp/rain.wav: no such file or directory",
+	}
+
+	for _, check := range checks {
+		if !strings.Contains(formatted, check) {
+			ts.Fatalf("expected formatted CLI error to contain %q, got:\n%s", check, formatted)
+		}
+	}
+}
+
+func TestFormatCLIErrorDiagnosticCauseSkipsDuplicateMessage(ts *testing.T) {
+	clistyle.SetColorEnabled(false)
+	defer clistyle.SetColorEnabled(true)
+
+	err := diag.Validation("ambiance not found").WithCause(errors.New("ambiance not found"))
+
+	formatted := formatCLIError(err)
+
+	if strings.Contains(formatted, "cause:") {
+		ts.Fatalf("expected duplicate cause to be omitted, got:\n%s", formatted)
+	}
+}
