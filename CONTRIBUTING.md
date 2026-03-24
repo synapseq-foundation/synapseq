@@ -20,6 +20,17 @@ The legacy C code (V2, inherited from SBaGen) is available in the `v2` branch. I
 - Follow Go best practices and maintain clean, readable code.
 - Ensure backward compatibility when possible.
 
+## SynapSeq Principles
+
+SynapSeq is guided by a small set of principles that define both its development process and its overall philosophy. Contributions should align with these principles whenever possible:
+
+- **One way to do it** - Prefer a single, clear approach for each task.
+- **Clarity over cleverness** - Favor readable, straightforward syntax and implementation over clever or obscure solutions.
+- **Intention over syntax** - Focus on what the user is trying to achieve rather than adding unnecessary syntactic complexity.
+- **Less options, more focus** - Prioritize essential features and avoid expanding configuration or surface area without a strong reason.
+
+When making changes, use these principles as a filter for API design, user experience, CLI behavior, documentation, and internal implementation choices.
+
 ### Git Flow Workflow
 
 SynapSeq V4 follows the **Git Flow** branching model:
