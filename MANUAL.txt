@@ -163,10 +163,10 @@ SEQUENCE FILE
     Timeline
 
         Syntax
-            HH MM SS PRESET_NAME [TRANSITION]
+            HH:MM:SS PRESET_NAME [TRANSITION]
 
         Time
-            HH MM SS required
+            HH:MM:SS required
 
         Rules
             top-level lines only
@@ -306,7 +306,15 @@ SEQUENCE FILE
 
         Rules
 
+            VALUE may be absolute or signed relative delta
+            +VALUE adds to inherited value
+            -VALUE subtracts from inherited value
             matching existing effect type only
+
+        Examples
+
+            track 1 binaural +5
+            track 1 binaural -5
 
     Extended files
 

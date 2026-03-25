@@ -77,6 +77,11 @@ func TestRenderIncludesCoreSections(ts *testing.T) {
 		"pan",
 		"doppler",
 		"Track overrides",
+		"VALUE may be absolute or signed relative delta",
+		"+VALUE adds to inherited value",
+		"-VALUE subtracts from inherited value",
+		"track 1 binaural +5",
+		"track 1 binaural -5",
 		"smooth VALUE",
 		"Timeline",
 		"steady",
@@ -99,7 +104,7 @@ func TestRenderIncludesCoreSections(ts *testing.T) {
 		"Option after preset or timeline",
 		"New track in inherited preset",
 		"Invalid local path",
-		"HH MM SS required",
+		"HH:MM:SS required",
 		"tone only with tone",
 		"same source only",
 	}
@@ -136,9 +141,7 @@ func TestRenderIncludesCoreSections(ts *testing.T) {
 		"Standalone lines only",
 		"Track Definitions",
 		"->",
-		":",
 		"00:00:00",
-		"HH:MM:SS",
 	}
 
 	for _, check := range removed {
