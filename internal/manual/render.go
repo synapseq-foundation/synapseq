@@ -115,6 +115,16 @@ func writeCodeBlock(b *strings.Builder, lines ...string) {
 	writeIndentedCodeBlock(b, 8, lines...)
 }
 
+func writeExample(b *strings.Builder, example string) {
+	writeIndentedSubsection(b, 8, "Example")
+	writeIndentedCodeBlock(b, 12, example)
+}
+
+func writeNestedExample(b *strings.Builder, example string) {
+	writeIndentedSubsection(b, 12, "Example")
+	writeIndentedCodeBlock(b, 16, example)
+}
+
 func writeIndentedCodeBlock(b *strings.Builder, indent int, lines ...string) {
 	prefix := strings.Repeat(" ", indent)
 	for _, line := range lines {
