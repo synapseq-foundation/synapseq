@@ -281,12 +281,6 @@ func Render() string {
 		"matching existing effect type only",
 	)
 
-	writeNestedSubsection(&b, "Examples")
-	writeNestedCodeBlock(&b,
-		"track 1 binaural +5",
-		"track 1 binaural -5",
-	)
-
 	writeSubsection(&b, "Extended files")
 	writeNestedSubsection(&b, "type")
 	writeNestedLineBlock(&b,
