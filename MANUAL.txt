@@ -9,10 +9,10 @@ NAME
 
 SYNOPSIS
         synapseq [OPTION]... INPUT [OUTPUT]
-        synapseq -new TYPE
-        synapseq -preview INPUT
+        synapseq -new TYPE [OUTPUT]
+        synapseq -preview INPUT [OUTPUT]
         synapseq -play INPUT
-        synapseq -mp3 INPUT
+        synapseq -mp3 INPUT [OUTPUT]
         synapseq -test INPUT
         synapseq -hub-update
         synapseq -hub-clean
@@ -26,49 +26,12 @@ SYNOPSIS
         synapseq -version
         synapseq -manual -no-color
 
-    Paged reading
-
-    Linux and macOS
-        synapseq -manual | less
-
-    Windows PowerShell
-        synapseq -manual | more
-
 DESCRIPTION
-    SynapSeq parses a line-oriented score language and renders deterministic
-    audio. Ordering is strict. Sequence options must appear first. Presets
-    must appear next. Timeline entries must appear last.
+    SynapSeq parses line-oriented .spsq files and renders deterministic audio.
 
     INPUT may be a local .spsq file, a sequence URL, or -. Output is WAV by
     default. -mp3 selects MP3. -preview selects HTML. -play selects direct
     playback. -test validates only.
-
-SOUND CONCEPTS
-    binaural
-        A pair of nearby tones, one per ear, that creates a perceived beat
-        inside the listener. Headphones are recommended because each ear must
-        receive a different carrier.
-
-    monaural
-        A beat created by mixing the tones before playback. The pulse is
-        present in the audio signal itself, so it can be heard on speakers or
-        headphones.
-
-    isochronic
-        A single carrier that is gated on and off at the beat rate. The result
-        is a clearly pulsed rhythm with sharp entrainment cues.
-
-    doppler
-        An effect for tone tracks that shifts motion and pitch perspective so
-        the sound feels like it is moving toward and away from the listener.
-
-    pan
-        An effect that moves energy between the left and right channels. Use
-        it to widen static sounds or create gentle spatial motion.
-
-    modulation
-        An effect that varies amplitude over time. Use it to add movement,
-        shimmer, or slow breathing to a track.
 
 OPTIONS
     Rules
@@ -78,14 +41,27 @@ OPTIONS
         OUTPUT optional
         derived output path when OUTPUT is omitted
 
-    General
+    Render modes
+
+    -test
+        validate syntax and semantics only
+
+    -preview
+        render HTML preview
+
+    -play
+        render and play through ffplay
+
+    -mp3
+        render MP3 output
+
+    -quiet
+        suppress non-error CLI output
+
+    Creation
 
     -new TYPE
         create a starter sequence
-
-        Example
-
-            synapseq -new meditation
 
     TYPE
         meditation
@@ -94,233 +70,92 @@ OPTIONS
         relaxation
         example
 
-    -test
-        validate syntax and semantics only
-
-        Example
-
-            synapseq -test session.spsq
-
-    -preview
-        render HTML preview
-
-        Example
-
-            synapseq -preview session.spsq
-
-    -play
-        render and play through ffplay
-
-        Example
-
-            synapseq -play session.spsq
-
-    -mp3
-        render MP3 output
-
-        Example
-
-            synapseq -mp3 session.spsq
-
-    -quiet
-        suppress non-error CLI output
-
-        Example
-
-            synapseq -quiet session.spsq
-
-    -no-color
-        disable ANSI color output
-
-        Example
-
-            synapseq -manual -no-color
-
-    -manual
-        print full manual
-
-        Example
-
-            synapseq -manual
-
-    -help
-        print concise command overview
-
-        Example
-
-            synapseq -help
-
-    -version
-        print version build and platform information
-
-        Example
-
-            synapseq -version
-
     Hub
 
     -hub-update
         refresh local Hub index
 
-        Example
-
-            synapseq -hub-update
-
     -hub-clean
         remove cached Hub data
-
-        Example
-
-            synapseq -hub-clean
 
     -hub-list
         list sequences from local Hub index
 
-        Example
-
-            synapseq -hub-list
-
     -hub-search WORD
         search local Hub index
-
-        Example
-
-            synapseq -hub-search calm
 
     -hub-info NAME
         print Hub sequence metadata
 
-        Example
-
-            synapseq -hub-info calm-state
-
     -hub-download NAME [DIR]
         download sequence and dependencies
-        DIR optional
-
-        Example
-
-            synapseq -hub-download calm-state downloads
 
     -hub-get NAME [OUTPUT]
         download and render sequence
-        OUTPUT optional
 
-        Example
-
-            synapseq -hub-get calm-state calm-state.wav
-
-    External tools
+    Tools and system
 
     -ffmpeg-path PATH
         use specific ffmpeg executable
 
-        Example
-
-            synapseq -ffmpeg-path /usr/local/bin/ffmpeg -mp3 session.spsq
-
     -ffplay-path PATH
         use specific ffplay executable
 
-        Example
-
-            synapseq -ffplay-path /usr/local/bin/ffplay -play session.spsq
-
-    Windows
-
     -install-file-association
-        associate .spsq files with SynapSeq
-
-        Example
-
-            synapseq -install-file-association
+        associate .spsq files with SynapSeq on Windows
 
     -uninstall-file-association
-        remove .spsq file association
+        remove .spsq file association on Windows
 
-        Example
+    Information
 
-            synapseq -uninstall-file-association
+    -manual
+        print compact syntax reference
+
+    -help
+        print concise command overview
+
+    -version
+        print version build and platform information
+
+    -no-color
+        disable ANSI color output
 
 SEQUENCE FILE
-    File type
-
-        plain-text .spsq
-        parsed top to bottom
-
     Order
 
+        plain-text .spsq
         sequence options
         presets
         timeline
 
     Top level
 
-        no indentation
-        sequence options must start in column 1
-        preset declarations must start in column 1
-        timeline entries must start in column 1
-
-    Preset body
-
-        exactly two leading spaces required
-        track definitions use this indentation
-        track overrides use this indentation
+        all top-level lines start in column 1
+        preset body lines require exactly two leading spaces
 
     Comments
 
-    # comment
-        ignored
-
-    ## comment
-        stored and printed unless -quiet is set
-
-    Rules
+        # comment: ignored
+        ## comment: printed unless -quiet is set
         full line only
         inline comment not permitted
 
     Sequence Options
 
-    Sequence options configure the whole file and must appear before the first
-    preset or timeline entry.
+        Syntax
+
+            @samplerate NUMBER
+            @volume NUMBER
+            @ambiance NAME PATH_OR_URL
+            @extends PATH_OR_URL
 
         Rules
 
             valid only before first preset
             valid only before first timeline entry
-
-        Commands
-
-        @samplerate NUMBER
-            set output sample rate
-            default 44100
-
-            Example
-
-                @samplerate 48000
-
-        @volume NUMBER
-            set master volume
-            range 0 to 100
-            default 100
-
-            Example
-
-                @volume 80
-
-        @ambiance NAME PATH_OR_URL
-            register a named ambiance source for later use in presets
-
-            Example
-
-                @ambiance rain audio/rain
-
-        @extends PATH_OR_URL
-            load modular .spsc content before the main file is parsed
-
-            Example
-
-                @extends library/common
+            @samplerate default 44100
+            @volume range 0 to 100; default 100
 
         Local paths
 
@@ -337,21 +172,34 @@ SEQUENCE FILE
         Extended files
 
             type .spsc
-            allowed: options presets tracks track overrides
-            not permitted: timeline entries nested @extends
+
+            Allowed
+
+                options
+                presets
+                tracks
+                track overrides
+
+            Not permitted
+
+                timeline entries
+                nested @extends
 
     Presets
-
-    Presets define reusable track groups. Declare them at the top level and
-    place track lines inside the body with exactly two leading spaces.
 
         Identifiers
 
             first character must be a letter
-            remaining characters may be letters digits underscores dashes
             maximum length 20
             preset references are case-insensitive
             preset names normalize to lowercase
+
+            Remaining characters may be:
+
+                letters
+                digits
+                underscores
+                dashes
 
         Preset declarations
 
@@ -359,33 +207,11 @@ SEQUENCE FILE
             NAME as template
             NAME from TEMPLATE_NAME
 
-        Preset example
-
-            focus
-              noise pink amplitude 30
-              tone 180 binaural 10 amplitude 18
-
-        Template rules
+        Rules
 
             template preset cannot appear on timeline
-
-        Inheritance rules
-
             inherited preset cannot define new track lines
             inherited preset may contain track overrides only
-
-        Inherited preset example
-
-            base as template
-              noise pink smooth 20 amplitude 30
-              tone 220 binaural 10 amplitude 18
-
-            focus from base
-              track 1 smooth 35
-              track 1 amplitude +5
-              track 2 tone 180
-              track 2 binaural -2
-              track 2 amplitude +4
 
         Track syntax
 
@@ -400,9 +226,10 @@ SEQUENCE FILE
             carrier positive only
             beat positive only
             smooth 0 to 100 only
-            waveform prefix allowed on tone track
-            waveform prefix allowed on ambiance track
-            effect TYPE VALUE intensity PERCENT appears before amplitude
+            waveform prefix allowed on:
+            tone tracks
+            ambiance tracks
+            effect appears before amplitude
 
         Waveforms
 
@@ -410,84 +237,81 @@ SEQUENCE FILE
 
             VALUE
 
-                sine square triangle sawtooth
+                sine
+                square
+                triangle
+                sawtooth
 
         Effects
 
-            effect TYPE VALUE intensity PERCENT
+            effect pan VALUE intensity PERCENT
+            effect modulation VALUE intensity PERCENT
+            effect doppler VALUE intensity PERCENT
 
-            TYPE
+        Allowed
 
-                pan modulation doppler
+            tone
 
-            Allowed
+                pan
+                modulation
+                doppler
 
-                tone
-                    pan modulation doppler
+            noise
 
-                noise
-                    pan modulation
+                pan
+                modulation
 
-                ambiance
-                    pan modulation
+            ambiance
+
+                pan
+                modulation
 
         Track overrides
 
-            Scope
+            track N tone VALUE
+            track N binaural|monaural|isochronic VALUE
+            track N smooth VALUE
+            track N pan|modulation|doppler VALUE
+            track N intensity VALUE
+            track N amplitude VALUE
 
-                inherited presets only
-
-            Index
-
-                1-based
-
-            Syntax
-
-                track N tone VALUE
-                track N binaural|monaural|isochronic VALUE
-                track N smooth VALUE
-                track N pan|modulation|doppler VALUE
-                track N intensity VALUE
-                track N amplitude VALUE
-
-            Rules
-
-                VALUE may be absolute or signed relative delta
-                +VALUE adds to inherited value
-                -VALUE subtracts from inherited value
-                matching existing effect type only
+            inherited presets only
+            1-based index
+            VALUE may be absolute or signed relative delta
+            +VALUE adds to inherited value
+            -VALUE subtracts from inherited value
+            matching existing effect type only
 
     Timeline
 
-    Timeline entries schedule presets over time. Each entry starts with a
-    timestamp and may include a transition keyword.
-
         Syntax
 
-            HH:MM:SS PRESET_NAME [TRANSITION]
-
-        Time
-
-            HH:MM:SS required
+            HH:MM:SS PRESET_NAME [TRANSITION [STEPS]]
 
         Rules
 
-            top-level lines only
+            top-level lines only; HH:MM:SS required
             first entry zero time
             strictly increasing
             at least two periods
             non-template preset only
+            steps require explicit transition
+            steps 0 keeps the normal transition
+            maximum steps depend on the time until the next entry
 
         TRANSITION
 
-            steady ease-in ease-out smooth
+            steady
+            ease-in
+            ease-out
+            smooth
 
-        Timeline examples
+        STEPS
 
-            00:00:00 silence
-            00:00:30 focus ease-in
-            00:10:00 focus-deep smooth
-            00:20:00 silence ease-out
+            integer 0 or greater
+            0 means no step alternation
+            uses the selected transition curve on each leg
+            limited by 5 seconds per leg, with a hard cap of 12
 
 COMPATIBILITY
     Scope
@@ -574,18 +398,4 @@ COMMON ERRORS
         use relative path
         use forward slashes
         omit extension
-
-NOTES
-    silence
-        built-in preset
-        always available
-
-    Channels
-        assigned by track declaration order
-
-    Reuse
-        @extends loads reusable .spsc content
-
-SEE ALSO
-        synapseq -help
 

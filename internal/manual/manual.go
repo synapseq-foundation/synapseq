@@ -47,10 +47,10 @@ func Render() string {
 	writeSection(&b, "Synopsis")
 	writeCodeBlock(&b,
 		"synapseq [OPTION]... INPUT [OUTPUT]",
-		"synapseq -new TYPE",
-		"synapseq -preview INPUT",
+		"synapseq -new TYPE [OUTPUT]",
+		"synapseq -preview INPUT [OUTPUT]",
 		"synapseq -play INPUT",
-		"synapseq -mp3 INPUT",
+		"synapseq -mp3 INPUT [OUTPUT]",
 		"synapseq -test INPUT",
 		"synapseq -hub-update",
 		"synapseq -hub-clean",
@@ -64,25 +64,14 @@ func Render() string {
 		"synapseq -version",
 		"synapseq -manual -no-color",
 	)
-	writeSubsection(&b, "Paged reading")
-	writeBullet(&b, "Linux and macOS", "synapseq -manual | less")
-	writeBullet(&b, "Windows PowerShell", "synapseq -manual | more")
 
 	writeSection(&b, "Description")
 	writeParagraph(&b,
-		"SynapSeq parses a line-oriented score language and renders deterministic audio. Ordering is strict. Sequence options must appear first. Presets must appear next. Timeline entries must appear last.",
+		"SynapSeq parses line-oriented .spsq files and renders deterministic audio.",
 	)
 	writeParagraph(&b,
 		"INPUT may be a local .spsq file, a sequence URL, or -. Output is WAV by default. -mp3 selects MP3. -preview selects HTML. -play selects direct playback. -test validates only.",
 	)
-
-	writeSection(&b, "Sound Concepts")
-	writeBullet(&b, "binaural", "A pair of nearby tones, one per ear, that creates a perceived beat inside the listener. Headphones are recommended because each ear must receive a different carrier.")
-	writeBullet(&b, "monaural", "A beat created by mixing the tones before playback. The pulse is present in the audio signal itself, so it can be heard on speakers or headphones.")
-	writeBullet(&b, "isochronic", "A single carrier that is gated on and off at the beat rate. The result is a clearly pulsed rhythm with sharp entrainment cues.")
-	writeBullet(&b, "doppler", "An effect for tone tracks that shifts motion and pitch perspective so the sound feels like it is moving toward and away from the listener.")
-	writeBullet(&b, "pan", "An effect that moves energy between the left and right channels. Use it to widen static sounds or create gentle spatial motion.")
-	writeBullet(&b, "modulation", "An effect that varies amplitude over time. Use it to add movement, shimmer, or slow breathing to a track.")
 
 	writeSection(&b, "Options")
 	writeSubsection(&b, "Rules")
@@ -93,66 +82,42 @@ func Render() string {
 		"derived output path when OUTPUT is omitted",
 	)
 
-	writeSubsection(&b, "General")
-	writeBullet(&b, "-new TYPE", "create a starter sequence")
-	writeExample(&b, "synapseq -new meditation")
-	writeBullet(&b, "TYPE", "meditation\nfocus\nsleep\nrelaxation\nexample")
+	writeSubsection(&b, "Render modes")
 	writeBullet(&b, "-test", "validate syntax and semantics only")
-	writeExample(&b, "synapseq -test session.spsq")
 	writeBullet(&b, "-preview", "render HTML preview")
-	writeExample(&b, "synapseq -preview session.spsq")
 	writeBullet(&b, "-play", "render and play through ffplay")
-	writeExample(&b, "synapseq -play session.spsq")
 	writeBullet(&b, "-mp3", "render MP3 output")
-	writeExample(&b, "synapseq -mp3 session.spsq")
 	writeBullet(&b, "-quiet", "suppress non-error CLI output")
-	writeExample(&b, "synapseq -quiet session.spsq")
-	writeBullet(&b, "-no-color", "disable ANSI color output")
-	writeExample(&b, "synapseq -manual -no-color")
-	writeBullet(&b, "-manual", "print full manual")
-	writeExample(&b, "synapseq -manual")
-	writeBullet(&b, "-help", "print concise command overview")
-	writeExample(&b, "synapseq -help")
-	writeBullet(&b, "-version", "print version build and platform information")
-	writeExample(&b, "synapseq -version")
+
+	writeSubsection(&b, "Creation")
+	writeBullet(&b, "-new TYPE", "create a starter sequence")
+	writeBullet(&b, "TYPE", "meditation\nfocus\nsleep\nrelaxation\nexample")
 
 	writeSubsection(&b, "Hub")
 	writeBullet(&b, "-hub-update", "refresh local Hub index")
-	writeExample(&b, "synapseq -hub-update")
 	writeBullet(&b, "-hub-clean", "remove cached Hub data")
-	writeExample(&b, "synapseq -hub-clean")
 	writeBullet(&b, "-hub-list", "list sequences from local Hub index")
-	writeExample(&b, "synapseq -hub-list")
 	writeBullet(&b, "-hub-search WORD", "search local Hub index")
-	writeExample(&b, "synapseq -hub-search calm")
 	writeBullet(&b, "-hub-info NAME", "print Hub sequence metadata")
-	writeExample(&b, "synapseq -hub-info calm-state")
-	writeBullet(&b, "-hub-download NAME [DIR]", "download sequence and dependencies\nDIR optional")
-	writeExample(&b, "synapseq -hub-download calm-state downloads")
-	writeBullet(&b, "-hub-get NAME [OUTPUT]", "download and render sequence\nOUTPUT optional")
-	writeExample(&b, "synapseq -hub-get calm-state calm-state.wav")
+	writeBullet(&b, "-hub-download NAME [DIR]", "download sequence and dependencies")
+	writeBullet(&b, "-hub-get NAME [OUTPUT]", "download and render sequence")
 
-	writeSubsection(&b, "External tools")
+	writeSubsection(&b, "Tools and system")
 	writeBullet(&b, "-ffmpeg-path PATH", "use specific ffmpeg executable")
-	writeExample(&b, "synapseq -ffmpeg-path /usr/local/bin/ffmpeg -mp3 session.spsq")
 	writeBullet(&b, "-ffplay-path PATH", "use specific ffplay executable")
-	writeExample(&b, "synapseq -ffplay-path /usr/local/bin/ffplay -play session.spsq")
+	writeBullet(&b, "-install-file-association", "associate .spsq files with SynapSeq on Windows")
+	writeBullet(&b, "-uninstall-file-association", "remove .spsq file association on Windows")
 
-	writeSubsection(&b, "Windows")
-	writeBullet(&b, "-install-file-association", "associate .spsq files with SynapSeq")
-	writeExample(&b, "synapseq -install-file-association")
-	writeBullet(&b, "-uninstall-file-association", "remove .spsq file association")
-	writeExample(&b, "synapseq -uninstall-file-association")
+	writeSubsection(&b, "Information")
+	writeBullet(&b, "-manual", "print compact syntax reference")
+	writeBullet(&b, "-help", "print concise command overview")
+	writeBullet(&b, "-version", "print version build and platform information")
+	writeBullet(&b, "-no-color", "disable ANSI color output")
 
 	writeSection(&b, "Sequence File")
-	writeSubsection(&b, "File type")
-	writeLineBlock(&b,
-		"plain-text .spsq",
-		"parsed top to bottom",
-	)
-
 	writeSubsection(&b, "Order")
 	writeLineBlock(&b,
+		"plain-text .spsq",
 		"sequence options",
 		"presets",
 		"timeline",
@@ -160,42 +125,33 @@ func Render() string {
 
 	writeSubsection(&b, "Top level")
 	writeLineBlock(&b,
-		"no indentation",
-		"sequence options must start in column 1",
-		"preset declarations must start in column 1",
-		"timeline entries must start in column 1",
-	)
-
-	writeSubsection(&b, "Preset body")
-	writeLineBlock(&b,
-		"exactly two leading spaces required",
-		"track definitions use this indentation",
-		"track overrides use this indentation",
+		"all top-level lines start in column 1",
+		"preset body lines require exactly two leading spaces",
 	)
 
 	writeSubsection(&b, "Comments")
-	writeBullet(&b, "# comment", "ignored")
-	writeBullet(&b, "## comment", "stored and printed unless -quiet is set")
-	writeBullet(&b, "Rules", "full line only\ninline comment not permitted")
+	writeLineBlock(&b,
+		"# comment: ignored",
+		"## comment: printed unless -quiet is set",
+		"full line only",
+		"inline comment not permitted",
+	)
 
 	writeSubsection(&b, "Sequence Options")
-	writeParagraph(&b,
-		"Sequence options configure the whole file and must appear before the first preset or timeline entry.",
+	writeNestedSubsection(&b, "Syntax")
+	writeNestedCodeBlock(&b,
+		"@samplerate NUMBER",
+		"@volume NUMBER",
+		"@ambiance NAME PATH_OR_URL",
+		"@extends PATH_OR_URL",
 	)
 	writeNestedSubsection(&b, "Rules")
 	writeNestedLineBlock(&b,
 		"valid only before first preset",
 		"valid only before first timeline entry",
+		"@samplerate default 44100",
+		"@volume range 0 to 100; default 100",
 	)
-	writeNestedSubsection(&b, "Commands")
-	writeNestedBullet(&b, "@samplerate NUMBER", "set output sample rate\ndefault 44100")
-	writeNestedExample(&b, "@samplerate 48000")
-	writeNestedBullet(&b, "@volume NUMBER", "set master volume\nrange 0 to 100\ndefault 100")
-	writeNestedExample(&b, "@volume 80")
-	writeNestedBullet(&b, "@ambiance NAME PATH_OR_URL", "register a named ambiance source for later use in presets")
-	writeNestedExample(&b, "@ambiance rain audio/rain")
-	writeNestedBullet(&b, "@extends PATH_OR_URL", "load modular .spsc content before the main file is parsed")
-	writeNestedExample(&b, "@extends library/common")
 	writeNestedSubsection(&b, "Local paths")
 	writeNestedLineBlock(&b,
 		"relative only",
@@ -211,21 +167,34 @@ func Render() string {
 	writeNestedSubsection(&b, "Extended files")
 	writeNestedLineBlock(&b,
 		"type .spsc",
-		"allowed: options presets tracks track overrides",
-		"not permitted: timeline entries nested @extends",
+	)
+	writeIndentedSubsection(&b, 12, "Allowed")
+	writeIndentedLineBlock(&b, 16,
+		"options",
+		"presets",
+		"tracks",
+		"track overrides",
+	)
+	writeIndentedSubsection(&b, 12, "Not permitted")
+	writeIndentedLineBlock(&b, 16,
+		"timeline entries",
+		"nested @extends",
 	)
 
 	writeSubsection(&b, "Presets")
-	writeParagraph(&b,
-		"Presets define reusable track groups. Declare them at the top level and place track lines inside the body with exactly two leading spaces.",
-	)
 	writeNestedSubsection(&b, "Identifiers")
 	writeNestedLineBlock(&b,
 		"first character must be a letter",
-		"remaining characters may be letters digits underscores dashes",
 		"maximum length 20",
 		"preset references are case-insensitive",
 		"preset names normalize to lowercase",
+	)
+	writeIndentedSubsection(&b, 12, "Remaining characters may be:")
+	writeIndentedLineBlock(&b, 16,
+		"letters",
+		"digits",
+		"underscores",
+		"dashes",
 	)
 	writeNestedSubsection(&b, "Preset declarations")
 	writeNestedCodeBlock(&b,
@@ -233,33 +202,11 @@ func Render() string {
 		"NAME as template",
 		"NAME from TEMPLATE_NAME",
 	)
-	writeNestedSubsection(&b, "Preset example")
-	writeNestedCodeBlock(&b,
-		"focus",
-		"  noise pink amplitude 30",
-		"  tone 180 binaural 10 amplitude 18",
-	)
-	writeNestedSubsection(&b, "Template rules")
+	writeNestedSubsection(&b, "Rules")
 	writeNestedLineBlock(&b,
 		"template preset cannot appear on timeline",
-	)
-	writeNestedSubsection(&b, "Inheritance rules")
-	writeNestedLineBlock(&b,
 		"inherited preset cannot define new track lines",
 		"inherited preset may contain track overrides only",
-	)
-	writeNestedSubsection(&b, "Inherited preset example")
-	writeNestedCodeBlock(&b,
-		"base as template",
-		"  noise pink smooth 20 amplitude 30",
-		"  tone 220 binaural 10 amplitude 18",
-		"",
-		"focus from base",
-		"  track 1 smooth 35",
-		"  track 1 amplitude +5",
-		"  track 2 tone 180",
-		"  track 2 binaural -2",
-		"  track 2 amplitude +4",
 	)
 	writeNestedSubsection(&b, "Track syntax")
 	writeNestedCodeBlock(&b,
@@ -274,41 +221,45 @@ func Render() string {
 		"carrier positive only",
 		"beat positive only",
 		"smooth 0 to 100 only",
-		"waveform prefix allowed on tone track",
-		"waveform prefix allowed on ambiance track",
-		"effect TYPE VALUE intensity PERCENT appears before amplitude",
+		"waveform prefix allowed on:",
+		"tone tracks",
+		"ambiance tracks",
+		"effect appears before amplitude",
 	)
 	writeNestedSubsection(&b, "Waveforms")
-	writeNestedCodeBlock(&b,
-		"waveform VALUE",
-	)
+	writeNestedCodeBlock(&b, "waveform VALUE")
 	writeIndentedSubsection(&b, 12, "VALUE")
 	writeIndentedLineBlock(&b, 16,
-		"sine square triangle sawtooth",
+		"sine",
+		"square",
+		"triangle",
+		"sawtooth",
 	)
 	writeNestedSubsection(&b, "Effects")
 	writeNestedCodeBlock(&b,
-		"effect TYPE VALUE intensity PERCENT",
+		"effect pan VALUE intensity PERCENT",
+		"effect modulation VALUE intensity PERCENT",
+		"effect doppler VALUE intensity PERCENT",
 	)
-	writeIndentedSubsection(&b, 12, "TYPE")
+	writeNestedSubsection(&b, "Allowed")
+	writeIndentedSubsection(&b, 12, "tone")
 	writeIndentedLineBlock(&b, 16,
-		"pan modulation doppler",
+		"pan",
+		"modulation",
+		"doppler",
 	)
-	writeIndentedSubsection(&b, 12, "Allowed")
-	writeIndentedBullet(&b, 16, 20, "tone", "pan modulation doppler")
-	writeIndentedBullet(&b, 16, 20, "noise", "pan modulation")
-	writeIndentedBullet(&b, 16, 20, "ambiance", "pan modulation")
+	writeIndentedSubsection(&b, 12, "noise")
+	writeIndentedLineBlock(&b, 16,
+		"pan",
+		"modulation",
+	)
+	writeIndentedSubsection(&b, 12, "ambiance")
+	writeIndentedLineBlock(&b, 16,
+		"pan",
+		"modulation",
+	)
 	writeNestedSubsection(&b, "Track overrides")
-	writeIndentedSubsection(&b, 12, "Scope")
-	writeIndentedLineBlock(&b, 16,
-		"inherited presets only",
-	)
-	writeIndentedSubsection(&b, 12, "Index")
-	writeIndentedLineBlock(&b, 16,
-		"1-based",
-	)
-	writeIndentedSubsection(&b, 12, "Syntax")
-	writeIndentedCodeBlock(&b, 16,
+	writeNestedCodeBlock(&b,
 		"track N tone VALUE",
 		"track N binaural|monaural|isochronic VALUE",
 		"track N smooth VALUE",
@@ -316,8 +267,9 @@ func Render() string {
 		"track N intensity VALUE",
 		"track N amplitude VALUE",
 	)
-	writeIndentedSubsection(&b, 12, "Rules")
-	writeIndentedLineBlock(&b, 16,
+	writeNestedLineBlock(&b,
+		"inherited presets only",
+		"1-based index",
 		"VALUE may be absolute or signed relative delta",
 		"+VALUE adds to inherited value",
 		"-VALUE subtracts from inherited value",
@@ -325,20 +277,13 @@ func Render() string {
 	)
 
 	writeSubsection(&b, "Timeline")
-	writeParagraph(&b,
-		"Timeline entries schedule presets over time. Each entry starts with a timestamp and may include a transition keyword and an optional steps count.",
-	)
 	writeNestedSubsection(&b, "Syntax")
 	writeNestedCodeBlock(&b,
 		"HH:MM:SS PRESET_NAME [TRANSITION [STEPS]]",
 	)
-	writeNestedSubsection(&b, "Time")
-	writeNestedLineBlock(&b,
-		"HH:MM:SS required",
-	)
 	writeNestedSubsection(&b, "Rules")
 	writeNestedLineBlock(&b,
-		"top-level lines only",
+		"top-level lines only; HH:MM:SS required",
 		"first entry zero time",
 		"strictly increasing",
 		"at least two periods",
@@ -349,7 +294,10 @@ func Render() string {
 	)
 	writeNestedSubsection(&b, "TRANSITION")
 	writeNestedLineBlock(&b,
-		"steady ease-in ease-out smooth",
+		"steady",
+		"ease-in",
+		"ease-out",
+		"smooth",
 	)
 	writeNestedSubsection(&b, "STEPS")
 	writeNestedLineBlock(&b,
@@ -357,13 +305,6 @@ func Render() string {
 		"0 means no step alternation",
 		"uses the selected transition curve on each leg",
 		"limited by 5 seconds per leg, with a hard cap of 12",
-	)
-	writeNestedSubsection(&b, "Timeline examples")
-	writeNestedCodeBlock(&b,
-		"00:00:00 silence",
-		"00:00:30 focus ease-in",
-		"00:10:00 focus-deep smooth 3",
-		"00:20:00 silence ease-out",
 	)
 
 	writeSection(&b, "Compatibility")
@@ -413,16 +354,6 @@ func Render() string {
 	writeBullet(&b, "New track in inherited preset", "remove track definition\nuse track override only")
 	writeBullet(&b, "Incompatible direct transition", "insert silence between presets")
 	writeBullet(&b, "Invalid local path", "use relative path\nuse forward slashes\nomit extension")
-
-	writeSection(&b, "Notes")
-	writeBullet(&b, "silence", "built-in preset\nalways available")
-	writeBullet(&b, "Channels", "assigned by track declaration order")
-	writeBullet(&b, "Reuse", "@extends loads reusable .spsc content")
-
-	writeSection(&b, "See Also")
-	writeCodeBlock(&b,
-		"synapseq -help",
-	)
 
 	return b.String()
 }
