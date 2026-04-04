@@ -18,6 +18,7 @@ import (
 	"html/template"
 	"math"
 
+	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -239,6 +240,8 @@ func buildPreviewData(periods []t.Period) (*previewTemplateData, error) {
 		transition := period.Transition.String()
 		if idx == len(periods)-1 {
 			transition = "end"
+		} else {
+			transition = formatPreviewTransition(period)
 		}
 
 		nodes = append(nodes, previewNodeView{
@@ -274,7 +277,7 @@ func buildPreviewData(periods []t.Period) (*previewTemplateData, error) {
 			StartLabel:     formatTime(current.Time),
 			EndLabel:       formatTime(next.Time),
 			DurationLabel:  formatDuration(next.Time - current.Time),
-			Transition:     current.Transition.String(),
+			Transition:     formatPreviewTransition(current),
 			LeftPct:        toGraphPercent(current.Time, totalDurationMs),
 			WidthPct:       toGraphWidth(next.Time-current.Time, totalDurationMs),
 			Class:          dominantSegmentClass(items),
@@ -499,14 +502,14 @@ func collectGraphMetricSeries(definition graphMetricDefinition, periods []t.Peri
 				seriesSet = true
 			}
 
-			samples := transitionSampleCount(period.Transition)
+			samples := transitionSampleCount(period)
 			for step := 0; step <= samples; step++ {
 				if idx > 0 && step == 0 {
 					continue
 				}
 
 				progress := float64(step) / float64(samples)
-				alpha := applyTransitionAlpha(progress, period.Transition)
+				alpha := stepAlphaForPreview(progress, period)
 				var value float64
 				var ok bool
 				if definition.SelectTransitionValue != nil {
@@ -621,16 +624,23 @@ func buildPreviewSeriesFromRaw(rawSeries []rawGraphSeries, minValue, maxValue fl
 	return series
 }
 
-func transitionSampleCount(transition t.TransitionType) int {
-	switch transition {
+
+func transitionSampleCount(period t.Period) int {
+	base := 1
+	switch period.Transition {
 	case t.TransitionEaseOut, t.TransitionEaseIn:
-		return 8
+		base = 8
 	case t.TransitionSmooth:
-		return 12
-	default:
-		return 1
+		base = 12
 	}
-}
+
+	legs := 2*period.Steps + 1
+	if legs < 1 {
+		legs = 1
+	}
+
+	return base * legs
+	}
 
 func interpolateTrackForPreview(startTrack, endTrack t.Track, alpha float64) t.Track {
 	track := startTrack
@@ -644,27 +654,11 @@ func interpolateTrackForPreview(startTrack, endTrack t.Track, alpha float64) t.T
 }
 
 func applyTransitionAlpha(progress float64, transition t.TransitionType) float64 {
-	if progress < 0 {
-		progress = 0
-	}
-	if progress > 1 {
-		progress = 1
+	return s.ApplyTransitionAlpha(progress, transition)
 	}
 
-	alpha := progress
-	switch transition {
-	case t.TransitionEaseOut:
-		alpha = math.Log1p(math.Expm1(t.TransitionCurveK)*progress) / t.TransitionCurveK
-	case t.TransitionEaseIn:
-		alpha = math.Expm1(t.TransitionCurveK*progress) / math.Expm1(t.TransitionCurveK)
-	case t.TransitionSmooth:
-		raw := 1.0 / (1.0 + math.Exp(-t.TransitionCurveK*(progress-0.5)))
-		min := 1.0 / (1.0 + math.Exp(t.TransitionCurveK*0.5))
-		max := 1.0 / (1.0 + math.Exp(-t.TransitionCurveK*0.5))
-		alpha = (raw - min) / (max - min)
-	}
-
-	return alpha
+func stepAlphaForPreview(progress float64, period t.Period) float64 {
+	return s.StepAlpha(progress, period.Transition, period.Steps)
 }
 
 func interpolateTime(startTime, endTime int, progress float64) int {
@@ -917,6 +911,19 @@ func buildRuler(totalDurationMs int) []previewRulerMarkView {
 		})
 	}
 	return marks
+}
+
+func formatPreviewTransition(period t.Period) string {
+	if period.Steps <= 0 {
+		return period.Transition.String() + " - no steps"
+	}
+
+	label := "steps"
+	if period.Steps == 1 {
+		label = "step"
+	}
+
+	return fmt.Sprintf("%s - %d %s", period.Transition.String(), period.Steps, label)
 }
 
 func carrierBounds(periods []t.Period) (float64, float64, bool) {

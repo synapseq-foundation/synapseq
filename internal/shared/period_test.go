@@ -12,10 +12,33 @@
 package shared
 
 import (
+	"strings"
 	"testing"
 
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
+
+func TestMaxPeriodSteps(ts *testing.T) {
+	tests := []struct {
+		durationMs int
+		want       int
+	}{
+		{0, 0},
+		{4_999, 0},
+		{10_000, 0},
+		{15_000, 1},
+		{30_000, 2},
+		{60_000, 5},
+		{180_000, 12},
+		{600_000, 12},
+	}
+
+	for _, test := range tests {
+		if got := MaxPeriodSteps(test.durationMs); got != test.want {
+			ts.Fatalf("MaxPeriodSteps(%d) = %d, want %d", test.durationMs, got, test.want)
+		}
+	}
+}
 
 func TestAdjustPeriods_NormalCopy(ts *testing.T) {
 	var last, next t.Period
@@ -187,5 +210,37 @@ func TestAdjustPeriods_Errors(ts *testing.T) {
 		if err := AdjustPeriods(&last, &next); err == nil {
 			ts.Fatalf("%s: expected error, got nil", tc.name)
 		}
+	}
+}
+
+func TestAdjustPeriods_ValidatesStepsAgainstDuration(ts *testing.T) {
+	var last, next t.Period
+	last.Time = 120_000
+	next.Time = 150_000
+	last.Steps = 3
+	last.TrackStart[0] = t.Track{Type: t.TrackBinauralBeat, Amplitude: t.AmplitudePercentToRaw(10), Waveform: t.WaveformSine}
+	last.TrackEnd[0] = last.TrackStart[0]
+	next.TrackStart[0] = last.TrackStart[0]
+
+	err := AdjustPeriods(&last, &next)
+	if err == nil {
+		ts.Fatal("expected steps validation error, got nil")
+	}
+	if !strings.Contains(err.Error(), "uses 3 steps") {
+		ts.Fatalf("expected steps error message, got: %v", err)
+	}
+}
+
+func TestAdjustPeriods_AllowsStepsWithinDurationLimit(ts *testing.T) {
+	var last, next t.Period
+	last.Time = 120_000
+	next.Time = 180_000
+	last.Steps = 5
+	last.TrackStart[0] = t.Track{Type: t.TrackBinauralBeat, Amplitude: t.AmplitudePercentToRaw(10), Waveform: t.WaveformSine}
+	last.TrackEnd[0] = last.TrackStart[0]
+	next.TrackStart[0] = last.TrackStart[0]
+
+	if err := AdjustPeriods(&last, &next); err != nil {
+		ts.Fatalf("unexpected error for valid steps: %v", err)
 	}
 }

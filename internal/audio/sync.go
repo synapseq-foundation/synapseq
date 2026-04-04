@@ -12,8 +12,7 @@
 package audio
 
 import (
-	"math"
-
+	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -26,7 +25,7 @@ func (r *AudioRenderer) sync(timeMs int, periodIdx int) {
 	}
 
 	period := r.periods[periodIdx]
-	alpha := r.transitionAlpha(r.interpolationProgress(timeMs, periodIdx), period.Transition)
+	alpha := s.StepAlpha(r.interpolationProgress(timeMs, periodIdx), period.Transition, period.Steps)
 
 	for ch := range r.channels {
 		r.syncChannel(ch, periodIdx, period, alpha)
@@ -45,25 +44,6 @@ func (r *AudioRenderer) nextPeriodTime(periodIdx int, timeMs int) int {
 
 	return timeMs + defaultSyncWindowMs
 }
-
-func (r *AudioRenderer) transitionAlpha(progress float64, transition t.TransitionType) float64 {
-	alpha := progress
-
-	switch transition {
-	case t.TransitionEaseOut:
-		alpha = math.Log1p(math.Expm1(t.TransitionCurveK)*progress) / t.TransitionCurveK
-	case t.TransitionEaseIn:
-		alpha = math.Expm1(t.TransitionCurveK*progress) / math.Expm1(t.TransitionCurveK)
-	case t.TransitionSmooth:
-		raw := 1.0 / (1.0 + math.Exp(-t.TransitionCurveK*(progress-0.5)))
-		min := 1.0 / (1.0 + math.Exp(t.TransitionCurveK*0.5))
-		max := 1.0 / (1.0 + math.Exp(-t.TransitionCurveK*0.5))
-		alpha = (raw - min) / (max - min)
-	}
-
-	return alpha
-}
-
 func (r *AudioRenderer) syncChannel(ch int, periodIdx int, period t.Period, alpha float64) {
 	channel := &r.channels[ch]
 	track := interpolateTrack(period.TrackStart[ch], period.TrackEnd[ch], alpha)

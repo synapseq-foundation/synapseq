@@ -15,6 +15,7 @@ import (
 	"math"
 	"testing"
 
+	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -186,6 +187,52 @@ func TestAudioRendererSync_ResetsEffectPhaseWhenEffectChanges(ts *testing.T) {
 	if channel.Increment[1] != 0 {
 		ts.Fatalf("unexpected secondary increment for pure tone: got %d", channel.Increment[1])
 	}
+}
+
+func TestAudioRendererSync_AppliesStepsTrajectory(ts *testing.T) {
+	var p0, p1 t.Period
+	p0.Time = 0
+	p0.Steps = 1
+	p1.Time = 9000
+	p0.TrackStart[0] = t.Track{
+		Type:      t.TrackBinauralBeat,
+		Amplitude: t.AmplitudePercentToRaw(10),
+		Carrier:   200,
+		Resonance: 8,
+		Waveform:  t.WaveformSine,
+	}
+	p0.TrackEnd[0] = t.Track{
+		Type:      t.TrackBinauralBeat,
+		Amplitude: t.AmplitudePercentToRaw(20),
+		Carrier:   300,
+		Resonance: 12,
+		Waveform:  t.WaveformTriangle,
+	}
+
+	renderer := newTestRenderer(ts, []t.Period{p0, p1})
+
+	renderer.sync(3000, 0)
+	first := renderer.channels[0].Track
+	assertAlmostEqual(ts, first.Carrier, 300, 0.0001)
+	assertAlmostEqual(ts, first.Resonance, 12, 0.0001)
+
+	renderer.sync(6000, 0)
+	second := renderer.channels[0].Track
+	assertAlmostEqual(ts, second.Carrier, 200, 0.0001)
+	assertAlmostEqual(ts, second.Resonance, 8, 0.0001)
+
+	renderer.sync(9000, 0)
+	third := renderer.channels[0].Track
+	assertAlmostEqual(ts, third.Carrier, 300, 0.0001)
+	assertAlmostEqual(ts, third.Resonance, 12, 0.0001)
+	assertAlmostEqual(ts, renderer.channels[0].WaveformAlpha, 1, 0.0001)
+	}
+
+func TestStepAlpha(ts *testing.T) {
+	assertAlmostEqual(ts, s.StepAlpha(0.5, t.TransitionSteady, 0), 0.5, 0.000001)
+	assertAlmostEqual(ts, s.StepAlpha(1.0/3.0, t.TransitionSteady, 1), 1.0, 0.000001)
+	assertAlmostEqual(ts, s.StepAlpha(2.0/3.0, t.TransitionSteady, 1), 0.0, 0.000001)
+	assertAlmostEqual(ts, s.StepAlpha(1.0, t.TransitionSteady, 1), 1.0, 0.000001)
 }
 
 func newTestRenderer(ts *testing.T, periods []t.Period) *AudioRenderer {

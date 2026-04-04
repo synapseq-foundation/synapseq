@@ -20,6 +20,10 @@ import (
 
 // AdjustPeriods adjusts the tracks in the overlapping periods
 func AdjustPeriods(last, next *t.Period) error {
+	if err := validatePeriodSteps(last, next); err != nil {
+		return err
+	}
+
 	for ch := range t.NumberOfChannels {
 		tr0 := &last.TrackStart[ch]
 		tr1 := &last.TrackEnd[ch]
@@ -94,5 +98,24 @@ func AdjustPeriods(last, next *t.Period) error {
 		tr1.Waveform = tr2.Waveform
 		tr1.AmbianceName = tr2.AmbianceName
 	}
+	return nil
+}
+
+func validatePeriodSteps(last, next *t.Period) error {
+	if last == nil || next == nil {
+		return nil
+	}
+	if last.Steps < 0 {
+		return diag.Validation(fmt.Sprintf("timeline %s cannot use negative steps: %d", last.TimeString(), last.Steps))
+	}
+
+	durationMs := next.Time - last.Time
+	maxSteps := MaxPeriodSteps(durationMs)
+	if last.Steps > maxSteps {
+		return diag.Validation(
+			fmt.Sprintf("timeline %s uses %d steps but the maximum for this %d-second interval is %d", last.TimeString(), last.Steps, durationMs/1000, maxSteps),
+		).WithHint("reduce steps or increase the time before the next timeline entry")
+	}
+
 	return nil
 }

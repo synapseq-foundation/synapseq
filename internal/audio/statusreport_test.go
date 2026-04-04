@@ -31,6 +31,7 @@ func TestStatusReporter_DisplayPeriodChange_PrintsStartAndDash(ts *testing.T) {
 	var p0, p1 t.Period
 	p0.Time = 0
 	p1.Time = 1000
+	p0.Steps = 3
 
 	start := t.Track{Type: t.TrackBinauralBeat, Carrier: 100, Resonance: 5, Amplitude: t.AmplitudePercentToRaw(10), Waveform: t.WaveformSine}
 	endEqual := start
@@ -44,7 +45,7 @@ func TestStatusReporter_DisplayPeriodChange_PrintsStartAndDash(ts *testing.T) {
 	sr.DisplayPeriodChange(r, 0)
 	out := buf.String()
 
-	if !strings.Contains(out, "- "+p0.TimeString()+" -> "+p1.TimeString()+" ("+p0.Transition.String()+")") {
+	if !strings.Contains(out, "- "+p0.TimeString()+" -> "+p1.TimeString()+" ("+p0.Transition.String()+" - 3 steps)") {
 		ts.Fatalf("missing start time line: %q", out)
 	}
 	// We no longer print the end time when start==end
@@ -128,6 +129,7 @@ func TestStatusReporter_DisplayPeriodChange_UsesANSIWhenEnabled(ts *testing.T) {
 	var p0, p1 t.Period
 	p0.Time = 0
 	p1.Time = 1000
+	p0.Steps = 1
 
 	track := t.Track{Type: t.TrackBinauralBeat, Carrier: 100, Resonance: 5, Amplitude: t.AmplitudePercentToRaw(10), Waveform: t.WaveformSine}
 	p0.TrackStart[0] = track
@@ -145,7 +147,27 @@ func TestStatusReporter_DisplayPeriodChange_UsesANSIWhenEnabled(ts *testing.T) {
 	}
 
 	plain := stripANSI(out)
-	if !strings.Contains(plain, "- "+p0.TimeString()+" -> "+p1.TimeString()+" ("+p0.Transition.String()+")") {
+	if !strings.Contains(plain, "- "+p0.TimeString()+" -> "+p1.TimeString()+" ("+p0.Transition.String()+" - 1 step)") {
 		ts.Fatalf("unexpected plain output after stripping ANSI: %q", plain)
+	}
+}
+
+func TestStatusReporter_DisplayPeriodChange_ShowsNoStepsWhenZero(ts *testing.T) {
+	var p0, p1 t.Period
+	p0.Time = 0
+	p1.Time = 1000
+
+	track := t.Track{Type: t.TrackBinauralBeat, Carrier: 100, Resonance: 5, Amplitude: t.AmplitudePercentToRaw(10), Waveform: t.WaveformSine}
+	p0.TrackStart[0] = track
+	p0.TrackEnd[0] = track
+
+	r := &AudioRenderer{periods: []t.Period{p0, p1}, AudioRendererOptions: &AudioRendererOptions{}}
+	var buf bytes.Buffer
+	sr := NewStatusReporter(&buf, false)
+	sr.DisplayPeriodChange(r, 0)
+	out := buf.String()
+
+	if !strings.Contains(out, "- "+p0.TimeString()+" -> "+p1.TimeString()+" ("+p0.Transition.String()+" - no steps)") {
+		ts.Fatalf("expected no-steps label in output: %q", out)
 	}
 }

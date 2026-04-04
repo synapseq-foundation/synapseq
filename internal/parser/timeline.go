@@ -93,6 +93,8 @@ func (ctx *TextParser) ParseTimeline(presets *[]t.Preset) (*t.Period, error) {
 
 	// default transition type
 	transitionType := t.TransitionSteady
+	steps := 0
+
 	transition, ok := ctx.Line.NextToken()
 	if ok {
 		transitionSpan, _ := ctx.Line.LastTokenSpan()
@@ -114,6 +116,19 @@ func (ctx *TextParser) ParseTimeline(presets *[]t.Preset) (*t.Period, error) {
 				t.KeywordTransitionEaseIn,
 				t.KeywordTransitionSmooth,
 			)
+		}
+
+		if stepToken, ok := ctx.Line.Peek(); ok {
+			if _, convErr := strconv.Atoi(stepToken); convErr == nil {
+				steps, err = ctx.Line.NextIntStrict()
+				if err != nil {
+					return nil, err
+				}
+				if steps < 0 {
+					stepSpan, _ := ctx.Line.LastTokenSpan()
+					return nil, diag.Validation("steps must be non-negative").WithSpan(stepSpan).WithFound(stepToken)
+				}
+			}
 		}
 	}
 
@@ -137,6 +152,7 @@ func (ctx *TextParser) ParseTimeline(presets *[]t.Preset) (*t.Period, error) {
 		TrackStart: p.Track,
 		TrackEnd:   p.Track,
 		Transition: transitionType,
+		Steps:      steps,
 	}
 
 	return period, nil

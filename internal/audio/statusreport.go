@@ -72,7 +72,7 @@ func (sr *StatusReporter) DisplayPeriodChange(r *AudioRenderer, periodIdx int) {
 		sr.statusTime(period.TimeString()),
 		sr.statusArrow("->"),
 		sr.statusTime(nextPeriod.TimeString()),
-		sr.statusTransition("("+period.Transition.String()+")"))
+		sr.formatTransition(period))
 
 	// Line 2: Start tracks (indented)
 	line2 := ""
@@ -176,6 +176,24 @@ func (sr *StatusReporter) statusArrow(text string) string {
 
 func (sr *StatusReporter) statusTransition(text string) string {
 	return sr.statusRGB(text, palette.MutedWarm)
+}
+
+func (sr *StatusReporter) formatTransition(period t.Period) string {
+	transition := sr.statusTransition(period.Transition.String())
+	if period.Steps <= 0 {
+		return "(" + transition + sr.statusSteps(" - no steps") + ")"
+	}
+
+	label := "steps"
+	if period.Steps == 1 {
+		label = "step"
+	}
+
+	return "(" + transition + sr.statusSteps(fmt.Sprintf(" - %d %s", period.Steps, label)) + ")"
+}
+
+func (sr *StatusReporter) statusSteps(text string) string {
+	return sr.statusRGB(text, palette.Ochre)
 }
 
 func (sr *StatusReporter) statusTrack(text string) string {

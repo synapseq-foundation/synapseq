@@ -326,11 +326,11 @@ func Render() string {
 
 	writeSubsection(&b, "Timeline")
 	writeParagraph(&b,
-		"Timeline entries schedule presets over time. Each entry starts with a timestamp and may include a transition keyword.",
+		"Timeline entries schedule presets over time. Each entry starts with a timestamp and may include a transition keyword and an optional steps count.",
 	)
 	writeNestedSubsection(&b, "Syntax")
 	writeNestedCodeBlock(&b,
-		"HH:MM:SS PRESET_NAME [TRANSITION]",
+		"HH:MM:SS PRESET_NAME [TRANSITION [STEPS]]",
 	)
 	writeNestedSubsection(&b, "Time")
 	writeNestedLineBlock(&b,
@@ -343,16 +343,26 @@ func Render() string {
 		"strictly increasing",
 		"at least two periods",
 		"non-template preset only",
+		"steps require explicit transition",
+		"steps 0 keeps the normal transition",
+		"maximum steps depend on the time until the next entry",
 	)
 	writeNestedSubsection(&b, "TRANSITION")
 	writeNestedLineBlock(&b,
 		"steady ease-in ease-out smooth",
 	)
+	writeNestedSubsection(&b, "STEPS")
+	writeNestedLineBlock(&b,
+		"integer 0 or greater",
+		"0 means no step alternation",
+		"uses the selected transition curve on each leg",
+		"limited by 5 seconds per leg, with a hard cap of 12",
+	)
 	writeNestedSubsection(&b, "Timeline examples")
 	writeNestedCodeBlock(&b,
 		"00:00:00 silence",
 		"00:00:30 focus ease-in",
-		"00:10:00 focus-deep smooth",
+		"00:10:00 focus-deep smooth 3",
 		"00:20:00 silence ease-out",
 	)
 

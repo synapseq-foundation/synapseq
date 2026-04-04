@@ -205,6 +205,25 @@ alpha
 	}
 }
 
+func TestLoadTextSequence_Error_StepsExceedDurationLimit(ts *testing.T) {
+	seq := `
+alpha
+  tone 100 binaural 1 amplitude 1
+beta
+  tone 120 binaural 4 amplitude 2
+00:00:00 alpha steady 3
+00:00:30 beta
+`
+	path := writeSeqFile(ts, seq)
+	_, err := LoadTextSequence(path)
+	if err == nil {
+		ts.Fatalf("expected error for steps above duration limit")
+	}
+	if !strings.Contains(err.Error(), "uses 3 steps") {
+		ts.Fatalf("expected steps validation error, got %v", err)
+	}
+}
+
 func TestLoadTextSequence_Error_BackgroundWithoutFile(ts *testing.T) {
 	seq := `
 alpha

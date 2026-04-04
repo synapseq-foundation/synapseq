@@ -54,17 +54,18 @@ func TestParseTimeline(ts *testing.T) {
 		line        string
 		expectError bool
 		expectedMs  int
+		expectedSteps int
 	}{
-		{"00:00:00 alpha", false, 0},
-		{"00:00:15 alpha", false, 15_000},
-		{"12:34:56 alpha", false, (12*3600 + 34*60 + 56) * 1000},
-		{"24:00:00 alpha", true, 0},
-		{"00:60:00 alpha", true, 0},
-		{"00:00:60 alpha", true, 0},
-		{"00:00:05 beta", true, 0},
-		{"00:00:05 alpha extra", true, 0},
-		{"00:00:05", true, 0},
-		{"00:00 alpha", true, 0},
+		{"00:00:00 alpha", false, 0, 0},
+		{"00:00:15 alpha", false, 15_000, 0},
+		{"12:34:56 alpha", false, (12*3600 + 34*60 + 56) * 1000, 0},
+		{"24:00:00 alpha", true, 0, 0},
+		{"00:60:00 alpha", true, 0, 0},
+		{"00:00:60 alpha", true, 0, 0},
+		{"00:00:05 beta", true, 0, 0},
+		{"00:00:05 alpha extra", true, 0, 0},
+		{"00:00:05", true, 0, 0},
+		{"00:00 alpha", true, 0, 0},
 	}
 
 	for _, test := range tests {
@@ -86,6 +87,9 @@ func TestParseTimeline(ts *testing.T) {
 		}
 		if per.Time != test.expectedMs {
 			ts.Errorf("For line '%s', expected time %d but got %d", test.line, test.expectedMs, per.Time)
+		}
+		if per.Steps != test.expectedSteps {
+			ts.Errorf("For line '%s', expected steps %d but got %d", test.line, test.expectedSteps, per.Steps)
 		}
 	}
 }
@@ -149,34 +153,40 @@ func TestParseTimelineWithTransitions(ts *testing.T) {
 		expectError        bool
 		expectedMs         int
 		expectedTransition t.TransitionType
+		expectedSteps      int
 	}{
 		// Transition steady (explicit)
-		{"00:00:00 alpha steady", false, 0, t.TransitionSteady},
-		{"00:00:15 alpha steady", false, 15_000, t.TransitionSteady},
+		{"00:00:00 alpha steady", false, 0, t.TransitionSteady, 0},
+		{"00:00:15 alpha steady", false, 15_000, t.TransitionSteady, 0},
 
 		// Transition ease-out
-		{"00:01:00 alpha ease-out", false, 60_000, t.TransitionEaseOut},
-		{"12:34:56 alpha ease-out", false, (12*3600 + 34*60 + 56) * 1000, t.TransitionEaseOut},
+		{"00:01:00 alpha ease-out", false, 60_000, t.TransitionEaseOut, 0},
+		{"12:34:56 alpha ease-out", false, (12*3600 + 34*60 + 56) * 1000, t.TransitionEaseOut, 0},
 
 		// Transition ease-in
-		{"00:02:00 alpha ease-in", false, 120_000, t.TransitionEaseIn},
-		{"00:05:30 alpha ease-in", false, (5*60 + 30) * 1000, t.TransitionEaseIn},
+		{"00:02:00 alpha ease-in", false, 120_000, t.TransitionEaseIn, 0},
+		{"00:05:30 alpha ease-in", false, (5*60 + 30) * 1000, t.TransitionEaseIn, 0},
 
 		// Transition smooth
-		{"00:03:00 alpha smooth", false, 180_000, t.TransitionSmooth},
-		{"01:00:00 alpha smooth", false, 3_600_000, t.TransitionSmooth},
+		{"00:03:00 alpha smooth", false, 180_000, t.TransitionSmooth, 0},
+		{"01:00:00 alpha smooth", false, 3_600_000, t.TransitionSmooth, 0},
+		{"00:03:00 alpha smooth 3", false, 180_000, t.TransitionSmooth, 3},
+		{"00:03:00 alpha steady 0", false, 180_000, t.TransitionSteady, 0},
 
 		// Empty transition (steady default)
-		{"00:00:00 alpha", false, 0, t.TransitionSteady},
-		{"00:10:00 alpha", false, 600_000, t.TransitionSteady},
+		{"00:00:00 alpha", false, 0, t.TransitionSteady, 0},
+		{"00:10:00 alpha", false, 600_000, t.TransitionSteady, 0},
 
 		// Invalid transition types
-		{"00:00:05 alpha invalid-transition", true, 0, t.TransitionSteady},
-		{"00:00:05 alpha linear", true, 0, t.TransitionSteady},
+		{"00:00:05 alpha invalid-transition", true, 0, t.TransitionSteady, 0},
+		{"00:00:05 alpha linear", true, 0, t.TransitionSteady, 0},
+		{"00:00:05 alpha steady -1", true, 0, t.TransitionSteady, 0},
+		{"00:00:05 alpha 4", true, 0, t.TransitionSteady, 0},
 
 		// Extra tokens after valid transition
-		{"00:00:05 alpha steady extra", true, 0, t.TransitionSteady},
-		{"00:00:05 alpha ease-in extra-token", true, 0, t.TransitionSteady},
+		{"00:00:05 alpha steady extra", true, 0, t.TransitionSteady, 0},
+		{"00:00:05 alpha ease-in extra-token", true, 0, t.TransitionSteady, 0},
+		{"00:00:05 alpha steady 3 extra", true, 0, t.TransitionSteady, 0},
 	}
 
 	for _, test := range tests {
@@ -201,6 +211,9 @@ func TestParseTimelineWithTransitions(ts *testing.T) {
 		}
 		if per.Transition != test.expectedTransition {
 			ts.Errorf("For line '%s', expected transition %v but got %v", test.line, test.expectedTransition, per.Transition)
+		}
+		if per.Steps != test.expectedSteps {
+			ts.Errorf("For line '%s', expected steps %d but got %d", test.line, test.expectedSteps, per.Steps)
 		}
 	}
 }

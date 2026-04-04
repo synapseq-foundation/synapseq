@@ -12,6 +12,7 @@ func TestGetPreviewContent(ts *testing.T) {
 	periods := []t.Period{
 		{
 			Time: 0,
+			Steps: 1,
 			TrackStart: [t.NumberOfChannels]t.Track{
 				{
 					Type:        t.TrackPinkNoise,
@@ -116,6 +117,7 @@ func TestGetPreviewContent(ts *testing.T) {
 		"Carrier",
 		"Beat",
 		"Smooth",
+		"Transition smooth - 1 step",
 		"Amplitude",
 		"Effect",
 		"Effect value",
@@ -164,5 +166,18 @@ func TestApplyTransitionAlpha(ts *testing.T) {
 	smooth := applyTransitionAlpha(0.5, t.TransitionSmooth)
 	if math.Abs(smooth-0.5) > 0.000001 {
 		ts.Fatalf("expected smooth alpha midpoint to stay centered, got %.6f", smooth)
+	}
+}
+
+func TestStepAlphaForPreview(ts *testing.T) {
+	period := t.Period{Transition: t.TransitionSteady, Steps: 1}
+	if got := stepAlphaForPreview(1.0/3.0, period); math.Abs(got-1.0) > 0.000001 {
+		ts.Fatalf("expected first leg to reach end value, got %.6f", got)
+	}
+	if got := stepAlphaForPreview(2.0/3.0, period); math.Abs(got-0.0) > 0.000001 {
+		ts.Fatalf("expected second leg to return to start value, got %.6f", got)
+	}
+	if got := stepAlphaForPreview(1.0, period); math.Abs(got-1.0) > 0.000001 {
+		ts.Fatalf("expected final point to end on the next preset, got %.6f", got)
 	}
 }
