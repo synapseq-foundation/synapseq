@@ -171,7 +171,7 @@ theta
 # The timeline controls when presets are played.
 
 # Format:
-#   hh:mm:ss preset-name [transition]
+#   hh:mm:ss preset-name [transition [steps]]
 
 # Transition types:
 #   steady (default)
@@ -179,6 +179,7 @@ theta
 #   ease-out
 #   smooth
 
+# Steps control how many steps the transition takes (default: 0) in current preset to next preset.
 
 # ============================================================
 # MINIMAL WORKING EXAMPLE
