@@ -40,7 +40,7 @@ After installation, you can run `synapseq -install-file-association` to associat
 
 ### Manual Downloads
 
-If you prefer to install manually, download the appropriate archive from the latest GitHub release: [v4.0.3](https://github.com/synapseq-foundation/synapseq/releases/tag/v4.0.3).
+If you prefer to install manually, download the appropriate archive from the latest GitHub release: [v4.1.0](https://github.com/synapseq-foundation/synapseq/releases/tag/v4.1.0).
 
 If you want to build SynapSeq from source, see the [Compilation Guide](COMPILE.md).
 
