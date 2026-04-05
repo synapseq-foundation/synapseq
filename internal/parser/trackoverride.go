@@ -70,6 +70,7 @@ func (ctx *TextParser) ParseTrackOverride(preset *t.Preset) error {
 		t.KeywordBinaural,
 		t.KeywordMonaural,
 		t.KeywordIsochronic,
+		t.KeywordWaveform,
 		t.KeywordPan,
 		t.KeywordModulation,
 		t.KeywordDoppler,
@@ -191,6 +192,38 @@ func (ctx *TextParser) ParseTrackOverride(preset *t.Preset) error {
 		}
 
 		preset.Track[idx].Effect.Intensity = t.IntensityPercentToRaw(intensity)
+	case t.KeywordWaveform:
+		if track.Type == t.TrackBrownNoise ||
+			track.Type == t.TrackPinkNoise ||
+			track.Type == t.TrackWhiteNoise {
+			return diag.Validation(fmt.Sprintf("cannot set waveform on track %d of type %q", trackIdx, track.Type.String())).WithSpan(kindSpan).WithFound(kind)
+		}
+
+		waveform, err := ctx.Line.NextExpectOneOf(
+			t.KeywordSine,
+			t.KeywordSquare,
+			t.KeywordTriangle,
+			t.KeywordSawtooth)
+
+		if err != nil {
+			return err
+		}
+
+		var waveformType t.WaveformType
+		switch waveform {
+		case t.KeywordSine:
+			waveformType = t.WaveformSine
+		case t.KeywordSquare:
+			waveformType = t.WaveformSquare
+		case t.KeywordTriangle:
+			waveformType = t.WaveformTriangle
+		case t.KeywordSawtooth:
+			waveformType = t.WaveformSawtooth
+		default:
+			return diag.Parse("unexpected waveform type").WithSpan(kindSpan).WithFound(waveform)
+		}
+
+		preset.Track[idx].Waveform = waveformType
 	default:
 		return diag.Parse("unexpected keyword").WithSpan(kindSpan).WithFound(kind)
 	}

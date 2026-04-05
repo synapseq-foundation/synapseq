@@ -186,6 +186,16 @@ func TestParseTrackOverride_Success(ts *testing.T) {
 			},
 		},
 		{
+			name:     "override tone waveform",
+			line:     "  track 1 waveform triangle",
+			trackIdx: 0,
+			checkFunc: func(ts *testing.T, p *t.Preset) {
+				if p.Track[0].Waveform != t.WaveformTriangle {
+					ts.Errorf("expected waveform %v, got %v", t.WaveformTriangle, p.Track[0].Waveform)
+				}
+			},
+		},
+		{
 			name:     "override ambiance pan value",
 			line:     "  track 2 pan 5",
 			trackIdx: 1,
@@ -255,6 +265,16 @@ func TestParseTrackOverride_Success(ts *testing.T) {
 				expected := t.IntensityPercentToRaw(60)
 				if p.Track[1].Effect.Intensity != expected {
 					ts.Errorf("expected intensity %v, got %v", expected, p.Track[1].Effect.Intensity)
+				}
+			},
+		},
+		{
+			name:     "override ambiance waveform",
+			line:     "  track 2 waveform sawtooth",
+			trackIdx: 1,
+			checkFunc: func(ts *testing.T, p *t.Preset) {
+				if p.Track[1].Waveform != t.WaveformSawtooth {
+					ts.Errorf("expected waveform %v, got %v", t.WaveformSawtooth, p.Track[1].Waveform)
 				}
 			},
 		},
@@ -382,6 +402,8 @@ func TestParseTrackOverride_Errors(ts *testing.T) {
 		{"invalid value", "  track 1 amplitude abc"},
 		{"extra tokens", "  track 1 amplitude 10 extra"},
 		{"tone on ambiance track", "  track 2 tone 300"},
+		{"waveform on noise track", "  track 4 waveform square"},
+		{"invalid waveform value", "  track 1 waveform pulse"},
 		{"smooth on non-noise track", "  track 1 smooth 30"},
 		// {"pan on non-ambiance track", "  track 1 pan 200"},
 		{"wrong beat type override", "  track 1 monaural 8"},
@@ -464,6 +486,7 @@ func TestPresetInheritance_Integration(ts *testing.T) {
 	overrides := []string{
 		"  track 1 tone +50",
 		"  track 1 binaural +2",
+		"  track 1 waveform square",
 		"  track 1 amplitude +5",
 		"  track 2 smooth +25",
 		"  track 2 amplitude +5",
@@ -482,6 +505,9 @@ func TestPresetInheritance_Integration(ts *testing.T) {
 	}
 	if derivedPreset.Track[0].Resonance != 12 {
 		ts.Errorf("expected overridden resonance 12, got %v", derivedPreset.Track[0].Resonance)
+	}
+	if derivedPreset.Track[0].Waveform != t.WaveformSquare {
+		ts.Errorf("expected overridden waveform square, got %v", derivedPreset.Track[0].Waveform)
 	}
 	if derivedPreset.Track[0].Amplitude != t.AmplitudePercentToRaw(25) {
 		ts.Errorf("expected overridden amplitude for track 1, got %v", derivedPreset.Track[0].Amplitude)
