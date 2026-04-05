@@ -262,6 +262,7 @@ func Render() string {
 	writeNestedCodeBlock(&b,
 		"track N tone VALUE",
 		"track N binaural|monaural|isochronic VALUE",
+		"track N waveform sine|square|triangle|sawtooth",
 		"track N smooth VALUE",
 		"track N pan|modulation|doppler VALUE",
 		"track N intensity VALUE",
