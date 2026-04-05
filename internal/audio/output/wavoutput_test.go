@@ -11,7 +11,7 @@
  * See the file COPYING.txt for details.
  */
 
-package audio
+package output
 
 import (
 	"bytes"
@@ -20,33 +20,26 @@ import (
 	"testing"
 
 	bwav "github.com/gopxl/beep/v2/wav"
-	audiooutput "github.com/synapseq-foundation/synapseq/v4/internal/audio/output"
-	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
-func TestWAVOutput_Write_EmitsDecodableWAV(ts *testing.T) {
-	var p0, pEnd t.Period
-	p0.Time = 0
-	p0.TrackStart[0] = t.Track{
-		Type:      t.TrackPureTone,
-		Carrier:   220,
-		Amplitude: t.AmplitudePercentToRaw(10),
-		Waveform:  t.WaveformSine,
-	}
-	p0.TrackEnd[0] = p0.TrackStart[0]
-	pEnd.Time = 100
+func TestWAVOutputWrite_EmitsDecodableWAV(ts *testing.T) {
+	const (
+		sampleRate = 44100
+		channels   = 2
+		precision  = 2
+	)
 
-	renderer, err := NewAudioRenderer([]t.Period{p0, pEnd}, &AudioRendererOptions{
-		SampleRate: 44100,
-		Volume:     100,
-		Ambiance:   map[string]string{},
-	})
-	if err != nil {
-		ts.Fatalf("NewAudioRenderer failed: %v", err)
+	render := func(consume func(samples []int) error) error {
+		samples := make([]int, 128*channels)
+		for i := 0; i < len(samples); i += 2 {
+			samples[i] = 1000
+			samples[i+1] = -1000
+		}
+		return consume(samples)
 	}
 
 	buffer := &testMemoryWriteSeeker{}
-	if err := audiooutput.NewWAVOutput(renderer.SampleRate, audioChannels, audioBitDepth/8, renderer.Render).Write(buffer); err != nil {
+	if err := NewWAVOutput(sampleRate, channels, precision, render).Write(buffer); err != nil {
 		ts.Fatalf("Write failed: %v", err)
 	}
 
@@ -56,10 +49,10 @@ func TestWAVOutput_Write_EmitsDecodableWAV(ts *testing.T) {
 	}
 	defer decoded.Close()
 
-	if int(format.SampleRate) != 44100 {
+	if int(format.SampleRate) != sampleRate {
 		ts.Fatalf("unexpected sample rate: got %d", format.SampleRate)
 	}
-	if format.NumChannels != audioChannels {
+	if format.NumChannels != channels {
 		ts.Fatalf("unexpected channel count: got %d", format.NumChannels)
 	}
 
@@ -67,6 +60,17 @@ func TestWAVOutput_Write_EmitsDecodableWAV(ts *testing.T) {
 	n, ok := decoded.Stream(buf)
 	if n == 0 && !ok {
 		ts.Fatalf("expected decodable audio frames")
+	}
+
+	hasSignal := false
+	for i := 0; i < n; i++ {
+		if buf[i][0] != 0 || buf[i][1] != 0 {
+			hasSignal = true
+			break
+		}
+	}
+	if !hasSignal {
+		ts.Fatalf("expected non-zero decoded samples")
 	}
 }
 

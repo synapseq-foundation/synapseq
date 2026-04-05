@@ -12,6 +12,7 @@
 package timeline
 
 import (
+	"math"
 	"strings"
 	"testing"
 
@@ -170,5 +171,20 @@ func TestAdjustPeriods_AllowsStepsWithinDurationLimit(ts *testing.T) {
 
 	if err := AdjustPeriods(&last, &next); err != nil {
 		ts.Fatalf("unexpected error for valid steps: %v", err)
+	}
+}
+
+func TestStepAlpha(ts *testing.T) {
+	assertAlmostEqual(ts, StepAlpha(0.5, t.TransitionSteady, 0), 0.5, 0.000001)
+	assertAlmostEqual(ts, StepAlpha(1.0/3.0, t.TransitionSteady, 1), 1.0, 0.000001)
+	assertAlmostEqual(ts, StepAlpha(2.0/3.0, t.TransitionSteady, 1), 0.0, 0.000001)
+	assertAlmostEqual(ts, StepAlpha(1.0, t.TransitionSteady, 1), 1.0, 0.000001)
+}
+
+func assertAlmostEqual(ts *testing.T, got, want, tolerance float64) {
+	ts.Helper()
+
+	if math.Abs(got-want) > tolerance {
+		ts.Fatalf("unexpected value: got %.6f want %.6f", got, want)
 	}
 }

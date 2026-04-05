@@ -9,18 +9,18 @@
  * See the file COPYING.txt for details.
  */
 
-package audio
+package sync
 
 import (
 	"math"
 	"testing"
 
-	audiosync "github.com/synapseq-foundation/synapseq/v4/internal/audio/sync"
-	tl "github.com/synapseq-foundation/synapseq/v4/internal/timeline"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
-func TestAudioRendererSync_InterpolatesTrackAndSignal(ts *testing.T) {
+const testSampleRate = 44100
+
+func TestEngineSync_InterpolatesTrackAndSignal(ts *testing.T) {
 	var p0, p1 t.Period
 	p0.Time = 0
 	p1.Time = 1000
@@ -49,10 +49,11 @@ func TestAudioRendererSync_InterpolatesTrackAndSignal(ts *testing.T) {
 		},
 	}
 
-	renderer := newTestRenderer(ts, []t.Period{p0, p1})
-	renderer.syncEngine.Sync(renderer.channels[:], renderer.periods, 500, 0)
+	channels := make([]t.Channel, t.NumberOfChannels)
+	engine := NewEngine(testSampleRate, nil)
+	engine.Sync(channels, []t.Period{p0, p1}, 500, 0)
 
-	channel := renderer.channels[0]
+	channel := channels[0]
 
 	assertAlmostEqual(ts, float64(channel.Track.Amplitude), float64(t.AmplitudePercentToRaw(20)), 0.0001)
 	assertAlmostEqual(ts, channel.Track.Carrier, 250, 0.0001)
@@ -77,18 +78,18 @@ func TestAudioRendererSync_InterpolatesTrackAndSignal(ts *testing.T) {
 	if channel.Amplitude[0] != int(channel.Track.Amplitude) || channel.Amplitude[1] != int(channel.Track.Amplitude) {
 		ts.Fatalf("unexpected amplitudes: got %v", channel.Amplitude)
 	}
-	if channel.Increment[0] != audiosync.FrequencyToIncrement(renderer.SampleRate, 255) {
+	if channel.Increment[0] != FrequencyToIncrement(testSampleRate, 255) {
 		ts.Fatalf("unexpected high increment: got %d", channel.Increment[0])
 	}
-	if channel.Increment[1] != audiosync.FrequencyToIncrement(renderer.SampleRate, 245) {
+	if channel.Increment[1] != FrequencyToIncrement(testSampleRate, 245) {
 		ts.Fatalf("unexpected low increment: got %d", channel.Increment[1])
 	}
-	if channel.Effect.Increment != audiosync.FrequencyToIncrement(renderer.SampleRate, 3) {
+	if channel.Effect.Increment != FrequencyToIncrement(testSampleRate, 3) {
 		ts.Fatalf("unexpected effect increment: got %d", channel.Effect.Increment)
 	}
 }
 
-func TestAudioRendererSync_ResetsOffsetsAndClearsResidualState(ts *testing.T) {
+func TestEngineSync_ResetsOffsetsAndClearsResidualState(ts *testing.T) {
 	var p0, p1 t.Period
 	p0.Time = 0
 	p1.Time = 1000
@@ -99,22 +100,23 @@ func TestAudioRendererSync_ResetsOffsetsAndClearsResidualState(ts *testing.T) {
 	}
 	p0.TrackEnd[0] = p0.TrackStart[0]
 
-	renderer := newTestRenderer(ts, []t.Period{p0, p1})
-	renderer.channels[0].Type = t.TrackBinauralBeat
-	renderer.channels[0].Track.Effect.Type = t.EffectPan
-	renderer.channels[0].Offset = [2]int{77, 99}
-	renderer.channels[0].Amplitude = [2]int{11, 22}
-	renderer.channels[0].Increment = [2]int{33, 44}
-	renderer.channels[0].Effect.Offset = 55
-	renderer.channels[0].Effect.Increment = 66
-	renderer.channels[0].Effect.ModulationGain = 0.75
-	renderer.channels[0].Effect.ModulationInitialized = true
-	renderer.channels[0].Effect.PanPosition = 0.25
-	renderer.channels[0].Effect.PanInitialized = true
+	channels := make([]t.Channel, t.NumberOfChannels)
+	channels[0].Type = t.TrackBinauralBeat
+	channels[0].Track.Effect.Type = t.EffectPan
+	channels[0].Offset = [2]int{77, 99}
+	channels[0].Amplitude = [2]int{11, 22}
+	channels[0].Increment = [2]int{33, 44}
+	channels[0].Effect.Offset = 55
+	channels[0].Effect.Increment = 66
+	channels[0].Effect.ModulationGain = 0.75
+	channels[0].Effect.ModulationInitialized = true
+	channels[0].Effect.PanPosition = 0.25
+	channels[0].Effect.PanInitialized = true
 
-	renderer.syncEngine.Sync(renderer.channels[:], renderer.periods, 0, 0)
+	engine := NewEngine(testSampleRate, nil)
+	engine.Sync(channels, []t.Period{p0, p1}, 0, 0)
 
-	channel := renderer.channels[0]
+	channel := channels[0]
 	if channel.Type != t.TrackWhiteNoise {
 		ts.Fatalf("unexpected runtime type: got %v", channel.Type)
 	}
@@ -141,7 +143,7 @@ func TestAudioRendererSync_ResetsOffsetsAndClearsResidualState(ts *testing.T) {
 	}
 }
 
-func TestAudioRendererSync_ResetsEffectPhaseWhenEffectChanges(ts *testing.T) {
+func TestEngineSync_ResetsEffectPhaseWhenEffectChanges(ts *testing.T) {
 	var p0, p1 t.Period
 	p0.Time = 0
 	p1.Time = 1000
@@ -158,22 +160,23 @@ func TestAudioRendererSync_ResetsEffectPhaseWhenEffectChanges(ts *testing.T) {
 	}
 	p0.TrackEnd[0] = p0.TrackStart[0]
 
-	renderer := newTestRenderer(ts, []t.Period{p0, p1})
-	renderer.channels[0].Track.Effect.Type = t.EffectPan
-	renderer.channels[0].Effect.Offset = 1234
-	renderer.channels[0].Effect.Increment = 4321
-	renderer.channels[0].Effect.ModulationGain = 0.4
-	renderer.channels[0].Effect.ModulationInitialized = true
-	renderer.channels[0].Effect.PanPosition = -0.5
-	renderer.channels[0].Effect.PanInitialized = true
+	channels := make([]t.Channel, t.NumberOfChannels)
+	channels[0].Track.Effect.Type = t.EffectPan
+	channels[0].Effect.Offset = 1234
+	channels[0].Effect.Increment = 4321
+	channels[0].Effect.ModulationGain = 0.4
+	channels[0].Effect.ModulationInitialized = true
+	channels[0].Effect.PanPosition = -0.5
+	channels[0].Effect.PanInitialized = true
 
-	renderer.syncEngine.Sync(renderer.channels[:], renderer.periods, 0, 0)
+	engine := NewEngine(testSampleRate, nil)
+	engine.Sync(channels, []t.Period{p0, p1}, 0, 0)
 
-	channel := renderer.channels[0]
+	channel := channels[0]
 	if channel.Effect.Offset != 0 {
 		ts.Fatalf("effect offset was not reset: got %d", channel.Effect.Offset)
 	}
-	if channel.Effect.Increment != audiosync.FrequencyToIncrement(renderer.SampleRate, 5) {
+	if channel.Effect.Increment != FrequencyToIncrement(testSampleRate, 5) {
 		ts.Fatalf("unexpected effect increment after effect change: got %d", channel.Effect.Increment)
 	}
 	if channel.Effect.ModulationInitialized {
@@ -182,7 +185,7 @@ func TestAudioRendererSync_ResetsEffectPhaseWhenEffectChanges(ts *testing.T) {
 	if channel.Effect.PanInitialized {
 		ts.Fatalf("pan smoothing state should be reset on effect change")
 	}
-	if channel.Increment[0] != audiosync.FrequencyToIncrement(renderer.SampleRate, 220) {
+	if channel.Increment[0] != FrequencyToIncrement(testSampleRate, 220) {
 		ts.Fatalf("unexpected carrier increment: got %d", channel.Increment[0])
 	}
 	if channel.Increment[1] != 0 {
@@ -190,7 +193,7 @@ func TestAudioRendererSync_ResetsEffectPhaseWhenEffectChanges(ts *testing.T) {
 	}
 }
 
-func TestAudioRendererSync_AppliesStepsTrajectory(ts *testing.T) {
+func TestEngineSync_AppliesStepsTrajectory(ts *testing.T) {
 	var p0, p1 t.Period
 	p0.Time = 0
 	p0.Steps = 1
@@ -210,45 +213,24 @@ func TestAudioRendererSync_AppliesStepsTrajectory(ts *testing.T) {
 		Waveform:  t.WaveformTriangle,
 	}
 
-	renderer := newTestRenderer(ts, []t.Period{p0, p1})
+	channels := make([]t.Channel, t.NumberOfChannels)
+	engine := NewEngine(testSampleRate, nil)
 
-	renderer.syncEngine.Sync(renderer.channels[:], renderer.periods, 3000, 0)
-	first := renderer.channels[0].Track
+	engine.Sync(channels, []t.Period{p0, p1}, 3000, 0)
+	first := channels[0].Track
 	assertAlmostEqual(ts, first.Carrier, 300, 0.0001)
 	assertAlmostEqual(ts, first.Resonance, 12, 0.0001)
 
-	renderer.syncEngine.Sync(renderer.channels[:], renderer.periods, 6000, 0)
-	second := renderer.channels[0].Track
+	engine.Sync(channels, []t.Period{p0, p1}, 6000, 0)
+	second := channels[0].Track
 	assertAlmostEqual(ts, second.Carrier, 200, 0.0001)
 	assertAlmostEqual(ts, second.Resonance, 8, 0.0001)
 
-	renderer.syncEngine.Sync(renderer.channels[:], renderer.periods, 9000, 0)
-	third := renderer.channels[0].Track
+	engine.Sync(channels, []t.Period{p0, p1}, 9000, 0)
+	third := channels[0].Track
 	assertAlmostEqual(ts, third.Carrier, 300, 0.0001)
 	assertAlmostEqual(ts, third.Resonance, 12, 0.0001)
-	assertAlmostEqual(ts, renderer.channels[0].WaveformAlpha, 1, 0.0001)
-}
-
-func TestStepAlpha(ts *testing.T) {
-	assertAlmostEqual(ts, tl.StepAlpha(0.5, t.TransitionSteady, 0), 0.5, 0.000001)
-	assertAlmostEqual(ts, tl.StepAlpha(1.0/3.0, t.TransitionSteady, 1), 1.0, 0.000001)
-	assertAlmostEqual(ts, tl.StepAlpha(2.0/3.0, t.TransitionSteady, 1), 0.0, 0.000001)
-	assertAlmostEqual(ts, tl.StepAlpha(1.0, t.TransitionSteady, 1), 1.0, 0.000001)
-}
-
-func newTestRenderer(ts *testing.T, periods []t.Period) *AudioRenderer {
-	ts.Helper()
-
-	renderer, err := NewAudioRenderer(periods, &AudioRendererOptions{
-		SampleRate: 44100,
-		Volume:     80,
-		Ambiance:   map[string]string{},
-	})
-	if err != nil {
-		ts.Fatalf("NewAudioRenderer failed: %v", err)
-	}
-
-	return renderer
+	assertAlmostEqual(ts, channels[0].WaveformAlpha, 1, 0.0001)
 }
 
 func assertAlmostEqual(ts *testing.T, got, want, tolerance float64) {

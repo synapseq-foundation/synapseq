@@ -9,20 +9,18 @@
  * See the file COPYING.txt for details.
  */
 
-package audio
+package output
 
 import (
 	"bytes"
 	"testing"
-
-	audiooutput "github.com/synapseq-foundation/synapseq/v4/internal/audio/output"
 )
 
-func TestRawPCMWriter_WriteSamples_EncodesLittleEndianPCM16(ts *testing.T) {
+func TestRawPCMWriterWriteSamples_EncodesLittleEndianPCM16(ts *testing.T) {
 	var out bytes.Buffer
-	writer := audiooutput.NewRawPCMWriter(&out, 4)
+	writer := NewRawPCMWriter(&out, 4)
 
-	if err := writer.WriteSamples([]int{audioMaxValue + 10, audioMinValue - 10, 1, -1}); err != nil {
+	if err := writer.WriteSamples([]int{40000, -40000, 1, -1}); err != nil {
 		ts.Fatalf("WriteSamples failed: %v", err)
 	}
 	if err := writer.Flush(); err != nil {
