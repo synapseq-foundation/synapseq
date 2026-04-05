@@ -12,15 +12,37 @@
 package audio
 
 import (
+	"bytes"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/gopxl/beep/v2"
 	bwav "github.com/gopxl/beep/v2/wav"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
+
+func writeConstWav(t *testing.T, path string, sampleRate int) {
+	t.Helper()
+
+	f, err := os.Create(path)
+	if err != nil {
+		t.Fatalf("create wav: %v", err)
+	}
+	defer f.Close()
+
+	format := beep.Format{
+		SampleRate:  beep.SampleRate(sampleRate),
+		NumChannels: audioChannels,
+		Precision:   audioBitDepth / 8,
+	}
+	cs := &constStreamer{framesLeft: sampleRate, val: float64(1000) / 32768.0}
+	if err := bwav.Encode(f, cs, format); err != nil {
+		t.Fatalf("encode wav: %v", err)
+	}
+}
 
 func mustReadWavAll(t *testing.T, path string) ([]int, uint32, int, int) {
 	t.Helper()
@@ -428,6 +450,56 @@ func TestAmbianceAudio_Local10MBLimit(ts *testing.T) {
 func TestAmbianceAudio_InvalidPath(t *testing.T) {
 	if _, err := NewAmbianceAudio([]string{filepath.Join("testdata", "missing.wav")}, 44100); err == nil {
 		t.Fatalf("expected error for missing ambiance file")
+	}
+}
+
+func TestAmbianceAudio_ResamplesMismatchedSampleRate(t *testing.T) {
+	tempDir := t.TempDir()
+	path := filepath.Join(tempDir, "mismatch.wav")
+	writeConstWav(t, path, 48000)
+
+	aa, err := NewAmbianceAudio([]string{path}, 44100)
+	if err != nil {
+		t.Fatalf("NewAmbianceAudio resample: %v", err)
+	}
+	defer aa.Close()
+
+	if aa.sampleRate != 44100 {
+		t.Fatalf("expected resampled sample rate 44100, got %d", aa.sampleRate)
+	}
+	if aa.channels != audioChannels {
+		t.Fatalf("expected %d channels, got %d", audioChannels, aa.channels)
+	}
+
+	buf := make([]int, 1024)
+	n, err := aa.ReadSamplesAt(0, buf, len(buf))
+	if err != nil {
+		t.Fatalf("ReadSamplesAt resampled wav: %v", err)
+	}
+	if n != len(buf) {
+		t.Fatalf("ReadSamplesAt short read after resample: got %d want %d", n, len(buf))
+	}
+
+	hasNonZero := false
+	for _, sample := range buf {
+		if sample != 0 {
+			hasNonZero = true
+			break
+		}
+	}
+	if !hasNonZero {
+		t.Fatalf("expected non-zero samples from resampled wav")
+	}
+
+	reader := bytes.NewReader(aa.cachedData[0])
+	stream, format, err := bwav.Decode(reader)
+	if err != nil {
+		t.Fatalf("decode resampled cache: %v", err)
+	}
+	defer stream.Close()
+
+	if int(format.SampleRate) != 44100 {
+		t.Fatalf("expected cached wav sample rate 44100, got %d", format.SampleRate)
 	}
 }
 

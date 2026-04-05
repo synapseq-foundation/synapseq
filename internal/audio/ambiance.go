@@ -12,6 +12,8 @@ import (
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
+const ambianceResampleQuality = 4
+
 // AmbianceAudio handles ambiance WAV playlist playback with looping
 type AmbianceAudio struct {
 	filePaths    []string
@@ -92,17 +94,13 @@ func (aa *AmbianceAudio) validateTracks(expectedSampleRate int) error {
 		if err != nil {
 			return fmt.Errorf("failed to decode ambiance file [%d] (%s): %w", i, aa.filePaths[i], err)
 		}
-		_ = stream.Close()
 
 		sr := int(format.SampleRate)
 		ch := format.NumChannels
 		// depth := format.Precision * 8
 
-		if sr != expectedSampleRate {
-			return fmt.Errorf(
-				"ambiance track [%d] (%s) has sample rate %d Hz, expected %d Hz",
-				i, aa.filePaths[i], sr, expectedSampleRate,
-			)
+		if err := stream.Close(); err != nil {
+			return fmt.Errorf("failed to close ambiance file [%d] (%s): %w", i, aa.filePaths[i], err)
 		}
 
 		if ch != audioChannels {
@@ -110,6 +108,45 @@ func (aa *AmbianceAudio) validateTracks(expectedSampleRate int) error {
 				"ambiance track [%d] (%s) has %d channel(s), expected %d",
 				i, aa.filePaths[i], ch, audioChannels,
 			)
+		}
+
+		if sr != expectedSampleRate {
+			resampled, err := resampleWAVData(data, expectedSampleRate)
+			if err != nil {
+				return fmt.Errorf(
+					"failed to resample ambiance file [%d] (%s) from %d Hz to %d Hz: %w",
+					i, aa.filePaths[i], sr, expectedSampleRate, err,
+				)
+			}
+
+			aa.cachedData[i] = resampled
+
+			reader = bytes.NewReader(resampled)
+			stream, format, err = bwav.Decode(reader)
+			if err != nil {
+				return fmt.Errorf("failed to decode resampled ambiance file [%d] (%s): %w", i, aa.filePaths[i], err)
+			}
+
+			sr = int(format.SampleRate)
+			ch = format.NumChannels
+
+			if err := stream.Close(); err != nil {
+				return fmt.Errorf("failed to close resampled ambiance file [%d] (%s): %w", i, aa.filePaths[i], err)
+			}
+
+			if sr != expectedSampleRate {
+				return fmt.Errorf(
+					"ambiance track [%d] (%s) has sample rate %d Hz after resample, expected %d Hz",
+					i, aa.filePaths[i], sr, expectedSampleRate,
+				)
+			}
+
+			if ch != audioChannels {
+				return fmt.Errorf(
+					"ambiance track [%d] (%s) has %d channel(s) after resample, expected %d",
+					i, aa.filePaths[i], ch, audioChannels,
+				)
+			}
 		}
 
 		// if i == 0 {
@@ -127,6 +164,77 @@ func (aa *AmbianceAudio) validateTracks(expectedSampleRate int) error {
 	// aa.bitDepth = baseDepth
 
 	return nil
+}
+
+func resampleWAVData(data []byte, expectedSampleRate int) ([]byte, error) {
+	reader := bytes.NewReader(data)
+	stream, format, err := bwav.Decode(reader)
+	if err != nil {
+		return nil, err
+	}
+	defer stream.Close()
+
+	resampled := beep.Resample(
+		ambianceResampleQuality,
+		format.SampleRate,
+		beep.SampleRate(expectedSampleRate),
+		stream,
+	)
+
+	out := &memoryWriteSeeker{}
+	outFormat := beep.Format{
+		SampleRate:  beep.SampleRate(expectedSampleRate),
+		NumChannels: format.NumChannels,
+		Precision:   format.Precision,
+	}
+	if err := bwav.Encode(out, resampled, outFormat); err != nil {
+		return nil, err
+	}
+	if err := resampled.Err(); err != nil {
+		return nil, err
+	}
+
+	return out.Bytes(), nil
+}
+
+type memoryWriteSeeker struct {
+	data []byte
+	pos  int
+}
+
+func (m *memoryWriteSeeker) Write(p []byte) (int, error) {
+	end := m.pos + len(p)
+	if end > len(m.data) {
+		grown := make([]byte, end)
+		copy(grown, m.data)
+		m.data = grown
+	}
+	copy(m.data[m.pos:end], p)
+	m.pos = end
+	return len(p), nil
+}
+
+func (m *memoryWriteSeeker) Seek(offset int64, whence int) (int64, error) {
+	var next int
+	switch whence {
+	case io.SeekStart:
+		next = int(offset)
+	case io.SeekCurrent:
+		next = m.pos + int(offset)
+	case io.SeekEnd:
+		next = len(m.data) + int(offset)
+	default:
+		return 0, fmt.Errorf("invalid seek whence: %d", whence)
+	}
+	if next < 0 {
+		return 0, fmt.Errorf("invalid seek position: %d", next)
+	}
+	m.pos = next
+	return int64(next), nil
+}
+
+func (m *memoryWriteSeeker) Bytes() []byte {
+	return append([]byte(nil), m.data...)
 }
 
 // openFromCache opens a decoder from cached data at a given index
