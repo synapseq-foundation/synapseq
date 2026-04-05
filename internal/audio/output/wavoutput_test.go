@@ -22,7 +22,7 @@ import (
 	bwav "github.com/gopxl/beep/v2/wav"
 )
 
-func TestWAVOutputWrite_EmitsDecodableWAV(ts *testing.T) {
+func TestWAVOutput_Write_EmitsDecodableWAV(ts *testing.T) {
 	const (
 		sampleRate = 44100
 		channels   = 2

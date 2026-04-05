@@ -16,7 +16,7 @@ import (
 	"testing"
 )
 
-func TestRawPCMWriterWriteSamples_EncodesLittleEndianPCM16(ts *testing.T) {
+func TestRawPCMWriter_WriteSamples_EncodesLittleEndianPCM16(ts *testing.T) {
 	var out bytes.Buffer
 	writer := NewRawPCMWriter(&out, 4)
 

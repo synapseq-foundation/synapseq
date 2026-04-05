@@ -26,7 +26,7 @@ func stripANSI(text string) string {
 	return ansiRegexp.ReplaceAllString(text, "")
 }
 
-func TestReporterDisplayPeriodChange_PrintsStartAndDash(ts *testing.T) {
+func TestReporter_DisplayPeriodChange_PrintsStartAndDash(ts *testing.T) {
 	var p0, p1 t.Period
 	p0.Time = 0
 	p1.Time = 1000
@@ -52,7 +52,7 @@ func TestReporterDisplayPeriodChange_PrintsStartAndDash(ts *testing.T) {
 	}
 }
 
-func TestReporterDisplayPeriodChange_ShowsEndTrackWhenChanged(ts *testing.T) {
+func TestReporter_DisplayPeriodChange_ShowsEndTrackWhenChanged(ts *testing.T) {
 	var p0, p1 t.Period
 	p0.Time = 0
 	p1.Time = 1000
@@ -80,7 +80,7 @@ func TestReporterDisplayPeriodChange_ShowsEndTrackWhenChanged(ts *testing.T) {
 	}
 }
 
-func TestReporterCheckPeriodChange_DetectsTransitions(ts *testing.T) {
+func TestReporter_CheckPeriodChange_DetectsTransitions(ts *testing.T) {
 	var p0, p1, p2 t.Period
 	p0.Time = 0
 	p1.Time = 1000
@@ -116,7 +116,7 @@ func TestReporterCheckPeriodChange_DetectsTransitions(ts *testing.T) {
 	}
 }
 
-func TestReporterDisplayPeriodChange_UsesANSIWhenEnabled(ts *testing.T) {
+func TestReporter_DisplayPeriodChange_UsesANSIWhenEnabled(ts *testing.T) {
 	var p0, p1 t.Period
 	p0.Time = 0
 	p1.Time = 1000
@@ -143,7 +143,7 @@ func TestReporterDisplayPeriodChange_UsesANSIWhenEnabled(ts *testing.T) {
 	}
 }
 
-func TestReporterDisplayPeriodChange_ShowsNoStepsWhenZero(ts *testing.T) {
+func TestReporter_DisplayPeriodChange_ShowsNoStepsWhenZero(ts *testing.T) {
 	var p0, p1 t.Period
 	p0.Time = 0
 	p1.Time = 1000
@@ -163,7 +163,7 @@ func TestReporterDisplayPeriodChange_ShowsNoStepsWhenZero(ts *testing.T) {
 	}
 }
 
-func TestReporterDisplayStatus_UsesChannelView(ts *testing.T) {
+func TestReporter_DisplayStatus_UsesChannelView(ts *testing.T) {
 	channels := make([]t.Channel, t.NumberOfChannels)
 	channels[0].Track = t.Track{Type: t.TrackBinauralBeat, Carrier: 100, Resonance: 5, Amplitude: t.AmplitudePercentToRaw(10), Waveform: t.WaveformSine}
 	channels[1].Track = t.Track{Type: t.TrackPinkNoise, Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformSine}

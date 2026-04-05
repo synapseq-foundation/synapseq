@@ -20,7 +20,7 @@ import (
 
 const testSampleRate = 44100
 
-func TestEngineSync_InterpolatesTrackAndSignal(ts *testing.T) {
+func TestEngine_Sync_InterpolatesTrackAndSignal(ts *testing.T) {
 	var p0, p1 t.Period
 	p0.Time = 0
 	p1.Time = 1000
@@ -89,7 +89,7 @@ func TestEngineSync_InterpolatesTrackAndSignal(ts *testing.T) {
 	}
 }
 
-func TestEngineSync_ResetsOffsetsAndClearsResidualState(ts *testing.T) {
+func TestEngine_Sync_ResetsOffsetsAndClearsResidualState(ts *testing.T) {
 	var p0, p1 t.Period
 	p0.Time = 0
 	p1.Time = 1000
@@ -143,7 +143,7 @@ func TestEngineSync_ResetsOffsetsAndClearsResidualState(ts *testing.T) {
 	}
 }
 
-func TestEngineSync_ResetsEffectPhaseWhenEffectChanges(ts *testing.T) {
+func TestEngine_Sync_ResetsEffectPhaseWhenEffectChanges(ts *testing.T) {
 	var p0, p1 t.Period
 	p0.Time = 0
 	p1.Time = 1000
@@ -193,7 +193,7 @@ func TestEngineSync_ResetsEffectPhaseWhenEffectChanges(ts *testing.T) {
 	}
 }
 
-func TestEngineSync_AppliesStepsTrajectory(ts *testing.T) {
+func TestEngine_Sync_AppliesStepsTrajectory(ts *testing.T) {
 	var p0, p1 t.Period
 	p0.Time = 0
 	p0.Steps = 1
