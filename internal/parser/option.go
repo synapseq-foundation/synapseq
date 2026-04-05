@@ -20,7 +20,8 @@ import (
 	"strings"
 
 	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
-	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
+	nr "github.com/synapseq-foundation/synapseq/v4/internal/nameref"
+	r "github.com/synapseq-foundation/synapseq/v4/internal/resource"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -118,7 +119,7 @@ func (ctx *TextParser) ParseOption(dirPath string) (*t.ParseOptions, error) {
 		}
 		nameSpan, _ := ctx.Line.LastTokenSpan()
 
-		if err := s.IsValidNamedRef(name); err != nil {
+		if err := nr.IsValid(name); err != nil {
 			return nil, diag.Validation(err.Error()).WithSpan(nameSpan).WithFound(name).WithCause(err)
 		}
 
@@ -130,7 +131,7 @@ func (ctx *TextParser) ParseOption(dirPath string) (*t.ParseOptions, error) {
 		contentSpan, _ := ctx.Line.LastTokenSpan()
 
 		fullPath := content
-		if !s.IsRemoteFile(content) {
+		if !r.IsRemoteFile(content) {
 			var err error
 			fullPath, err = resolveLocalOptionFile(dirPath, content, ".wav", "ambiance")
 			if err != nil {
@@ -147,7 +148,7 @@ func (ctx *TextParser) ParseOption(dirPath string) (*t.ParseOptions, error) {
 		contentSpan, _ := ctx.Line.LastTokenSpan()
 
 		fullPath := content
-		if !s.IsRemoteFile(content) {
+		if !r.IsRemoteFile(content) {
 			var err error
 			fullPath, err = resolveLocalOptionFile(dirPath, content, ".spsc", "extends")
 			if err != nil {

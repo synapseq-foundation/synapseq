@@ -9,7 +9,7 @@
  * See the file COPYING.txt for details.
  */
 
-package audio
+package wavetable
 
 import (
 	"math"
@@ -17,8 +17,8 @@ import (
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
-// InitWaveformTables initializes the waveform tables
-func InitWaveformTables() [4][]int {
+// Init initializes the waveform lookup tables used during rendering.
+func Init() [4][]int {
 	var waveTables [4][]int
 	for i := range waveTables {
 		waveformTable := make([]int, t.SineTableSize)
@@ -27,7 +27,7 @@ func InitWaveformTables() [4][]int {
 			phase := float64(j) * 2.0 * float64(math.Pi) / float64(t.SineTableSize)
 			var val float64
 
-			switch i { // i is the waveform type
+			switch i {
 			case int(t.WaveformSine):
 				val = math.Sin(phase)
 			case int(t.WaveformSquare):
@@ -43,8 +43,6 @@ func InitWaveformTables() [4][]int {
 					val = 3.0 - (2.0 * phase / math.Pi)
 				}
 			case int(t.WaveformSawtooth):
-				// Center the discontinuity at pi so waveform morphs stay phase-aligned with
-				// square/triangle and do not sound like a fade during transitions.
 				val = 2.0 * (phase/(2.0*math.Pi) - math.Floor(phase/(2.0*math.Pi)+0.5))
 			default:
 				val = math.Sin(phase)
@@ -55,5 +53,6 @@ func InitWaveformTables() [4][]int {
 
 		waveTables[i] = waveformTable
 	}
+
 	return waveTables
 }

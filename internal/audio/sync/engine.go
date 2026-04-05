@@ -9,43 +9,59 @@
  * See the file COPYING.txt for details.
  */
 
-package audio
+package sync
 
 import (
-	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
+	tl "github.com/synapseq-foundation/synapseq/v4/internal/timeline"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 const defaultSyncWindowMs = 1000
 
-// sync synchronizes the audio renderer state with the current time
-func (r *AudioRenderer) sync(timeMs int, periodIdx int) {
-	if periodIdx >= len(r.periods) {
+type Engine struct {
+	SampleRate          int
+	UpdateAmbianceIndex func(ch int, periodIdx int, trackType t.TrackType)
+}
+
+func NewEngine(sampleRate int, updateAmbianceIndex func(ch int, periodIdx int, trackType t.TrackType)) *Engine {
+	return &Engine{
+		SampleRate:          sampleRate,
+		UpdateAmbianceIndex: updateAmbianceIndex,
+	}
+}
+
+func (e *Engine) Sync(channels []t.Channel, periods []t.Period, timeMs int, periodIdx int) {
+	if periodIdx >= len(periods) {
 		return
 	}
 
-	period := r.periods[periodIdx]
-	alpha := s.StepAlpha(r.interpolationProgress(timeMs, periodIdx), period.Transition, period.Steps)
+	period := periods[periodIdx]
+	alpha := tl.StepAlpha(e.interpolationProgress(periods, timeMs, periodIdx), period.Transition, period.Steps)
 
-	for ch := range r.channels {
-		r.syncChannel(ch, periodIdx, period, alpha)
+	for ch := range channels {
+		e.syncChannel(ch, channels, periodIdx, period, alpha)
 	}
 }
 
-func (r *AudioRenderer) interpolationProgress(timeMs int, periodIdx int) float64 {
-	period := r.periods[periodIdx]
-	return clampUnit(float64(timeMs-period.Time) / float64(r.nextPeriodTime(periodIdx, timeMs)-period.Time))
+func FrequencyToIncrement(sampleRate int, frequency float64) int {
+	return int(frequency / float64(sampleRate) * t.SineTableSize * t.PhasePrecision)
 }
 
-func (r *AudioRenderer) nextPeriodTime(periodIdx int, timeMs int) int {
-	if periodIdx+1 < len(r.periods) {
-		return r.periods[periodIdx+1].Time
+func (e *Engine) interpolationProgress(periods []t.Period, timeMs int, periodIdx int) float64 {
+	period := periods[periodIdx]
+	return clampUnit(float64(timeMs-period.Time) / float64(e.nextPeriodTime(periods, periodIdx, timeMs)-period.Time))
+}
+
+func (e *Engine) nextPeriodTime(periods []t.Period, periodIdx int, timeMs int) int {
+	if periodIdx+1 < len(periods) {
+		return periods[periodIdx+1].Time
 	}
 
 	return timeMs + defaultSyncWindowMs
 }
-func (r *AudioRenderer) syncChannel(ch int, periodIdx int, period t.Period, alpha float64) {
-	channel := &r.channels[ch]
+
+func (e *Engine) syncChannel(ch int, channels []t.Channel, periodIdx int, period t.Period, alpha float64) {
+	channel := &channels[ch]
 	track := interpolateTrack(period.TrackStart[ch], period.TrackEnd[ch], alpha)
 	previousTrackType := channel.Type
 	previousEffectType := channel.Track.Effect.Type
@@ -54,10 +70,10 @@ func (r *AudioRenderer) syncChannel(ch int, periodIdx int, period t.Period, alph
 	channel.WaveformStart = period.TrackStart[ch].Waveform
 	channel.WaveformEnd = period.TrackEnd[ch].Waveform
 	channel.WaveformAlpha = alpha
-	r.updateAmbianceIndex(ch, periodIdx, track.Type)
-	r.resetRuntimeState(channel, previousTrackType, previousEffectType)
-	r.configureEffectState(channel)
-	r.configureTrackSignal(channel)
+	e.updateAmbianceIndex(ch, periodIdx, track.Type)
+	e.resetRuntimeState(channel, previousTrackType, previousEffectType)
+	e.configureEffectState(channel)
+	e.configureTrackSignal(channel)
 }
 
 func interpolateTrack(start, end t.Track, alpha float64) t.Track {
@@ -77,16 +93,15 @@ func interpolateTrack(start, end t.Track, alpha float64) t.Track {
 	}
 }
 
-func (r *AudioRenderer) updateAmbianceIndex(ch int, periodIdx int, trackType t.TrackType) {
-	if trackType == t.TrackAmbiance {
-		r.channelAmbianceIndex[ch] = r.periodAmbianceStart[periodIdx][ch]
+func (e *Engine) updateAmbianceIndex(ch int, periodIdx int, trackType t.TrackType) {
+	if e.UpdateAmbianceIndex == nil {
 		return
 	}
 
-	r.channelAmbianceIndex[ch] = -1
+	e.UpdateAmbianceIndex(ch, periodIdx, trackType)
 }
 
-func (r *AudioRenderer) resetRuntimeState(channel *t.Channel, previousTrackType t.TrackType, previousEffectType t.EffectType) {
+func (e *Engine) resetRuntimeState(channel *t.Channel, previousTrackType t.TrackType, previousEffectType t.EffectType) {
 	if previousTrackType != channel.Track.Type {
 		channel.Offset = [2]int{}
 	}
@@ -101,16 +116,16 @@ func (r *AudioRenderer) resetRuntimeState(channel *t.Channel, previousTrackType 
 	}
 }
 
-func (r *AudioRenderer) configureEffectState(channel *t.Channel) {
+func (e *Engine) configureEffectState(channel *t.Channel) {
 	channel.Effect.Increment = 0
 	if channel.Track.Effect.Type == t.EffectOff {
 		return
 	}
 
-	channel.Effect.Increment = r.frequencyToIncrement(channel.Track.Effect.Value)
+	channel.Effect.Increment = FrequencyToIncrement(e.SampleRate, channel.Track.Effect.Value)
 }
 
-func (r *AudioRenderer) configureTrackSignal(channel *t.Channel) {
+func (e *Engine) configureTrackSignal(channel *t.Channel) {
 	channel.Amplitude = [2]int{}
 	channel.Increment = [2]int{}
 
@@ -119,35 +134,27 @@ func (r *AudioRenderer) configureTrackSignal(channel *t.Channel) {
 	switch channel.Track.Type {
 	case t.TrackPureTone:
 		channel.Amplitude[0] = amplitude
-		channel.Increment[0] = r.frequencyToIncrement(channel.Track.Carrier)
+		channel.Increment[0] = FrequencyToIncrement(e.SampleRate, channel.Track.Carrier)
 	case t.TrackBinauralBeat:
 		freq1 := channel.Track.Carrier + channel.Track.Resonance/2
 		freq2 := channel.Track.Carrier - channel.Track.Resonance/2
 		channel.Amplitude[0] = amplitude
 		channel.Amplitude[1] = amplitude
-		channel.Increment[0] = r.frequencyToIncrement(freq1)
-		channel.Increment[1] = r.frequencyToIncrement(freq2)
+		channel.Increment[0] = FrequencyToIncrement(e.SampleRate, freq1)
+		channel.Increment[1] = FrequencyToIncrement(e.SampleRate, freq2)
 	case t.TrackMonauralBeat:
 		freqHigh := channel.Track.Carrier + channel.Track.Resonance/2
 		freqLow := channel.Track.Carrier - channel.Track.Resonance/2
 		channel.Amplitude[0] = amplitude
-		channel.Increment[0] = r.frequencyToIncrement(freqHigh)
-		channel.Increment[1] = r.frequencyToIncrement(freqLow)
+		channel.Increment[0] = FrequencyToIncrement(e.SampleRate, freqHigh)
+		channel.Increment[1] = FrequencyToIncrement(e.SampleRate, freqLow)
 	case t.TrackIsochronicBeat:
 		channel.Amplitude[0] = amplitude
-		channel.Increment[0] = r.frequencyToIncrement(channel.Track.Carrier)
-		channel.Increment[1] = r.frequencyToIncrement(channel.Track.Resonance)
+		channel.Increment[0] = FrequencyToIncrement(e.SampleRate, channel.Track.Carrier)
+		channel.Increment[1] = FrequencyToIncrement(e.SampleRate, channel.Track.Resonance)
 	case t.TrackWhiteNoise, t.TrackPinkNoise, t.TrackBrownNoise, t.TrackAmbiance:
 		channel.Amplitude[0] = amplitude
 	}
-}
-
-func (r *AudioRenderer) frequencyToIncrement(frequency float64) int {
-	return int(frequency / float64(r.SampleRate) * t.SineTableSize * t.PhasePrecision)
-}
-
-func lerpFloat64(start, end, alpha float64) float64 {
-	return start + (end-start)*alpha
 }
 
 func clampUnit(value float64) float64 {
@@ -159,4 +166,8 @@ func clampUnit(value float64) float64 {
 	}
 
 	return value
+}
+
+func lerpFloat64(start, end, alpha float64) float64 {
+	return start + (end-start)*alpha
 }

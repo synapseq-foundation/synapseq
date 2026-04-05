@@ -15,7 +15,8 @@ import (
 	"fmt"
 
 	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
-	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
+	nr "github.com/synapseq-foundation/synapseq/v4/internal/nameref"
+	p "github.com/synapseq-foundation/synapseq/v4/internal/preset"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -56,7 +57,7 @@ func (ctx *TextParser) ParsePreset(presets *[]t.Preset) (*t.Preset, error) {
 			}
 			fromSpan, _ := ctx.Line.LastTokenSpan()
 
-			fromPreset = s.FindPreset(fromPresetName, *presets)
+			fromPreset = p.FindPreset(fromPresetName, *presets)
 			if fromPreset == nil {
 				return nil, diag.Validation(fmt.Sprintf("unknown preset to inherit from: %q", fromPresetName)).WithSpan(fromSpan).WithFound(fromPresetName)
 			}
@@ -82,7 +83,7 @@ func (ctx *TextParser) ParsePreset(presets *[]t.Preset) (*t.Preset, error) {
 		return nil, diag.Parse("unexpected token after preset definition").WithSpan(unknownSpan).WithFound(unknown)
 	}
 
-	if err := s.IsValidNamedRef(presetName); err != nil {
+	if err := nr.IsValid(presetName); err != nil {
 		return nil, diag.Validation(err.Error()).WithSpan(presetSpan).WithFound(presetName).WithCause(err)
 	}
 

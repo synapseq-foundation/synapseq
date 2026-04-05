@@ -17,7 +17,8 @@ import (
 	"fmt"
 
 	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
-	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
+	nr "github.com/synapseq-foundation/synapseq/v4/internal/nameref"
+	r "github.com/synapseq-foundation/synapseq/v4/internal/resource"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -79,7 +80,7 @@ func (ctx *TextParser) ParseOption(_ string) (*t.ParseOptions, error) {
 		}
 		nameSpan, _ := ctx.Line.LastTokenSpan()
 
-		if err := s.IsValidNamedRef(name); err != nil {
+		if err := nr.IsValid(name); err != nil {
 			return nil, diag.Validation(err.Error()).WithSpan(nameSpan).WithFound(name).WithCause(err)
 		}
 
@@ -89,7 +90,7 @@ func (ctx *TextParser) ParseOption(_ string) (*t.ParseOptions, error) {
 		}
 		contentSpan, _ := ctx.Line.LastTokenSpan()
 
-		if !s.IsRemoteFile(content) {
+		if !r.IsRemoteFile(content) {
 			return nil, diag.Validation("WASM only supports remote URLs for ambiance audio").WithSpan(contentSpan).WithFound(content)
 		}
 
@@ -101,7 +102,7 @@ func (ctx *TextParser) ParseOption(_ string) (*t.ParseOptions, error) {
 		}
 		contentSpan, _ := ctx.Line.LastTokenSpan()
 
-		if !s.IsRemoteFile(content) {
+		if !r.IsRemoteFile(content) {
 			return nil, diag.Validation("WASM only supports remote URLs for extends").WithSpan(contentSpan).WithFound(content)
 		}
 

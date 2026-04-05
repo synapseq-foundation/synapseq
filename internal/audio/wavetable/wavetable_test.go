@@ -9,7 +9,7 @@
  * See the file COPYING.txt for details.
  */
 
-package audio
+package wavetable
 
 import (
 	"math"
@@ -18,8 +18,8 @@ import (
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
-func TestInitWaveformTables_LengthAndBounds(ts *testing.T) {
-	wts := InitWaveformTables()
+func TestInit_LengthAndBounds(ts *testing.T) {
+	wts := Init()
 	for i := range wts {
 		tab := wts[i]
 		if len(tab) != t.SineTableSize {
@@ -33,8 +33,8 @@ func TestInitWaveformTables_LengthAndBounds(ts *testing.T) {
 	}
 }
 
-func TestInitWaveformTables_Sine(ts *testing.T) {
-	wts := InitWaveformTables()
+func TestInit_Sine(ts *testing.T) {
+	wts := Init()
 	tab := wts[int(t.WaveformSine)]
 	amp := int(t.WaveTableAmplitude)
 
@@ -57,8 +57,8 @@ func TestInitWaveformTables_Sine(ts *testing.T) {
 	}
 }
 
-func TestInitWaveformTables_Square(ts *testing.T) {
-	wts := InitWaveformTables()
+func TestInit_Square(ts *testing.T) {
+	wts := Init()
 	tab := wts[int(t.WaveformSquare)]
 	amp := int(t.WaveTableAmplitude)
 
@@ -73,7 +73,6 @@ func TestInitWaveformTables_Square(ts *testing.T) {
 	if tab[j1] != amp {
 		ts.Fatalf("square j=pi/2: want %d, got %d", amp, tab[j1])
 	}
-	// Around pi we only assert the sign flips across the boundary to avoid float rounding at exactly pi
 	if !(tab[j2-1] == amp && tab[j2+1] == -amp) {
 		ts.Fatalf("square around pi: expected transition +amp -> -amp, got %d and %d", tab[j2-1], tab[j2+1])
 	}
@@ -88,8 +87,8 @@ func TestInitWaveformTables_Square(ts *testing.T) {
 	}
 }
 
-func TestInitWaveformTables_Triangle(ts *testing.T) {
-	wts := InitWaveformTables()
+func TestInit_Triangle(ts *testing.T) {
+	wts := Init()
 	tab := wts[int(t.WaveformTriangle)]
 	amp := int(t.WaveTableAmplitude)
 
@@ -112,8 +111,8 @@ func TestInitWaveformTables_Triangle(ts *testing.T) {
 	}
 }
 
-func TestInitWaveformTables_Sawtooth(ts *testing.T) {
-	wts := InitWaveformTables()
+func TestInit_Sawtooth(ts *testing.T) {
+	wts := Init()
 	tab := wts[int(t.WaveformSawtooth)]
 	amp := int(t.WaveTableAmplitude)
 

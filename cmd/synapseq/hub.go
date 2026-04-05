@@ -24,7 +24,7 @@ import (
 	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
 	"github.com/synapseq-foundation/synapseq/v4/internal/cli"
 	"github.com/synapseq-foundation/synapseq/v4/internal/hub"
-	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
+	r "github.com/synapseq-foundation/synapseq/v4/internal/resource"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -239,7 +239,7 @@ func hubRunDownload(sequenceID, targetDir string, quiet bool) error {
 		return fmt.Errorf("failed to download sequence from hub. Error\n  %v", err)
 	}
 
-	if err := s.CopyDir(filepath.Dir(seqFile), filepath.Join(targetDir, entry.ID)); err != nil {
+	if err := r.CopyDir(filepath.Dir(seqFile), filepath.Join(targetDir, entry.ID)); err != nil {
 		return fmt.Errorf("failed to copy files to target directory. Error\n  %v", err)
 	}
 

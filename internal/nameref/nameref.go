@@ -9,14 +9,14 @@
  * See the file COPYING.txt for details.
  */
 
-package shared
+package nameref
 
 import "fmt"
 
-const MaxNamedRefLength = 20
+const MaxLength = 20
 
-// IsValidNamedRef checks if a name is valid for a named reference
-func IsValidNamedRef(name string) error {
+// IsValid checks if a name is valid for a named reference.
+func IsValid(name string) error {
 	isLetter := func(b byte) bool {
 		return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z')
 	}
@@ -28,8 +28,8 @@ func IsValidNamedRef(name string) error {
 		return fmt.Errorf("reference name cannot be empty")
 	}
 
-	if len(name) > MaxNamedRefLength {
-		return fmt.Errorf("reference name cannot be longer than %d characters: %q", MaxNamedRefLength, name)
+	if len(name) > MaxLength {
+		return fmt.Errorf("reference name cannot be longer than %d characters: %q", MaxLength, name)
 	}
 
 	first := name[0]

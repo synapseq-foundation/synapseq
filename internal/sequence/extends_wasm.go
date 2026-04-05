@@ -14,13 +14,13 @@
 package sequence
 
 import (
-	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
+	r "github.com/synapseq-foundation/synapseq/v4/internal/resource"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // extends loads preset and option definitions from a remote .spsc file.
 func extends(fileName string) (*t.Extends, error) {
-	rawContent, err := s.GetFile(fileName, t.FormatText)
+	rawContent, err := r.GetFile(fileName, t.FormatText)
 	if err != nil {
 		return nil, err
 	}

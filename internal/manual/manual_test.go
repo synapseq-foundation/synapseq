@@ -17,7 +17,7 @@ import (
 	"testing"
 
 	"github.com/fatih/color"
-	clistyle "github.com/synapseq-foundation/synapseq/v4/internal/cli"
+	style "github.com/synapseq-foundation/synapseq/v4/internal/textstyle"
 )
 
 var ansiPattern = regexp.MustCompile(`\x1b\[[0-9;]*m`)
@@ -30,7 +30,7 @@ func TestRenderIncludesCoreSections(ts *testing.T) {
 	originalNoColor := color.NoColor
 	defer func() { color.NoColor = originalNoColor }()
 
-	clistyle.SetColorEnabled(false)
+	style.SetColorEnabled(false)
 	manual := Render()
 
 	checks := []string{
@@ -208,7 +208,7 @@ func TestRenderEmitsANSIWhenEnabled(ts *testing.T) {
 	originalNoColor := color.NoColor
 	defer func() { color.NoColor = originalNoColor }()
 
-	clistyle.SetColorEnabled(true)
+	style.SetColorEnabled(true)
 	manual := Render()
 
 	if !strings.Contains(manual, "\x1b[") {

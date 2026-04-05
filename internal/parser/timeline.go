@@ -17,7 +17,7 @@ import (
 	"strings"
 
 	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
-	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
+	p "github.com/synapseq-foundation/synapseq/v4/internal/preset"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -138,19 +138,19 @@ func (ctx *TextParser) ParseTimeline(presets *[]t.Preset) (*t.Period, error) {
 		return nil, diag.Parse("unexpected token on timeline").WithSpan(unknownSpan).WithFound(unknown)
 	}
 
-	p := s.FindPreset(strings.ToLower(tok), *presets)
-	if p == nil {
+	selectedPreset := p.FindPreset(strings.ToLower(tok), *presets)
+	if selectedPreset == nil {
 		return nil, diag.Validation(fmt.Sprintf("preset %q not found", tok)).WithSpan(presetSpan).WithFound(tok)
 	}
 
-	if p.IsTemplate {
-		return nil, diag.Validation(fmt.Sprintf("cannot use template preset %q in timeline", p.String())).WithSpan(presetSpan).WithFound(tok)
+	if selectedPreset.IsTemplate {
+		return nil, diag.Validation(fmt.Sprintf("cannot use template preset %q in timeline", selectedPreset.String())).WithSpan(presetSpan).WithFound(tok)
 	}
 
 	period := &t.Period{
 		Time:       timeMs,
-		TrackStart: p.Track,
-		TrackEnd:   p.Track,
+		TrackStart: selectedPreset.Track,
+		TrackEnd:   selectedPreset.Track,
 		Transition: transitionType,
 		Steps:      steps,
 	}

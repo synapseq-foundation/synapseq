@@ -18,7 +18,7 @@ import (
 	"html/template"
 	"math"
 
-	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
+	tl "github.com/synapseq-foundation/synapseq/v4/internal/timeline"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -624,7 +624,6 @@ func buildPreviewSeriesFromRaw(rawSeries []rawGraphSeries, minValue, maxValue fl
 	return series
 }
 
-
 func transitionSampleCount(period t.Period) int {
 	base := 1
 	switch period.Transition {
@@ -640,7 +639,7 @@ func transitionSampleCount(period t.Period) int {
 	}
 
 	return base * legs
-	}
+}
 
 func interpolateTrackForPreview(startTrack, endTrack t.Track, alpha float64) t.Track {
 	track := startTrack
@@ -654,11 +653,11 @@ func interpolateTrackForPreview(startTrack, endTrack t.Track, alpha float64) t.T
 }
 
 func applyTransitionAlpha(progress float64, transition t.TransitionType) float64 {
-	return s.ApplyTransitionAlpha(progress, transition)
-	}
+	return tl.ApplyTransitionAlpha(progress, transition)
+}
 
 func stepAlphaForPreview(progress float64, period t.Period) float64 {
-	return s.StepAlpha(progress, period.Transition, period.Steps)
+	return tl.StepAlpha(progress, period.Transition, period.Steps)
 }
 
 func interpolateTime(startTime, endTime int, progress float64) int {

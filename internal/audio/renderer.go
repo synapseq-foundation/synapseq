@@ -14,8 +14,11 @@ package audio
 import (
 	"fmt"
 	"io"
-	"math"
 
+	amb "github.com/synapseq-foundation/synapseq/v4/internal/audio/ambiance"
+	efx "github.com/synapseq-foundation/synapseq/v4/internal/audio/effects"
+	audiosync "github.com/synapseq-foundation/synapseq/v4/internal/audio/sync"
+	wt "github.com/synapseq-foundation/synapseq/v4/internal/audio/wavetable"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -29,24 +32,13 @@ const (
 
 // AudioRenderer handle audio generation
 type AudioRenderer struct {
-	channels       [t.NumberOfChannels]t.Channel
-	periods        []t.Period
-	waveTables     [4][]int
-	noiseGenerator *NoiseGenerator
-	ambianceAudio  *AmbianceAudio
-
-	// Reusable buffer to avoid allocating every mix() call
-	ambianceSamplesByIndex [][]int
-	// Track indices that have active ambiance audio (for optimization)
-	activeAmbianceIndices []int
-	// Mask to track which ambiance audio tracks are currently active
-	activeAmbianceMask []bool
-
-	// Cache for the current ambiance index of each channel to optimize lookups during sync
-	channelAmbianceIndex [t.NumberOfChannels]int
-
-	// cache for the current period's ambiance names for each channel to optimize lookups during sync
-	periodAmbianceStart [][]int
+	channels        [t.NumberOfChannels]t.Channel
+	periods         []t.Period
+	waveTables      [4][]int
+	noiseGenerator  *NoiseGenerator
+	syncEngine      *audiosync.Engine
+	effectProcessor *efx.Processor
+	ambianceState   *amb.Runtime
 
 	// Embedding options
 	*AudioRendererOptions
@@ -79,100 +71,40 @@ func NewAudioRenderer(p []t.Period, ar *AudioRendererOptions) (*AudioRenderer, e
 		return nil, fmt.Errorf("no periods defined in the sequence")
 	}
 
-	ambiancePaths, ambianceNameToIndex, err := buildAmbianceIndex(ar.Ambiance)
-	if err != nil {
-		return nil, err
-	}
-
-	periodAmbianceStart, err := precomputePeriodAmbianceStart(p, ambianceNameToIndex)
-	if err != nil {
-		return nil, err
-	}
-
-	ambianceAudio, err := NewAmbianceAudio(ambiancePaths, ar.SampleRate)
+	ambianceState, err := amb.NewRuntime(p, ar.Ambiance, ar.SampleRate, func(paths []string, sampleRate int) (amb.SampleAudio, error) {
+		return amb.NewAudio(paths, sampleRate)
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	renderer := &AudioRenderer{
-		periods:                p,
-		waveTables:             InitWaveformTables(),
-		noiseGenerator:         NewNoiseGenerator(),
-		ambianceAudio:          ambianceAudio,
-		ambianceSamplesByIndex: make([][]int, len(ambiancePaths)),
-		activeAmbianceIndices:  make([]int, 0, t.NumberOfChannels),
-		activeAmbianceMask:     make([]bool, len(ambiancePaths)),
-		periodAmbianceStart:    periodAmbianceStart,
-		AudioRendererOptions:   ar,
+		periods:              p,
+		waveTables:           wt.Init(),
+		noiseGenerator:       NewNoiseGenerator(),
+		ambianceState:        ambianceState,
+		AudioRendererOptions: ar,
 	}
+	renderer.syncEngine = audiosync.NewEngine(renderer.SampleRate, func(ch int, periodIdx int, trackType t.TrackType) {
+		if renderer.ambianceState == nil {
+			return
+		}
 
-	for i := range renderer.channelAmbianceIndex {
-		renderer.channelAmbianceIndex[i] = -1
-	}
+		renderer.ambianceState.UpdateChannelIndex(ch, periodIdx, trackType)
+	})
+	renderer.effectProcessor = efx.NewProcessor(renderer.SampleRate, renderer.waveTables)
 
 	return renderer, nil
 }
 
 // Render generates the audio and passes buffers to the consume function
 func (r *AudioRenderer) Render(consume func(samples []int) error) error {
-	// Ensure ambiance audio file is closed if opened
 	defer func() {
-		if r.ambianceAudio != nil {
-			r.ambianceAudio.Close()
+		if r.ambianceState != nil {
+			r.ambianceState.Close()
 		}
 	}()
 
-	endMs := r.periods[len(r.periods)-1].Time
-	totalFrames := int64(math.Round(float64(endMs) * float64(r.SampleRate) / 1000.0))
-	chunkFrames := int64(t.BufferSize)
-	framesWritten := int64(0)
-
-	var statusReporter *StatusReporter
-	if r.StatusOutput != nil {
-		statusReporter = NewStatusReporter(r.StatusOutput, r.Colors)
-		defer statusReporter.FinalStatus()
-	}
-
-	// Stereo: left + right
-	samples := make([]int, t.BufferSize*audioChannels)
-	periodIdx := 0
-
-	for framesWritten < totalFrames {
-		currentTimeMs := int((float64(framesWritten) * 1000.0) / float64(r.SampleRate))
-		// Find the correct period for the current time
-		for periodIdx+1 < len(r.periods) && currentTimeMs >= r.periods[periodIdx+1].Time {
-			periodIdx++
-		}
-
-		r.sync(currentTimeMs, periodIdx)
-		r.collectActiveAmbianceIndices()
-		r.prepareAmbianceBuffers()
-
-		if statusReporter != nil {
-			statusReporter.CheckPeriodChange(r, periodIdx)
-		}
-
-		data := r.mix(samples)
-
-		framesToWrite := chunkFrames
-		if remain := totalFrames - framesWritten; remain < chunkFrames {
-			framesToWrite = remain
-			// stereo interleaved
-			data = data[:remain*audioChannels]
-		}
-
-		if consume != nil {
-			if err := consume(data); err != nil {
-				return fmt.Errorf("failed to consume audio buffer: %w", err)
-			}
-		}
-
-		framesWritten += framesToWrite
-
-		if statusReporter != nil && statusReporter.ShouldUpdateStatus() {
-			statusReporter.DisplayStatus(r, currentTimeMs)
-		}
-	}
-
-	return nil
+	runtime := newRenderRuntime(r, consume)
+	return runtime.run()
 }

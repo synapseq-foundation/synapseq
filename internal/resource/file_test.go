@@ -9,7 +9,7 @@
  * See the file COPYING.txt for details.
  */
 
-package shared
+package resource
 
 import (
 	"bytes"
@@ -23,7 +23,6 @@ import (
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
-// writeTempFile creates a temporary file with the given content
 func writeTempFile(ts *testing.T, name string, content []byte) string {
 	ts.Helper()
 
@@ -37,7 +36,6 @@ func writeTempFile(ts *testing.T, name string, content []byte) string {
 	return path
 }
 
-// makeBigContent generates a slice of lines totaling at least minBytes
 func makeBigContent(lineLen, minBytes int) []byte {
 	var buf bytes.Buffer
 	line := strings.Repeat("x", lineLen) + "\n"
@@ -111,28 +109,23 @@ func TestGetFile_LocalFile_Truncate_WAV(ts *testing.T) {
 }
 
 func TestGetFile_Stdin(ts *testing.T) {
-	// Save original stdin
 	oldStdin := os.Stdin
 	defer func() { os.Stdin = oldStdin }()
 
-	// Create pipe
-	r, w, err := os.Pipe()
+	reader, writer, err := os.Pipe()
 	if err != nil {
 		ts.Fatalf("failed to create pipe: %v", err)
 	}
-	defer r.Close()
+	defer reader.Close()
 
-	// Replace stdin
-	os.Stdin = r
+	os.Stdin = reader
 
-	// Write content to pipe
 	content := []byte("stdin content\n")
 	go func() {
-		defer w.Close()
-		_, _ = w.Write(content)
+		defer writer.Close()
+		_, _ = writer.Write(content)
 	}()
 
-	// Test GetFile with stdin
 	got, err := GetFile("-", t.FormatText)
 	if err != nil {
 		ts.Fatalf("GetFile() error: %v", err)
@@ -147,20 +140,20 @@ func TestGetFile_Stdin_Truncate(ts *testing.T) {
 	oldStdin := os.Stdin
 	defer func() { os.Stdin = oldStdin }()
 
-	r, w, err := os.Pipe()
+	reader, writer, err := os.Pipe()
 	if err != nil {
 		ts.Fatalf("failed to create pipe: %v", err)
 	}
-	defer r.Close()
+	defer reader.Close()
 
-	os.Stdin = r
+	os.Stdin = reader
 
 	const maxSize = t.MaxTextFileSize
 	bigContent := makeBigContent(100, int(maxSize+8192))
 
 	go func() {
-		defer w.Close()
-		_, _ = w.Write(bigContent)
+		defer writer.Close()
+		_, _ = writer.Write(bigContent)
 	}()
 
 	got, err := GetFile("-", t.FormatText)
@@ -176,13 +169,13 @@ func TestGetFile_Stdin_Truncate(ts *testing.T) {
 func TestGetFile_HTTP_Text(ts *testing.T) {
 	content := []byte("remote content\n")
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/plain")
-		_, _ = w.Write(content)
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "text/plain")
+		_, _ = writer.Write(content)
 	}))
-	defer srv.Close()
+	defer server.Close()
 
-	got, err := GetFile(srv.URL+"/test.spsq", t.FormatText)
+	got, err := GetFile(server.URL+"/test.spsq", t.FormatText)
 	if err != nil {
 		ts.Fatalf("GetFile() error: %v", err)
 	}
@@ -193,17 +186,15 @@ func TestGetFile_HTTP_Text(ts *testing.T) {
 }
 
 func TestGetFile_HTTP_WAV(ts *testing.T) {
-	// Minimal WAV header (44 bytes)
-	content := []byte("RIFF" + string([]byte{0, 0, 0, 0}) + "WAVEfmt " +
-		string(make([]byte, 32)))
+	content := []byte("RIFF" + string([]byte{0, 0, 0, 0}) + "WAVEfmt " + string(make([]byte, 32)))
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "audio/wav")
-		_, _ = w.Write(content)
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "audio/wav")
+		_, _ = writer.Write(content)
 	}))
-	defer srv.Close()
+	defer server.Close()
 
-	got, err := GetFile(srv.URL+"/test.wav", t.FormatWAV)
+	got, err := GetFile(server.URL+"/test.wav", t.FormatWAV)
 	if err != nil {
 		ts.Fatalf("GetFile() error: %v", err)
 	}
@@ -217,13 +208,13 @@ func TestGetFile_HTTP_Truncate(ts *testing.T) {
 	const maxSize = t.MaxTextFileSize
 	bigContent := makeBigContent(100, int(maxSize+8192))
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/plain")
-		_, _ = w.Write(bigContent)
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "text/plain")
+		_, _ = writer.Write(bigContent)
 	}))
-	defer srv.Close()
+	defer server.Close()
 
-	got, err := GetFile(srv.URL+"/big.spsq", t.FormatText)
+	got, err := GetFile(server.URL+"/big.spsq", t.FormatText)
 	if err != nil {
 		ts.Fatalf("GetFile() error: %v", err)
 	}
@@ -234,7 +225,6 @@ func TestGetFile_HTTP_Truncate(ts *testing.T) {
 }
 
 func TestGetFile_HTTP_NetworkError(ts *testing.T) {
-	// Use invalid URL
 	_, err := GetFile("http://localhost:1/nonexistent", t.FormatText)
 	if err == nil {
 		ts.Fatal("expected network error, got nil")
@@ -248,7 +238,6 @@ func TestGetFile_HTTP_NetworkError(ts *testing.T) {
 func TestGetFile_UnsupportedFormat(ts *testing.T) {
 	path := writeTempFile(ts, "test.txt", []byte("content"))
 
-	// Use an invalid format value
 	_, err := GetFile(path, t.FileFormat(999))
 	if err == nil {
 		ts.Fatal("expected error for unsupported format, got nil")
@@ -286,11 +275,11 @@ func TestIsRemoteFile(ts *testing.T) {
 		{"ftp URL", "ftp://example.com/file.spsq", false},
 	}
 
-	for _, tt := range tests {
-		ts.Run(tt.name, func(ts *testing.T) {
-			got := IsRemoteFile(tt.filePath)
-			if got != tt.want {
-				ts.Errorf("IsRemoteFile(%q) = %v, want %v", tt.filePath, got, tt.want)
+	for _, test := range tests {
+		ts.Run(test.name, func(ts *testing.T) {
+			got := IsRemoteFile(test.filePath)
+			if got != test.want {
+				ts.Errorf("IsRemoteFile(%q) = %v, want %v", test.filePath, got, test.want)
 			}
 		})
 	}

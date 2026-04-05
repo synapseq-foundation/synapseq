@@ -9,7 +9,7 @@
  * See the file COPYING.txt for details.
  */
 
-package shared
+package preset
 
 import (
 	"testing"
@@ -81,8 +81,8 @@ func TestIsPresetEmpty(ts *testing.T) {
 		ts.Fatalf("preset with one active track should not be empty")
 	}
 
-	sil := t.NewBuiltinSilencePreset()
-	if IsPresetEmpty(sil) {
+	silencePreset := t.NewBuiltinSilencePreset()
+	if IsPresetEmpty(silencePreset) {
 		ts.Fatalf("silence preset should not be considered empty")
 	}
 }

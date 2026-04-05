@@ -9,7 +9,7 @@
  * See the file COPYING.txt for details.
  */
 
-package shared
+package preset
 
 import (
 	"fmt"
@@ -17,7 +17,7 @@ import (
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
-// FindPreset searches for a preset by name in a slice of presets
+// FindPreset searches for a preset by name in a slice of presets.
 func FindPreset(name string, presets []t.Preset) *t.Preset {
 	for i := range presets {
 		if presets[i].String() == name {
@@ -27,7 +27,7 @@ func FindPreset(name string, presets []t.Preset) *t.Preset {
 	return nil
 }
 
-// AllocateTrack allocates a free track in the preset
+// AllocateTrack allocates a free track in the preset.
 func AllocateTrack(preset *t.Preset) (int, error) {
 	for index, track := range preset.Track {
 		if track.Type == t.TrackOff {
@@ -37,7 +37,7 @@ func AllocateTrack(preset *t.Preset) (int, error) {
 	return -1, fmt.Errorf("no available tracks for preset %q", preset.String())
 }
 
-// IsPresetEmpty checks if all tracks in the preset are off
+// IsPresetEmpty checks if all tracks in the preset are off.
 func IsPresetEmpty(preset *t.Preset) bool {
 	for _, track := range preset.Track {
 		if track.Type != t.TrackOff {

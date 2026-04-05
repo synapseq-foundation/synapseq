@@ -9,31 +9,31 @@
  * See the file COPYING.txt for details.
  */
 
-package shared
+package nameref
 
 import (
 	"strings"
 	"testing"
 )
 
-func TestIsValidNamedRef_Valid(t *testing.T) {
+func TestIsValid_Valid(ts *testing.T) {
 	tests := []string{
 		"rain",
 		"Rain",
 		"rain_01",
 		"rain-01",
 		"A1_b-2",
-		"abcdefghijklmnopqrst", // MaxNamedRefLength (20)
+		"abcdefghijklmnopqrst",
 	}
 
 	for _, name := range tests {
-		if err := IsValidNamedRef(name); err != nil {
-			t.Errorf("expected valid name %q, got error: %v", name, err)
+		if err := IsValid(name); err != nil {
+			ts.Errorf("expected valid name %q, got error: %v", name, err)
 		}
 	}
 }
 
-func TestIsValidNamedRef_Invalid(t *testing.T) {
+func TestIsValid_Invalid(ts *testing.T) {
 	tests := []struct {
 		name        string
 		errContains string
@@ -45,18 +45,18 @@ func TestIsValidNamedRef_Invalid(t *testing.T) {
 		{"rain name", "invalid character"},
 		{"rain.name", "invalid character"},
 		{"rain@name", "invalid character"},
-		{"abcdefghijklmnopqrstu", "cannot be longer"}, // 21 chars
+		{"abcdefghijklmnopqrstu", "cannot be longer"},
 	}
 
-	for _, tt := range tests {
-		err := IsValidNamedRef(tt.name)
+	for _, test := range tests {
+		err := IsValid(test.name)
 		if err == nil {
-			t.Errorf("expected error for invalid name %q, got nil", tt.name)
+			ts.Errorf("expected error for invalid name %q, got nil", test.name)
 			continue
 		}
 
-		if !strings.Contains(err.Error(), tt.errContains) {
-			t.Errorf("invalid name %q: expected error containing %q, got %q", tt.name, tt.errContains, err.Error())
+		if !strings.Contains(err.Error(), test.errContains) {
+			ts.Errorf("invalid name %q: expected error containing %q, got %q", test.name, test.errContains, err.Error())
 		}
 	}
 }

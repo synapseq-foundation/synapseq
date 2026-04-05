@@ -13,7 +13,7 @@ package parser
 
 import (
 	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
-	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
+	nr "github.com/synapseq-foundation/synapseq/v4/internal/nameref"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -226,7 +226,7 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 			return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "ambiance name")
 		}
 
-		if err := s.IsValidNamedRef(name); err != nil {
+		if err := nr.IsValid(name); err != nil {
 			span, _ := ctx.Line.LastTokenSpan()
 			return nil, diag.Validation(err.Error()).WithSpan(span).WithFound(name).WithCause(err)
 		}

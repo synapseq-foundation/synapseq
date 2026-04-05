@@ -9,7 +9,7 @@
  * See the file COPYING.txt for details.
  */
 
-package shared
+package timeline
 
 import (
 	"math"

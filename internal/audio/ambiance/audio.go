@@ -1,4 +1,15 @@
-package audio
+/*
+ * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
+ * https://synapseq.org
+ *
+ * Copyright (c) 2025-2026 SynapSeq Foundation
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2.
+ * See the file COPYING.txt for details.
+ */
+
+package ambiance
 
 import (
 	"bytes"
@@ -8,14 +19,14 @@ import (
 	"github.com/gopxl/beep/v2"
 	bwav "github.com/gopxl/beep/v2/wav"
 
-	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
+	p "github.com/synapseq-foundation/synapseq/v4/internal/audio/pcm"
+	r "github.com/synapseq-foundation/synapseq/v4/internal/resource"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
-const ambianceResampleQuality = 4
+const resampleQuality = 4
 
-// AmbianceAudio handles ambiance WAV playlist playback with looping
-type AmbianceAudio struct {
+type Audio struct {
 	filePaths    []string
 	currentIndex int
 
@@ -33,17 +44,15 @@ type AmbianceAudio struct {
 	bufferSize int
 }
 
-// NewAmbianceAudio creates a new AmbianceAudio instance with the given file paths and expected sample rate,
-// loading and validating the ambiance audio tracks
-func NewAmbianceAudio(filePaths []string, expectedSampleRate int) (*AmbianceAudio, error) {
+func NewAudio(filePaths []string, expectedSampleRate int) (*Audio, error) {
 	if len(filePaths) == 0 {
-		return &AmbianceAudio{}, nil
+		return &Audio{}, nil
 	}
 
-	aa := &AmbianceAudio{
+	aa := &Audio{
 		filePaths:    filePaths,
 		currentIndex: 0,
-		bufferSize:   t.BufferSize * audioChannels,
+		bufferSize:   t.BufferSize * stereoChannels,
 		cachedData:   make([][]byte, len(filePaths)),
 		decoders:     make([]beep.StreamSeekCloser, len(filePaths)),
 	}
@@ -61,32 +70,48 @@ func NewAmbianceAudio(filePaths []string, expectedSampleRate int) (*AmbianceAudi
 	return aa, nil
 }
 
-// loadAndCacheAll loads all files (local or remote) into memory cache
-func (aa *AmbianceAudio) loadAndCacheAll() error {
-	for i, p := range aa.filePaths {
+func (aa *Audio) SampleRate() int {
+	return aa.sampleRate
+}
+
+func (aa *Audio) Channels() int {
+	return aa.channels
+}
+
+func (aa *Audio) BitDepth() int {
+	return aa.bitDepth
+}
+
+func (aa *Audio) BufferSize() int {
+	return aa.bufferSize
+}
+
+func (aa *Audio) CachedData() [][]byte {
+	return aa.cachedData
+}
+
+func (aa *Audio) loadAndCacheAll() error {
+	for i, path := range aa.filePaths {
 		if aa.cachedData[i] != nil {
 			continue
 		}
 
-		data, err := s.GetFile(p, t.FormatWAV)
+		data, err := r.GetFile(path, t.FormatWAV)
 		if err != nil {
-			return fmt.Errorf("failed to load ambiance file [%d] (%s): %w", i, p, err)
+			return fmt.Errorf("failed to load ambiance file [%d] (%s): %w", i, path, err)
 		}
 		aa.cachedData[i] = data
 	}
 	return nil
 }
 
-// validateTracks validates all tracks for compatible format and expected output format
-func (aa *AmbianceAudio) validateTracks(expectedSampleRate int) error {
+func (aa *Audio) validateTracks(expectedSampleRate int) error {
 	if len(aa.cachedData) == 0 {
 		return fmt.Errorf("no ambiance tracks loaded")
 	}
 	if expectedSampleRate <= 0 {
 		return fmt.Errorf("invalid expected sample rate: %d", expectedSampleRate)
 	}
-
-	// baseDepth := 0
 
 	for i, data := range aa.cachedData {
 		reader := bytes.NewReader(data)
@@ -97,26 +122,19 @@ func (aa *AmbianceAudio) validateTracks(expectedSampleRate int) error {
 
 		sr := int(format.SampleRate)
 		ch := format.NumChannels
-		// depth := format.Precision * 8
 
 		if err := stream.Close(); err != nil {
 			return fmt.Errorf("failed to close ambiance file [%d] (%s): %w", i, aa.filePaths[i], err)
 		}
 
-		if ch != audioChannels {
-			return fmt.Errorf(
-				"ambiance track [%d] (%s) has %d channel(s), expected %d",
-				i, aa.filePaths[i], ch, audioChannels,
-			)
+		if ch != stereoChannels {
+			return fmt.Errorf("ambiance track [%d] (%s) has %d channel(s), expected %d", i, aa.filePaths[i], ch, stereoChannels)
 		}
 
 		if sr != expectedSampleRate {
 			resampled, err := resampleWAVData(data, expectedSampleRate)
 			if err != nil {
-				return fmt.Errorf(
-					"failed to resample ambiance file [%d] (%s) from %d Hz to %d Hz: %w",
-					i, aa.filePaths[i], sr, expectedSampleRate, err,
-				)
+				return fmt.Errorf("failed to resample ambiance file [%d] (%s) from %d Hz to %d Hz: %w", i, aa.filePaths[i], sr, expectedSampleRate, err)
 			}
 
 			aa.cachedData[i] = resampled
@@ -135,34 +153,17 @@ func (aa *AmbianceAudio) validateTracks(expectedSampleRate int) error {
 			}
 
 			if sr != expectedSampleRate {
-				return fmt.Errorf(
-					"ambiance track [%d] (%s) has sample rate %d Hz after resample, expected %d Hz",
-					i, aa.filePaths[i], sr, expectedSampleRate,
-				)
+				return fmt.Errorf("ambiance track [%d] (%s) has sample rate %d Hz after resample, expected %d Hz", i, aa.filePaths[i], sr, expectedSampleRate)
 			}
 
-			if ch != audioChannels {
-				return fmt.Errorf(
-					"ambiance track [%d] (%s) has %d channel(s) after resample, expected %d",
-					i, aa.filePaths[i], ch, audioChannels,
-				)
+			if ch != stereoChannels {
+				return fmt.Errorf("ambiance track [%d] (%s) has %d channel(s) after resample, expected %d", i, aa.filePaths[i], ch, stereoChannels)
 			}
 		}
-
-		// if i == 0 {
-		// 	baseDepth = depth
-		// } else if depth != baseDepth {
-		// 	return fmt.Errorf(
-		// 		"ambiance track format mismatch in [%d] (%s): bit depth %dbit, expected %dbit",
-		// 		i, aa.filePaths[i], depth, baseDepth,
-		// 	)
-		// }
 	}
 
 	aa.sampleRate = expectedSampleRate
-	aa.channels = audioChannels
-	// aa.bitDepth = baseDepth
-
+	aa.channels = stereoChannels
 	return nil
 }
 
@@ -175,7 +176,7 @@ func resampleWAVData(data []byte, expectedSampleRate int) ([]byte, error) {
 	defer stream.Close()
 
 	resampled := beep.Resample(
-		ambianceResampleQuality,
+		resampleQuality,
 		format.SampleRate,
 		beep.SampleRate(expectedSampleRate),
 		stream,
@@ -237,8 +238,7 @@ func (m *memoryWriteSeeker) Bytes() []byte {
 	return append([]byte(nil), m.data...)
 }
 
-// openFromCache opens a decoder from cached data at a given index
-func (aa *AmbianceAudio) openFromCache(index int) error {
+func (aa *Audio) openFromCache(index int) error {
 	if index < 0 || index >= len(aa.cachedData) {
 		return fmt.Errorf("invalid ambiance index: %d", index)
 	}
@@ -246,7 +246,6 @@ func (aa *AmbianceAudio) openFromCache(index int) error {
 		return fmt.Errorf("no cached data available for index: %d", index)
 	}
 
-	// If decoder already exists for this index, reuse it
 	if aa.decoders[index] != nil {
 		aa.decoder = aa.decoders[index]
 		aa.currentIndex = index
@@ -271,8 +270,7 @@ func (aa *AmbianceAudio) openFromCache(index int) error {
 	return nil
 }
 
-// restart advances to next track (looping playlist) and reopens decoder
-func (aa *AmbianceAudio) restartAt(index int) error {
+func (aa *Audio) restartAt(index int) error {
 	if index < 0 || index >= len(aa.filePaths) {
 		return fmt.Errorf("invalid ambiance index: %d", index)
 	}
@@ -285,8 +283,7 @@ func (aa *AmbianceAudio) restartAt(index int) error {
 	return aa.openFromCache(index)
 }
 
-// ReadSamples reads ambiance audio samples with automatic looping
-func (aa *AmbianceAudio) ReadSamplesAt(index int, samples []int, numSamples int) (int, error) {
+func (aa *Audio) ReadSamplesAt(index int, samples []int, numSamples int) (int, error) {
 	if numSamples > len(samples) {
 		numSamples = len(samples)
 	}
@@ -329,8 +326,7 @@ func (aa *AmbianceAudio) ReadSamplesAt(index int, samples []int, numSamples int)
 	return samplesRead, nil
 }
 
-// readFromDecoder reads raw samples from the WAV decoder
-func (aa *AmbianceAudio) readFromDecoderAt(index int, samples []int, maxSamples int) (int, error) {
+func (aa *Audio) readFromDecoderAt(index int, samples []int, maxSamples int) (int, error) {
 	if index < 0 || index >= len(aa.decoders) || aa.decoders[index] == nil {
 		return 0, io.EOF
 	}
@@ -350,7 +346,6 @@ func (aa *AmbianceAudio) readFromDecoderAt(index int, samples []int, maxSamples 
 		return 0, io.EOF
 	}
 
-	const scale = 32768.0
 	outN := nFrames * aa.channels
 	if outN > maxSamples {
 		outN = maxSamples
@@ -358,21 +353,8 @@ func (aa *AmbianceAudio) readFromDecoderAt(index int, samples []int, maxSamples 
 	framesOut := outN / aa.channels
 
 	for i := 0; i < framesOut; i++ {
-		l := int(buf[i][0] * scale)
-		r := int(buf[i][1] * scale)
-
-		if l > audioMaxValue {
-			l = audioMaxValue
-		}
-		if l < audioMinValue {
-			l = audioMinValue
-		}
-		if r > audioMaxValue {
-			r = audioMaxValue
-		}
-		if r < audioMinValue {
-			r = audioMinValue
-		}
+		l := p.FloatToSample16(buf[i][0])
+		r := p.FloatToSample16(buf[i][1])
 
 		samples[2*i] = l
 		if 2*i+1 < outN {
@@ -383,8 +365,7 @@ func (aa *AmbianceAudio) readFromDecoderAt(index int, samples []int, maxSamples 
 	return outN, nil
 }
 
-// Close closes the ambiance audio decoder
-func (aa *AmbianceAudio) Close() error {
+func (aa *Audio) Close() error {
 	aa.closed = true
 	var firstErr error
 

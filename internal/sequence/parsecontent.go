@@ -16,7 +16,8 @@ import (
 
 	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
 	"github.com/synapseq-foundation/synapseq/v4/internal/parser"
-	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
+	p "github.com/synapseq-foundation/synapseq/v4/internal/preset"
+	tl "github.com/synapseq-foundation/synapseq/v4/internal/timeline"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -104,8 +105,8 @@ func parseSequenceContent(rawContent []byte, sourceFile string, baseRef string) 
 			}
 
 			pName := preset.String()
-			p := s.FindPreset(pName, presets)
-			if p != nil {
+			existingPreset := p.FindPreset(pName, presets)
+			if existingPreset != nil {
 				return nil, lineDiagnostic(sourceFile, lnn, ln, fmt.Sprintf("duplicate preset definition: %s", pName))
 			}
 
@@ -129,7 +130,7 @@ func parseSequenceContent(rawContent []byte, sourceFile string, baseRef string) 
 				return nil, lineDiagnostic(sourceFile, lnn, ln, fmt.Sprintf("preset %q inherits from another and cannot define new tracks", lastPreset.String()))
 			}
 
-			trackIndex, err := s.AllocateTrack(lastPreset)
+			trackIndex, err := p.AllocateTrack(lastPreset)
 			if err != nil {
 				return nil, withSource(err, sourceFile, lnn, ln)
 			}
@@ -192,7 +193,7 @@ func parseSequenceContent(rawContent []byte, sourceFile string, baseRef string) 
 					return nil, lineDiagnostic(sourceFile, lnn, ln, fmt.Sprintf("timeline %s overlaps with previous timeline %s", period.TimeString(), lastPeriod.TimeString()))
 				}
 
-				if err := s.AdjustPeriods(lastPeriod, period); err != nil {
+				if err := tl.AdjustPeriods(lastPeriod, period); err != nil {
 					return nil, withSource(err, sourceFile, lnn, ln)
 				}
 			}
@@ -218,7 +219,7 @@ func parseSequenceContent(rawContent []byte, sourceFile string, baseRef string) 
 	}
 
 	for i := range presets {
-		if s.IsPresetEmpty(&presets[i]) {
+		if p.IsPresetEmpty(&presets[i]) {
 			return nil, fmt.Errorf("preset %q is empty", presets[i].String())
 		}
 	}
@@ -296,8 +297,8 @@ func parseExtendsContent(rawContent []byte, sourceFile string, baseRef string) (
 			}
 
 			pName := preset.String()
-			p := s.FindPreset(pName, presets)
-			if p != nil {
+			existingPreset := p.FindPreset(pName, presets)
+			if existingPreset != nil {
 				return nil, lineDiagnostic(sourceFile, lnn, ln, fmt.Sprintf("duplicate preset definition: %s", pName))
 			}
 
@@ -317,7 +318,7 @@ func parseExtendsContent(rawContent []byte, sourceFile string, baseRef string) (
 				return nil, lineDiagnostic(sourceFile, lnn, ln, fmt.Sprintf("preset %q inherits from another and cannot define new tracks", lastPreset.String()))
 			}
 
-			trackIndex, err := s.AllocateTrack(lastPreset)
+			trackIndex, err := p.AllocateTrack(lastPreset)
 			if err != nil {
 				return nil, withSource(err, sourceFile, lnn, ln)
 			}
@@ -357,7 +358,7 @@ func parseExtendsContent(rawContent []byte, sourceFile string, baseRef string) (
 	}
 
 	for i := range presets {
-		if s.IsPresetEmpty(&presets[i]) {
+		if p.IsPresetEmpty(&presets[i]) {
 			return nil, fmt.Errorf("spsc file: preset %q is empty", presets[i].String())
 		}
 	}

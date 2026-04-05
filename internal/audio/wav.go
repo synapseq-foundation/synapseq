@@ -17,8 +17,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/gopxl/beep/v2"
-	bwav "github.com/gopxl/beep/v2/wav"
+	audiooutput "github.com/synapseq-foundation/synapseq/v4/internal/audio/output"
 )
 
 // RenderWav renders the audio to a WAV file using go-audio/wav
@@ -29,19 +28,5 @@ func (r *AudioRenderer) RenderWav(outPath string) error {
 	}
 	defer out.Close()
 
-	streamer := newRendererStreamer(r)
-	format := beep.Format{
-		SampleRate:  beep.SampleRate(r.SampleRate),
-		NumChannels: audioChannels,
-		Precision:   audioBitDepth / 8,
-	}
-
-	if err := bwav.Encode(out, streamer, format); err != nil {
-		return err
-	}
-	if streamer.err != nil {
-		return streamer.err
-	}
-
-	return nil
+	return audiooutput.NewWAVOutput(r.SampleRate, audioChannels, audioBitDepth/8, r.Render).Write(out)
 }

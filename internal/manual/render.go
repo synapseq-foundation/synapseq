@@ -14,18 +14,18 @@ package manual
 import (
 	"strings"
 
-	"github.com/synapseq-foundation/synapseq/v4/internal/cli"
+	style "github.com/synapseq-foundation/synapseq/v4/internal/textstyle"
 )
 
 func writeTitle(b *strings.Builder, title, subtitle string) {
-	b.WriteString(cli.Title(title))
+	b.WriteString(style.Title(title))
 	b.WriteString("\n")
-	b.WriteString(cli.Muted(subtitle))
+	b.WriteString(style.Muted(subtitle))
 	b.WriteString("\n\n")
 }
 
 func writeSection(b *strings.Builder, title string) {
-	b.WriteString(cli.Section(strings.ToUpper(title)))
+	b.WriteString(style.Section(strings.ToUpper(title)))
 	b.WriteString("\n")
 }
 
@@ -45,7 +45,7 @@ func writeParagraph(b *strings.Builder, lines ...string) {
 
 func writeBullet(b *strings.Builder, label, description string) {
 	b.WriteString("    ")
-	b.WriteString(cli.Label(label))
+	b.WriteString(style.Label(label))
 	b.WriteString("\n")
 	for _, line := range strings.Split(description, "\n") {
 		if line == "" {
@@ -82,13 +82,13 @@ func writeNestedCodeBlock(b *strings.Builder, lines ...string) {
 
 func writeIndentedSubsection(b *strings.Builder, indent int, title string) {
 	b.WriteString(strings.Repeat(" ", indent))
-	b.WriteString(cli.Label(title))
+	b.WriteString(style.Label(title))
 	b.WriteString("\n\n")
 }
 
 func writeIndentedBullet(b *strings.Builder, labelIndent, textIndent int, label, description string) {
 	b.WriteString(strings.Repeat(" ", labelIndent))
-	b.WriteString(cli.Label(label))
+	b.WriteString(style.Label(label))
 	b.WriteString("\n")
 	prefix := strings.Repeat(" ", textIndent)
 	for _, line := range strings.Split(description, "\n") {
@@ -133,7 +133,7 @@ func writeIndentedCodeBlock(b *strings.Builder, indent int, lines ...string) {
 			continue
 		}
 		b.WriteString(prefix)
-		b.WriteString(cli.Command(line))
+		b.WriteString(style.Command(line))
 		b.WriteString("\n")
 	}
 	b.WriteString("\n")

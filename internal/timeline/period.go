@@ -9,7 +9,7 @@
  * See the file COPYING.txt for details.
  */
 
-package shared
+package timeline
 
 import (
 	"fmt"
@@ -18,7 +18,7 @@ import (
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
-// AdjustPeriods adjusts the tracks in the overlapping periods
+// AdjustPeriods adjusts the tracks in the overlapping periods.
 func AdjustPeriods(last, next *t.Period) error {
 	if err := validatePeriodSteps(last, next); err != nil {
 		return err
@@ -29,7 +29,6 @@ func AdjustPeriods(last, next *t.Period) error {
 		tr1 := &last.TrackEnd[ch]
 		tr2 := &next.TrackStart[ch]
 
-		// Apply Fade-In
 		if tr0.Type == t.TrackSilence {
 			tr0.Type = tr2.Type
 			tr0.Carrier = tr2.Carrier
@@ -43,7 +42,6 @@ func AdjustPeriods(last, next *t.Period) error {
 			tr0.AmbianceName = tr2.AmbianceName
 		}
 
-		// Apply Fade-Out
 		if tr2.Type == t.TrackSilence {
 			tr2.Carrier = tr1.Carrier
 			tr2.Resonance = tr1.Resonance
@@ -55,7 +53,6 @@ func AdjustPeriods(last, next *t.Period) error {
 			tr2.Waveform = tr1.Waveform
 		}
 
-		// Validate if previus period has a track on and next period turn it off or vice-versa
 		if (tr1.Type != t.TrackOff && tr1.Type != t.TrackSilence && tr2.Type == t.TrackOff) ||
 			(tr1.Type == t.TrackOff && tr2.Type != t.TrackOff && tr2.Type != t.TrackSilence) {
 			return diag.Validation(
@@ -63,12 +60,10 @@ func AdjustPeriods(last, next *t.Period) error {
 			).WithHint("the current timeline entry conflicts with the previous one on this channel; insert a silence entry between them")
 		}
 
-		// Determine if both periods have a track on
 		if tr1.Type != t.TrackOff &&
 			tr1.Type != t.TrackSilence &&
 			tr2.Type != t.TrackOff &&
 			tr2.Type != t.TrackSilence {
-			// No slide allowed between different track types, effect types, or ambiance sources.
 			if tr1.Type != tr2.Type {
 				return diag.Validation(
 					fmt.Sprintf("channel %d cannot move directly from %s to %s on consecutive timeline entries", ch+1, tr1.Type.String(), tr2.Type.String()),
@@ -86,7 +81,6 @@ func AdjustPeriods(last, next *t.Period) error {
 			}
 		}
 
-		// Carry forward the track settings from the end of the last period to the start of the next period
 		tr1.Type = tr2.Type
 		tr1.Effect.Type = tr2.Effect.Type
 		tr1.Effect.Value = tr2.Effect.Value
