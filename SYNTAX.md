@@ -178,9 +178,13 @@ Examples:
 ```text
 alpha
   noise pink amplitude 30
+  noise white effect modulation 5 intensity 40 amplitude 20
   tone 200 binaural 10 amplitude 15
+  tone 300 effect pan 0.5 intensity 40 amplitude 40
   waveform square tone 300 isochronic 10 amplitude 8
+  tone 300 binaural 10 effect doppler 0.9 intensity 80 amplitude 40
   ambiance rain amplitude 25
+  ambiance rain effect pan 0.5 intensity 60 amplitude 30
 ```
 
 Supported track families are:
