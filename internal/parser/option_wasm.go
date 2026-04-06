@@ -18,7 +18,6 @@ import (
 
 	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
 	nr "github.com/synapseq-foundation/synapseq/v4/internal/nameref"
-	r "github.com/synapseq-foundation/synapseq/v4/internal/resource"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -86,12 +85,7 @@ func (ctx *TextParser) ParseOption(_ string) (*t.ParseOptions, error) {
 
 		content, ok := ctx.Line.NextToken()
 		if !ok {
-			return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "ambiance URL")
-		}
-		contentSpan, _ := ctx.Line.LastTokenSpan()
-
-		if !r.IsRemoteFile(content) {
-			return nil, diag.Validation("WASM only supports remote URLs for ambiance audio").WithSpan(contentSpan).WithFound(content)
+			content = name
 		}
 
 		parsed.Ambiance[name] = content
@@ -100,12 +94,6 @@ func (ctx *TextParser) ParseOption(_ string) (*t.ParseOptions, error) {
 		if !ok {
 			return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "extends URL")
 		}
-		contentSpan, _ := ctx.Line.LastTokenSpan()
-
-		if !r.IsRemoteFile(content) {
-			return nil, diag.Validation("WASM only supports remote URLs for extends").WithSpan(contentSpan).WithFound(content)
-		}
-
 		parsed.Extends = append(parsed.Extends, content)
 	default:
 		diagnostic := diag.Parse("invalid option").WithSpan(span).WithFound(option).WithExpected(validOptions...)

@@ -13,9 +13,9 @@ package parser
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
+	p "github.com/synapseq-foundation/synapseq/v4/internal/preset"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -37,32 +37,20 @@ func (ctx *TextParser) HasTrackOverride() bool {
 	return false
 }
 
-// ParseTrackOverride applies track overrides to the given preset
-func (ctx *TextParser) ParseTrackOverride(preset *t.Preset) error {
-	if preset == nil || preset.From == nil {
-		return diag.Validation("cannot override tracks on a preset without a 'from' source")
-	}
-
+func (ctx *TextParser) ParseTrackOverrideDeclaration() (*p.TrackOverrideSpec, error) {
 	_, ok := ctx.Line.NextToken()
 	if !ok {
-		return diag.UnexpectedEOF(ctx.Line.EOFSpan(), t.KeywordTrack)
+		return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), t.KeywordTrack)
 	}
 
 	trackIdx, err := ctx.Line.NextIntStrict()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	trackSpan, _ := ctx.Line.LastTokenSpan()
 
 	if trackIdx <= 0 || trackIdx >= t.NumberOfChannels {
-		return diag.Validation(fmt.Sprintf("track index out of range (1-%d): %d", t.NumberOfChannels-1, trackIdx)).WithSpan(trackSpan).WithFound(fmt.Sprintf("%d", trackIdx))
-	}
-
-	idx := trackIdx - 1 // Convert to 0-based index
-	from := preset.From
-
-	if from.Track[idx].Type == t.TrackOff {
-		return diag.Validation(fmt.Sprintf("cannot override track %d which is off in the template preset %q", trackIdx, from.String())).WithSpan(trackSpan).WithFound(fmt.Sprintf("%d", trackIdx))
+		return nil, diag.Validation(fmt.Sprintf("track index out of range (1-%d): %d", t.NumberOfChannels-1, trackIdx)).WithSpan(trackSpan).WithFound(fmt.Sprintf("%d", trackIdx))
 	}
 
 	kind, err := ctx.Line.NextExpectOneOf(
@@ -78,127 +66,67 @@ func (ctx *TextParser) ParseTrackOverride(preset *t.Preset) error {
 		t.KeywordAmplitude,
 		t.KeywordIntensity)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	kindSpan, _ := ctx.Line.LastTokenSpan()
 
-	track := preset.Track[idx]
+	decl := &p.TrackOverrideSpec{
+		TrackIndex: trackIdx,
+		TrackSpan:  trackSpan,
+		Kind:       kind,
+		KindSpan:   kindSpan,
+	}
 
 	switch kind {
 	case t.KeywordTone:
-		if track.Type == t.TrackAmbiance ||
-			track.Type == t.TrackWhiteNoise ||
-			track.Type == t.TrackPinkNoise ||
-			track.Type == t.TrackBrownNoise {
-			return diag.Validation(fmt.Sprintf("cannot set tone frequency on track %d of type %q", trackIdx, track.Type.String())).WithSpan(kindSpan).WithFound(kind)
-		}
-
-		rawValue, _ := ctx.Line.Peek()
-
-		carrier, err := ctx.Line.NextFloat64Strict()
+		decl.RawValue, _ = ctx.Line.Peek()
+		decl.Value, err = ctx.Line.NextFloat64Strict()
 		if err != nil {
-			return err
+			return nil, err
 		}
-
-		if strings.HasPrefix(rawValue, "+") || strings.HasPrefix(rawValue, "-") {
-			carrier = from.Track[idx].Carrier + carrier
-		}
-
-		preset.Track[idx].Carrier = carrier
+		decl.ValueSpan, _ = ctx.Line.LastTokenSpan()
+		decl.Relative = decl.RawValue != "" && (decl.RawValue[0] == '+' || decl.RawValue[0] == '-')
 	case t.KeywordPan, t.KeywordModulation, t.KeywordDoppler:
-		if kind == t.KeywordPan && track.Effect.Type != t.EffectPan {
-			return diag.Validation(fmt.Sprintf("pan can only be set on track %d with pan effect, it is %q", trackIdx, track.Effect.Type.String())).WithSpan(kindSpan).WithFound(kind)
-		}
-		if kind == t.KeywordModulation && track.Effect.Type != t.EffectModulation {
-			return diag.Validation(fmt.Sprintf("modulation rate can only be set on track %d with modulation effect, it is %q", trackIdx, track.Effect.Type.String())).WithSpan(kindSpan).WithFound(kind)
-		}
-		if kind == t.KeywordDoppler && track.Effect.Type != t.EffectDoppler {
-			return diag.Validation(fmt.Sprintf("doppler speed can only be set on track %d with doppler effect, it is %q", trackIdx, track.Effect.Type.String())).WithSpan(kindSpan).WithFound(kind)
-		}
-
-		rawValue, _ := ctx.Line.Peek()
-
-		effectValue, err := ctx.Line.NextFloat64Strict()
+		decl.RawValue, _ = ctx.Line.Peek()
+		decl.Value, err = ctx.Line.NextFloat64Strict()
 		if err != nil {
-			return err
+			return nil, err
 		}
-
-		if strings.HasPrefix(rawValue, "+") || strings.HasPrefix(rawValue, "-") {
-			effectValue = from.Track[idx].Effect.Value + effectValue
-		}
-
-		preset.Track[idx].Effect.Value = effectValue
+		decl.ValueSpan, _ = ctx.Line.LastTokenSpan()
+		decl.Relative = decl.RawValue != "" && (decl.RawValue[0] == '+' || decl.RawValue[0] == '-')
 	case t.KeywordBinaural, t.KeywordMonaural, t.KeywordIsochronic:
-		if (kind == t.KeywordBinaural && track.Type != t.TrackBinauralBeat) ||
-			(kind == t.KeywordMonaural && track.Type != t.TrackMonauralBeat) ||
-			(kind == t.KeywordIsochronic && track.Type != t.TrackIsochronicBeat) {
-			return diag.Validation(fmt.Sprintf("cannot change track %d type to %q, it is %q", trackIdx, kind, track.Type.String())).WithSpan(kindSpan).WithFound(kind)
-		}
-
-		rawValue, _ := ctx.Line.Peek()
-
-		resonance, err := ctx.Line.NextFloat64Strict()
+		decl.RawValue, _ = ctx.Line.Peek()
+		decl.Value, err = ctx.Line.NextFloat64Strict()
 		if err != nil {
-			return err
+			return nil, err
 		}
-
-		if strings.HasPrefix(rawValue, "+") || strings.HasPrefix(rawValue, "-") {
-			resonance = from.Track[idx].Resonance + resonance
-		}
-
-		preset.Track[idx].Resonance = resonance
+		decl.ValueSpan, _ = ctx.Line.LastTokenSpan()
+		decl.Relative = decl.RawValue != "" && (decl.RawValue[0] == '+' || decl.RawValue[0] == '-')
 	case t.KeywordSmooth:
-		if track.Type != t.TrackWhiteNoise &&
-			track.Type != t.TrackPinkNoise &&
-			track.Type != t.TrackBrownNoise {
-			return diag.Validation(fmt.Sprintf("cannot set smooth on track %d of type %q", trackIdx, track.Type.String())).WithSpan(kindSpan).WithFound(kind)
-		}
-
-		rawValue, _ := ctx.Line.Peek()
-
-		smooth, err := ctx.Line.NextFloat64Strict()
+		decl.RawValue, _ = ctx.Line.Peek()
+		decl.Value, err = ctx.Line.NextFloat64Strict()
 		if err != nil {
-			return err
+			return nil, err
 		}
-
-		if strings.HasPrefix(rawValue, "+") || strings.HasPrefix(rawValue, "-") {
-			smooth = from.Track[idx].NoiseSmooth + smooth
-		}
-
-		preset.Track[idx].NoiseSmooth = smooth
+		decl.ValueSpan, _ = ctx.Line.LastTokenSpan()
+		decl.Relative = decl.RawValue != "" && (decl.RawValue[0] == '+' || decl.RawValue[0] == '-')
 	case t.KeywordAmplitude:
-		rawValue, _ := ctx.Line.Peek()
-
-		amplitude, err := ctx.Line.NextFloat64Strict()
+		decl.RawValue, _ = ctx.Line.Peek()
+		decl.Value, err = ctx.Line.NextFloat64Strict()
 		if err != nil {
-			return err
+			return nil, err
 		}
-
-		if strings.HasPrefix(rawValue, "+") || strings.HasPrefix(rawValue, "-") {
-			amplitude = from.Track[idx].Amplitude.ToPercent() + amplitude
-		}
-
-		preset.Track[idx].Amplitude = t.AmplitudePercentToRaw(amplitude)
+		decl.ValueSpan, _ = ctx.Line.LastTokenSpan()
+		decl.Relative = decl.RawValue != "" && (decl.RawValue[0] == '+' || decl.RawValue[0] == '-')
 	case t.KeywordIntensity:
-		rawValue, _ := ctx.Line.Peek()
-
-		intensity, err := ctx.Line.NextFloat64Strict()
+		decl.RawValue, _ = ctx.Line.Peek()
+		decl.Value, err = ctx.Line.NextFloat64Strict()
 		if err != nil {
-			return err
+			return nil, err
 		}
-
-		if strings.HasPrefix(rawValue, "+") || strings.HasPrefix(rawValue, "-") {
-			intensity = from.Track[idx].Effect.Intensity.ToPercent() + intensity
-		}
-
-		preset.Track[idx].Effect.Intensity = t.IntensityPercentToRaw(intensity)
+		decl.ValueSpan, _ = ctx.Line.LastTokenSpan()
+		decl.Relative = decl.RawValue != "" && (decl.RawValue[0] == '+' || decl.RawValue[0] == '-')
 	case t.KeywordWaveform:
-		if track.Type == t.TrackBrownNoise ||
-			track.Type == t.TrackPinkNoise ||
-			track.Type == t.TrackWhiteNoise {
-			return diag.Validation(fmt.Sprintf("cannot set waveform on track %d of type %q", trackIdx, track.Type.String())).WithSpan(kindSpan).WithFound(kind)
-		}
-
 		waveform, err := ctx.Line.NextExpectOneOf(
 			t.KeywordSine,
 			t.KeywordSquare,
@@ -206,7 +134,7 @@ func (ctx *TextParser) ParseTrackOverride(preset *t.Preset) error {
 			t.KeywordSawtooth)
 
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		var waveformType t.WaveformType
@@ -220,26 +148,18 @@ func (ctx *TextParser) ParseTrackOverride(preset *t.Preset) error {
 		case t.KeywordSawtooth:
 			waveformType = t.WaveformSawtooth
 		default:
-			return diag.Parse("unexpected waveform type").WithSpan(kindSpan).WithFound(waveform)
+			return nil, diag.Parse("unexpected waveform type").WithSpan(kindSpan).WithFound(waveform)
 		}
 
-		preset.Track[idx].Waveform = waveformType
-	default:
-		return diag.Parse("unexpected keyword").WithSpan(kindSpan).WithFound(kind)
+		decl.Waveform = waveformType
+		decl.ValueSpan, _ = ctx.Line.LastTokenSpan()
 	}
 
 	unknown, ok := ctx.Line.Peek()
 	if ok {
 		unknownSpan, _ := ctx.Line.PeekSpan()
-		return diag.Parse("unexpected token after track override definition").WithSpan(unknownSpan).WithFound(unknown)
+		return nil, diag.Parse("unexpected token after track override definition").WithSpan(unknownSpan).WithFound(unknown)
 	}
 
-	if err := preset.Track[idx].Validate(); err != nil {
-		if span, ok := ctx.Line.LastTokenSpan(); ok {
-			return diag.Validation(fmt.Sprintf("invalid track %d after override: %v", trackIdx, err)).WithSpan(span).WithCause(err)
-		}
-		return err
-	}
-
-	return nil
+	return decl, nil
 }

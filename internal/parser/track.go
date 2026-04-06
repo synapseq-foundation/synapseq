@@ -17,6 +17,19 @@ import (
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
+type ParsedTrackDeclaration struct {
+	Type                   t.TrackType
+	Carrier                float64
+	Resonance              float64
+	AmplitudePercent       float64
+	NoiseSmooth            float64
+	Waveform               t.WaveformType
+	AmbianceName           string
+	EffectType             t.EffectType
+	EffectValue            float64
+	EffectIntensityPercent float64
+}
+
 // HasTrack checks if the current line is a track definition
 func (ctx *TextParser) HasTrack() bool {
 	ln := ctx.Line.Raw
@@ -36,8 +49,7 @@ func (ctx *TextParser) HasTrack() bool {
 	return false
 }
 
-// ParseTrack extracts and returns a Track from the current line context
-func (ctx *TextParser) ParseTrack() (*t.Track, error) {
+func (ctx *TextParser) ParseTrackDeclaration() (*ParsedTrackDeclaration, error) {
 	waveform := t.WaveformSine
 
 	if tok, ok := ctx.Line.Peek(); ok && tok == t.KeywordWaveform {
@@ -71,22 +83,15 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 		return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), t.KeywordTone, t.KeywordNoise, t.KeywordAmbiance)
 	}
 
-	var (
-		carrier, resonance, amplitude, smooth float64
-		trackType                             t.TrackType
-		ambianceName                          string
-	)
-
-	effect := t.Effect{
-		Type:      t.EffectOff,
-		Value:     0.0,
-		Intensity: 0.0,
+	decl := &ParsedTrackDeclaration{
+		Waveform:   waveform,
+		EffectType: t.EffectOff,
 	}
 
 	switch first {
 	case t.KeywordTone:
 		var err error
-		if carrier, err = ctx.Line.NextFloat64Strict(); err != nil {
+		if decl.Carrier, err = ctx.Line.NextFloat64Strict(); err != nil {
 			return nil, err
 		}
 
@@ -97,19 +102,19 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 
 		switch kind {
 		case t.KeywordBinaural:
-			trackType = t.TrackBinauralBeat
+			decl.Type = t.TrackBinauralBeat
 		case t.KeywordMonaural:
-			trackType = t.TrackMonauralBeat
+			decl.Type = t.TrackMonauralBeat
 		case t.KeywordIsochronic:
-			trackType = t.TrackIsochronicBeat
+			decl.Type = t.TrackIsochronicBeat
 		default:
-			trackType = t.TrackPureTone
+			decl.Type = t.TrackPureTone
 		}
 
-		if trackType == t.TrackBinauralBeat ||
-			trackType == t.TrackMonauralBeat ||
-			trackType == t.TrackIsochronicBeat {
-			if resonance, err = ctx.Line.NextFloat64Strict(); err != nil {
+		if decl.Type == t.TrackBinauralBeat ||
+			decl.Type == t.TrackMonauralBeat ||
+			decl.Type == t.TrackIsochronicBeat {
+			if decl.Resonance, err = ctx.Line.NextFloat64Strict(); err != nil {
 				return nil, err
 			}
 
@@ -129,15 +134,15 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 			if err != nil {
 				return nil, err
 			}
-			effect.Value = effectValue
+			decl.EffectValue = effectValue
 
 			switch effectKind {
 			case t.KeywordPan:
-				effect.Type = t.EffectPan
+				decl.EffectType = t.EffectPan
 			case t.KeywordModulation:
-				effect.Type = t.EffectModulation
+				decl.EffectType = t.EffectModulation
 			case t.KeywordDoppler:
-				effect.Type = t.EffectDoppler
+				decl.EffectType = t.EffectDoppler
 			}
 
 			if _, err := ctx.Line.NextExpectOneOf(t.KeywordIntensity); err != nil {
@@ -148,7 +153,7 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 			if err != nil {
 				return nil, err
 			}
-			effect.Intensity = t.IntensityPercentToRaw(intensity)
+			decl.EffectIntensityPercent = intensity
 
 			if _, err := ctx.Line.NextExpectOneOf(t.KeywordAmplitude); err != nil {
 				return nil, err
@@ -162,11 +167,11 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 
 		switch kind {
 		case t.KeywordWhite:
-			trackType = t.TrackWhiteNoise
+			decl.Type = t.TrackWhiteNoise
 		case t.KeywordPink:
-			trackType = t.TrackPinkNoise
+			decl.Type = t.TrackPinkNoise
 		case t.KeywordBrown:
-			trackType = t.TrackBrownNoise
+			decl.Type = t.TrackBrownNoise
 		}
 
 		kind, err = ctx.Line.NextExpectOneOf(t.KeywordEffect, t.KeywordSmooth, t.KeywordAmplitude)
@@ -175,7 +180,7 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 		}
 
 		if kind == t.KeywordSmooth {
-			smooth, err = ctx.Line.NextFloat64Strict()
+			decl.NoiseSmooth, err = ctx.Line.NextFloat64Strict()
 			if err != nil {
 				return nil, err
 			}
@@ -195,13 +200,13 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 			if err != nil {
 				return nil, err
 			}
-			effect.Value = effectValue
+			decl.EffectValue = effectValue
 
 			switch effectKind {
 			case t.KeywordPan:
-				effect.Type = t.EffectPan
+				decl.EffectType = t.EffectPan
 			case t.KeywordModulation:
-				effect.Type = t.EffectModulation
+				decl.EffectType = t.EffectModulation
 			}
 
 			if _, err := ctx.Line.NextExpectOneOf(t.KeywordIntensity); err != nil {
@@ -212,14 +217,14 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 			if err != nil {
 				return nil, err
 			}
-			effect.Intensity = t.IntensityPercentToRaw(intensity)
+			decl.EffectIntensityPercent = intensity
 
 			if _, err := ctx.Line.NextExpectOneOf(t.KeywordAmplitude); err != nil {
 				return nil, err
 			}
 		}
 	case t.KeywordAmbiance:
-		trackType = t.TrackAmbiance
+		decl.Type = t.TrackAmbiance
 
 		name, ok := ctx.Line.NextToken()
 		if !ok {
@@ -251,13 +256,13 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 			if err != nil {
 				return nil, err
 			}
-			effect.Value = effectValue
+			decl.EffectValue = effectValue
 
 			switch effectKind {
 			case t.KeywordPan:
-				effect.Type = t.EffectPan
+				decl.EffectType = t.EffectPan
 			case t.KeywordModulation:
-				effect.Type = t.EffectModulation
+				decl.EffectType = t.EffectModulation
 			}
 
 			if _, err := ctx.Line.NextExpectOneOf(t.KeywordIntensity); err != nil {
@@ -268,22 +273,21 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 			if err != nil {
 				return nil, err
 			}
-			effect.Intensity = t.IntensityPercentToRaw(intensity)
+			decl.EffectIntensityPercent = intensity
 
 			if _, err := ctx.Line.NextExpectOneOf(t.KeywordAmplitude); err != nil {
 				return nil, err
 			}
 		}
 
-		// convert to 0-based index
-		ambianceName = name
+		decl.AmbianceName = name
 	default:
 		span, _ := ctx.Line.LastTokenSpan()
 		return nil, diag.UnexpectedToken(span, first, t.KeywordTone, t.KeywordNoise, t.KeywordAmbiance, t.KeywordTrack)
 	}
 
 	var err error
-	if amplitude, err = ctx.Line.NextFloat64Strict(); err != nil {
+	if decl.AmplitudePercent, err = ctx.Line.NextFloat64Strict(); err != nil {
 		return nil, err
 	}
 
@@ -293,22 +297,5 @@ func (ctx *TextParser) ParseTrack() (*t.Track, error) {
 		return nil, diag.Parse("unexpected token after track definition").WithSpan(span).WithFound(unknown)
 	}
 
-	track := t.Track{
-		Type:         trackType,
-		Carrier:      carrier,
-		Resonance:    resonance,
-		Amplitude:    t.AmplitudePercentToRaw(amplitude),
-		AmbianceName: ambianceName,
-		NoiseSmooth:  smooth,
-		Waveform:     waveform,
-		Effect:       effect,
-	}
-	if err := track.Validate(); err != nil {
-		if span, ok := ctx.Line.LastTokenSpan(); ok {
-			return nil, diag.Validation(err.Error()).WithSpan(span).WithCause(err)
-		}
-		return nil, err
-	}
-
-	return &track, nil
+	return decl, nil
 }

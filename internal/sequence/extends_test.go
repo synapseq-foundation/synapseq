@@ -148,6 +148,24 @@ func TestExtendsRejectsTrackBeforePreset(ts *testing.T) {
 	}
 }
 
+func TestExtendsRejectsAmbiancePathWithExtension(ts *testing.T) {
+	path := writeExtendsFile(ts, "bad-ambiance.spsc", `
+@ambiance forest audio/forest.wav
+
+alpha
+  ambiance forest amplitude 10
+`)
+
+	_, err := extends(path)
+	if err == nil {
+		ts.Fatal("expected error for ambiance path with extension in extends, got nil")
+	}
+
+	if !strings.Contains(err.Error(), "ambiance local path must not include file extension") {
+		ts.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestExtendsRejectsEmptyPreset(ts *testing.T) {
 	path := writeExtendsFile(ts, "empty-preset.spsc", `
 alpha
