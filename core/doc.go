@@ -4,8 +4,9 @@ for the SynapSeq text-driven audio sequencer for brainwave entrainment.
 
 # Overview
 
-This package is designed to be used as a library by other Go projects
-that want to integrate SynapSeq audio generation capabilities.
+This package is the public Go API for loading .spsq sequences,
+inspecting their metadata, rendering WAV output, streaming raw PCM,
+and generating HTML previews.
 
 # Supported Format
 
@@ -39,19 +40,31 @@ SynapSeq currently supports text input in .spsq format.
 	    if err := loaded.WAV("output.wav"); err != nil {
 	        log.Fatal(err)
 	    }
+
+	    // Or render an HTML preview
+	    previewHTML, err := loaded.Preview()
+	    if err != nil {
+	        log.Fatal(err)
+	    }
+	    _ = previewHTML
 	}
 
 # File Paths
 
-Input and output files support:
+Input paths support:
   - Local file paths: "path/to/file.spsq"
-  - Standard input: "-" (only for input files)
+  - Standard input: "-" (input only)
   - HTTP/HTTPS URLs: "https://example.com/sequence.spsq"
+
+Output methods:
+  - loaded.WAV("output.wav") writes a WAV file
+  - loaded.Stream(writer) writes raw PCM to an io.Writer
+  - loaded.Preview() returns HTML preview bytes
 
 # Thread Safety
 
-AppContext methods are safe for concurrent use as they return new instances
-rather than modifying the original context.
+AppContext methods are safe for concurrent use because configuration methods
+return new instances rather than mutating the original context.
 
 # More Information
 
