@@ -15,7 +15,6 @@ package main
 
 import (
 	"github.com/synapseq-foundation/synapseq/v4/internal/cli"
-	"github.com/synapseq-foundation/synapseq/v4/internal/manual"
 )
 
 func dispatchSpecialCommand(opts *cli.CLIOptions, args []string) (bool, error) {
@@ -26,7 +25,7 @@ func dispatchSpecialCommand(opts *cli.CLIOptions, args []string) (bool, error) {
 		cli.ShowVersion()
 		return true, nil
 	case cli.SpecialCommandShowManual:
-		manual.Show()
+		cli.ShowManual()
 		return true, nil
 	case cli.SpecialCommandHubUpdate:
 		return true, hubRunUpdate(opts.Quiet)

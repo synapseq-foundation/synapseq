@@ -46,7 +46,7 @@ If you want to build SynapSeq from source, see the [Compilation Guide](COMPILE.m
 
 ### Usage
 
-After installation on any platform, run `synapseq -manual` to open the built-in manual, or read [MANUAL](MANUAL.txt) in this repository.
+After installation on any platform, run `synapseq -manual` to get links to the canonical documentation, or read [SYNTAX](SYNTAX.md), [ARCHITECTURE](ARCHITECTURE.md), and [CONTRIBUTING](CONTRIBUTING.md) in this repository.
 
 ## Go API
 

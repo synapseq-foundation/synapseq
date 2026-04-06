@@ -61,6 +61,8 @@ This is the executable entry layer.
 
 This package should remain a shell around the rest of the system rather than a new home for parser, sequence, or renderer logic.
 
+The `-manual` command is intentionally kept as a discovery shortcut, but it now points users to the canonical repository documents instead of maintaining a second syntax manual inside the binary.
+
 ### `core`
 
 This is the public API of SynapSeq.

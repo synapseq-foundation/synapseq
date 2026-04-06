@@ -145,7 +145,7 @@ func flagBindings() []flagBinding {
 		{Name: "no-color", Usage: "Disable ANSI colors in CLI output", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.NoColor }},
 		{Name: "test", Usage: "Validate syntax without generating output", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.Test }},
 		{Name: "help", Usage: "Show help", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.ShowHelp }},
-		{Name: "manual", Usage: "Show the full manual", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.ShowManual }, SpecialCommand: SpecialCommandShowManual},
+		{Name: "manual", Usage: "Show links to the canonical documentation", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.ShowManual }, SpecialCommand: SpecialCommandShowManual},
 		{Name: "hub-update", Usage: "Update index of available sequences", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.HubUpdate }, SpecialCommand: SpecialCommandHubUpdate},
 		{Name: "hub-clean", Usage: "Clean up local cache", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.HubClean }, SpecialCommand: SpecialCommandHubClean},
 		{Name: "hub-get", Usage: "Get sequence", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.HubGet }, SpecialCommand: SpecialCommandHubGet},

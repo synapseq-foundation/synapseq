@@ -15,9 +15,16 @@ import (
 	"fmt"
 	"io"
 	"runtime"
+	"strings"
 
 	"github.com/fatih/color"
 	"github.com/synapseq-foundation/synapseq/v4/internal/info"
+)
+
+const (
+	syntaxDocURL       = info.REPOSITORY + "/blob/main/SYNTAX.md"
+	architectureDocURL = info.REPOSITORY + "/blob/main/ARCHITECTURE.md"
+	contributingDocURL = info.REPOSITORY + "/blob/main/CONTRIBUTING.md"
 )
 
 type helpExample struct {
@@ -71,6 +78,39 @@ func ShowVersion() {
 		Label("built"),
 		Command(fmt.Sprintf("%s for %s/%s", info.BUILD_DATE, runtime.GOOS, runtime.GOARCH)),
 	)
+}
+
+// ShowManual prints documentation links for users who discover the project from the CLI.
+func ShowManual() {
+	writer := color.Output
+
+	fmt.Fprintf(writer, "%s\n\n", Title("SynapSeq Documentation"))
+	fmt.Fprintf(writer, "  %s\n", Muted("The built-in manual was retired to avoid duplicated documentation."))
+	fmt.Fprintf(writer, "  %s\n\n", Muted("Use the documents below as the single source of truth."))
+
+	lines := []struct {
+		label string
+		url   string
+		desc  string
+	}{
+		{label: "Syntax reference", url: syntaxDocURL, desc: "Full .spsq and .spsc language reference, examples, and semantic rules"},
+		{label: "Architecture guide", url: architectureDocURL, desc: "Package boundaries, runtime flow, and design trade-offs"},
+		{label: "Contribution guide", url: contributingDocURL, desc: "How to contribute changes and where to read first"},
+	}
+
+	for _, line := range lines {
+		fmt.Fprintf(writer, "  %s\n", Label(line.label))
+		fmt.Fprintf(writer, "    %s\n", Command(line.url))
+		fmt.Fprintf(writer, "      %s\n", Muted(line.desc))
+	}
+
+	fmt.Fprintln(writer)
+	fmt.Fprintf(writer, "  %s\n", Label("Tip"))
+	fmt.Fprintf(writer, "    %s\n", Muted(strings.Join([]string{
+		"Keep -help for command usage,",
+		"use this command for documentation links,",
+		"and treat the repository documents as canonical.",
+	}, " ")))
 }
 
 func writeHelpHeader(writer io.Writer) {
@@ -162,7 +202,7 @@ func nextStepExamples() []helpExample {
 		{CommandText: "synapseq -preview starter.spsq", Description: "Generate starter.html with a visual timeline preview"},
 		{CommandText: "synapseq -play starter.spsq", Description: "Play the sequence directly with ffplay"},
 		{CommandText: "synapseq starter.spsq starter.mp3", Description: "Export to MP3 with ffmpeg"},
-		{CommandText: "synapseq -manual", Description: "Print the compact syntax reference manual"},
+		{CommandText: "synapseq -manual", Description: "Show links to syntax, architecture, and contribution docs"},
 	}
 }
 
@@ -175,7 +215,7 @@ func commonHelpOptions() []helpOption {
 		{FlagText: "-mp3", ColumnWidth: 18, Description: "Export to MP3 with ffmpeg"},
 		{FlagText: "-quiet", ColumnWidth: 18, Description: "Suppress non-error output"},
 		{FlagText: "-no-color", ColumnWidth: 18, Description: "Disable ANSI colors in CLI output"},
-		{FlagText: "-manual", ColumnWidth: 18, Description: "Show the compact syntax reference manual"},
+		{FlagText: "-manual", ColumnWidth: 18, Description: "Show links to the canonical docs"},
 		{FlagText: "-version", ColumnWidth: 18, Description: "Show version information"},
 		{FlagText: "-help", ColumnWidth: 18, Description: "Show this help message"},
 	}
@@ -219,7 +259,9 @@ func hubQuickStartCommands() []string {
 
 func moreInfoLinks() []helpLink {
 	return []helpLink{
-		{Target: "synapseq -manual", Description: "Show the compact syntax reference manual"},
+		{Target: "synapseq -manual", Description: "Show links to syntax, architecture, and contribution docs"},
+		{Target: syntaxDocURL, Description: "Canonical syntax reference for .spsq and .spsc"},
+		{Target: architectureDocURL, Description: "Architecture guide, package boundaries, and design trade-offs"},
 		{Target: "https://synapseq.org", Description: "Visit the website for documentation, examples, and the latest updates"},
 	}
 }

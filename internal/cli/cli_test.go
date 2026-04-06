@@ -428,13 +428,14 @@ func TestHelpIncludesQuickStart(ts *testing.T) {
 		"Generate starter.html with a visual timeline preview",
 		"defaults to <input>.wav",
 		"-new TYPE         Template type: meditation, focus, sleep, relaxation",
-		"-manual           Show the compact syntax reference manual",
+		"-manual           Show links to the canonical docs",
 		"-preview          Render an HTML preview timeline",
 		"Hub quick start:",
 		"Run -hub-update first to initialize the local Hub index.",
 		"synapseq -hub-update",
 		"synapseq -hub-list",
 		"synapseq -hub-get calm-state calm-state.wav",
+		"Canonical syntax reference for .spsq and .spsc",
 	}
 
 	for _, expected := range checks {
