@@ -22,9 +22,7 @@ import (
 )
 
 const (
-	syntaxDocURL       = info.REPOSITORY + "/blob/main/SYNTAX.md"
-	architectureDocURL = info.REPOSITORY + "/blob/main/ARCHITECTURE.md"
-	contributingDocURL = info.REPOSITORY + "/blob/main/CONTRIBUTING.md"
+	learnURL = "https://synapseq.org/learn"
 )
 
 type helpExample struct {
@@ -85,7 +83,6 @@ func ShowManual() {
 	writer := color.Output
 
 	fmt.Fprintf(writer, "%s\n\n", Title("SynapSeq Documentation"))
-	fmt.Fprintf(writer, "  %s\n", Muted("The built-in manual was retired to avoid duplicated documentation."))
 	fmt.Fprintf(writer, "  %s\n\n", Muted("Use the documents below as the single source of truth."))
 
 	lines := []struct {
@@ -93,9 +90,9 @@ func ShowManual() {
 		url   string
 		desc  string
 	}{
-		{label: "Syntax reference", url: syntaxDocURL, desc: "Full .spsq and .spsc language reference, examples, and semantic rules"},
-		{label: "Architecture guide", url: architectureDocURL, desc: "Package boundaries, runtime flow, and design trade-offs"},
-		{label: "Contribution guide", url: contributingDocURL, desc: "How to contribute changes and where to read first"},
+		{label: "Syntax reference", url: syntaxDocURL(), desc: "Full .spsq and .spsc language reference, examples, and semantic rules"},
+		{label: "Architecture guide", url: architectureDocURL(), desc: "Package boundaries, runtime flow, and design trade-offs"},
+		{label: "Contribution guide", url: contributingDocURL(), desc: "How to contribute changes and where to read first"},
 	}
 
 	for _, line := range lines {
@@ -188,6 +185,30 @@ func writeLinkSection(writer io.Writer) {
 	}
 }
 
+func docsRef() string {
+	version := strings.TrimSpace(info.VERSION)
+	if version == "" || version == "development" || version == "unknown" {
+		return "main"
+	}
+	if strings.HasPrefix(version, "v") {
+		return version
+	}
+
+	return "v" + version
+}
+
+func syntaxDocURL() string {
+	return info.REPOSITORY + "/blob/" + docsRef() + "/SYNTAX.md"
+}
+
+func architectureDocURL() string {
+	return info.REPOSITORY + "/blob/" + docsRef() + "/ARCHITECTURE.md"
+}
+
+func contributingDocURL() string {
+	return info.REPOSITORY + "/blob/" + docsRef() + "/CONTRIBUTING.md"
+}
+
 func quickStartExamples() []helpExample {
 	return []helpExample{
 		{Label: "1. Create a starter file", CommandText: "synapseq -new meditation starter.spsq", Description: "Create starter.spsq from the meditation template"},
@@ -259,9 +280,7 @@ func hubQuickStartCommands() []string {
 
 func moreInfoLinks() []helpLink {
 	return []helpLink{
-		{Target: "synapseq -manual", Description: "Show links to syntax, architecture, and contribution docs"},
-		{Target: syntaxDocURL, Description: "Canonical syntax reference for .spsq and .spsc"},
-		{Target: architectureDocURL, Description: "Architecture guide, package boundaries, and design trade-offs"},
+		{Target: learnURL, Description: "Learn brainwave entrainment concepts and experiment in the playground"},
 		{Target: "https://synapseq.org", Description: "Visit the website for documentation, examples, and the latest updates"},
 	}
 }

@@ -435,7 +435,8 @@ func TestHelpIncludesQuickStart(ts *testing.T) {
 		"synapseq -hub-update",
 		"synapseq -hub-list",
 		"synapseq -hub-get calm-state calm-state.wav",
-		"Canonical syntax reference for .spsq and .spsc",
+		"https://synapseq.org/learn",
+		"Learn brainwave entrainment concepts and experiment in the playground",
 	}
 
 	for _, expected := range checks {
