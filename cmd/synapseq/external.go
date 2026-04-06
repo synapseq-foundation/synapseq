@@ -39,7 +39,7 @@ func externalMp3(ffmpegPath string, loadedCtx *synapseq.LoadedContext, outputFil
 		return err
 	}
 
-	if err := ffmpeg.Convert(loadedCtx, outputFile, "mp3"); err != nil {
+	if err := ffmpeg.Convert(loadedCtx, outputFile); err != nil {
 		return err
 	}
 

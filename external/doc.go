@@ -78,7 +78,7 @@ using constant bit rate (CBR) at 320 kbps.
 	        log.Fatal(err)
 	    }
 
-	    if err := encoder.Convert(loaded, "output.mp3", "mp3"); err != nil {
+	    if err := encoder.Convert(loaded, "output.mp3"); err != nil {
 	        log.Fatal(err)
 	    }
 	}
@@ -87,7 +87,7 @@ using constant bit rate (CBR) at 320 kbps.
 
 The Convert method currently supports:
 
-  - MP3: uses libmp3lame encoder with CBR at 320 kbps
+  - MP3: uses libmp3lame encoder with CBR at 320 kbps, inferred from the output file extension
 
 # Error Handling
 
