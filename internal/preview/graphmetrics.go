@@ -418,13 +418,6 @@ func buildWaveformPointLabel(channel int, track t.Track) string {
 	return fmt.Sprintf("%s • %s", buildSeriesLegendLabel(channel, track), humanWaveformType(track.Waveform))
 }
 
-func buildGraphValueLabel(track t.Track) string {
-	if usesBeat(track) {
-		return fmt.Sprintf("%s / %s", formatHz(track.Carrier), formatHz(track.Resonance))
-	}
-	return formatHz(track.Carrier)
-}
-
 func buildRuler(totalDurationMs int) []previewRulerMarkView {
 	marks := make([]previewRulerMarkView, 0, 6)
 	for i := 0; i <= 5; i++ {

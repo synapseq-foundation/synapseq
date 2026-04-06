@@ -25,10 +25,6 @@ func shouldRenderSegmentItem(startTrack, endTrack t.Track) bool {
 	return includeVisibleTrack(startTrack) || includeVisibleTrack(endTrack)
 }
 
-func trackHasGraphPoint(track t.Track) bool {
-	return isToneTrack(track) || track.Type == t.TrackSilence
-}
-
 func isToneTrack(track t.Track) bool {
 	switch track.Type {
 	case t.TrackPureTone, t.TrackBinauralBeat, t.TrackMonauralBeat, t.TrackIsochronicBeat:
