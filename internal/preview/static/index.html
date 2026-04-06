@@ -1,3 +1,174 @@
+{{ define "preview-stats" }}
+<aside class="panel stats">
+  <div class="stat">
+    <span class="stat-label">Total time</span>
+    <span class="stat-value">{{ .TotalDurationLabel }}</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Timeline nodes</span>
+    <span class="stat-value">{{ .PeriodCount }}</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Audio segments</span>
+    <span class="stat-value">{{ .SegmentCount }}</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Peak active channels</span>
+    <span class="stat-value">{{ .ActiveChannels }}</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Tone observations</span>
+    <span class="stat-value">{{ .ToneTracks }}</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Textures and ambiance</span>
+    <span class="stat-value">{{ .TextureTracks }}</span>
+  </div>
+</aside>
+{{ end }} {{ define "preview-graph-metric" }}
+<section
+  class="graph-metric-view{{ if .Default }} is-active{{ end }}"
+  data-graph-view="{{ .Key }}"
+>
+  <div class="graph-meta">
+    <strong>{{ .Label }}</strong>
+    <span>{{ .RangeLabel }}</span>
+  </div>
+
+  <div class="graph-legend" aria-label="Graph legend">
+    {{ range .LegendItems }}
+    <span class="graph-legend-item">
+      {{ if .Color }}
+      <span class="graph-legend-swatch" data-swatch-color="{{ .Color }}"></span>
+      {{ end }}
+      <span>{{ .Label }}</span>
+    </span>
+    {{ end }}
+  </div>
+
+  {{ if .HasData }}
+  <div class="graph-scale">
+    <span>{{ .MaxLabel }}</span>
+    <span>{{ .MinLabel }}</span>
+  </div>
+
+  <div class="graph">
+    <svg
+      viewBox="0 0 1000 280"
+      preserveAspectRatio="none"
+      aria-label="{{ .Label }} graph"
+    >
+      {{ range .Series }} {{ $seriesColor := .Color }}
+      <g aria-label="{{ .ChannelLabel }}">
+        <polyline
+          class="series-line {{ .Class }}"
+          stroke="{{ .Color }}"
+          points="{{ .Points }}"
+        ></polyline>
+        {{ range .Markers }}
+        <circle
+          class="series-point"
+          cx="{{ .X }}"
+          cy="{{ .Y }}"
+          r="5"
+          fill="{{ $seriesColor }}"
+        >
+          <title>{{ .TimeLabel }} • {{ .ValueLabel }}</title>
+        </circle>
+        {{ end }}
+      </g>
+      {{ end }}
+    </svg>
+
+    <div class="segment-band">
+      {{ range .Segments }}
+      <div
+        class="band {{ .Class }}"
+        data-left="{{ .LeftPct }}"
+        data-width="{{ .WidthPct }}"
+      ></div>
+      {{ end }}
+    </div>
+
+    <div class="graph-ruler">
+      {{ range .Ruler }}
+      <div class="tick" data-left="{{ .LeftPct }}">
+        <span>{{ .Label }}</span>
+      </div>
+      {{ end }}
+    </div>
+
+    <div class="node-markers">
+      {{ range .TimelineNodes }}
+      <div class="node-marker" data-left="{{ .PositionPct }}">
+        <span>{{ .TimeLabel }}</span>
+      </div>
+      {{ end }}
+    </div>
+  </div>
+  {{ else }}
+  <div class="graph-empty">{{ .EmptyLabel }}</div>
+  {{ end }}
+</section>
+{{ end }} {{ define "preview-segment-card" }}
+<article class="segment-card">
+  <h3>{{ .Label }}</h3>
+  <div class="segment-meta">
+    <span class="pill">Duration {{ .DurationLabel }}</span>
+    <span class="pill">Transition {{ .Transition }}</span>
+    <span class="pill">{{ .ChannelCount }} channels</span>
+  </div>
+  <p class="segment-summary">{{ .PrimarySummary }}</p>
+  <div class="segment-items">
+    {{ range .Items }} {{ template "preview-segment-item" . }} {{ end }}
+  </div>
+</article>
+{{ end }} {{ define "preview-segment-item" }}
+<div class="segment-item">
+  <div class="item-head">
+    <span class="track-kind {{ .Class }}"
+      ><span class="dot"></span>{{ .ChannelLabel }} {{ .Label }}</span
+    >
+  </div>
+  <p class="track-summary">{{ .Summary }}</p>
+</div>
+{{ end }} {{ define "preview-node-card" }}
+<article class="node-card" id="{{ .ID }}">
+  <h3>{{ .TimeLabel }}</h3>
+  <div class="node-meta">
+    <span class="pill">Transition {{ .Transition }}</span>
+    <span class="pill">{{ .TrackCount }} tracks</span>
+    <span class="pill">{{ .ToneCount }} tonal</span>
+    <span class="pill">{{ .TextureCount }} texture</span>
+  </div>
+  <p class="node-summary">
+    State snapshot at {{ .TimeLabel }} with all configured channels for this
+    point in the session.
+  </p>
+
+  <div class="track-list">
+    {{ range .Tracks }} {{ template "preview-track-card" . }} {{ end }}
+  </div>
+</article>
+{{ end }} {{ define "preview-track-card" }}
+<section class="track-card">
+  <div class="track-head">
+    <span class="track-kind {{ .Class }}"
+      ><span class="dot"></span>{{ .ChannelLabel }} {{ .TypeLabel }}</span
+    >
+  </div>
+  <p class="track-summary">{{ .Summary }}</p>
+  <div class="track-meta-grid">
+    {{ range .Meta }}
+    <div class="meta-box">
+      <span class="label">{{ .Label }}</span>
+      <span class="value">{{ .Value }}</span>
+    </div>
+    {{ end }}
+  </div>
+</section>
+{{ end }}
+
 <!doctype html>
 <html lang="en">
   <head>
@@ -55,32 +226,7 @@
           </p>
         </article>
 
-        <aside class="panel stats">
-          <div class="stat">
-            <span class="stat-label">Total time</span>
-            <span class="stat-value">{{ .TotalDurationLabel }}</span>
-          </div>
-          <div class="stat">
-            <span class="stat-label">Timeline nodes</span>
-            <span class="stat-value">{{ .PeriodCount }}</span>
-          </div>
-          <div class="stat">
-            <span class="stat-label">Audio segments</span>
-            <span class="stat-value">{{ .SegmentCount }}</span>
-          </div>
-          <div class="stat">
-            <span class="stat-label">Peak active channels</span>
-            <span class="stat-value">{{ .ActiveChannels }}</span>
-          </div>
-          <div class="stat">
-            <span class="stat-label">Tone observations</span>
-            <span class="stat-value">{{ .ToneTracks }}</span>
-          </div>
-          <div class="stat">
-            <span class="stat-label">Textures and ambiance</span>
-            <span class="stat-value">{{ .TextureTracks }}</span>
-          </div>
-        </aside>
+        {{ template "preview-stats" .Stats }}
       </section>
 
       <section class="panel timeline-panel">
@@ -92,13 +238,16 @@
               intensity.
             </p>
           </div>
-          <p>{{ .SegmentCount }} segments across {{ .TotalDurationLabel }}</p>
+          <p>
+            {{ .Timeline.SegmentCount }} segments across {{
+            .Timeline.TotalDurationLabel }}
+          </p>
         </div>
 
         <div class="graph-shell">
           <div class="graph-toolbar">
             <div class="graph-tabs" role="tablist" aria-label="Graph metrics">
-              {{ range .GraphMetrics }}
+              {{ range .Timeline.Metrics }}
               <button
                 class="graph-tab{{ if .Default }} is-active{{ end }}"
                 type="button"
@@ -115,121 +264,12 @@
             </p>
           </div>
 
-          {{ range .GraphMetrics }}
-          <section
-            class="graph-metric-view{{ if .Default }} is-active{{ end }}"
-            data-graph-view="{{ .Key }}"
-          >
-            <div class="graph-meta">
-              <strong>{{ .Label }}</strong>
-              <span>{{ .RangeLabel }}</span>
-            </div>
-
-            <div class="graph-legend" aria-label="Graph legend">
-              {{ range .LegendItems }}
-              <span class="graph-legend-item">
-                {{ if .Color }}
-                <span
-                  class="graph-legend-swatch"
-                  data-swatch-color="{{ .Color }}"
-                ></span>
-                {{ end }}
-                <span>{{ .Label }}</span>
-              </span>
-              {{ end }}
-            </div>
-
-            {{ if .HasData }}
-            <div class="graph-scale">
-              <span>{{ .MaxLabel }}</span>
-              <span>{{ .MinLabel }}</span>
-            </div>
-
-            <div class="graph">
-              <svg
-                viewBox="0 0 1000 280"
-                preserveAspectRatio="none"
-                aria-label="{{ .Label }} graph"
-              >
-                {{ range .Series }} {{ $seriesColor := .Color }}
-                <g aria-label="{{ .ChannelLabel }}">
-                  <polyline
-                    class="series-line {{ .Class }}"
-                    stroke="{{ .Color }}"
-                    points="{{ .Points }}"
-                  ></polyline>
-                  {{ range .Markers }}
-                  <circle
-                    class="series-point"
-                    cx="{{ .X }}"
-                    cy="{{ .Y }}"
-                    r="5"
-                    fill="{{ $seriesColor }}"
-                  >
-                    <title>{{ .TimeLabel }} • {{ .ValueLabel }}</title>
-                  </circle>
-                  {{ end }}
-                </g>
-                {{ end }}
-              </svg>
-
-              <div class="segment-band">
-                {{ range $.Segments }}
-                <div
-                  class="band {{ .Class }}"
-                  data-left="{{ .LeftPct }}"
-                  data-width="{{ .WidthPct }}"
-                ></div>
-                {{ end }}
-              </div>
-
-              <div class="graph-ruler">
-                {{ range $.Ruler }}
-                <div class="tick" data-left="{{ .LeftPct }}">
-                  <span>{{ .Label }}</span>
-                </div>
-                {{ end }}
-              </div>
-
-              <div class="node-markers">
-                {{ range $.TimelineNodes }}
-                <div class="node-marker" data-left="{{ .PositionPct }}">
-                  <span>{{ .TimeLabel }}</span>
-                </div>
-                {{ end }}
-              </div>
-            </div>
-            {{ else }}
-            <div class="graph-empty">{{ .EmptyLabel }}</div>
-            {{ end }}
-          </section>
+          {{ range .Timeline.Metrics }} {{ template "preview-graph-metric" . }}
           {{ end }}
         </div>
 
         <div class="segment-grid">
-          {{ range .Segments }}
-          <article class="segment-card">
-            <h3>{{ .Label }}</h3>
-            <div class="segment-meta">
-              <span class="pill">Duration {{ .DurationLabel }}</span>
-              <span class="pill">Transition {{ .Transition }}</span>
-              <span class="pill">{{ .ChannelCount }} channels</span>
-            </div>
-            <p class="segment-summary">{{ .PrimarySummary }}</p>
-            <div class="segment-items">
-              {{ range .Items }}
-              <div class="segment-item">
-                <div class="item-head">
-                  <span class="track-kind {{ .Class }}"
-                    ><span class="dot"></span>{{ .ChannelLabel }} {{ .Label
-                    }}</span
-                  >
-                </div>
-                <p class="track-summary">{{ .Summary }}</p>
-              </div>
-              {{ end }}
-            </div>
-          </article>
+          {{ range .Timeline.Segments }} {{ template "preview-segment-card" . }}
           {{ end }}
         </div>
       </section>
@@ -242,47 +282,12 @@
               Each node captures the preset state at a specific time marker.
             </p>
           </div>
-          <p>{{ .PeriodCount }} recorded states</p>
+          <p>{{ .Nodes.PeriodCount }} recorded states</p>
         </div>
 
         <div class="node-grid">
-          {{ range .Nodes }}
-          <article class="node-card" id="{{ .ID }}">
-            <h3>{{ .TimeLabel }}</h3>
-            <div class="node-meta">
-              <span class="pill">Transition {{ .Transition }}</span>
-              <span class="pill">{{ .TrackCount }} tracks</span>
-              <span class="pill">{{ .ToneCount }} tonal</span>
-              <span class="pill">{{ .TextureCount }} texture</span>
-            </div>
-            <p class="node-summary">
-              State snapshot at {{ .TimeLabel }} with all configured channels
-              for this point in the session.
-            </p>
-
-            <div class="track-list">
-              {{ range .Tracks }}
-              <section class="track-card">
-                <div class="track-head">
-                  <span class="track-kind {{ .Class }}"
-                    ><span class="dot"></span>{{ .ChannelLabel }} {{ .TypeLabel
-                    }}</span
-                  >
-                </div>
-                <p class="track-summary">{{ .Summary }}</p>
-                <div class="track-meta-grid">
-                  {{ range .Meta }}
-                  <div class="meta-box">
-                    <span class="label">{{ .Label }}</span>
-                    <span class="value">{{ .Value }}</span>
-                  </div>
-                  {{ end }}
-                </div>
-              </section>
-              {{ end }}
-            </div>
-          </article>
-          {{ end }}
+          {{ range .Nodes.Nodes }} {{ template "preview-node-card" . }} {{ end
+          }}
         </div>
       </section>
     </main>

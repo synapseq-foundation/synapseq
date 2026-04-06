@@ -17,7 +17,7 @@ import (
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
-type previewNodeData struct {
+type previewNodeSectionData struct {
 	ActiveChannels int
 	ToneTracks     int
 	TextureTracks  int
@@ -25,14 +25,11 @@ type previewNodeData struct {
 	Nodes          []previewNodeView
 }
 
-type previewRenderData struct {
-	NodeData          previewNodeData
-	Series            []previewSeriesView
-	Segments          []previewSegmentView
-	GraphMetrics      []previewGraphMetricView
-	CarrierRangeLabel string
-	GraphMinLabel     string
-	GraphMaxLabel     string
+type previewSectionData struct {
+	NodeSection     previewNodeSectionData
+	Ruler           []previewRulerMarkView
+	Segments        []previewSegmentView
+	TimelineMetrics []previewGraphMetricView
 }
 
 func validatePreviewPeriods(periods []t.Period) (int, error) {
@@ -48,57 +45,87 @@ func validatePreviewPeriods(periods []t.Period) (int, error) {
 	return totalDurationMs, nil
 }
 
-func buildPreviewRenderData(periods []t.Period, totalDurationMs int) previewRenderData {
-	minCarrier, maxCarrier, hasCarrier := carrierBounds(periods)
-	nodeData := buildNodeData(periods, totalDurationMs)
+func buildPreviewSectionData(periods []t.Period, totalDurationMs int) previewSectionData {
+	nodeSection := buildNodeSectionData(periods, totalDurationMs)
 	segments := buildSegmentViews(periods, totalDurationMs)
-	series := buildSeries(periods, minCarrier, maxCarrier, hasCarrier, totalDurationMs)
-	graphMetrics := buildGraphMetrics(periods, totalDurationMs)
-	carrierRangeLabel, graphMinLabel, graphMaxLabel := buildCarrierRangeLabels(minCarrier, maxCarrier, hasCarrier)
 
-	return previewRenderData{
-		NodeData:          nodeData,
-		Series:            series,
-		Segments:          segments,
-		GraphMetrics:      graphMetrics,
-		CarrierRangeLabel: carrierRangeLabel,
-		GraphMinLabel:     graphMinLabel,
-		GraphMaxLabel:     graphMaxLabel,
+	return previewSectionData{
+		NodeSection:     nodeSection,
+		Ruler:           buildRuler(totalDurationMs),
+		Segments:        segments,
+		TimelineMetrics: buildGraphMetrics(periods, totalDurationMs),
 	}
 }
 
-func buildPreviewTemplateData(periods []t.Period, totalDurationMs int, renderData previewRenderData) *previewTemplateData {
+func buildPreviewTemplateData(periods []t.Period, totalDurationMs int, sectionData previewSectionData) *previewTemplateData {
 	return &previewTemplateData{
-		Title:              "SynapSeq Sequence Preview",
-		PreviewCSS:         previewCSS,
-		PreviewJS:          previewJS,
+		Title:      "SynapSeq Sequence Preview",
+		PreviewCSS: previewCSS,
+		PreviewJS:  previewJS,
+		Stats:      buildPreviewStatsView(periods, totalDurationMs, sectionData.NodeSection),
+		Timeline:   buildPreviewTimelineSectionView(periods, totalDurationMs, sectionData),
+		Nodes:      buildPreviewNodesSectionView(periods, sectionData.NodeSection),
+	}
+}
+
+func buildPreviewStatsView(periods []t.Period, totalDurationMs int, nodeSection previewNodeSectionData) previewStatsView {
+	return previewStatsView{
 		TotalDurationLabel: formatTime(totalDurationMs),
-		TotalDurationMs:    totalDurationMs,
 		PeriodCount:        len(periods),
 		SegmentCount:       len(periods) - 1,
-		ActiveChannels:     renderData.NodeData.ActiveChannels,
-		ToneTracks:         renderData.NodeData.ToneTracks,
-		TextureTracks:      renderData.NodeData.TextureTracks,
-		CarrierRangeLabel:  renderData.CarrierRangeLabel,
-		GraphMinLabel:      renderData.GraphMinLabel,
-		GraphMaxLabel:      renderData.GraphMaxLabel,
-		Ruler:              buildRuler(totalDurationMs),
-		TimelineNodes:      renderData.NodeData.TimelineNodes,
-		GraphMetrics:       renderData.GraphMetrics,
-		Series:             renderData.Series,
-		Segments:           renderData.Segments,
-		Nodes:              renderData.NodeData.Nodes,
+		ActiveChannels:     nodeSection.ActiveChannels,
+		ToneTracks:         nodeSection.ToneTracks,
+		TextureTracks:      nodeSection.TextureTracks,
 	}
 }
 
-func buildNodeData(periods []t.Period, totalDurationMs int) previewNodeData {
-	data := previewNodeData{
+func buildPreviewTimelineSectionView(periods []t.Period, totalDurationMs int, sectionData previewSectionData) previewTimelineSectionView {
+	return previewTimelineSectionView{
+		SegmentCount:       len(periods) - 1,
+		TotalDurationLabel: formatTime(totalDurationMs),
+		Metrics:            buildPreviewTimelineMetrics(sectionData),
+		Segments:           sectionData.Segments,
+	}
+}
+
+func buildPreviewTimelineMetrics(sectionData previewSectionData) []previewTimelineMetricView {
+	metricViews := make([]previewTimelineMetricView, 0, len(sectionData.TimelineMetrics))
+	for _, metric := range sectionData.TimelineMetrics {
+		metricViews = append(metricViews, previewTimelineMetricView{
+			Key:           metric.Key,
+			Label:         metric.Label,
+			RangeLabel:    metric.RangeLabel,
+			MinLabel:      metric.MinLabel,
+			MaxLabel:      metric.MaxLabel,
+			EmptyLabel:    metric.EmptyLabel,
+			Default:       metric.Default,
+			HasData:       metric.HasData,
+			LegendItems:   metric.LegendItems,
+			Series:        metric.Series,
+			Segments:      sectionData.Segments,
+			Ruler:         sectionData.Ruler,
+			TimelineNodes: sectionData.NodeSection.TimelineNodes,
+		})
+	}
+
+	return metricViews
+}
+
+func buildPreviewNodesSectionView(periods []t.Period, nodeSection previewNodeSectionData) previewNodesSectionView {
+	return previewNodesSectionView{
+		PeriodCount: len(periods),
+		Nodes:       nodeSection.Nodes,
+	}
+}
+
+func buildNodeSectionData(periods []t.Period, totalDurationMs int) previewNodeSectionData {
+	sectionData := previewNodeSectionData{
 		TimelineNodes: make([]previewNodeMarkerView, 0, len(periods)),
 		Nodes:         make([]previewNodeView, 0, len(periods)),
 	}
 
 	for idx, period := range periods {
-		data.TimelineNodes = append(data.TimelineNodes, previewNodeMarkerView{
+		sectionData.TimelineNodes = append(sectionData.TimelineNodes, previewNodeMarkerView{
 			TimeLabel:   formatTime(period.Time),
 			PositionPct: toGraphPercent(period.Time, totalDurationMs),
 		})
@@ -116,16 +143,16 @@ func buildNodeData(periods []t.Period, totalDurationMs int) previewNodeData {
 			tracks = append(tracks, buildTrackView(ch, track))
 			if isToneTrack(track) {
 				nodeToneCount++
-				data.ToneTracks++
+				sectionData.ToneTracks++
 			}
 			if isTextureTrack(track) {
 				nodeTextureCount++
-				data.TextureTracks++
+				sectionData.TextureTracks++
 			}
 		}
 
-		if len(tracks) > data.ActiveChannels {
-			data.ActiveChannels = len(tracks)
+		if len(tracks) > sectionData.ActiveChannels {
+			sectionData.ActiveChannels = len(tracks)
 		}
 
 		if len(tracks) == 0 {
@@ -139,7 +166,7 @@ func buildNodeData(periods []t.Period, totalDurationMs int) previewNodeData {
 			transition = formatPreviewTransition(period)
 		}
 
-		data.Nodes = append(data.Nodes, previewNodeView{
+		sectionData.Nodes = append(sectionData.Nodes, previewNodeView{
 			ID:           fmt.Sprintf("node-%d", idx),
 			TimeLabel:    formatTime(period.Time),
 			Transition:   transition,
@@ -151,7 +178,7 @@ func buildNodeData(periods []t.Period, totalDurationMs int) previewNodeData {
 		})
 	}
 
-	return data
+	return sectionData
 }
 
 func buildSegmentViews(periods []t.Period, totalDurationMs int) []previewSegmentView {
@@ -189,10 +216,3 @@ func buildSegmentViews(periods []t.Period, totalDurationMs int) []previewSegment
 	return segments
 }
 
-func buildCarrierRangeLabels(minCarrier, maxCarrier float64, hasCarrier bool) (string, string, string) {
-	if !hasCarrier {
-		return "No tonal carriers", "0 Hz", "0 Hz"
-	}
-
-	return fmt.Sprintf("%s - %s", formatHz(minCarrier), formatHz(maxCarrier)), formatHz(minCarrier), formatHz(maxCarrier)
-}

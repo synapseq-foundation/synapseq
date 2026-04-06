@@ -37,7 +37,7 @@ func buildPreviewData(periods []t.Period) (*previewTemplateData, error) {
 		return nil, err
 	}
 
-	renderData := buildPreviewRenderData(periods, totalDurationMs)
+	sectionData := buildPreviewSectionData(periods, totalDurationMs)
 
-	return buildPreviewTemplateData(periods, totalDurationMs, renderData), nil
+	return buildPreviewTemplateData(periods, totalDurationMs, sectionData), nil
 }

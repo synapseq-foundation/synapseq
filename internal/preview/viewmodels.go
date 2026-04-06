@@ -14,25 +14,49 @@ package preview
 import "html/template"
 
 type previewTemplateData struct {
-	Title              string
-	PreviewCSS         template.CSS
-	PreviewJS          template.JS
+	Title      string
+	PreviewCSS template.CSS
+	PreviewJS  template.JS
+	Stats      previewStatsView
+	Timeline   previewTimelineSectionView
+	Nodes      previewNodesSectionView
+}
+
+type previewStatsView struct {
 	TotalDurationLabel string
-	TotalDurationMs    int
 	PeriodCount        int
 	SegmentCount       int
 	ActiveChannels     int
 	ToneTracks         int
 	TextureTracks      int
-	CarrierRangeLabel  string
-	GraphMinLabel      string
-	GraphMaxLabel      string
-	Ruler              []previewRulerMarkView
-	TimelineNodes      []previewNodeMarkerView
-	GraphMetrics       []previewGraphMetricView
-	Series             []previewSeriesView
+}
+
+type previewTimelineSectionView struct {
+	SegmentCount       int
+	TotalDurationLabel string
+	Metrics            []previewTimelineMetricView
 	Segments           []previewSegmentView
-	Nodes              []previewNodeView
+}
+
+type previewTimelineMetricView struct {
+	Key           string
+	Label         string
+	RangeLabel    string
+	MinLabel      string
+	MaxLabel      string
+	EmptyLabel    string
+	Default       bool
+	HasData       bool
+	LegendItems   []previewGraphLegendItemView
+	Series        []previewSeriesView
+	Segments      []previewSegmentView
+	Ruler         []previewRulerMarkView
+	TimelineNodes []previewNodeMarkerView
+}
+
+type previewNodesSectionView struct {
+	PeriodCount int
+	Nodes       []previewNodeView
 }
 
 type previewRulerMarkView struct {
