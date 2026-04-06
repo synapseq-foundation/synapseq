@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ .Title }}</title>
+    <script>
+      {{ .PreviewJS }}
+    </script>
+    <style>
+      {{ .PreviewCSS }}
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <nav class="panel navbar" aria-label="Primary">
+        <div class="navbar-copy">
+          <p class="navbar-brand">SynapSeq</p>
+          <p class="navbar-subtitle">
+            Text-Driven Audio Sequencer for Brainwave Entrainment
+          </p>
+        </div>
+        <div class="navbar-actions">
+          <div class="theme-switcher" aria-label="Theme switcher">
+            <button
+              class="theme-button"
+              data-theme-button="light"
+              type="button"
+            >
+              Light
+            </button>
+            <button class="theme-button" data-theme-button="dark" type="button">
+              Dark
+            </button>
+          </div>
+          <a
+            class="navbar-link"
+            href="https://synapseq.org"
+            target="_blank"
+            rel="noreferrer"
+          >
+            synapseq.org
+          </a>
+        </div>
+      </nav>
+
+      <section class="hero">
+        <article class="panel hero-copy">
+          <p class="eyebrow">Sequence Preview</p>
+          <h1>Visual timeline for the full SynapSeq session.</h1>
+          <p class="lede">
+            The graph maps carrier movement over time, while each node records
+            the state of every active channel. Segment cards below summarize
+            transitions, beats, amplitudes, ambience beds, and texture layers.
+          </p>
+        </article>
+
+        <aside class="panel stats">
+          <div class="stat">
+            <span class="stat-label">Total time</span>
+            <span class="stat-value">{{ .TotalDurationLabel }}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Timeline nodes</span>
+            <span class="stat-value">{{ .PeriodCount }}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Audio segments</span>
+            <span class="stat-value">{{ .SegmentCount }}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Peak active channels</span>
+            <span class="stat-value">{{ .ActiveChannels }}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Tone observations</span>
+            <span class="stat-value">{{ .ToneTracks }}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Textures and ambiance</span>
+            <span class="stat-value">{{ .TextureTracks }}</span>
+          </div>
+        </aside>
+      </section>
+
+      <section class="panel timeline-panel">
+        <div class="section-head">
+          <div>
+            <h2>Frequency timeline</h2>
+            <p>
+              Switch between resonance, carrier, amplitude, and effect
+              intensity.
+            </p>
+          </div>
+          <p>{{ .SegmentCount }} segments across {{ .TotalDurationLabel }}</p>
+        </div>
+
+        <div class="graph-shell">
+          <div class="graph-toolbar">
+            <div class="graph-tabs" role="tablist" aria-label="Graph metrics">
+              {{ range .GraphMetrics }}
+              <button
+                class="graph-tab{{ if .Default }} is-active{{ end }}"
+                type="button"
+                data-graph-target="{{ .Key }}"
+                aria-pressed="{{ if .Default }}true{{ else }}false{{ end }}"
+              >
+                {{ .Label }}
+              </button>
+              {{ end }}
+            </div>
+            <p>
+              Resonance is the default view. The timeline and segment overlays
+              stay aligned across all metrics.
+            </p>
+          </div>
+
+          {{ range .GraphMetrics }}
+          <section
+            class="graph-metric-view{{ if .Default }} is-active{{ end }}"
+            data-graph-view="{{ .Key }}"
+          >
+            <div class="graph-meta">
+              <strong>{{ .Label }}</strong>
+              <span>{{ .RangeLabel }}</span>
+            </div>
+
+            <div class="graph-legend" aria-label="Graph legend">
+              {{ range .LegendItems }}
+              <span class="graph-legend-item">
+                {{ if .Color }}
+                <span
+                  class="graph-legend-swatch"
+                  data-swatch-color="{{ .Color }}"
+                ></span>
+                {{ end }}
+                <span>{{ .Label }}</span>
+              </span>
+              {{ end }}
+            </div>
+
+            {{ if .HasData }}
+            <div class="graph-scale">
+              <span>{{ .MaxLabel }}</span>
+              <span>{{ .MinLabel }}</span>
+            </div>
+
+            <div class="graph">
+              <svg
+                viewBox="0 0 1000 280"
+                preserveAspectRatio="none"
+                aria-label="{{ .Label }} graph"
+              >
+                {{ range .Series }} {{ $seriesColor := .Color }}
+                <g aria-label="{{ .ChannelLabel }}">
+                  <polyline
+                    class="series-line {{ .Class }}"
+                    stroke="{{ .Color }}"
+                    points="{{ .Points }}"
+                  ></polyline>
+                  {{ range .Markers }}
+                  <circle
+                    class="series-point"
+                    cx="{{ .X }}"
+                    cy="{{ .Y }}"
+                    r="5"
+                    fill="{{ $seriesColor }}"
+                  >
+                    <title>{{ .TimeLabel }} • {{ .ValueLabel }}</title>
+                  </circle>
+                  {{ end }}
+                </g>
+                {{ end }}
+              </svg>
+
+              <div class="segment-band">
+                {{ range $.Segments }}
+                <div
+                  class="band {{ .Class }}"
+                  data-left="{{ .LeftPct }}"
+                  data-width="{{ .WidthPct }}"
+                ></div>
+                {{ end }}
+              </div>
+
+              <div class="graph-ruler">
+                {{ range $.Ruler }}
+                <div class="tick" data-left="{{ .LeftPct }}">
+                  <span>{{ .Label }}</span>
+                </div>
+                {{ end }}
+              </div>
+
+              <div class="node-markers">
+                {{ range $.TimelineNodes }}
+                <div class="node-marker" data-left="{{ .PositionPct }}">
+                  <span>{{ .TimeLabel }}</span>
+                </div>
+                {{ end }}
+              </div>
+            </div>
+            {{ else }}
+            <div class="graph-empty">{{ .EmptyLabel }}</div>
+            {{ end }}
+          </section>
+          {{ end }}
+        </div>
+
+        <div class="segment-grid">
+          {{ range .Segments }}
+          <article class="segment-card">
+            <h3>{{ .Label }}</h3>
+            <div class="segment-meta">
+              <span class="pill">Duration {{ .DurationLabel }}</span>
+              <span class="pill">Transition {{ .Transition }}</span>
+              <span class="pill">{{ .ChannelCount }} channels</span>
+            </div>
+            <p class="segment-summary">{{ .PrimarySummary }}</p>
+            <div class="segment-items">
+              {{ range .Items }}
+              <div class="segment-item">
+                <div class="item-head">
+                  <span class="track-kind {{ .Class }}"
+                    ><span class="dot"></span>{{ .ChannelLabel }} {{ .Label
+                    }}</span
+                  >
+                </div>
+                <p class="track-summary">{{ .Summary }}</p>
+              </div>
+              {{ end }}
+            </div>
+          </article>
+          {{ end }}
+        </div>
+      </section>
+
+      <section class="panel timeline-panel">
+        <div class="section-head">
+          <div>
+            <h2>Timeline nodes</h2>
+            <p>
+              Each node captures the preset state at a specific time marker.
+            </p>
+          </div>
+          <p>{{ .PeriodCount }} recorded states</p>
+        </div>
+
+        <div class="node-grid">
+          {{ range .Nodes }}
+          <article class="node-card" id="{{ .ID }}">
+            <h3>{{ .TimeLabel }}</h3>
+            <div class="node-meta">
+              <span class="pill">Transition {{ .Transition }}</span>
+              <span class="pill">{{ .TrackCount }} tracks</span>
+              <span class="pill">{{ .ToneCount }} tonal</span>
+              <span class="pill">{{ .TextureCount }} texture</span>
+            </div>
+            <p class="node-summary">
+              State snapshot at {{ .TimeLabel }} with all configured channels
+              for this point in the session.
+            </p>
+
+            <div class="track-list">
+              {{ range .Tracks }}
+              <section class="track-card">
+                <div class="track-head">
+                  <span class="track-kind {{ .Class }}"
+                    ><span class="dot"></span>{{ .ChannelLabel }} {{ .TypeLabel
+                    }}</span
+                  >
+                </div>
+                <p class="track-summary">{{ .Summary }}</p>
+                <div class="track-meta-grid">
+                  {{ range .Meta }}
+                  <div class="meta-box">
+                    <span class="label">{{ .Label }}</span>
+                    <span class="value">{{ .Value }}</span>
+                  </div>
+                  {{ end }}
+                </div>
+              </section>
+              {{ end }}
+            </div>
+          </article>
+          {{ end }}
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
