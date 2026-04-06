@@ -4,6 +4,21 @@ This document describes the `.spsq` sequence format, how the parser classifies l
 
 It complements [ARCHITECTURE.md](ARCHITECTURE.md), which focuses on package boundaries, runtime flow, and code-level responsibilities.
 
+## Quick Reference
+
+This table is meant to answer the most common question quickly: what kind of line am I allowed to write here?
+
+| Line kind      | Shape                                   | Indentation        | Scope                      | Notes                                                                  |
+| -------------- | --------------------------------------- | ------------------ | -------------------------- | ---------------------------------------------------------------------- |
+| Comment        | `# ...` or `## ...`                     | any                | anywhere                   | `##` comments are also stored in sequence metadata                     |
+| Option         | `@samplerate ...`                       | top-level          | before presets or timeline | options lock after the first preset, track, override, or timeline line |
+| Preset         | `alpha`                                 | top-level          | before timeline            | may also use `from` or `as template`                                   |
+| Track          | `tone ...`, `noise ...`, `ambiance ...` | exactly two spaces | under the current preset   | not allowed on presets created with `from`                             |
+| Track override | `track 1 amplitude 35`                  | exactly two spaces | under an inherited preset  | only valid on non-template presets created with `from`                 |
+| Timeline       | `00:00:20 alpha smooth 5`               | top-level          | after presets              | first entry must be `00:00:00`                                         |
+
+Use this as a quick orientation tool. The sections below describe the exact syntax and the builder rules behind each line type.
+
 ## The `.spsq` Format
 
 SynapSeq sequence files are line-oriented text documents. The parser does not implement a general-purpose grammar with nested blocks or quoted string handling. Instead, it classifies each line by leading token and indentation, then the sequence builder enforces placement and semantic rules.
@@ -260,3 +275,307 @@ The easiest way to read a `.spsq` file is:
 4. read top-level time entries that arrange presets into playback periods.
 
 That mental model matches both the parser and the sequence builder.
+
+## Valid and Invalid Examples
+
+The examples below are intentionally short. They are meant to show common success and failure cases that come directly from the current parser and builder behavior.
+
+### Valid Minimal Sequence
+
+```text
+alpha
+  tone 100 binaural 1 amplitude 1
+
+00:00:00 alpha
+00:01:00 alpha
+```
+
+Why it is valid:
+
+- it defines a preset before using it in the timeline;
+- the track is indented with exactly two spaces;
+- the first period starts at `00:00:00`;
+- there are at least two timeline periods.
+
+### Valid Sequence With Stored Comments
+
+```text
+## Session intro
+
+alpha
+  tone 100 binaural 1 amplitude 1
+
+## Main phase
+00:00:00 alpha
+00:01:00 alpha
+```
+
+Why it is valid:
+
+- the `##` lines are accepted as comments;
+- those `##` lines are also persisted and exposed through `LoadedContext.Comments()`.
+
+### Valid Sequence With Extends
+
+```text
+@extends presets/base
+
+00:00:00 preparation
+00:01:00 preparation
+```
+
+Why it is valid:
+
+- `@extends` is a top-level option;
+- the local path omits the file extension, so it resolves to `.spsc`;
+- the referenced preset can be supplied by the extended file.
+
+### Valid Inherited Preset With Override
+
+```text
+base-focus as template
+  tone 240 binaural 16 amplitude 15
+
+focus-strong from base-focus
+  track 1 amplitude 35
+
+00:00:00 focus-strong
+00:01:00 focus-strong
+```
+
+Why it is valid:
+
+- `base-focus` is declared as a template;
+- `focus-strong` inherits from that template;
+- the derived preset uses a track override instead of declaring a new track.
+
+### Invalid: Wrong Indentation For Track Content
+
+```text
+alpha
+tone 100 binaural 1 amplitude 1
+
+00:00:00 alpha
+00:01:00 alpha
+```
+
+Why it is invalid:
+
+- the track line is top-level instead of being indented with exactly two spaces;
+- this triggers the builder error about expected two-space indentation under a preset definition.
+
+### Invalid: Option After Preset Content Started
+
+```text
+alpha
+  tone 100 binaural 1 amplitude 1
+@volume 80
+
+00:00:00 alpha
+00:01:00 alpha
+```
+
+Why it is invalid:
+
+- options are only allowed at the top of the file;
+- once preset content has started, options are locked.
+
+### Invalid: Duplicate Preset
+
+```text
+alpha
+alpha
+```
+
+Why it is invalid:
+
+- preset names must be unique;
+- duplicate preset definitions are rejected during sequence construction.
+
+### Invalid: Timeline Before Any Preset
+
+```text
+00:00:00 alpha
+00:01:00 alpha
+```
+
+Why it is invalid:
+
+- the timeline references presets before any user preset has been declared;
+- timeline entries must come after preset declarations.
+
+### Invalid: First Timeline Does Not Start At Zero
+
+```text
+alpha
+  tone 100 binaural 1 amplitude 1
+
+00:00:10 alpha
+00:01:00 alpha
+```
+
+Why it is invalid:
+
+- the first timeline entry must begin at `00:00:00`.
+
+### Invalid: Only One Timeline Period
+
+```text
+alpha
+  tone 100 binaural 1 amplitude 1
+
+00:00:00 alpha
+```
+
+Why it is invalid:
+
+- the final sequence must contain at least two periods.
+
+### Invalid: Empty Preset
+
+```text
+alpha
+
+00:00:00 alpha
+00:01:00 alpha
+```
+
+Why it is invalid:
+
+- presets must contain at least one track or inherited track structure;
+- empty presets are rejected during final validation.
+
+### Invalid: New Track Under An Inherited Preset
+
+```text
+base-focus as template
+  tone 240 binaural 16 amplitude 15
+
+focus-strong from base-focus
+  tone 260 binaural 18 amplitude 20
+
+00:00:00 focus-strong
+00:01:00 focus-strong
+```
+
+Why it is invalid:
+
+- presets created with `from` cannot define new tracks;
+- they must modify inherited tracks through `track` overrides.
+
+### Invalid: Template Used Directly In Timeline
+
+```text
+base-focus as template
+  tone 240 binaural 16 amplitude 15
+
+00:00:00 base-focus
+00:01:00 base-focus
+```
+
+Why it is invalid:
+
+- template presets are reusable building blocks, not playable timeline presets.
+
+### Invalid: Relative Path Traversal In Option
+
+```text
+@extends ../shared/base
+
+alpha
+  tone 100 binaural 1 amplitude 1
+
+00:00:00 alpha
+00:01:00 alpha
+```
+
+Why it is invalid:
+
+- local option paths may not traverse parent directories with `..`.
+
+## Informal Grammar
+
+This is a lightweight, line-oriented grammar intended to summarize the parser shape. It is not a full formal specification of every semantic validation rule.
+
+```text
+file                 = { line } ;
+
+line                 = blank-line
+                     | comment-line
+                     | option-line
+                     | preset-line
+                     | track-line
+                     | track-override-line
+                     | timeline-line ;
+
+blank-line           = whitespace-only ;
+
+comment-line         = [indent] "#" text
+                     | [indent] "##" text ;
+
+option-line          = "@samplerate" integer
+                     | "@volume" integer
+                     | "@ambiance" name [path-or-url]
+                     | "@extends" path-or-url ;
+
+preset-line          = name
+                     | name "from" name
+                     | name "as" "template" ;
+
+track-line           = indent2 tone-track
+                     | indent2 noise-track
+                     | indent2 ambiance-track ;
+
+tone-track           = [waveform-prefix] "tone" float tone-tail ;
+tone-tail            = "amplitude" float
+                     | beat-kind float "amplitude" float
+                     | "effect" tone-effect float "intensity" float "amplitude" float
+                     | beat-kind float "effect" tone-effect float "intensity" float "amplitude" float ;
+
+noise-track          = "noise" noise-kind noise-tail ;
+noise-tail           = "amplitude" float
+                     | "smooth" float "amplitude" float
+                     | "effect" noise-effect float "intensity" float "amplitude" float
+                     | "smooth" float "effect" noise-effect float "intensity" float "amplitude" float ;
+
+ambiance-track       = [waveform-prefix] "ambiance" name ambiance-tail ;
+ambiance-tail        = "amplitude" float
+                     | "effect" ambiance-effect float "intensity" float "amplitude" float ;
+
+waveform-prefix      = "waveform" waveform ;
+waveform             = "sine" | "square" | "triangle" | "sawtooth" ;
+beat-kind            = "binaural" | "monaural" | "isochronic" ;
+noise-kind           = "white" | "pink" | "brown" ;
+tone-effect          = "pan" | "modulation" | "doppler" ;
+noise-effect         = "pan" | "modulation" ;
+ambiance-effect      = "pan" | "modulation" ;
+
+track-override-line  = indent2 "track" track-index override-kind override-value ;
+track-index          = integer ;
+override-kind        = "tone"
+                     | "binaural"
+                     | "monaural"
+                     | "isochronic"
+                     | "waveform"
+                     | "pan"
+                     | "modulation"
+                     | "doppler"
+                     | "smooth"
+                     | "amplitude"
+                     | "intensity" ;
+override-value       = signed-float | waveform ;
+
+timeline-line        = time name [transition [steps]] ;
+time                 = HH ":" MM ":" SS ;
+transition           = "steady" | "ease-in" | "ease-out" | "smooth" ;
+steps                = integer ;
+
+indent2              = exactly two leading spaces ;
+name                 = validated identifier ;
+integer              = strict base-10 integer ;
+float                = strict decimal number ;
+signed-float         = float with optional leading "+" or "-" ;
+path-or-url          = local path without extension | remote URL ;
+```
+
+Use the grammar above as a compact map of accepted line shapes. For placement rules, timeline ordering, preset inheritance restrictions, path normalization, and final sequence validation, follow the semantic sections earlier in this document.
