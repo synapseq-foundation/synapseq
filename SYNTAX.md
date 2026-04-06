@@ -135,6 +135,40 @@ Rules:
 
 The builder inserts a built-in `silence` preset up front, which is why user-defined presets begin after that implicit baseline.
 
+### Built-in `silence` Preset
+
+The `silence` preset is always available, even if the file never declares it explicitly.
+
+Important properties:
+
+- `silence` is built in by the sequence builder;
+- the name `silence` is reserved and cannot be redefined by user presets;
+- it behaves like a real preset in the timeline, so it can be referenced anywhere a preset name is expected.
+
+In practice, `silence` is commonly used at the beginning and end of a sequence:
+
+```text
+00:00:00 silence
+00:00:20 alpha
+00:20:00 silence
+```
+
+That pattern is useful for two reasons:
+
+- at the beginning, it gives the sequence a silent lead-in before the first active preset;
+- at the end, it gives the sequence a silent destination so playback can settle back to zero instead of stopping on an active preset.
+
+When `silence` is adjacent to an active preset, the timeline adjustment logic turns that boundary into a fade-compatible transition by preserving the target track shape while forcing amplitude to or from zero.
+
+That means:
+
+- `silence -> alpha` behaves like a fade-in into the next preset;
+- `alpha -> silence` behaves like a fade-out from the current preset.
+
+The actual transition curve still follows the transition configured on the period itself, such as `steady`, `ease-in`, `ease-out`, or `smooth`.
+
+`silence` is also the safe bridge between otherwise incompatible consecutive presets. If two timeline entries would switch a channel directly between incompatible active track types, effects, or ambiance sources, inserting a `silence` period between them is the intended way to make the transition valid.
+
 ## Track Declarations
 
 Tracks must be indented with exactly two leading spaces under the current preset.
