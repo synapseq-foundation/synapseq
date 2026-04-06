@@ -12,40 +12,25 @@
 package hub
 
 import (
-	"fmt"
-	"io"
-	"net/http"
-	"os"
-	"strings"
-
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // HubUpdate updates the local Hub manifest cache
 func HubUpdate() error {
-	cache, err := GetCacheDir()
+	cache, err := openHubCache()
 	if err != nil {
 		return err
 	}
 
-	resp, err := http.Get(t.HubManifestURL)
+	data, response, err := downloadURL(t.HubManifestURL)
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
-
-	contentType := resp.Header.Get("Content-Type")
-	if !strings.HasPrefix(contentType, "application/json") {
-		return fmt.Errorf("invalid content-type for manifest file: %s", contentType)
-	}
-
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
+	if err := validateJSONContentType(response); err != nil {
 		return err
 	}
 
-	manifestPath := cache + "/manifest.json"
-	if err = os.WriteFile(manifestPath, data, 0644); err != nil {
+	if err = cache.manifest().write(data); err != nil {
 		return err
 	}
 

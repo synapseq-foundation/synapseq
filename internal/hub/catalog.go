@@ -13,22 +13,23 @@ package hub
 
 import t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 
-// GetManifest retrieves and parses the Hub manifest file from the cache
-func GetManifest() (*t.HubManifest, error) {
-	cache, err := openHubCache()
+type manifestCatalog struct {
+	manifest *t.HubManifest
+}
+
+func loadManifestCatalog() (*manifestCatalog, error) {
+	manifest, err := GetManifest()
 	if err != nil {
 		return nil, err
 	}
 
-	return cache.manifest().read()
+	return &manifestCatalog{manifest: manifest}, nil
 }
 
-// ManifestExists checks if the Hub manifest file exists in the cache
-func ManifestExists() bool {
-	cache, err := openHubCache()
-	if err != nil {
-		return false
+func (catalog *manifestCatalog) findEntry(sequenceID string) *t.HubEntry {
+	if catalog == nil {
+		return nil
 	}
 
-	return cache.manifest().exists()
+	return findEntryByID(catalog.manifest, sequenceID)
 }

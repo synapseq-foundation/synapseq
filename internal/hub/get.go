@@ -13,31 +13,18 @@ package hub
 
 import (
 	"fmt"
-	"io"
-	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
 
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // HubGet retrieves a sequence by its ID from the Hub
 func HubGet(sequenceID string) (*t.HubEntry, error) {
-	manifest, err := GetManifest()
+	catalog, err := loadManifestCatalog()
 	if err != nil {
 		return nil, err
 	}
 
-	var entry *t.HubEntry
-	for _, e := range manifest.Entries {
-		if e.ID == sequenceID {
-			entry = &e
-			break
-		}
-	}
-
-	return entry, nil
+	return catalog.findEntry(sequenceID), nil
 }
 
 // HubDownload downloads a sequence and its dependencies from the Hub
@@ -46,59 +33,58 @@ func HubDownload(entry *t.HubEntry) (string, error) {
 		return "", fmt.Errorf("hub entry is nil")
 	}
 
-	cache, err := GetCacheDir()
+	cache, err := openHubCache()
 	if err != nil {
 		return "", err
 	}
 
-	path := filepath.Join(cache, strings.TrimSuffix(entry.Path, ".spsq"))
-	if err := os.MkdirAll(path, 0755); err != nil {
+	entryCache, err := prepareEntryDownload(cache, entry)
+	if err != nil {
 		return "", err
 	}
 
-	sequencePath := filepath.Join(path, entry.ID+".spsq")
-	if _, err := os.Stat(sequencePath); err == nil {
-		return sequencePath, nil
-	}
-
-	for _, dep := range entry.Dependencies {
-		var depPath string
-		if dep.Type == t.HubDependencyTypeAmbiance {
-			depPath = filepath.Join(path, dep.ID+".wav")
-		} else {
-			depPath = filepath.Join(path, dep.ID+".spsc")
-		}
-
-		resp, err := http.Get(dep.DownloadUrl)
-		if err != nil {
-			return "", fmt.Errorf("error downloading dependency %s: %v", dep.ID, err)
-		}
-		defer resp.Body.Close()
-
-		data, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return "", fmt.Errorf("error reading dependency %s: %v", dep.ID, err)
-		}
-
-		if err = os.WriteFile(depPath, data, 0644); err != nil {
-			return "", fmt.Errorf("error saving dependency %s: %v", dep.ID, err)
-		}
-	}
-
-	resp, err := http.Get(entry.DownloadUrl)
+	cached, err := entryCache.hasSequence()
 	if err != nil {
-		return "", fmt.Errorf("error downloading sequence %s: %v", entry.ID, err)
+		return "", err
 	}
-	defer resp.Body.Close()
-
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("error reading sequence %s: %v", entry.ID, err)
+	if cached {
+		return entryCache.sequencePath(), nil
 	}
 
-	if err = os.WriteFile(sequencePath, data, 0644); err != nil {
-		return "", fmt.Errorf("error saving sequence %s: %v", entry.ID, err)
+	if err := downloadEntryDependencies(entryCache, entry); err != nil {
+		return "", err
 	}
 
-	return sequencePath, nil
+	if err := downloadEntrySequence(entryCache, entry); err != nil {
+		return "", err
+	}
+
+	return entryCache.sequencePath(), nil
+}
+
+func prepareEntryDownload(cache *hubCache, entry *t.HubEntry) (entryCache, error) {
+	entryCache := cache.entry(entry)
+	if err := entryCache.prepare(); err != nil {
+		return entryCache, err
+	}
+
+	return entryCache, nil
+}
+
+func downloadEntryDependencies(cache entryCache, entry *t.HubEntry) error {
+	for _, dependency := range entry.Dependencies {
+		if err := downloadFile(dependency.DownloadUrl, cache.dependencyPath(dependency)); err != nil {
+			return fmt.Errorf("error saving dependency %s: %v", dependency.ID, err)
+		}
+	}
+
+	return nil
+}
+
+func downloadEntrySequence(cache entryCache, entry *t.HubEntry) error {
+	if err := downloadFile(entry.DownloadUrl, cache.sequencePath()); err != nil {
+		return fmt.Errorf("error saving sequence %s: %v", entry.ID, err)
+	}
+
+	return nil
 }
