@@ -148,7 +148,6 @@ It is internal because it serves the executable, but it is kept separate from `c
 ### Other supporting packages
 
 - `internal/diag` centralizes structured diagnostics and source-aware parse errors.
-- `internal/shared` holds shared domain helpers used across parsing, sequence construction, and validation.
 - `internal/timeline` provides transition math used by rendering and preview.
 - `internal/preset` supports preset-related resolution and helpers.
 - `internal/resource` abstracts file access and local or remote loading.
@@ -232,6 +231,8 @@ Important responsibilities:
 - `core` only exposes the final result as `LoadedContext`.
 
 This split is important because it keeps parser logic isolated from construction and validation logic.
+
+The `.spsq` and `.spsc` language rules are documented in [SYNTAX.md](SYNTAX.md). Keep this architecture document focused on package structure and runtime flow; use the syntax document when changing parser behavior, sequence-building rules, or the text format itself.
 
 ## Audio Rendering Flow
 

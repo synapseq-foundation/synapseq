@@ -33,6 +33,8 @@ When making changes, use these principles as a filter for API design, user exper
 
 Before making larger code changes, read [ARCHITECTURE.md](ARCHITECTURE.md). It explains the package boundaries, runtime flow, and the architectural invariants contributors are expected to preserve.
 
+If your change touches the `.spsq` or `.spsc` language, parser behavior, timeline rules, or sequence-building semantics, also read [SYNTAX.md](SYNTAX.md).
+
 ### Git Flow Workflow
 
 SynapSeq V4 follows the **Git Flow** branching model:
