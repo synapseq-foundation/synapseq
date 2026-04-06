@@ -16,8 +16,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/synapseq-foundation/synapseq/v4/internal/cli"
 )
@@ -53,9 +51,4 @@ func run(opts *cli.CLIOptions, args []string) error {
 	}
 
 	return handleSequenceCommand(args, opts)
-}
-
-// getDefaultOutputBaseName generates the default output base name from an input filename.
-func getDefaultOutputBaseName(inputFile string) string {
-	return strings.TrimSuffix(filepath.Base(inputFile), filepath.Ext(inputFile))
 }

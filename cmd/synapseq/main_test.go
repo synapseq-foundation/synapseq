@@ -15,7 +15,6 @@ package main
 
 import (
 	"errors"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -148,12 +147,6 @@ func TestFindHubEntryByID(ts *testing.T) {
 	}
 	if missing := findHubEntryByID(manifest, "missing"); missing != nil {
 		ts.Fatalf("expected missing entry to return nil, got %#v", missing)
-	}
-}
-
-func TestGetDefaultOutputBaseName(ts *testing.T) {
-	if base := getDefaultOutputBaseName(filepath.Join("sessions", "focus.spsq")); base != "focus" {
-		ts.Fatalf("expected base name focus, got %q", base)
 	}
 }
 

@@ -17,6 +17,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"strings"
 
 	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
 	"github.com/synapseq-foundation/synapseq/v4/internal/cli"
@@ -43,7 +45,7 @@ func prepareSequenceCommand(args []string, opts *cli.CLIOptions) (*sequenceComma
 	}
 
 	inputFile := args[0]
-	baseName := getDefaultOutputBaseName(inputFile)
+	baseName := strings.TrimSuffix(filepath.Base(inputFile), filepath.Ext(inputFile))
 	outputFile, outputFormat := resolveOutputTarget(baseName, "", opts)
 	if len(args) == 2 {
 		outputFile, outputFormat = resolveOutputTarget(baseName, args[1], opts)
