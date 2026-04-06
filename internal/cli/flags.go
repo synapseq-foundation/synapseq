@@ -21,6 +21,18 @@ import (
 	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
 )
 
+type boolFlagBinding struct {
+	Name  string
+	Usage string
+	Bind  func(*CLIOptions) *bool
+}
+
+type stringFlagBinding struct {
+	Name  string
+	Usage string
+	Bind  func(*CLIOptions) *string
+}
+
 // ParseFlags parses command-line flags and returns CLIOptions
 func ParseFlags() (*CLIOptions, []string, error) {
 	opts := &CLIOptions{}
@@ -45,30 +57,13 @@ func ParseFlags() (*CLIOptions, []string, error) {
 }
 
 func bindFlags(fs *flag.FlagSet, opts *CLIOptions) {
-	fs.BoolVar(&opts.ShowVersion, "version", false, "Show version information")
-	fs.StringVar(&opts.New, "new", "", "Template type: meditation, focus, sleep, relaxation, example")
-	fs.BoolVar(&opts.Preview, "preview", false, "Render HTML preview timeline")
-	fs.BoolVar(&opts.Quiet, "quiet", false, "Enable quiet mode")
-	fs.BoolVar(&opts.NoColor, "no-color", false, "Disable ANSI colors in CLI output")
-	fs.BoolVar(&opts.Test, "test", false, "Validate syntax without generating output")
-	fs.BoolVar(&opts.ShowHelp, "help", false, "Show help")
-	fs.BoolVar(&opts.ShowManual, "manual", false, "Show the full manual")
+	for _, binding := range boolFlagBindings() {
+		fs.BoolVar(binding.Bind(opts), binding.Name, false, binding.Usage)
+	}
 
-	fs.BoolVar(&opts.HubUpdate, "hub-update", false, "Update index of available sequences")
-	fs.BoolVar(&opts.HubClean, "hub-clean", false, "Clean up local cache")
-	fs.BoolVar(&opts.HubList, "hub-list", false, "List available sequences")
-	fs.StringVar(&opts.HubSearch, "hub-search", "", "Search sequences")
-	fs.StringVar(&opts.HubDownload, "hub-download", "", "Download sequence and dependencies")
-	fs.StringVar(&opts.HubInfo, "hub-info", "", "Show information about a sequence")
-	fs.StringVar(&opts.HubGet, "hub-get", "", "Get sequence")
-
-	fs.BoolVar(&opts.Play, "play", false, "Play audio using ffplay")
-	fs.BoolVar(&opts.Mp3, "mp3", false, "Export to MP3 with ffmpeg")
-	fs.StringVar(&opts.FFmpegPath, "ffmpeg-path", "", "Path to ffmpeg executable")
-	fs.StringVar(&opts.FFplayPath, "ffplay-path", "", "Path to ffplay executable")
-
-	fs.BoolVar(&opts.InstallFileAssociation, "install-file-association", false, "Associate .spsq files with SynapSeq (Windows only)")
-	fs.BoolVar(&opts.UninstallFileAssociation, "uninstall-file-association", false, "Remove .spsq file association (Windows only)")
+	for _, binding := range stringFlagBindings() {
+		fs.StringVar(binding.Bind(opts), binding.Name, "", binding.Usage)
+	}
 }
 
 func hasNoColorArg(args []string) bool {
@@ -112,4 +107,35 @@ func flagNames(fs *flag.FlagSet) []string {
 		flags = append(flags, "-"+f.Name)
 	})
 	return flags
+}
+
+func boolFlagBindings() []boolFlagBinding {
+	return []boolFlagBinding{
+		{Name: "version", Usage: "Show version information", Bind: func(opts *CLIOptions) *bool { return &opts.ShowVersion }},
+		{Name: "preview", Usage: "Render HTML preview timeline", Bind: func(opts *CLIOptions) *bool { return &opts.Preview }},
+		{Name: "quiet", Usage: "Enable quiet mode", Bind: func(opts *CLIOptions) *bool { return &opts.Quiet }},
+		{Name: "no-color", Usage: "Disable ANSI colors in CLI output", Bind: func(opts *CLIOptions) *bool { return &opts.NoColor }},
+		{Name: "test", Usage: "Validate syntax without generating output", Bind: func(opts *CLIOptions) *bool { return &opts.Test }},
+		{Name: "help", Usage: "Show help", Bind: func(opts *CLIOptions) *bool { return &opts.ShowHelp }},
+		{Name: "manual", Usage: "Show the full manual", Bind: func(opts *CLIOptions) *bool { return &opts.ShowManual }},
+		{Name: "hub-update", Usage: "Update index of available sequences", Bind: func(opts *CLIOptions) *bool { return &opts.HubUpdate }},
+		{Name: "hub-clean", Usage: "Clean up local cache", Bind: func(opts *CLIOptions) *bool { return &opts.HubClean }},
+		{Name: "hub-list", Usage: "List available sequences", Bind: func(opts *CLIOptions) *bool { return &opts.HubList }},
+		{Name: "play", Usage: "Play audio using ffplay", Bind: func(opts *CLIOptions) *bool { return &opts.Play }},
+		{Name: "mp3", Usage: "Export to MP3 with ffmpeg", Bind: func(opts *CLIOptions) *bool { return &opts.Mp3 }},
+		{Name: "install-file-association", Usage: "Associate .spsq files with SynapSeq (Windows only)", Bind: func(opts *CLIOptions) *bool { return &opts.InstallFileAssociation }},
+		{Name: "uninstall-file-association", Usage: "Remove .spsq file association (Windows only)", Bind: func(opts *CLIOptions) *bool { return &opts.UninstallFileAssociation }},
+	}
+}
+
+func stringFlagBindings() []stringFlagBinding {
+	return []stringFlagBinding{
+		{Name: "new", Usage: "Template type: meditation, focus, sleep, relaxation, example", Bind: func(opts *CLIOptions) *string { return &opts.New }},
+		{Name: "hub-search", Usage: "Search sequences", Bind: func(opts *CLIOptions) *string { return &opts.HubSearch }},
+		{Name: "hub-download", Usage: "Download sequence and dependencies", Bind: func(opts *CLIOptions) *string { return &opts.HubDownload }},
+		{Name: "hub-info", Usage: "Show information about a sequence", Bind: func(opts *CLIOptions) *string { return &opts.HubInfo }},
+		{Name: "hub-get", Usage: "Get sequence", Bind: func(opts *CLIOptions) *string { return &opts.HubGet }},
+		{Name: "ffmpeg-path", Usage: "Path to ffmpeg executable", Bind: func(opts *CLIOptions) *string { return &opts.FFmpegPath }},
+		{Name: "ffplay-path", Usage: "Path to ffplay executable", Bind: func(opts *CLIOptions) *string { return &opts.FFplayPath }},
+	}
 }

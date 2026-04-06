@@ -13,96 +13,51 @@ package cli
 
 import (
 	"fmt"
+	"io"
 	"runtime"
 
 	"github.com/fatih/color"
 	"github.com/synapseq-foundation/synapseq/v4/internal/info"
 )
 
+type helpExample struct {
+	Label       string
+	CommandText string
+	Description string
+}
+
+type helpOption struct {
+	FlagText    string
+	ColumnWidth int
+	Description string
+}
+
+type helpLink struct {
+	Target      string
+	Description string
+}
+
 // Help prints the help message
 func Help() {
-	fmt.Fprintf(color.Output, "%s\n\n", Title(fmt.Sprintf("SynapSeq %s - Text-Driven Audio Sequencer for Brainwave Entrainment", info.VERSION)))
-
-	fmt.Fprintf(color.Output, "%s\n", Section("Usage:"))
-	fmt.Fprintf(color.Output, "  %s\n\n", Command("synapseq [options] <input> [output]"))
-
-	fmt.Fprintf(color.Output, "%s\n", Section("Quick start:"))
-	fmt.Fprintf(color.Output, "  %s\n", Label("1. Create a starter file"))
-	fmt.Fprintf(color.Output, "     %s\n", Command("synapseq -new meditation starter.spsq"))
-	fmt.Fprintf(color.Output, "       %s\n\n", Muted("Create starter.spsq from the meditation template"))
-	fmt.Fprintf(color.Output, "  %s\n", Label("2. Render audio"))
-	fmt.Fprintf(color.Output, "     %s\n", Command("synapseq starter.spsq"))
-	fmt.Fprintf(color.Output, "       %s\n\n", Muted("Generate starter.wav in the current folder"))
-	fmt.Fprintf(color.Output, "  %s\n", Label("Available templates"))
-	fmt.Fprintf(color.Output, "     %s\n\n", Muted("meditation, focus, sleep, relaxation, example"))
-
-	fmt.Fprintf(color.Output, "%s\n", Section("Next steps:"))
-	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq -test starter.spsq"))
-	fmt.Fprintf(color.Output, "    %s\n\n", Muted("Validate syntax and semantics without generating audio"))
-	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq -preview starter.spsq"))
-	fmt.Fprintf(color.Output, "    %s\n\n", Muted("Generate starter.html with a visual timeline preview"))
-	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq -play starter.spsq"))
-	fmt.Fprintf(color.Output, "    %s\n\n", Muted("Play the sequence directly with ffplay"))
-	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq starter.spsq starter.mp3"))
-	fmt.Fprintf(color.Output, "    %s\n\n", Muted("Export to MP3 with ffmpeg"))
-	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq -manual"))
-	fmt.Fprintf(color.Output, "    %s\n\n", Muted("Print the compact syntax reference manual"))
-
-	fmt.Fprintf(color.Output, "%s\n", Section("Input:"))
-	fmt.Fprintf(color.Output, "  local file        %s\n", Command("path/to/sequence.spsq"))
-	fmt.Fprintf(color.Output, "  URL               %s\n", Command("https://example.com/sequence.spsq"))
-	fmt.Fprintf(color.Output, "  standard input    %s\n\n", Command("-"))
-
-	fmt.Fprintf(color.Output, "%s\n", Section("Output:"))
-	fmt.Fprintf(color.Output, "  omitted           %s\n", Muted("defaults to <input>.wav"))
-	fmt.Fprintf(color.Output, "  WAV file          %s\n", Command("path/to/output.wav"))
-	fmt.Fprintf(color.Output, "  MP3 file          %s\n", Command("path/to/output.mp3"))
-	fmt.Fprintf(color.Output, "  standard output   %s\n\n", Muted("-   raw PCM (16-bit stereo)"))
-
-	fmt.Fprintf(color.Output, "%s\n", Section("Most common options:"))
-	fmt.Fprintf(color.Output, "  %sTemplate type: meditation, focus, sleep, relaxation, example\n", FlagColumn("-new TYPE", 18))
-	fmt.Fprintf(color.Output, "  %sCheck syntax only\n", FlagColumn("-test", 18))
-	fmt.Fprintf(color.Output, "  %sRender an HTML preview timeline\n", FlagColumn("-preview", 18))
-	fmt.Fprintf(color.Output, "  %sPlay audio using ffplay\n", FlagColumn("-play", 18))
-	fmt.Fprintf(color.Output, "  %sExport to MP3 with ffmpeg\n", FlagColumn("-mp3", 18))
-	fmt.Fprintf(color.Output, "  %sSuppress non-error output\n", FlagColumn("-quiet", 18))
-	fmt.Fprintf(color.Output, "  %sDisable ANSI colors in CLI output\n", FlagColumn("-no-color", 18))
-	fmt.Fprintf(color.Output, "  %sShow the compact syntax reference manual\n", FlagColumn("-manual", 18))
-	fmt.Fprintf(color.Output, "  %sShow version information\n", FlagColumn("-version", 18))
-	fmt.Fprintf(color.Output, "  %sShow this help message\n\n", FlagColumn("-help", 18))
-
-	fmt.Fprintf(color.Output, "%s\n", Section("Hub:"))
-	fmt.Fprintf(color.Output, "  %s\n\n", Muted("Run -hub-update first to initialize the local Hub index."))
-	fmt.Fprintf(color.Output, "  %s Update the local Hub index\n", FlagColumn("-hub-update", 24))
-	fmt.Fprintf(color.Output, "  %s List available sequences\n", FlagColumn("-hub-list", 24))
-	fmt.Fprintf(color.Output, "  %s Search the Hub\n", FlagColumn("-hub-search WORD", 24))
-	fmt.Fprintf(color.Output, "  %s Show information about a sequence\n", FlagColumn("-hub-info NAME", 24))
-	fmt.Fprintf(color.Output, "  %s Download a sequence and dependencies\n", FlagColumn("-hub-download NAME [DIR]", 24))
-	fmt.Fprintf(color.Output, "  %s Download and generate in one step\n", FlagColumn("-hub-get NAME [OUTPUT]", 24))
-	fmt.Fprintf(color.Output, "  %s Clean up local Hub cache\n\n", FlagColumn("-hub-clean", 24))
-
-	fmt.Fprintf(color.Output, "%s\n", Section("Hub quick start:"))
-	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq -hub-update"))
-	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq -hub-list"))
-	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq -hub-search calm-state"))
-	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq -hub-get calm-state calm-state.wav"))
-	fmt.Fprintf(color.Output, "  %s\n\n", Command("synapseq -hub-get calm-state calm-state.mp3"))
-
-	fmt.Fprintf(color.Output, "%s\n", Section("Advanced:"))
-	fmt.Fprintf(color.Output, "  %sPath to ffmpeg executable\n", FlagColumn("-ffmpeg-path PATH", 22))
-	fmt.Fprintf(color.Output, "  %sPath to ffplay executable\n\n", FlagColumn("-ffplay-path PATH", 22))
+	writer := color.Output
+	writeHelpHeader(writer)
+	writeUsageSection(writer)
+	writeExamplesSection(writer, "Quick start:", quickStartExamples())
+	writeExamplesSection(writer, "Next steps:", nextStepExamples())
+	writeInputSection(writer)
+	writeOutputSection(writer)
+	writeOptionsSection(writer, "Most common options:", commonHelpOptions())
+	writeMutedLeadSection(writer, "Hub:", "Run -hub-update first to initialize the local Hub index.")
+	writeOptionsList(writer, hubHelpOptions())
+	fmt.Fprintln(writer)
+	writeCommandListSection(writer, "Hub quick start:", hubQuickStartCommands())
+	writeOptionsSection(writer, "Advanced:", advancedHelpOptions())
 
 	if runtime.GOOS == "windows" {
-		fmt.Fprintf(color.Output, "%s\n", Section("Windows-specific options:"))
-		fmt.Fprintf(color.Output, "  %sAssociate .spsq files with SynapSeq\n", FlagColumn("-install-file-association", 30))
-		fmt.Fprintf(color.Output, "  %sRemove .spsq file association\n\n", FlagColumn("-uninstall-file-association", 30))
+		writeOptionsSection(writer, "Windows-specific options:", windowsHelpOptions())
 	}
 
-	fmt.Fprintf(color.Output, "%s\n", Section("For more information:"))
-	fmt.Fprintf(color.Output, "  %s\n", Command("synapseq -manual"))
-	fmt.Fprintf(color.Output, "    %s\n\n", Muted("Show the compact syntax reference manual"))
-	fmt.Fprintf(color.Output, "  %s\n", Command("https://synapseq.org"))
-	fmt.Fprintf(color.Output, "    %s\n", Muted("Visit the website for documentation, examples, and the latest updates"))
+	writeLinkSection(writer)
 }
 
 // ShowVersion prints the version information
@@ -116,4 +71,155 @@ func ShowVersion() {
 		Label("built"),
 		Command(fmt.Sprintf("%s for %s/%s", info.BUILD_DATE, runtime.GOOS, runtime.GOARCH)),
 	)
+}
+
+func writeHelpHeader(writer io.Writer) {
+	fmt.Fprintf(writer, "%s\n\n", Title(fmt.Sprintf("SynapSeq %s - Text-Driven Audio Sequencer for Brainwave Entrainment", info.VERSION)))
+}
+
+func writeUsageSection(writer io.Writer) {
+	fmt.Fprintf(writer, "%s\n", Section("Usage:"))
+	fmt.Fprintf(writer, "  %s\n\n", Command("synapseq [options] <input> [output]"))
+}
+
+func writeExamplesSection(writer io.Writer, title string, examples []helpExample) {
+	fmt.Fprintf(writer, "%s\n", Section(title))
+	for _, example := range examples {
+		if example.Label != "" {
+			fmt.Fprintf(writer, "  %s\n", Label(example.Label))
+			fmt.Fprintf(writer, "     %s\n", Command(example.CommandText))
+			fmt.Fprintf(writer, "       %s\n", Muted(example.Description))
+			continue
+		}
+
+		fmt.Fprintf(writer, "  %s\n", Command(example.CommandText))
+		if example.Description != "" {
+			fmt.Fprintf(writer, "    %s\n", Muted(example.Description))
+		}
+	}
+	fmt.Fprintln(writer)
+}
+
+func writeInputSection(writer io.Writer) {
+	fmt.Fprintf(writer, "%s\n", Section("Input:"))
+	fmt.Fprintf(writer, "  local file        %s\n", Command("path/to/sequence.spsq"))
+	fmt.Fprintf(writer, "  URL               %s\n", Command("https://example.com/sequence.spsq"))
+	fmt.Fprintf(writer, "  standard input    %s\n\n", Command("-"))
+}
+
+func writeOutputSection(writer io.Writer) {
+	fmt.Fprintf(writer, "%s\n", Section("Output:"))
+	fmt.Fprintf(writer, "  omitted           %s\n", Muted("defaults to <input>.wav"))
+	fmt.Fprintf(writer, "  WAV file          %s\n", Command("path/to/output.wav"))
+	fmt.Fprintf(writer, "  MP3 file          %s\n", Command("path/to/output.mp3"))
+	fmt.Fprintf(writer, "  standard output   %s\n\n", Muted("-   raw PCM (16-bit stereo)"))
+}
+
+func writeOptionsSection(writer io.Writer, title string, options []helpOption) {
+	fmt.Fprintf(writer, "%s\n", Section(title))
+	writeOptionsList(writer, options)
+	fmt.Fprintln(writer)
+}
+
+func writeMutedLeadSection(writer io.Writer, title, lead string) {
+	fmt.Fprintf(writer, "%s\n", Section(title))
+	fmt.Fprintf(writer, "  %s\n\n", Muted(lead))
+}
+
+func writeOptionsList(writer io.Writer, options []helpOption) {
+	for _, option := range options {
+		fmt.Fprintf(writer, "  %s%s\n", FlagColumn(option.FlagText, option.ColumnWidth), option.Description)
+	}
+}
+
+func writeCommandListSection(writer io.Writer, title string, commands []string) {
+	fmt.Fprintf(writer, "%s\n", Section(title))
+	for _, commandText := range commands {
+		fmt.Fprintf(writer, "  %s\n", Command(commandText))
+	}
+	fmt.Fprintln(writer)
+}
+
+func writeLinkSection(writer io.Writer) {
+	fmt.Fprintf(writer, "%s\n", Section("For more information:"))
+	for _, link := range moreInfoLinks() {
+		fmt.Fprintf(writer, "  %s\n", Command(link.Target))
+		fmt.Fprintf(writer, "    %s\n", Muted(link.Description))
+	}
+}
+
+func quickStartExamples() []helpExample {
+	return []helpExample{
+		{Label: "1. Create a starter file", CommandText: "synapseq -new meditation starter.spsq", Description: "Create starter.spsq from the meditation template"},
+		{Label: "2. Render audio", CommandText: "synapseq starter.spsq", Description: "Generate starter.wav in the current folder"},
+		{Label: "Available templates", Description: "meditation, focus, sleep, relaxation, example"},
+	}
+}
+
+func nextStepExamples() []helpExample {
+	return []helpExample{
+		{CommandText: "synapseq -test starter.spsq", Description: "Validate syntax and semantics without generating audio"},
+		{CommandText: "synapseq -preview starter.spsq", Description: "Generate starter.html with a visual timeline preview"},
+		{CommandText: "synapseq -play starter.spsq", Description: "Play the sequence directly with ffplay"},
+		{CommandText: "synapseq starter.spsq starter.mp3", Description: "Export to MP3 with ffmpeg"},
+		{CommandText: "synapseq -manual", Description: "Print the compact syntax reference manual"},
+	}
+}
+
+func commonHelpOptions() []helpOption {
+	return []helpOption{
+		{FlagText: "-new TYPE", ColumnWidth: 18, Description: "Template type: meditation, focus, sleep, relaxation, example"},
+		{FlagText: "-test", ColumnWidth: 18, Description: "Check syntax only"},
+		{FlagText: "-preview", ColumnWidth: 18, Description: "Render an HTML preview timeline"},
+		{FlagText: "-play", ColumnWidth: 18, Description: "Play audio using ffplay"},
+		{FlagText: "-mp3", ColumnWidth: 18, Description: "Export to MP3 with ffmpeg"},
+		{FlagText: "-quiet", ColumnWidth: 18, Description: "Suppress non-error output"},
+		{FlagText: "-no-color", ColumnWidth: 18, Description: "Disable ANSI colors in CLI output"},
+		{FlagText: "-manual", ColumnWidth: 18, Description: "Show the compact syntax reference manual"},
+		{FlagText: "-version", ColumnWidth: 18, Description: "Show version information"},
+		{FlagText: "-help", ColumnWidth: 18, Description: "Show this help message"},
+	}
+}
+
+func hubHelpOptions() []helpOption {
+	return []helpOption{
+		{FlagText: "-hub-update", ColumnWidth: 24, Description: "Update the local Hub index"},
+		{FlagText: "-hub-list", ColumnWidth: 24, Description: "List available sequences"},
+		{FlagText: "-hub-search WORD", ColumnWidth: 24, Description: "Search the Hub"},
+		{FlagText: "-hub-info NAME", ColumnWidth: 24, Description: "Show information about a sequence"},
+		{FlagText: "-hub-download NAME [DIR]", ColumnWidth: 24, Description: "Download a sequence and dependencies"},
+		{FlagText: "-hub-get NAME [OUTPUT]", ColumnWidth: 24, Description: "Download and generate in one step"},
+		{FlagText: "-hub-clean", ColumnWidth: 24, Description: "Clean up local Hub cache"},
+	}
+}
+
+func advancedHelpOptions() []helpOption {
+	return []helpOption{
+		{FlagText: "-ffmpeg-path PATH", ColumnWidth: 22, Description: "Path to ffmpeg executable"},
+		{FlagText: "-ffplay-path PATH", ColumnWidth: 22, Description: "Path to ffplay executable"},
+	}
+}
+
+func windowsHelpOptions() []helpOption {
+	return []helpOption{
+		{FlagText: "-install-file-association", ColumnWidth: 30, Description: "Associate .spsq files with SynapSeq"},
+		{FlagText: "-uninstall-file-association", ColumnWidth: 30, Description: "Remove .spsq file association"},
+	}
+}
+
+func hubQuickStartCommands() []string {
+	return []string{
+		"synapseq -hub-update",
+		"synapseq -hub-list",
+		"synapseq -hub-search calm-state",
+		"synapseq -hub-get calm-state calm-state.wav",
+		"synapseq -hub-get calm-state calm-state.mp3",
+	}
+}
+
+func moreInfoLinks() []helpLink {
+	return []helpLink{
+		{Target: "synapseq -manual", Description: "Show the compact syntax reference manual"},
+		{Target: "https://synapseq.org", Description: "Visit the website for documentation, examples, and the latest updates"},
+	}
 }
