@@ -15,6 +15,29 @@ import (
 	style "github.com/synapseq-foundation/synapseq/v4/internal/textstyle"
 )
 
+type SpecialCommandKind string
+
+const (
+	SpecialCommandNone                     SpecialCommandKind = "none"
+	SpecialCommandShowVersion              SpecialCommandKind = "show-version"
+	SpecialCommandShowManual               SpecialCommandKind = "show-manual"
+	SpecialCommandHubUpdate                SpecialCommandKind = "hub-update"
+	SpecialCommandHubClean                 SpecialCommandKind = "hub-clean"
+	SpecialCommandHubGet                   SpecialCommandKind = "hub-get"
+	SpecialCommandHubList                  SpecialCommandKind = "hub-list"
+	SpecialCommandHubSearch                SpecialCommandKind = "hub-search"
+	SpecialCommandHubDownload              SpecialCommandKind = "hub-download"
+	SpecialCommandHubInfo                  SpecialCommandKind = "hub-info"
+	SpecialCommandInstallFileAssociation   SpecialCommandKind = "install-file-association"
+	SpecialCommandUninstallFileAssociation SpecialCommandKind = "uninstall-file-association"
+	SpecialCommandGenerateTemplate         SpecialCommandKind = "generate-template"
+)
+
+type SpecialCommand struct {
+	Kind        SpecialCommandKind
+	OptionalArg string
+}
+
 // CLIOptions holds command-line options
 type CLIOptions struct {
 	// Show version information and exit
