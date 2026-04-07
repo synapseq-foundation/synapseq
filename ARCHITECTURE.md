@@ -297,6 +297,33 @@ That means Hub integration should stay shallow:
 
 The Hub should not fork the rendering architecture.
 
+## WASM Build Target
+
+SynapSeq also ships a browser-oriented WebAssembly target under [cmd/wasm/main.go](cmd/wasm/main.go).
+
+This target does not go through the CLI flow in `cmd/synapseq`. Instead, it exposes a JavaScript bridge that:
+
+- receives `.spsq` content as bytes from browser code;
+- loads the sequence through `internal/sequence`;
+- renders audio through `internal/audio`;
+- streams raw PCM chunks back to JavaScript callbacks.
+
+Internally, the WASM target is intentionally split into a small set of focused layers:
+
+- `main.go` only boots the runtime and registers global exports;
+- `bridge_wasm.go` owns the `syscall/js` boundary, Promise handling, and callback delivery;
+- `streamservice.go` coordinates load, renderer construction, PCM encoding, and chunk streaming without JavaScript concerns;
+- `rendererbuilder.go` and `pcmencoder.go` keep renderer configuration and PCM byte encoding isolated and testable.
+
+This makes the WASM target intentionally narrower than the native CLI:
+
+- it does not participate in Hub workflows;
+- it does not use external tools such as ffplay or ffmpeg;
+- it does not generate preview HTML;
+- it acts as a browser runtime bridge rather than a general command interface.
+
+Detailed browser-facing API behavior belongs in [wasm/README.md](wasm/README.md). This architecture document should only describe the WASM target as a separate runtime entrypoint with its own environment constraints.
+
 ## External Tool Integration
 
 The `external` package is a small adapter layer for ffplay and ffmpeg.
