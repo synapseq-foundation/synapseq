@@ -144,6 +144,14 @@ class SynapSeq {
   _createWorker() {
     // Worker code as a standalone function
     function workerFunction() {
+      function toWorkerErrorMessage(error) {
+        if (error && typeof error.message === "string") {
+          return error.message;
+        }
+
+        return error || "Unknown error occurred";
+      }
+
       let wasmReady = false;
       let wasmPath = "";
       let wasmExecPath = "";
@@ -184,7 +192,7 @@ class SynapSeq {
           } catch (error) {
             self.postMessage({
               type: "error",
-              error: "Failed to load WASM: " + error.message,
+              error: "Failed to load WASM: " + toWorkerErrorMessage(error),
             });
           }
           return;
@@ -200,6 +208,7 @@ class SynapSeq {
           }
 
           try {
+            let streamErrorReported = false;
             const contentBytes = e.data.contentBytes;
             const format = e.data.format || "text";
 
@@ -220,9 +229,10 @@ class SynapSeq {
             };
 
             const onError = (error) => {
+              streamErrorReported = true;
               self.postMessage({
                 type: "error",
-                error: error,
+                error: toWorkerErrorMessage(error),
               });
             };
 
@@ -234,10 +244,12 @@ class SynapSeq {
               format,
             );
           } catch (error) {
-            self.postMessage({
-              type: "error",
-              error: error.message || error || "Unknown error occurred",
-            });
+            if (!streamErrorReported) {
+              self.postMessage({
+                type: "error",
+                error: toWorkerErrorMessage(error),
+              });
+            }
           }
         }
       };
@@ -245,7 +257,28 @@ class SynapSeq {
 
     const workerCode = `(${workerFunction.toString()})();`;
     const blob = new Blob([workerCode], { type: "application/javascript" });
-    return new Worker(URL.createObjectURL(blob));
+    const url = URL.createObjectURL(blob);
+    const worker = new Worker(url);
+    URL.revokeObjectURL(url);
+    return worker;
+  }
+
+  /**
+   * Normalizes worker/runtime errors into Error instances.
+   * @private
+   * @param {unknown} error - Error value from worker or browser APIs
+   * @returns {Error}
+   */
+  _toError(error) {
+    if (error instanceof Error) {
+      return error;
+    }
+
+    if (error && typeof error.message === "string") {
+      return new Error(error.message);
+    }
+
+    return new Error(String(error || "Unknown error occurred"));
   }
 
   /**
@@ -274,7 +307,7 @@ class SynapSeq {
           } else if (data.type === "stream-done") {
             this._handleStreamDone();
           } else if (data.type === "error") {
-            this._handleError(new Error(data.error));
+            this._handleError(this._toError(data.error));
           }
         };
 
@@ -626,7 +659,9 @@ class SynapSeq {
 
       this._dispatchEvent("playing");
     } catch (error) {
-      throw new Error("Failed to start streaming: " + error.message);
+      throw new Error(
+        "Failed to start streaming: " + this._toError(error).message,
+      );
     }
   }
 
