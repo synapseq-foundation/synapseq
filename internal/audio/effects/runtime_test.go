@@ -11,15 +11,12 @@
 
 package effects
 
-const (
-	modulationSlewTimeMs = 2.0
-)
+import "testing"
 
-type Processor struct {
-	sampleRate int
-	waveTables [4][]int
-}
-
-func NewProcessor(sampleRate int, waveTables [4][]int) *Processor {
-	return &Processor{sampleRate: sampleRate, waveTables: waveTables}
+func TestAdvancePhaseWrapsAtMask(ts *testing.T) {
+	got := advancePhase(phaseMask-5, 10)
+	want := 4
+	if got != want {
+		ts.Fatalf("unexpected wrapped phase: got %d, want %d", got, want)
+	}
 }

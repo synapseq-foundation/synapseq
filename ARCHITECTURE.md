@@ -113,11 +113,20 @@ This package renders audio from sequence periods and tracks.
 The root package owns `AudioRenderer` and the main rendering loop. Supporting responsibilities are split into focused subpackages such as:
 
 - `audio/ambiance` for ambiance loading and playback runtime;
-- `audio/effects` for panning, modulation, and doppler processing;
+- `audio/effects` for panning, modulation, doppler, waveform morph, and effect runtime helpers;
+- `audio/sources` for compiled source evaluators such as pure tone, binaural, monaural, isochronic, noise, and ambiance;
 - `audio/sync` for temporal synchronization and per-period updates;
 - `audio/wavetable` for waveform lookup tables;
 - `audio/output` and `audio/pcm` for output encoding;
 - `audio/status` for rendering progress and status output.
+
+Inside the root package, the engine is currently being decomposed into three explicit layers:
+
+- a compiled temporal layer (`renderPlan`) that turns `[]types.Period` into time windows and resolved per-period cues;
+- a compiled signal layer (`channelSignalState`) that carries already-resolved waveform, effect, amplitude, and increment data for the active channel state;
+- a mutable runtime layer (`types.Channel`) that now trends toward phase, offsets, and smoothing state rather than full semantic ownership of the signal.
+
+This refactor is intentionally incremental. The parser and `.spsq` syntax remain unchanged while the audio engine boundary is being pushed away from `types.Period` and toward explicit compiled artifacts.
 
 ### `internal/preview`
 
@@ -246,9 +255,11 @@ flowchart TD
 	Stream[LoadedContext.Stream] --> Generate
 	Generate --> RendererOptions[buildAudioRendererOptions]
 	Generate --> Renderer[internal/audio.NewAudioRenderer]
-	Renderer --> RenderLoop[AudioRenderer.Render]
-	RenderLoop --> Sync[audio/sync]
-	RenderLoop --> Effects[audio/effects]
+	Renderer --> RenderPlan[renderPlan compile]
+	RenderPlan --> RenderLoop[AudioRenderer.Render]
+	RenderLoop --> Cue[resolved Cue and channelSignalState]
+	Cue --> Sync[audio/sync runtime apply]
+	Cue --> Effects[audio/effects]
 	RenderLoop --> Ambiance[audio/ambiance]
 	RenderLoop --> Wavetable[audio/wavetable]
 	RenderLoop --> Output[audio/output and audio/pcm]
@@ -259,8 +270,40 @@ At a high level:
 1. `core` validates that a loaded sequence is renderable.
 2. `core` builds renderer options from sequence options and `AppContext` verbosity settings.
 3. `internal/audio` constructs an `AudioRenderer` with waveform tables, ambiance runtime, sync engine, and effect processor.
-4. The render loop synthesizes PCM samples period by period.
-5. The output path writes either WAV or raw PCM.
+4. The renderer compiles a temporal plan and resolves per-period cues before entering the hot render loop.
+5. The render loop applies each cue into mutable channel runtime state and then synthesizes PCM samples.
+6. The mixer and effects path consume compiled signal state instead of recomputing semantics directly from `Period` on every chunk.
+7. The output path writes either WAV or raw PCM.
+
+### Current Engine Refactor Direction
+
+The audio engine is in the middle of a controlled rearchitecture. The current direction should be preserved:
+
+1. parser and `.spsq` syntax remain frozen;
+2. semantic sequence loading still ends in `types.Sequence` and `types.Period`;
+3. `renderPlan` is the first compilation boundary after semantic sequence data;
+4. `audio/sync` is being narrowed so it applies resolved cues instead of deciding temporal interpolation;
+5. the mixer hot path is being shifted from `types.Channel`-driven semantics to explicit compiled signal artifacts;
+6. new source evaluators should be introduced incrementally per signal family, starting with concrete tone sources rather than a big-bang rewrite.
+
+Today, that migration lives in the `internal/audio/sources` subpackage:
+
+- pure tone rendering uses a dedicated `pureToneSource`;
+- binaural rendering uses a dedicated `binauralBeatSource`;
+- monaural rendering uses a dedicated `monauralBeatSource`;
+- isochronic rendering uses a dedicated `isochronicBeatSource`;
+- noise rendering uses a dedicated `noiseSource`;
+- ambiance rendering uses a dedicated `ambianceSource`;
+- other signal families still pass through the legacy mixer path and should be migrated the same way instead of adding new synthesis rules directly inside `mixsources.go`.
+
+Within `internal/audio/effects`, the supporting effect processor code is also now split by concern rather than concentrated in one file:
+
+- `morph.go` owns waveform morph resolution from channel state;
+- `waveform.go` owns waveform lookup and interpolation helpers;
+- `doppler.go`, `modulation.go`, and `pan.go` own their respective effect families;
+- `apply.go`, `runtime.go`, and `smoothing.go` hold effect dispatch, phase advancement, and smoothing state.
+
+Contributors working in `internal/audio` should prefer continuing this direction over reintroducing semantic or temporal decision-making into `sync`, `mix`, or `effects` hot paths.
 
 The renderer is intentionally concrete. It is not an interface-heavy pipeline; contributors should prefer focused collaborators over generalization.
 

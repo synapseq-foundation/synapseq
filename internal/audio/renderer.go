@@ -33,6 +33,8 @@ const (
 // AudioRenderer handle audio generation
 type AudioRenderer struct {
 	channels        [t.NumberOfChannels]t.Channel
+	signals         [t.NumberOfChannels]channelSignalState
+	plan            renderPlan
 	periods         []t.Period
 	waveTables      [4][]int
 	noiseGenerator  *NoiseGenerator
@@ -79,6 +81,7 @@ func NewAudioRenderer(p []t.Period, ar *AudioRendererOptions) (*AudioRenderer, e
 	}
 
 	renderer := &AudioRenderer{
+		plan:                 compileRenderPlan(p, ar.SampleRate),
 		periods:              p,
 		waveTables:           wt.Init(),
 		noiseGenerator:       NewNoiseGenerator(),

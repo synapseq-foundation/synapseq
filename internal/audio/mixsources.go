@@ -11,69 +11,65 @@
 
 package audio
 
-import t "github.com/synapseq-foundation/synapseq/v4/internal/types"
+import (
+	src "github.com/synapseq-foundation/synapseq/v4/internal/audio/sources"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
+)
 
-func (r *AudioRenderer) mixPureTone(channel *t.Channel) stereoSample {
-	inc0 := r.effectProcessor.ApplyDoppler(channel, channel.Increment[0])
+func (r *AudioRenderer) mixPureTone(channel *t.Channel, signal channelSignalState) stereoSample {
+	source := src.NewPureTone(signal.sourceSignal())
+	inc0 := r.effectProcessor.ApplyDoppler(channel, signal.effect, signal.increment[0])
 	channel.Offset[0] = advancePhase(channel.Offset[0], inc0)
 
-	sample := channel.Amplitude[0] * r.effectProcessor.WaveformSample(channel, channel.Offset[0])
-	return r.applyEffectToMono(channel, sample)
+	sample := source.Sample(r.effectProcessor, channel.Offset[0])
+	return r.applyEffectToMono(channel, signal, sample)
 }
 
-func (r *AudioRenderer) mixBinauralBeat(channel *t.Channel) stereoSample {
-	inc0, inc1 := r.effectProcessor.ApplyDopplerPair(channel, channel.Increment[0], channel.Increment[1])
-	channel.Offset[0] = advancePhase(channel.Offset[0], inc0)
-	channel.Offset[1] = advancePhase(channel.Offset[1], inc1)
-
-	left := channel.Amplitude[0] * r.effectProcessor.WaveformSample(channel, channel.Offset[0])
-	right := channel.Amplitude[1] * r.effectProcessor.WaveformSample(channel, channel.Offset[1])
-	return r.applyEffectToStereo(channel, left, right)
-}
-
-func (r *AudioRenderer) mixMonauralBeat(channel *t.Channel) stereoSample {
-	inc0, inc1 := r.effectProcessor.ApplyDopplerPair(channel, channel.Increment[0], channel.Increment[1])
+func (r *AudioRenderer) mixBinauralBeat(channel *t.Channel, signal channelSignalState) stereoSample {
+	source := src.NewBinaural(signal.sourceSignal())
+	inc0, inc1 := r.effectProcessor.ApplyDopplerPair(channel, signal.effect, signal.increment[0], signal.increment[1])
 	channel.Offset[0] = advancePhase(channel.Offset[0], inc0)
 	channel.Offset[1] = advancePhase(channel.Offset[1], inc1)
 
-	freqHigh := r.effectProcessor.WaveformSample(channel, channel.Offset[0])
-	freqLow := r.effectProcessor.WaveformSample(channel, channel.Offset[1])
-	mixed := (channel.Amplitude[0] * (freqHigh + freqLow)) >> 1
-
-	return r.applyEffectToMono(channel, mixed)
+	left, right := source.Sample(r.effectProcessor, channel.Offset[0], channel.Offset[1])
+	return r.applyEffectToStereo(channel, signal, left, right)
 }
 
-func (r *AudioRenderer) mixIsochronicBeat(channel *t.Channel) stereoSample {
-	incCarrier := r.effectProcessor.ApplyDoppler(channel, channel.Increment[0])
+func (r *AudioRenderer) mixMonauralBeat(channel *t.Channel, signal channelSignalState) stereoSample {
+	source := src.NewMonaural(signal.sourceSignal())
+	inc0, inc1 := r.effectProcessor.ApplyDopplerPair(channel, signal.effect, signal.increment[0], signal.increment[1])
+	channel.Offset[0] = advancePhase(channel.Offset[0], inc0)
+	channel.Offset[1] = advancePhase(channel.Offset[1], inc1)
+
+	mixed := source.Sample(r.effectProcessor, channel.Offset[0], channel.Offset[1])
+
+	return r.applyEffectToMono(channel, signal, mixed)
+}
+
+func (r *AudioRenderer) mixIsochronicBeat(channel *t.Channel, signal channelSignalState) stereoSample {
+	source := src.NewIsochronic(signal.sourceSignal())
+	incCarrier := r.effectProcessor.ApplyDoppler(channel, signal.effect, signal.increment[0])
 	channel.Offset[0] = advancePhase(channel.Offset[0], incCarrier)
-	channel.Offset[1] = advancePhase(channel.Offset[1], channel.Increment[1])
+	channel.Offset[1] = advancePhase(channel.Offset[1], signal.increment[1])
 
-	modFactor := r.effectProcessor.CalcModulationFactor(channel, channel.Offset[1])
-	carrier := float64(r.effectProcessor.WaveformSample(channel, channel.Offset[0]))
-	out := int(float64(channel.Amplitude[0]) * carrier * modFactor)
+	modFactor := r.effectProcessor.CalcModulationFactorForMorph(signal.waveform, channel.Offset[1])
+	out := source.Sample(r.effectProcessor, channel.Offset[0], modFactor)
 
-	return r.applyEffectToMono(channel, out)
+	return r.applyEffectToMono(channel, signal, out)
 }
 
-func (r *AudioRenderer) mixNoise(channel *t.Channel) stereoSample {
-	sample := channel.Amplitude[0] * r.noiseGenerator.Generate(channel.Track.Type, channel.Track.NoiseSmooth)
-	return r.applyEffectToMono(channel, sample)
+func (r *AudioRenderer) mixNoise(channel *t.Channel, signal channelSignalState) stereoSample {
+	source := src.NewNoise(signal.sourceSignal())
+	sample := source.Sample(r.noiseGenerator)
+	return r.applyEffectToMono(channel, signal, sample)
 }
 
-func (r *AudioRenderer) mixAmbiance(channel *t.Channel, ch, frame int) stereoSample {
-	const bgScaleFactor = 16
-
-	if r.ambianceState == nil {
+func (r *AudioRenderer) mixAmbiance(channel *t.Channel, signal channelSignalState, ch, frame int) stereoSample {
+	source := src.NewAmbiance(signal.sourceSignal())
+	left, right, ok := source.Sample(r.ambianceState, ch, frame)
+	if !ok {
 		return stereoSample{}
 	}
 
-	bgBuf := r.ambianceState.ChannelBuffer(ch)
-	if len(bgBuf) < frame*2+2 {
-		return stereoSample{}
-	}
-
-	left := bgBuf[frame*2] * bgScaleFactor * channel.Amplitude[0]
-	right := bgBuf[frame*2+1] * bgScaleFactor * channel.Amplitude[0]
-
-	return r.applyEffectToStereo(channel, left, right)
+	return r.applyEffectToStereo(channel, signal, left, right)
 }

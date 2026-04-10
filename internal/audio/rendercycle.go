@@ -13,7 +13,6 @@ package audio
 
 import (
 	"fmt"
-	"math"
 
 	audiostatus "github.com/synapseq-foundation/synapseq/v4/internal/audio/status"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
@@ -35,7 +34,7 @@ func newRenderRuntime(renderer *AudioRenderer, consume func(samples []int) error
 		renderer:    renderer,
 		consume:     consume,
 		samples:     make([]int, t.BufferSize*audioChannels),
-		totalFrames: totalRenderFrames(renderer.periods, renderer.SampleRate),
+		totalFrames: renderer.plan.totalFrames,
 		chunkFrames: int64(t.BufferSize),
 	}
 
@@ -44,11 +43,6 @@ func newRenderRuntime(renderer *AudioRenderer, consume func(samples []int) error
 	}
 
 	return runtime
-}
-
-func totalRenderFrames(periods []t.Period, sampleRate int) int64 {
-	endMs := periods[len(periods)-1].Time
-	return int64(math.Round(float64(endMs) * float64(sampleRate) / 1000.0))
 }
 
 func (rr *renderRuntime) run() error {
@@ -79,13 +73,13 @@ func (rr *renderRuntime) currentTimeMs() int {
 }
 
 func (rr *renderRuntime) advancePeriod(currentTimeMs int) {
-	for rr.periodIdx+1 < len(rr.renderer.periods) && currentTimeMs >= rr.renderer.periods[rr.periodIdx+1].Time {
-		rr.periodIdx++
-	}
+	rr.periodIdx = rr.renderer.plan.periodIndexAt(currentTimeMs, rr.periodIdx)
 }
 
 func (rr *renderRuntime) syncAndPrepare(currentTimeMs int) {
-	rr.renderer.syncEngine.Sync(rr.renderer.channels[:], rr.renderer.periods, currentTimeMs, rr.periodIdx)
+	cue := rr.renderer.plan.cue(rr.periodIdx, currentTimeMs)
+	rr.renderer.applyCueSignalState(cue)
+	rr.renderer.syncEngine.Sync(rr.renderer.channels[:], cue)
 	if rr.renderer.ambianceState != nil {
 		rr.renderer.ambianceState.CollectActiveIndices(rr.renderer.channels[:])
 		rr.renderer.ambianceState.PrepareBuffers(t.BufferSize)

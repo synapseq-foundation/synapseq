@@ -11,15 +11,8 @@
 
 package effects
 
-const (
-	modulationSlewTimeMs = 2.0
-)
+import wt "github.com/synapseq-foundation/synapseq/v4/internal/audio/wavetable"
 
-type Processor struct {
-	sampleRate int
-	waveTables [4][]int
-}
-
-func NewProcessor(sampleRate int, waveTables [4][]int) *Processor {
-	return &Processor{sampleRate: sampleRate, waveTables: waveTables}
+func newTestProcessor() *Processor {
+	return NewProcessor(44100, wt.Init())
 }

@@ -140,7 +140,7 @@ func TestAudioRendererMix_SawtoothModulationUsesThresholdedCurve(ts *testing.T) 
 	channel.WaveformEnd = t.WaveformSawtooth
 	channel.Effect.Offset = int(t.SineTableSize/2) * t.PhasePrecision
 
-	got := renderer.effectProcessor.ApplyModulationToCurrentPhase(channel, 1000)
+	got := renderer.effectProcessor.ApplyModulationToCurrentPhase(channel, channel.Track.Effect, efx.WaveformMorphFromChannel(channel), 1000)
 	modFactor := renderer.effectProcessor.CalcModulationFactor(channel, channel.Effect.Offset)
 	expected := int(math.Round(1000 * (0.3 + 0.7*modFactor)))
 	if got != expected {
@@ -192,7 +192,7 @@ func TestAudioRendererMix_ModulationSlewsAbruptSquareGainChanges(ts *testing.T) 
 	channel.Effect.ModulationGain = 1
 	channel.Effect.ModulationInitialized = true
 
-	got := renderer.effectProcessor.ApplyModulationToCurrentPhase(channel, 1000)
+	got := renderer.effectProcessor.ApplyModulationToCurrentPhase(channel, channel.Track.Effect, efx.WaveformMorphFromChannel(channel), 1000)
 	expectedFloor := int(1000 * 0.3)
 	if got <= expectedFloor || got >= 1000 {
 		ts.Fatalf("unexpected slewed modulation output: got %d, want between %d and 1000", got, expectedFloor)

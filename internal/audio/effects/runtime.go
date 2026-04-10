@@ -11,15 +11,14 @@
 
 package effects
 
-const (
-	modulationSlewTimeMs = 2.0
-)
+import t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 
-type Processor struct {
-	sampleRate int
-	waveTables [4][]int
+const phaseMask = (t.SineTableSize << 16) - 1
+
+func (p *Processor) advanceEffectPhase(channel *t.Channel) {
+	channel.Effect.Offset = advancePhase(channel.Effect.Offset, channel.Effect.Increment)
 }
 
-func NewProcessor(sampleRate int, waveTables [4][]int) *Processor {
-	return &Processor{sampleRate: sampleRate, waveTables: waveTables}
+func advancePhase(offset, increment int) int {
+	return (offset + increment) & phaseMask
 }

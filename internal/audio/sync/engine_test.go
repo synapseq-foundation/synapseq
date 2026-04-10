@@ -51,7 +51,7 @@ func TestEngine_Sync_InterpolatesTrackAndSignal(ts *testing.T) {
 
 	channels := make([]t.Channel, t.NumberOfChannels)
 	engine := NewEngine(testSampleRate, nil)
-	engine.Sync(channels, []t.Period{p0, p1}, 500, 0)
+	engine.Sync(channels, testCue(0, p0, p1, 500))
 
 	channel := channels[0]
 
@@ -114,7 +114,7 @@ func TestEngine_Sync_ResetsOffsetsAndClearsResidualState(ts *testing.T) {
 	channels[0].Effect.PanInitialized = true
 
 	engine := NewEngine(testSampleRate, nil)
-	engine.Sync(channels, []t.Period{p0, p1}, 0, 0)
+	engine.Sync(channels, testCue(0, p0, p1, 0))
 
 	channel := channels[0]
 	if channel.Type != t.TrackWhiteNoise {
@@ -170,7 +170,7 @@ func TestEngine_Sync_ResetsEffectPhaseWhenEffectChanges(ts *testing.T) {
 	channels[0].Effect.PanInitialized = true
 
 	engine := NewEngine(testSampleRate, nil)
-	engine.Sync(channels, []t.Period{p0, p1}, 0, 0)
+	engine.Sync(channels, testCue(0, p0, p1, 0))
 
 	channel := channels[0]
 	if channel.Effect.Offset != 0 {
@@ -216,21 +216,148 @@ func TestEngine_Sync_AppliesStepsTrajectory(ts *testing.T) {
 	channels := make([]t.Channel, t.NumberOfChannels)
 	engine := NewEngine(testSampleRate, nil)
 
-	engine.Sync(channels, []t.Period{p0, p1}, 3000, 0)
+	engine.Sync(channels, testCue(0, p0, p1, 3000))
 	first := channels[0].Track
 	assertAlmostEqual(ts, first.Carrier, 300, 0.0001)
 	assertAlmostEqual(ts, first.Resonance, 12, 0.0001)
 
-	engine.Sync(channels, []t.Period{p0, p1}, 6000, 0)
+	engine.Sync(channels, testCue(0, p0, p1, 6000))
 	second := channels[0].Track
 	assertAlmostEqual(ts, second.Carrier, 200, 0.0001)
 	assertAlmostEqual(ts, second.Resonance, 8, 0.0001)
 
-	engine.Sync(channels, []t.Period{p0, p1}, 9000, 0)
+	engine.Sync(channels, testCue(0, p0, p1, 9000))
 	third := channels[0].Track
 	assertAlmostEqual(ts, third.Carrier, 300, 0.0001)
 	assertAlmostEqual(ts, third.Resonance, 12, 0.0001)
 	assertAlmostEqual(ts, channels[0].WaveformAlpha, 1, 0.0001)
+}
+
+func testCue(periodIdx int, period t.Period, next t.Period, timeMs int) Cue {
+	durationMs := next.Time - period.Time
+	progress := 0.0
+	if durationMs > 0 {
+		progress = float64(timeMs-period.Time) / float64(durationMs)
+	}
+	alpha := clampUnitForTest(progress)
+	if period.Steps > 0 {
+		alpha = stepAlphaForTest(alpha, period.Steps)
+	}
+
+	cue := Cue{PeriodIndex: periodIdx}
+	for index := 0; index < t.NumberOfChannels; index++ {
+		track := interpolateTrackForTest(period.TrackStart[index], period.TrackEnd[index], alpha)
+		amplitude, increment, effectStep := compileSignalStateForTest(track)
+		cue.Channels[index] = ChannelCue{
+			Track:         track,
+			WaveformStart: period.TrackStart[index].Waveform,
+			WaveformEnd:   period.TrackEnd[index].Waveform,
+			WaveformAlpha: alpha,
+			Amplitude:     amplitude,
+			Increment:     increment,
+			EffectStep:    effectStep,
+		}
+	}
+
+	return cue
+}
+
+func clampUnitForTest(value float64) float64 {
+	if value < 0 {
+		return 0
+	}
+	if value > 1 {
+		return 1
+	}
+
+	return value
+}
+
+func interpolateTrackForTest(start, end t.Track, alpha float64) t.Track {
+	return t.Track{
+		Type:         start.Type,
+		Amplitude:    t.AmplitudeType(start.Amplitude + t.AmplitudeType((float64(end.Amplitude)-float64(start.Amplitude))*alpha)),
+		Carrier:      start.Carrier + (end.Carrier-start.Carrier)*alpha,
+		Resonance:    start.Resonance + (end.Resonance-start.Resonance)*alpha,
+		NoiseSmooth:  start.NoiseSmooth + (end.NoiseSmooth-start.NoiseSmooth)*alpha,
+		Waveform:     start.Waveform,
+		AmbianceName: start.AmbianceName,
+		Effect: t.Effect{
+			Type:      start.Effect.Type,
+			Value:     start.Effect.Value + (end.Effect.Value-start.Effect.Value)*alpha,
+			Intensity: t.IntensityType(float64(start.Effect.Intensity) + (float64(end.Effect.Intensity)-float64(start.Effect.Intensity))*alpha),
+		},
+	}
+}
+
+func stepAlphaForTest(progress float64, steps int) float64 {
+	if progress < 0 {
+		progress = 0
+	}
+	if progress > 1 {
+		progress = 1
+	}
+	if steps <= 0 {
+		return progress
+	}
+	if progress >= 1 {
+		return 1
+	}
+
+	totalLegs := 2*steps + 1
+	legSpan := 1.0 / float64(totalLegs)
+	legIndex := int(math.Floor(progress / legSpan))
+	if legIndex >= totalLegs {
+		legIndex = totalLegs - 1
+	}
+
+	legStart := float64(legIndex) * legSpan
+	legProgress := (progress - legStart) / legSpan
+	if legProgress < 0 {
+		legProgress = 0
+	}
+	if legProgress > 1 {
+		legProgress = 1
+	}
+	if legIndex%2 == 0 {
+		return legProgress
+	}
+
+	return 1 - legProgress
+}
+
+func compileSignalStateForTest(track t.Track) ([2]int, [2]int, int) {
+	var amplitude [2]int
+	var increment [2]int
+	effectStep := 0
+
+	if track.Effect.Type != t.EffectOff {
+		effectStep = FrequencyToIncrement(testSampleRate, track.Effect.Value)
+	}
+
+	rawAmplitude := int(track.Amplitude)
+	switch track.Type {
+	case t.TrackPureTone:
+		amplitude[0] = rawAmplitude
+		increment[0] = FrequencyToIncrement(testSampleRate, track.Carrier)
+	case t.TrackBinauralBeat:
+		amplitude[0] = rawAmplitude
+		amplitude[1] = rawAmplitude
+		increment[0] = FrequencyToIncrement(testSampleRate, track.Carrier+track.Resonance/2)
+		increment[1] = FrequencyToIncrement(testSampleRate, track.Carrier-track.Resonance/2)
+	case t.TrackMonauralBeat:
+		amplitude[0] = rawAmplitude
+		increment[0] = FrequencyToIncrement(testSampleRate, track.Carrier+track.Resonance/2)
+		increment[1] = FrequencyToIncrement(testSampleRate, track.Carrier-track.Resonance/2)
+	case t.TrackIsochronicBeat:
+		amplitude[0] = rawAmplitude
+		increment[0] = FrequencyToIncrement(testSampleRate, track.Carrier)
+		increment[1] = FrequencyToIncrement(testSampleRate, track.Resonance)
+	case t.TrackWhiteNoise, t.TrackPinkNoise, t.TrackBrownNoise, t.TrackAmbiance:
+		amplitude[0] = rawAmplitude
+	}
+
+	return amplitude, increment, effectStep
 }
 
 func assertAlmostEqual(ts *testing.T, got, want, tolerance float64) {
