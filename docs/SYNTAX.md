@@ -2,7 +2,7 @@
 
 This document describes the `.spsq` sequence format, how the parser classifies lines, and which semantic rules are enforced by the sequence builder after parsing.
 
-It complements [ARCHITECTURE.md](ARCHITECTURE.md), which focuses on package boundaries, runtime flow, and code-level responsibilities.
+It complements [ARCHITECTURE](ARCHITECTURE.md), which focuses on package boundaries, runtime flow, and code-level responsibilities.
 
 ## Quick Reference
 
@@ -32,6 +32,13 @@ At a practical level, a normal `.spsq` file is divided into four phases:
 
 The file can also contain comments and blank lines anywhere.
 
+```mermaid
+flowchart LR
+    A[top-level options] --> B[preset declarations]
+    B --> C[indented tracks or overrides]
+    C --> D[top-level timeline]
+```
+
 ## Line Classification Order
 
 Each non-empty line is evaluated in this order:
@@ -47,18 +54,18 @@ Each non-empty line is evaluated in this order:
 That order matters. For example, track lines are only recognized when they are indented with exactly two leading spaces. Timeline lines are only recognized at top level and only when their first token parses as `HH:MM:SS`.
 
 ```mermaid
-flowchart TD
+flowchart LR
     Line[raw line] --> Empty{empty or whitespace?}
     Empty -->|yes| Skip[ignore line]
     Empty -->|no| Comment{starts with # token?}
     Comment -->|yes| CommentHandle[handle comment]
-    Comment -->|no| Option{raw line starts with @?}
+    Comment -->|no| Option{starts with @?}
     Option -->|yes| OptionHandle[parse option]
-    Option -->|no| Preset{top-level name?}
+    Option -->|no| Preset{top-level preset?}
     Preset -->|yes| PresetHandle[parse preset]
-    Preset -->|no| Track{two-space indented track?}
+    Preset -->|no| Track{indented track?}
     Track -->|yes| TrackHandle[parse track]
-    Track -->|no| Override{two-space indented track override?}
+    Track -->|no| Override{indented override?}
     Override -->|yes| OverrideHandle[parse override]
     Override -->|no| Timeline{top-level HH:MM:SS?}
     Timeline -->|yes| TimelineHandle[parse timeline]
@@ -125,6 +132,12 @@ base-focus as template
 focus-strong from base-focus
 ```
 
+```mermaid
+flowchart LR
+    T["base-focus<br>template preset"] --> I["focus-strong<br>inherits from template"]
+    I --> TL["timeline entry may use focus-strong"]
+```
+
 Rules:
 
 - preset names must pass name validation;
@@ -164,6 +177,12 @@ That means:
 
 - `silence -> alpha` behaves like a fade-in into the next preset;
 - `alpha -> silence` behaves like a fade-out from the current preset.
+
+```mermaid
+flowchart LR
+    S1[silence] -->|fade-in style boundary| A[active preset]
+    A -->|fade-out style boundary| S2[silence]
+```
 
 The actual transition curve still follows the transition configured on the period itself, such as `steady`, `ease-in`, `ease-out`, or `smooth`.
 
