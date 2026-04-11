@@ -192,11 +192,20 @@ flowchart LR
 	HUB --> TYPES
 
 	AUDIO --> SYNC[internal/audio/sync]
+	AUDIO --> SOURCES[internal/audio/sources]
 	AUDIO --> EFFECTS[internal/audio/effects]
 	AUDIO --> AMB[internal/audio/ambiance]
 	AUDIO --> WAVETABLE[internal/audio/wavetable]
 	AUDIO --> STATUS[internal/audio/status]
 	AUDIO --> OUTPUT[internal/audio/output]
+	AUDIO --> PCM[internal/audio/pcm]
+
+	OUTPUT --> PCM
+	SOURCES --> EFFECTS
+	SOURCES --> TYPES
+	EFFECTS --> TYPES
+	SYNC --> TYPES
+	AMB --> PCM
 
 	TYPES:::leaf
 
@@ -256,13 +265,17 @@ flowchart TD
 	Generate --> RendererOptions[buildAudioRendererOptions]
 	Generate --> Renderer[internal/audio.NewAudioRenderer]
 	Renderer --> RenderPlan[renderPlan compile]
-	RenderPlan --> RenderLoop[AudioRenderer.Render]
-	RenderLoop --> Cue[resolved Cue and channelSignalState]
+	RenderPlan --> RenderLoop[renderRuntime.run]
+	RenderLoop --> Cue[resolved Cue]
+	Cue --> SignalState[channelSignalState]
 	Cue --> Sync[audio/sync runtime apply]
-	Cue --> Effects[audio/effects]
-	RenderLoop --> Ambiance[audio/ambiance]
-	RenderLoop --> Wavetable[audio/wavetable]
-	RenderLoop --> Output[audio/output and audio/pcm]
+	RenderLoop --> Mix[mix and mixChannelSample]
+	SignalState --> Mix
+	Mix --> Sources[audio/sources]
+	Mix --> Effects[audio/effects]
+	Mix --> Ambiance[audio/ambiance]
+	Mix --> Wavetable[audio/wavetable]
+	Mix --> Output[audio/output and audio/pcm]
 ```
 
 At a high level:
@@ -271,7 +284,7 @@ At a high level:
 2. `core` builds renderer options from sequence options and `AppContext` verbosity settings.
 3. `internal/audio` constructs an `AudioRenderer` with waveform tables, ambiance runtime, sync engine, and effect processor.
 4. The renderer compiles a temporal plan and resolves per-period cues before entering the hot render loop.
-5. The render loop applies each cue into mutable channel runtime state and then synthesizes PCM samples.
+5. The render loop applies each cue into mutable channel runtime state and then synthesizes PCM samples through the mix loop.
 6. The mixer and effects path consume compiled signal state instead of recomputing semantics directly from `Period` on every chunk.
 7. The output path writes either WAV or raw PCM.
 
@@ -294,7 +307,7 @@ Today, that migration lives in the `internal/audio/sources` subpackage:
 - isochronic rendering uses a dedicated `isochronicBeatSource`;
 - noise rendering uses a dedicated `noiseSource`;
 - ambiance rendering uses a dedicated `ambianceSource`;
-- other signal families still pass through the legacy mixer path and should be migrated the same way instead of adding new synthesis rules directly inside `mixsources.go`.
+- the remaining legacy aspect is not missing source evaluators, but the runtime model itself: these evaluators are still driven by mutable `Channel` state, `Offset`, and `Increment` inside the current renderer loop.
 
 Within `internal/audio/effects`, the supporting effect processor code is also now split by concern rather than concentrated in one file:
 
