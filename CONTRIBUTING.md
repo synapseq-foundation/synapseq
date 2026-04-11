@@ -31,9 +31,9 @@ SynapSeq is guided by a small set of principles that define both its development
 
 When making changes, use these principles as a filter for API design, user experience, CLI behavior, documentation, and internal implementation choices.
 
-Before making larger code changes, read [ARCHITECTURE.md](ARCHITECTURE.md). It explains the package boundaries, runtime flow, and the architectural invariants contributors are expected to preserve.
+Before making larger code changes, read [ARCHITECTURE.md](docs/ARCHITECTURE.md). It explains the package boundaries, runtime flow, and the architectural invariants contributors are expected to preserve.
 
-If your change touches the `.spsq` or `.spsc` language, parser behavior, timeline rules, or sequence-building semantics, also read [SYNTAX.md](SYNTAX.md).
+If your change touches the `.spsq` or `.spsc` language, parser behavior, timeline rules, or sequence-building semantics, also read [SYNTAX.md](docs/SYNTAX.md).
 
 ### Git Flow Workflow
 

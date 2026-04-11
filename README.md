@@ -42,11 +42,14 @@ After installation, you can run `synapseq -install-file-association` to associat
 
 If you prefer to install manually, download the appropriate archive from the latest GitHub release: [v4.1.0](https://github.com/synapseq-foundation/synapseq/releases/tag/v4.1.0).
 
-If you want to build SynapSeq from source, see the [Compilation Guide](COMPILE.md).
+If you want to build SynapSeq from source, see the [Compilation Guide](docs/COMPILE.md).
 
 ### Usage
 
-After installation on any platform, run `synapseq -manual` to get links to the canonical documentation, or read [SYNTAX](SYNTAX.md), [ARCHITECTURE](ARCHITECTURE.md), and [CONTRIBUTING](CONTRIBUTING.md) in this repository.
+After installation on any platform, run `synapseq -manual` to get links to the canonical documentation, or read the repository docs in this order:
+
+- [SYNTAX](docs/SYNTAX.md)
+- [HOW IT WORKS](docs/HOW_IT_WORKS.md)
 
 ## Go API
 
