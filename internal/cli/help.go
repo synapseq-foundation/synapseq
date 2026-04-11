@@ -21,10 +21,6 @@ import (
 	"github.com/synapseq-foundation/synapseq/v4/internal/info"
 )
 
-const (
-	learnURL = "https://synapseq.org/learn"
-)
-
 type helpExample struct {
 	Label       string
 	CommandText string
@@ -83,7 +79,7 @@ func ShowManual() {
 	writer := color.Output
 
 	fmt.Fprintf(writer, "%s\n\n", Title("SynapSeq Documentation"))
-	fmt.Fprintf(writer, "  %s\n\n", Muted("Use the documents below as the single source of truth."))
+	fmt.Fprintf(writer, "  %s\n\n", Muted("Important links for getting started and understanding SynapSeq"))
 
 	lines := []struct {
 		label string
@@ -91,8 +87,7 @@ func ShowManual() {
 		desc  string
 	}{
 		{label: "Syntax reference", url: syntaxDocURL(), desc: "Full .spsq and .spsc language reference, examples, and semantic rules"},
-		{label: "Architecture guide", url: architectureDocURL(), desc: "Package boundaries, runtime flow, and design trade-offs"},
-		{label: "Contribution guide", url: contributingDocURL(), desc: "How to contribute changes and where to read first"},
+		{label: "How it works", url: howItWorksDocURL(), desc: "Conceptual guide to beats, transitions, steps, noise, and effects"},
 	}
 
 	for _, line := range lines {
@@ -102,12 +97,6 @@ func ShowManual() {
 	}
 
 	fmt.Fprintln(writer)
-	fmt.Fprintf(writer, "  %s\n", Label("Tip"))
-	fmt.Fprintf(writer, "    %s\n", Muted(strings.Join([]string{
-		"Keep -help for command usage,",
-		"use this command for documentation links,",
-		"and treat the repository documents as canonical.",
-	}, " ")))
 }
 
 func writeHelpHeader(writer io.Writer) {
@@ -198,15 +187,11 @@ func docsRef() string {
 }
 
 func syntaxDocURL() string {
-	return info.REPOSITORY + "/blob/" + docsRef() + "/SYNTAX.md"
+	return info.REPOSITORY + "/blob/" + docsRef() + "/docs/SYNTAX.md"
 }
 
-func architectureDocURL() string {
-	return info.REPOSITORY + "/blob/" + docsRef() + "/ARCHITECTURE.md"
-}
-
-func contributingDocURL() string {
-	return info.REPOSITORY + "/blob/" + docsRef() + "/CONTRIBUTING.md"
+func howItWorksDocURL() string {
+	return info.REPOSITORY + "/blob/" + docsRef() + "/docs/HOW_IT_WORKS.md"
 }
 
 func quickStartExamples() []helpExample {
@@ -223,7 +208,7 @@ func nextStepExamples() []helpExample {
 		{CommandText: "synapseq -preview starter.spsq", Description: "Generate starter.html with a visual timeline preview"},
 		{CommandText: "synapseq -play starter.spsq", Description: "Play the sequence directly with ffplay"},
 		{CommandText: "synapseq starter.spsq starter.mp3", Description: "Export to MP3 with ffmpeg"},
-		{CommandText: "synapseq -manual", Description: "Show links to syntax, architecture, and contribution docs"},
+		{CommandText: "synapseq -manual", Description: "Show links to syntax, how-it-works, architecture, and contribution docs"},
 	}
 }
 
@@ -280,7 +265,6 @@ func hubQuickStartCommands() []string {
 
 func moreInfoLinks() []helpLink {
 	return []helpLink{
-		{Target: learnURL, Description: "Learn brainwave entrainment concepts and experiment in the playground"},
 		{Target: "https://synapseq.org", Description: "Visit the website for documentation, examples, and the latest updates"},
 	}
 }
