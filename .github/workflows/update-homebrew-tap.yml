@@ -1,0 +1,133 @@
+name: Update Homebrew Tap
+
+on:
+  release:
+    types:
+      - published
+
+concurrency:
+  group: update-homebrew-tap-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  update-homebrew-tap:
+    if: ${{ github.event.release.draft == false && github.event.release.prerelease == false }}
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    env:
+      TAP_REPOSITORY: synapseq-foundation/homebrew-synapseq
+      TAP_FORMULA_PATH: Formula/synapseq.rb
+
+    steps:
+      - name: Extract release metadata
+        id: meta
+        run: |
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          VERSION="${TAG_NAME#v}"
+
+          echo "tag_name=${TAG_NAME}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve checksums asset
+        id: asset
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const assets = context.payload.release.assets || [];
+            const checksums = assets.find((asset) => asset.name === "checksums.txt");
+
+            if (!checksums) {
+              core.setFailed("checksums.txt was not found in the published release assets.");
+              return;
+            }
+
+            core.setOutput("checksums_url", checksums.browser_download_url);
+
+      - name: Download release checksums
+        run: |
+          curl -fsSL "${{ steps.asset.outputs.checksums_url }}" -o checksums.txt
+          cat checksums.txt
+
+      - name: Extract archive hashes
+        id: hashes
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          linux_amd64_sha="$(awk '/synapseq-v'"${VERSION}"'-linux-amd64\.tar\.gz$/ {print $1}' checksums.txt)"
+          linux_arm64_sha="$(awk '/synapseq-v'"${VERSION}"'-linux-arm64\.tar\.gz$/ {print $1}' checksums.txt)"
+          macos_arm64_sha="$(awk '/synapseq-v'"${VERSION}"'-macos-arm64\.tar\.gz$/ {print $1}' checksums.txt)"
+
+          if [ -z "${linux_amd64_sha}" ] || [ -z "${linux_arm64_sha}" ] || [ -z "${macos_arm64_sha}" ]; then
+            echo "Could not resolve all required SHA256 values from checksums.txt"
+            exit 1
+          fi
+
+          echo "linux_amd64_sha=${linux_amd64_sha}" >> "$GITHUB_OUTPUT"
+          echo "linux_arm64_sha=${linux_arm64_sha}" >> "$GITHUB_OUTPUT"
+          echo "macos_arm64_sha=${macos_arm64_sha}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout Homebrew tap repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.TAP_REPOSITORY }}
+          path: homebrew-synapseq
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+
+      - name: Update formula
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+          LINUX_AMD64_SHA: ${{ steps.hashes.outputs.linux_amd64_sha }}
+          LINUX_ARM64_SHA: ${{ steps.hashes.outputs.linux_arm64_sha }}
+          MACOS_ARM64_SHA: ${{ steps.hashes.outputs.macos_arm64_sha }}
+          FORMULA_PATH: homebrew-synapseq/${{ env.TAP_FORMULA_PATH }}
+        run: |
+          ruby <<'RUBY'
+          path = ENV.fetch("FORMULA_PATH")
+          content = File.read(path)
+
+          replacements = {
+            /version "[^"]+"/ => %{version "#{ENV.fetch("VERSION")}"},
+            /(url "\#\{base_url\}\/synapseq-v\#\{version\}-macos-arm64\.tar\.gz"\n\s+sha256 ")([^"]+)"/ => "\\1#{ENV.fetch("MACOS_ARM64_SHA")}\"",
+            /(url "\#\{base_url\}\/synapseq-v\#\{version\}-linux-arm64\.tar\.gz"\n\s+sha256 ")([^"]+)"/ => "\\1#{ENV.fetch("LINUX_ARM64_SHA")}\"",
+            /(url "\#\{base_url\}\/synapseq-v\#\{version\}-linux-amd64\.tar\.gz"\n\s+sha256 ")([^"]+)"/ => "\\1#{ENV.fetch("LINUX_AMD64_SHA")}\""
+          }
+
+          replacements.each do |pattern, replacement|
+            updated = content.sub(pattern, replacement)
+            raise "Pattern not found: #{pattern}" if updated == content
+
+            content = updated
+          end
+
+          File.write(path, content)
+          RUBY
+
+      - name: Show formula diff
+        working-directory: homebrew-synapseq
+        run: |
+          git diff -- Formula/synapseq.rb
+
+      - name: Create pull request in Homebrew tap
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-synapseq
+          commit-message: "chore: update synapseq formula to ${{ steps.meta.outputs.tag_name }}"
+          branch: automation/homebrew-${{ steps.meta.outputs.tag_name }}
+          delete-branch: false
+          base: main
+          title: "chore: update SynapSeq formula to ${{ steps.meta.outputs.tag_name }}"
+          body: |
+            Updates `Formula/synapseq.rb` after publishing `${{ steps.meta.outputs.tag_name }}`.
+
+            Changes:
+            - bumps `version` to `${{ steps.meta.outputs.version }}`
+            - refreshes SHA256 for `macos-arm64`
+            - refreshes SHA256 for `linux-arm64`
+            - refreshes SHA256 for `linux-amd64`
+
+            Source release:
+            - ${{ github.event.release.html_url }}
