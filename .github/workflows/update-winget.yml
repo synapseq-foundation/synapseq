@@ -4,14 +4,20 @@ on:
   release:
     types:
       - published
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: Release tag to process, for example v4.1.0
+        required: true
+        type: string
 
 concurrency:
-  group: update-winget-${{ github.event.release.tag_name }}
+  group: update-winget-${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.event.release.tag_name }}
   cancel-in-progress: false
 
 jobs:
   update-winget:
-    if: ${{ github.event.release.draft == false && github.event.release.prerelease == false }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.release.draft == false && github.event.release.prerelease == false) }}
     runs-on: windows-latest
 
     permissions:
@@ -25,7 +31,13 @@ jobs:
         id: meta
         shell: pwsh
         run: |
-          $tag = "${{ github.event.release.tag_name }}"
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $tag = "${{ inputs.tag_name }}"
+          }
+          else {
+            $tag = "${{ github.event.release.tag_name }}"
+          }
+
           $version = $tag.TrimStart('v')
           $releaseUrl = "https://github.com/${{ github.repository }}/releases/download/$tag"
           $x64Url = "$releaseUrl/synapseq-$tag-windows-amd64.zip"
@@ -39,11 +51,19 @@ jobs:
       - name: Validate release assets
         uses: actions/github-script@v7
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const assets = (context.payload.release.assets || []).map((asset) => asset.name);
+            const tag = `${{ toJSON(steps.meta.outputs.tag) }}`;
+            const release = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag,
+            });
+
+            const assets = (release.data.assets || []).map((asset) => asset.name);
             const expected = [
-              `synapseq-${context.payload.release.tag_name}-windows-amd64.zip`,
-              `synapseq-${context.payload.release.tag_name}-windows-arm64.zip`,
+              `synapseq-${tag}-windows-amd64.zip`,
+              `synapseq-${tag}-windows-arm64.zip`,
             ];
 
             const missing = expected.filter((name) => !assets.includes(name));
