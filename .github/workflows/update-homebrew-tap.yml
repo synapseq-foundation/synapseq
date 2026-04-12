@@ -51,10 +51,12 @@ jobs:
       - name: Resolve checksums asset
         id: asset
         uses: actions/github-script@v7
+        env:
+          RELEASE_API_URL: ${{ steps.meta.outputs.release_api_url }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const releaseUrl = `${{ toJSON(steps.meta.outputs.release_api_url) }}`;
+            const releaseUrl = process.env.RELEASE_API_URL;
             const response = await github.request(`GET ${releaseUrl}`);
             const assets = response.data.assets || [];
             const checksums = assets.find((asset) => asset.name === "checksums.txt");
