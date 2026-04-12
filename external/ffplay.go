@@ -52,20 +52,24 @@ func (fp *FFplay) Play(loadedCtx *synapseq.LoadedContext) error {
 		return fmt.Errorf("loaded context cannot be nil")
 	}
 
-	ffplay := fp.Command(
-		"-nodisp",
-		"-hide_banner",
-		"-loglevel", "error",
-		"-autoexit",
-		"-f", "s16le",
-		"-ch_layout", "stereo",
-		"-ar", strconv.Itoa(loadedCtx.SampleRate()),
-		"-i", "pipe:0",
-	)
+	ffplay := fp.Command(buildPlayArgs(loadedCtx.SampleRate())...)
 
 	if err := startPipeCmd(ffplay, loadedCtx); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func buildPlayArgs(sampleRate int) []string {
+	return []string{
+		"-nodisp",
+		"-hide_banner",
+		"-loglevel", "error",
+		"-autoexit",
+		"-f", "s16le",
+		"-ch_layout", "stereo",
+		"-ar", strconv.Itoa(sampleRate),
+		"-i", "pipe:0",
+	}
 }

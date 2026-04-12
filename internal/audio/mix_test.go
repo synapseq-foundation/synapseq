@@ -15,6 +15,9 @@ import (
 	"math"
 	"testing"
 
+	amb "github.com/synapseq-foundation/synapseq/v4/internal/audio/ambiance"
+	efx "github.com/synapseq-foundation/synapseq/v4/internal/audio/effects"
+	wt "github.com/synapseq-foundation/synapseq/v4/internal/audio/wavetable"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -108,7 +111,7 @@ func TestAudioRendererMix_ModulationAffectsStereoWithSharedPhase(ts *testing.T) 
 
 	baseSample := renderer.channels[0].Amplitude[0] * renderer.waveTables[int(t.WaveformSawtooth)][1]
 	modOffset := renderer.channels[0].Effect.Increment
-	modFactor := renderer.calcModulationFactor(&renderer.channels[0], modOffset)
+	modFactor := renderer.effectProcessor.CalcModulationFactor(&renderer.channels[0], modOffset)
 	gain := 0.3 + 0.7*modFactor
 	expected := clampPCM16(int(math.Round(float64(baseSample)*gain)) >> audioBitShift)
 
@@ -137,8 +140,8 @@ func TestAudioRendererMix_SawtoothModulationUsesThresholdedCurve(ts *testing.T) 
 	channel.WaveformEnd = t.WaveformSawtooth
 	channel.Effect.Offset = int(t.SineTableSize/2) * t.PhasePrecision
 
-	got := renderer.applyModulationToCurrentPhase(channel, 1000)
-	modFactor := renderer.calcModulationFactor(channel, channel.Effect.Offset)
+	got := renderer.effectProcessor.ApplyModulationToCurrentPhase(channel, channel.Track.Effect, efx.WaveformMorphFromChannel(channel), 1000)
+	modFactor := renderer.effectProcessor.CalcModulationFactor(channel, channel.Effect.Offset)
 	expected := int(math.Round(1000 * (0.3 + 0.7*modFactor)))
 	if got != expected {
 		ts.Fatalf("unexpected sawtooth modulation output for current curve: got %d, want %d", got, expected)
@@ -164,7 +167,7 @@ func TestAudioRendererMix_PureToneMorphsBetweenWaveforms(ts *testing.T) {
 
 	sine := float64(renderer.waveTables[int(t.WaveformSine)][1])
 	square := float64(renderer.waveTables[int(t.WaveformSquare)][1])
-	blended := lerpFloat64(sine, square, 0.25)
+	blended := sine + (square-sine)*0.25
 	expectedRaw := int(math.Round(float64(renderer.channels[0].Amplitude[0]) * blended))
 	expected := clampPCM16(expectedRaw >> audioBitShift)
 
@@ -189,7 +192,7 @@ func TestAudioRendererMix_ModulationSlewsAbruptSquareGainChanges(ts *testing.T) 
 	channel.Effect.ModulationGain = 1
 	channel.Effect.ModulationInitialized = true
 
-	got := renderer.applyModulationToCurrentPhase(channel, 1000)
+	got := renderer.effectProcessor.ApplyModulationToCurrentPhase(channel, channel.Track.Effect, efx.WaveformMorphFromChannel(channel), 1000)
 	expectedFloor := int(1000 * 0.3)
 	if got <= expectedFloor || got >= 1000 {
 		ts.Fatalf("unexpected slewed modulation output: got %d, want between %d and 1000", got, expectedFloor)
@@ -216,7 +219,7 @@ func TestAudioRendererMix_PanUsesWaveformAndSlewsSquareSwitches(ts *testing.T) {
 	channel.Effect.PanInitialized = true
 	channel.Effect.Offset = int(t.SineTableSize/4) * t.PhasePrecision
 
-	left, right := renderer.applyPan(channel, 1000, 1000)
+	left, right := renderer.effectProcessor.ApplyPan(channel, 1000, 1000)
 	if left <= 0 || right <= 0 {
 		ts.Fatalf("unexpected hard-switched pan output: got [%d %d]", left, right)
 	}
@@ -233,8 +236,9 @@ func TestAudioRendererMix_PanUsesWaveformAndSlewsSquareSwitches(ts *testing.T) {
 
 func TestAudioRendererMix_AmbianceUsesPreparedStereoBuffer(ts *testing.T) {
 	renderer := newMixTestRenderer()
-	renderer.ambianceSamplesByIndex = [][]int{{20000, -10000}}
-	renderer.channelAmbianceIndex[0] = 0
+	renderer.ambianceState = amb.NewTestRuntime(1)
+	renderer.ambianceState.SetChannelBuffer(0, []int{20000, -10000})
+	renderer.ambianceState.SetChannelIndex(0, 0)
 	renderer.channels[0] = t.Channel{
 		Track: t.Track{
 			Type: t.TrackAmbiance,
@@ -255,17 +259,14 @@ func TestAudioRendererMix_AmbianceUsesPreparedStereoBuffer(ts *testing.T) {
 
 func newMixTestRenderer() *AudioRenderer {
 	renderer := &AudioRenderer{
-		waveTables:             InitWaveformTables(),
-		noiseGenerator:         NewNoiseGenerator(),
-		ambianceSamplesByIndex: [][]int{},
+		waveTables:       wt.Init(),
+		noiseGenerator:   NewNoiseGenerator(),
+		effectProcessor:  efx.NewProcessor(44100, wt.Init()),
+		ambianceState:    amb.NewTestRuntime(0),
 		AudioRendererOptions: &AudioRendererOptions{
 			SampleRate: 44100,
 			Volume:     100,
 		},
-	}
-
-	for i := range renderer.channelAmbianceIndex {
-		renderer.channelAmbianceIndex[i] = -1
 	}
 
 	return renderer

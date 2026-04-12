@@ -25,27 +25,6 @@ import (
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
-type constStreamer struct {
-	framesLeft int
-	val        float64
-}
-
-func (cs *constStreamer) Stream(samples [][2]float64) (n int, ok bool) {
-	n = len(samples)
-	if n > cs.framesLeft {
-		n = cs.framesLeft
-	}
-	for i := 0; i < n; i++ {
-		samples[i][0] = cs.val
-		samples[i][1] = cs.val
-	}
-	cs.framesLeft -= n
-	ok = cs.framesLeft > 0
-	return
-}
-
-func (cs *constStreamer) Err() error { return nil }
-
 func TestAudioRenderer_RenderWav_Integration(ts *testing.T) {
 	// Create test periods (2 seconds total) with different track types
 	var p0, p1, p2 t.Period

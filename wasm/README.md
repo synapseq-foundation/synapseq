@@ -321,6 +321,11 @@ Callback payload:
 
 - `{ error: Error }`
 
+Notes:
+
+- when the underlying WASM bridge fails during generation, the runtime invokes the error callback before the corresponding Promise is rejected;
+- callers should treat `onerror` as a notification hook and still handle Promise rejection from `play()`.
+
 ## Input Support
 
 Supported input:
@@ -346,6 +351,12 @@ Unsupported input:
 - Audio generation runs in a `Worker`.
 - PCM chunks are streamed back to the main thread.
 - Playback uses `AudioContext` and `AudioWorklet`.
+
+### WASM bridge error model
+
+- the low-level Go export receives `onChunk`, `onDone`, and `onError` callbacks;
+- sequence loading, renderer creation, encoding failures, and recovered panics are forwarded through `onError`;
+- the same fatal condition also rejects the Promise returned by the low-level bridge call.
 
 ### Sample rate handling
 

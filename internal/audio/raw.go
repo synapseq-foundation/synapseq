@@ -12,42 +12,21 @@
 package audio
 
 import (
-	"bufio"
 	"io"
 
+	audiooutput "github.com/synapseq-foundation/synapseq/v4/internal/audio/output"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // RenderRaw renders the audio to a raw PCM stream (16-bit little-endian)
 func (r *AudioRenderer) RenderRaw(w io.Writer) error {
-	bw := bufio.NewWriter(w)
-	// 2 bytes per sample (16-bit)
-	out := make([]byte, t.BufferSize*audioChannels*2)
+	rawWriter := audiooutput.NewRawPCMWriter(w, t.BufferSize*audioChannels)
 
 	err := r.Render(func(samples []int) error {
-		need := len(samples) * 2
-		if cap(out) < need {
-			out = make([]byte, need)
-		}
-		b := out[:need]
-
-		j := 0
-		for _, s := range samples {
-			if s > audioMaxValue {
-				s = audioMaxValue
-			} else if s < audioMinValue {
-				s = audioMinValue
-			}
-			v := int16(s)
-			b[j] = byte(v)        // LSB
-			b[j+1] = byte(v >> 8) // MSB
-			j += 2
-		}
-		_, err := bw.Write(b)
-		return err
+		return rawWriter.WriteSamples(samples)
 	})
 	if err != nil {
 		return err
 	}
-	return bw.Flush()
+	return rawWriter.Flush()
 }

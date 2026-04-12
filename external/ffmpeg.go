@@ -16,7 +16,9 @@ package external
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
 )
@@ -47,14 +49,19 @@ func NewFFmpegUnsafe(path string) *FFmpeg {
 	return &FFmpeg{baseUtility: baseUtility{path: path}}
 }
 
-// Convert encodes streaming PCM into the specified format using ffmpeg.
-func (fm *FFmpeg) Convert(loadedCtx *synapseq.LoadedContext, outputFile string, format string) error {
+// Convert encodes streaming PCM into the output format inferred from the file extension.
+func (fm *FFmpeg) Convert(loadedCtx *synapseq.LoadedContext, outputFile string) error {
 	if loadedCtx == nil {
 		return fmt.Errorf("loaded context cannot be nil")
 	}
 
 	if outputFile == "" {
 		return fmt.Errorf("output file cannot be empty")
+	}
+
+	format, err := outputFormatFromFileName(outputFile)
+	if err != nil {
+		return err
 	}
 
 	// Remove existing output file if it exists
@@ -64,34 +71,7 @@ func (fm *FFmpeg) Convert(loadedCtx *synapseq.LoadedContext, outputFile string, 
 		}
 	}
 
-	// Base ffmpeg arguments
-	args := []string{
-		"-hide_banner",
-		"-loglevel", "error",
-		"-f", "s16le",
-		"-ch_layout", "stereo",
-		"-ar", strconv.Itoa(loadedCtx.SampleRate()),
-		"-i", "pipe:0",
-	}
-
-	// Determine format and corresponding options
-	switch format {
-	case "mp3":
-		args = append(args, []string{
-			"-c:a", "libmp3lame",
-			"-b:a", "320k",
-			"-f", "mp3",
-		}...)
-	// TODO: more formats can be added here
-	// BUT for brainwave entrainment, only MP3 is currently relevant
-	default:
-		return fmt.Errorf("unsupported format: %s", format)
-	}
-
-	args = append(args, []string{
-		"-vn",
-		outputFile,
-	}...)
+	args := buildConvertArgs(loadedCtx.SampleRate(), outputFile, format)
 
 	ffmpeg := fm.Command(args...)
 	if err := startPipeCmd(ffmpeg, loadedCtx); err != nil {
@@ -99,4 +79,45 @@ func (fm *FFmpeg) Convert(loadedCtx *synapseq.LoadedContext, outputFile string, 
 	}
 
 	return nil
+}
+
+func outputFormatFromFileName(outputFile string) (string, error) {
+	extension := strings.ToLower(filepath.Ext(outputFile))
+	if extension == "" {
+		return "", fmt.Errorf("output file must include an extension to determine format")
+	}
+
+	switch extension {
+	case ".mp3":
+		return "mp3", nil
+	default:
+		return "", fmt.Errorf("unsupported output format: %s", extension)
+	}
+}
+
+func buildConvertArgs(sampleRate int, outputFile, format string) []string {
+	args := []string{
+		"-hide_banner",
+		"-loglevel", "error",
+		"-f", "s16le",
+		"-ch_layout", "stereo",
+		"-ar", strconv.Itoa(sampleRate),
+		"-i", "pipe:0",
+	}
+
+	switch format {
+	case "mp3":
+		args = append(args, []string{
+			"-c:a", "libmp3lame",
+			"-b:a", "320k",
+			"-f", "mp3",
+		}...)
+	}
+
+	args = append(args, []string{
+		"-vn",
+		outputFile,
+	}...)
+
+	return args
 }

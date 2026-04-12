@@ -31,23 +31,6 @@ func (dt HubDependencyType) String() string {
 	return string(dt)
 }
 
-// HubActionTracking represents the type of action being tracked
-type HubActionTracking string
-
-const (
-	// HubActionTrackingGet represents the "get" action being tracked
-	HubActionTrackingGet HubActionTracking = "get"
-	// HubActionTrackingInfo represents the "info" action being tracked
-	HubActionTrackingInfo HubActionTracking = "info"
-	// HubActionTrackingDownload represents the "download" action being tracked
-	HubActionTrackingDownload HubActionTracking = "download"
-)
-
-// String returns the string representation of the HubActionTracking
-func (at HubActionTracking) String() string {
-	return string(at)
-}
-
 // HubDependency represents a dependency for a Hub entry
 type HubDependency struct {
 	Type        HubDependencyType `json:"type"`

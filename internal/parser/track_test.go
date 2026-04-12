@@ -63,59 +63,42 @@ func TestHasTrack(ts *testing.T) {
 }
 
 func TestParseTrack_Tones(ts *testing.T) {
-	trs := []*t.Track{
-		{
-			Type:      t.TrackBinauralBeat,
-			Carrier:   300,
-			Resonance: 10,
-			Amplitude: t.AmplitudePercentToRaw(15),
-		},
-		{
-			Type:      t.TrackMonauralBeat,
-			Carrier:   440,
-			Resonance: 11,
-			Amplitude: t.AmplitudePercentToRaw(20),
-		},
-		{
-			Type:      t.TrackIsochronicBeat,
-			Carrier:   220,
-			Resonance: 8,
-			Amplitude: t.AmplitudePercentToRaw(5),
-		},
-		{
-			Type:      t.TrackBinauralBeat,
-			Carrier:   300,
-			Resonance: 10,
-			Amplitude: t.AmplitudePercentToRaw(15),
-			Waveform:  t.WaveformTriangle,
-		},
-		{
-			Type:      t.TrackPureTone,
-			Carrier:   350,
-			Amplitude: t.AmplitudePercentToRaw(10),
-			Waveform:  t.WaveformSquare,
-		},
+	trs := []*ParsedTrackDeclaration{
+		{Type: t.TrackBinauralBeat, Carrier: 300, Resonance: 10, AmplitudePercent: 15, Waveform: t.WaveformSine},
+		{Type: t.TrackMonauralBeat, Carrier: 440, Resonance: 11, AmplitudePercent: 20, Waveform: t.WaveformSine},
+		{Type: t.TrackIsochronicBeat, Carrier: 220, Resonance: 8, AmplitudePercent: 5, Waveform: t.WaveformSine},
+		{Type: t.TrackBinauralBeat, Carrier: 300, Resonance: 10, AmplitudePercent: 15, Waveform: t.WaveformTriangle},
+		{Type: t.TrackPureTone, Carrier: 350, AmplitudePercent: 10, Waveform: t.WaveformSquare},
 	}
 
 	// Helper to format track without extra waveform
 	fmtLine := func(tr *t.Track) string {
 		return strings.Join(strings.Fields(tr.String())[2:], " ")
 	}
+	toTrack := func(decl *ParsedTrackDeclaration) *t.Track {
+		return &t.Track{
+			Type:      decl.Type,
+			Carrier:   decl.Carrier,
+			Resonance: decl.Resonance,
+			Amplitude: t.AmplitudePercentToRaw(decl.AmplitudePercent),
+			Waveform:  decl.Waveform,
+		}
+	}
 
 	tests := []struct {
 		line      string
-		wantTrack t.Track
+		wantTrack ParsedTrackDeclaration
 	}{
-		{fmtLine(trs[0]), *trs[0]},
-		{fmtLine(trs[1]), *trs[1]},
-		{fmtLine(trs[2]), *trs[2]},
-		{trs[3].String(), *trs[3]},
-		{trs[4].String(), *trs[4]},
+		{fmtLine(toTrack(trs[0])), *trs[0]},
+		{fmtLine(toTrack(trs[1])), *trs[1]},
+		{fmtLine(toTrack(trs[2])), *trs[2]},
+		{toTrack(trs[3]).String(), *trs[3]},
+		{toTrack(trs[4]).String(), *trs[4]},
 	}
 
 	for i, tt := range tests {
 		ctx := NewTextParser(tt.line)
-		tr, err := ctx.ParseTrack()
+		tr, err := ctx.ParseTrackDeclaration()
 		if err != nil {
 			ts.Errorf("For line '%s', unexpected error: %v", tt.line, err)
 			continue
@@ -127,33 +110,27 @@ func TestParseTrack_Tones(ts *testing.T) {
 }
 
 func TestParseTrack_Noise(ts *testing.T) {
-	trs := []*t.Track{
-		{
-			Type:      t.TrackWhiteNoise,
-			Amplitude: t.AmplitudePercentToRaw(5),
-		},
-		{
-			Type:      t.TrackPinkNoise,
-			Amplitude: t.AmplitudePercentToRaw(40),
-		},
-		{
-			Type:      t.TrackBrownNoise,
-			Amplitude: t.AmplitudePercentToRaw(15),
-		},
+	trs := []*ParsedTrackDeclaration{
+		{Type: t.TrackWhiteNoise, AmplitudePercent: 5, Waveform: t.WaveformSine},
+		{Type: t.TrackPinkNoise, AmplitudePercent: 40, Waveform: t.WaveformSine},
+		{Type: t.TrackBrownNoise, AmplitudePercent: 15, Waveform: t.WaveformSine},
+	}
+	toTrack := func(decl *ParsedTrackDeclaration) *t.Track {
+		return &t.Track{Type: decl.Type, Amplitude: t.AmplitudePercentToRaw(decl.AmplitudePercent), Waveform: decl.Waveform}
 	}
 
 	tests := []struct {
 		line      string
-		wantTrack t.Track
+		wantTrack ParsedTrackDeclaration
 	}{
-		{trs[0].String(), *trs[0]},
-		{trs[1].String(), *trs[1]},
-		{trs[2].String(), *trs[2]},
+		{toTrack(trs[0]).String(), *trs[0]},
+		{toTrack(trs[1]).String(), *trs[1]},
+		{toTrack(trs[2]).String(), *trs[2]},
 	}
 
 	for _, tt := range tests {
 		ctx := NewTextParser(tt.line)
-		tr, err := ctx.ParseTrack()
+		tr, err := ctx.ParseTrackDeclaration()
 		if err != nil {
 			ts.Errorf("For line '%s', unexpected error: %v", tt.line, err)
 			continue
@@ -167,73 +144,67 @@ func TestParseTrack_Noise(ts *testing.T) {
 func TestParseTrack_Ambiance(ts *testing.T) {
 	tests := []struct {
 		line      string
-		wantTrack t.Track
+		wantTrack ParsedTrackDeclaration
 	}{
 		{
 			line: "ambiance rain amplitude 50",
-			wantTrack: t.Track{
-				Type:         t.TrackAmbiance,
-				AmbianceName: "rain",
-				Amplitude:    t.AmplitudePercentToRaw(50),
-				Waveform:     t.WaveformSine,
+			wantTrack: ParsedTrackDeclaration{
+				Type:             t.TrackAmbiance,
+				AmbianceName:     "rain",
+				AmplitudePercent: 50,
+				Waveform:         t.WaveformSine,
 			},
 		},
 		{
 			line: "ambiance beach effect pan 10 intensity 75 amplitude 50",
-			wantTrack: t.Track{
-				Type:         t.TrackAmbiance,
-				AmbianceName: "beach",
-				Effect: t.Effect{
-					Type:      t.EffectPan,
-					Value:     10,
-					Intensity: t.IntensityPercentToRaw(75),
-				},
-				Amplitude: t.AmplitudePercentToRaw(50),
-				Waveform:  t.WaveformSine,
+			wantTrack: ParsedTrackDeclaration{
+				Type:                   t.TrackAmbiance,
+				AmbianceName:           "beach",
+				EffectType:             t.EffectPan,
+				EffectValue:            10,
+				EffectIntensityPercent: 75,
+				AmplitudePercent:       50,
+				Waveform:               t.WaveformSine,
 			},
 		},
 		{
 			line: "ambiance music effect modulation 2.5 intensity 60 amplitude 40",
-			wantTrack: t.Track{
-				Type:         t.TrackAmbiance,
-				AmbianceName: "music",
-				Effect: t.Effect{
-					Type:      t.EffectModulation,
-					Value:     2.5,
-					Intensity: t.IntensityPercentToRaw(60),
-				},
-				Amplitude: t.AmplitudePercentToRaw(40),
-				Waveform:  t.WaveformSine,
+			wantTrack: ParsedTrackDeclaration{
+				Type:                   t.TrackAmbiance,
+				AmbianceName:           "music",
+				EffectType:             t.EffectModulation,
+				EffectValue:            2.5,
+				EffectIntensityPercent: 60,
+				AmplitudePercent:       40,
+				Waveform:               t.WaveformSine,
 			},
 		},
 		{
 			line: "waveform square ambiance river effect modulation 2.5 intensity 60 amplitude 40",
-			wantTrack: t.Track{
-				Type:         t.TrackAmbiance,
-				AmbianceName: "river",
-				Effect: t.Effect{
-					Type:      t.EffectModulation,
-					Value:     2.5,
-					Intensity: t.IntensityPercentToRaw(60),
-				},
-				Amplitude: t.AmplitudePercentToRaw(40),
-				Waveform:  t.WaveformSquare,
+			wantTrack: ParsedTrackDeclaration{
+				Type:                   t.TrackAmbiance,
+				AmbianceName:           "river",
+				EffectType:             t.EffectModulation,
+				EffectValue:            2.5,
+				EffectIntensityPercent: 60,
+				AmplitudePercent:       40,
+				Waveform:               t.WaveformSquare,
 			},
 		},
 		{
 			line: "ambiance stream_01 amplitude 33",
-			wantTrack: t.Track{
-				Type:         t.TrackAmbiance,
-				AmbianceName: "stream_01",
-				Amplitude:    t.AmplitudePercentToRaw(33),
-				Waveform:     t.WaveformSine,
+			wantTrack: ParsedTrackDeclaration{
+				Type:             t.TrackAmbiance,
+				AmbianceName:     "stream_01",
+				AmplitudePercent: 33,
+				Waveform:         t.WaveformSine,
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		ctx := NewTextParser(tt.line)
-		tr, err := ctx.ParseTrack()
+		tr, err := ctx.ParseTrackDeclaration()
 		if err != nil {
 			ts.Errorf("For line '%s', unexpected error: %v", tt.line, err)
 			continue
@@ -252,14 +223,12 @@ func TestParseTrack_Errors(ts *testing.T) {
 		"  ambiance spin 200 rate five intensity 75 amplitude 50",
 		"  ambiance pulse effect modulation 2.5 intensity sixty amplitude 40",
 		"  ambiance amplitude 50 extra",
-		"  tone 300 binaural 10 amplitude 120",
-		"  ambiance pulse effect modulation 2.5 intensity 150 amplitude 40",
 		"  unknown something",
 	}
 
 	for _, line := range tests {
 		ctx := NewTextParser(line)
-		_, err := ctx.ParseTrack()
+		_, err := ctx.ParseTrackDeclaration()
 		if err == nil {
 			ts.Errorf("For line '%s', expected error but got none", line)
 		}
@@ -269,7 +238,7 @@ func TestParseTrack_Errors(ts *testing.T) {
 func TestParseTrack_TypoDiagnostic(ts *testing.T) {
 	ctx := NewTextParser("tone 300 binaual 10 amplitude 10")
 
-	_, err := ctx.ParseTrack()
+	_, err := ctx.ParseTrackDeclaration()
 	if err == nil {
 		ts.Fatal("expected typo diagnostic")
 	}

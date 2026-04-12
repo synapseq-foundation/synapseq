@@ -15,8 +15,6 @@ package parser
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -46,13 +44,6 @@ func TestHasOption(ts *testing.T) {
 }
 
 func TestParseOption(ts *testing.T) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		ts.Fatalf("cannot get current working directory: %v", err)
-	}
-
-	basePath := filepath.Dir(cwd)
-
 	tests := []struct {
 		line     string
 		expected *t.ParseOptions
@@ -67,18 +58,18 @@ func TestParseOption(ts *testing.T) {
 		},
 		{
 			fmt.Sprintf("%s%s rain testdata/noise", t.KeywordOption, t.KeywordOptionAmbiance),
-			&t.ParseOptions{Values: map[string]string{}, Ambiance: map[string]string{"rain": filepath.Clean(filepath.Join(basePath, "testdata", "noise.wav"))}, Extends: []string{}},
+			&t.ParseOptions{Values: map[string]string{}, Ambiance: map[string]string{"rain": "testdata/noise"}, Extends: []string{}},
 		},
 		{
 			fmt.Sprintf("%s%s shared/base", t.KeywordOption, t.KeywordOptionExtends),
-			&t.ParseOptions{Values: map[string]string{}, Ambiance: map[string]string{}, Extends: []string{filepath.Clean(filepath.Join(basePath, "shared", "base.spsc"))}},
+			&t.ParseOptions{Values: map[string]string{}, Ambiance: map[string]string{}, Extends: []string{"shared/base"}},
 		},
 	}
 
 	for _, test := range tests {
 		ctx := NewTextParser(test.line)
 
-		parsed, err := ctx.ParseOption(basePath)
+		parsed, err := ctx.ParseOption("")
 		if err != nil {
 			ts.Errorf("For line '%s', unexpected error: %v", test.line, err)
 			continue
@@ -92,33 +83,11 @@ func TestParseOption(ts *testing.T) {
 }
 
 func TestParseOptionErrors(ts *testing.T) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		ts.Fatalf("cannot get current working directory: %v", err)
-	}
-
-	basePath := filepath.Dir(cwd)
-
 	tests := []struct {
 		name        string
 		line        string
 		wantErrText string
 	}{
-		{
-			name:        "ambiance path with extension rejected",
-			line:        fmt.Sprintf("%s%s rain audio/river.wav", t.KeywordOption, t.KeywordOptionAmbiance),
-			wantErrText: "ambiance local path must not include file extension",
-		},
-		{
-			name:        "extends path with extension rejected",
-			line:        fmt.Sprintf("%s%s shared/base.spsc", t.KeywordOption, t.KeywordOptionExtends),
-			wantErrText: "extends local path must not include file extension",
-		},
-		{
-			name:        "absolute path rejected",
-			line:        fmt.Sprintf("%s%s rain /tmp/river", t.KeywordOption, t.KeywordOptionAmbiance),
-			wantErrText: "absolute paths are not allowed",
-		},
 		{
 			name:        "unexpected extra token after volume",
 			line:        fmt.Sprintf("%svolume 50 extra", t.KeywordOption),
@@ -130,7 +99,7 @@ func TestParseOptionErrors(ts *testing.T) {
 		ts.Run(test.name, func(ts *testing.T) {
 			ctx := NewTextParser(test.line)
 
-			_, err := ctx.ParseOption(basePath)
+				_, err := ctx.ParseOption("")
 			if err == nil {
 				ts.Fatalf("expected error, got nil")
 			}
@@ -143,15 +112,9 @@ func TestParseOptionErrors(ts *testing.T) {
 }
 
 func TestParseOptionTypoDiagnostic(ts *testing.T) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		ts.Fatalf("cannot get current working directory: %v", err)
-	}
-
-	basePath := filepath.Dir(cwd)
 	ctx := NewTextParser("@volum 50")
 
-	_, err = ctx.ParseOption(basePath)
+	_, err := ctx.ParseOption("")
 	if err == nil {
 		ts.Fatal("expected option diagnostic")
 	}
