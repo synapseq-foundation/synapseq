@@ -18,82 +18,191 @@ concurrency:
 jobs:
   update-winget:
     if: ${{ github.event_name == 'workflow_dispatch' || (github.event.release.draft == false && github.event.release.prerelease == false) }}
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     permissions:
       contents: read
 
     env:
       PACKAGE_IDENTIFIER: ruanklein.synapseq
+      WINGET_OWNER: ruanklein
+      WINGET_FORK_REPOSITORY: ruanklein/winget-pkgs
+      WINGET_UPSTREAM_REPOSITORY: microsoft/winget-pkgs
+      WINGET_MANIFEST_ROOT: manifests/r/ruanklein/synapseq
 
     steps:
-      - name: Extract release metadata
+      - name: Resolve target release
         id: meta
-        shell: pwsh
         run: |
-          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
-            $tag = "${{ inputs.tag_name }}"
-          }
-          else {
-            $tag = "${{ github.event.release.tag_name }}"
-          }
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG_NAME="${{ inputs.tag_name }}"
+          else
+            TAG_NAME="${{ github.event.release.tag_name }}"
+          fi
 
-          $version = $tag.TrimStart('v')
-          $releaseUrl = "https://github.com/${{ github.repository }}/releases/download/$tag"
-          $x64Url = "$releaseUrl/synapseq-$tag-windows-amd64.zip"
-          $arm64Url = "$releaseUrl/synapseq-$tag-windows-arm64.zip"
+          VERSION="${TAG_NAME#v}"
+          RELEASE_API_URL="https://api.github.com/repos/${{ github.repository }}/releases/tags/${TAG_NAME}"
+          RELEASE_BASE_URL="https://github.com/${{ github.repository }}/releases/download/${TAG_NAME}"
+          BRANCH_NAME="ruanklein-synapseq-${VERSION}"
 
-          "tag=$tag" >> $env:GITHUB_OUTPUT
-          "version=$version" >> $env:GITHUB_OUTPUT
-          "x64_url=$x64Url" >> $env:GITHUB_OUTPUT
-          "arm64_url=$arm64Url" >> $env:GITHUB_OUTPUT
+          echo "tag_name=${TAG_NAME}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "release_api_url=${RELEASE_API_URL}" >> "$GITHUB_OUTPUT"
+          echo "release_base_url=${RELEASE_BASE_URL}" >> "$GITHUB_OUTPUT"
+          echo "branch_name=${BRANCH_NAME}" >> "$GITHUB_OUTPUT"
 
-      - name: Validate release assets
+      - name: Resolve checksums asset
+        id: asset
         uses: actions/github-script@v7
         env:
-          RELEASE_TAG: ${{ steps.meta.outputs.tag }}
+          RELEASE_API_URL: ${{ steps.meta.outputs.release_api_url }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const tag = process.env.RELEASE_TAG;
-            const release = await github.rest.repos.getReleaseByTag({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag,
-            });
+            const releaseUrl = process.env.RELEASE_API_URL;
+            const response = await github.request(`GET ${releaseUrl}`);
+            const assets = response.data.assets || [];
+            const checksums = assets.find((asset) => asset.name === "checksums.txt");
 
-            const assets = (release.data.assets || []).map((asset) => asset.name);
-            const expected = [
-              `synapseq-${tag}-windows-amd64.zip`,
-              `synapseq-${tag}-windows-arm64.zip`,
-            ];
-
-            const missing = expected.filter((name) => !assets.includes(name));
-            if (missing.length > 0) {
-              core.setFailed(`Missing release assets: ${missing.join(", ")}`);
+            if (!checksums) {
+              core.setFailed("checksums.txt was not found in the published release assets.");
+              return;
             }
 
-      - name: Setup .NET runtime
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 6.0.x
+            core.setOutput("checksums_url", checksums.browser_download_url);
 
-      - name: Download wingetcreate
-        shell: pwsh
+      - name: Download release checksums
         run: |
-          Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
+          curl -fsSL "${{ steps.asset.outputs.checksums_url }}" -o checksums.txt
+          cat checksums.txt
 
-      - name: Update WinGet manifest and submit PR
-        shell: pwsh
+      - name: Extract Windows archive hashes
+        id: hashes
         env:
-          WINGET_CREATE_GITHUB_TOKEN: ${{ secrets.WINGET_CREATE_GITHUB_TOKEN }}
+          VERSION: ${{ steps.meta.outputs.version }}
         run: |
-          if (-not $env:WINGET_CREATE_GITHUB_TOKEN) {
-            throw "The WINGET_CREATE_GITHUB_TOKEN secret is not configured."
-          }
+          windows_amd64_sha="$(awk '/synapseq-v'"${VERSION}"'-windows-amd64\.zip$/ {print $1}' checksums.txt)"
+          windows_arm64_sha="$(awk '/synapseq-v'"${VERSION}"'-windows-arm64\.zip$/ {print $1}' checksums.txt)"
 
-          ./wingetcreate.exe update $env:PACKAGE_IDENTIFIER `
-            --version "${{ steps.meta.outputs.version }}" `
-            --urls "${{ steps.meta.outputs.x64_url }}|x64" "${{ steps.meta.outputs.arm64_url }}|arm64" `
-            --token $env:WINGET_CREATE_GITHUB_TOKEN `
-            --submit
+          if [ -z "${windows_amd64_sha}" ] || [ -z "${windows_arm64_sha}" ]; then
+            echo "Could not resolve Windows SHA256 values from checksums.txt"
+            exit 1
+          fi
+
+          echo "windows_amd64_sha=${windows_amd64_sha}" >> "$GITHUB_OUTPUT"
+          echo "windows_arm64_sha=${windows_arm64_sha}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout WinGet fork
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.WINGET_FORK_REPOSITORY }}
+          path: winget-pkgs
+          token: ${{ secrets.WINGET_CREATE_GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Prepare branch and manifests
+        id: prep
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+          BRANCH_NAME: ${{ steps.meta.outputs.branch_name }}
+          MANIFEST_ROOT: ${{ env.WINGET_MANIFEST_ROOT }}
+        run: |
+          cd winget-pkgs
+          git checkout -B "${BRANCH_NAME}" origin/master
+
+          PREVIOUS_VERSION="$(find "${MANIFEST_ROOT}" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort -V | tail -n 1)"
+
+          if [ -z "${PREVIOUS_VERSION}" ]; then
+            echo "Could not determine previous manifest version"
+            exit 1
+          fi
+
+          if [ "${PREVIOUS_VERSION}" = "${VERSION}" ]; then
+            echo "Manifest version ${VERSION} already exists"
+            exit 1
+          fi
+
+          cp -R "${MANIFEST_ROOT}/${PREVIOUS_VERSION}" "${MANIFEST_ROOT}/${VERSION}"
+
+          echo "previous_version=${PREVIOUS_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Update WinGet manifests
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+          RELEASE_BASE_URL: ${{ steps.meta.outputs.release_base_url }}
+          WINDOWS_AMD64_SHA: ${{ steps.hashes.outputs.windows_amd64_sha }}
+          WINDOWS_ARM64_SHA: ${{ steps.hashes.outputs.windows_arm64_sha }}
+          MANIFEST_ROOT: winget-pkgs/${{ env.WINGET_MANIFEST_ROOT }}
+          INSTALLER_FILE: winget-pkgs/${{ env.WINGET_MANIFEST_ROOT }}/${{ steps.meta.outputs.version }}/ruanklein.synapseq.installer.yaml
+          LOCALE_FILE: winget-pkgs/${{ env.WINGET_MANIFEST_ROOT }}/${{ steps.meta.outputs.version }}/ruanklein.synapseq.locale.en-US.yaml
+          VERSION_FILE: winget-pkgs/${{ env.WINGET_MANIFEST_ROOT }}/${{ steps.meta.outputs.version }}/ruanklein.synapseq.yaml
+        run: |
+          INSTALLER_FILE="${MANIFEST_ROOT}/${VERSION}/ruanklein.synapseq.installer.yaml"
+          LOCALE_FILE="${MANIFEST_ROOT}/${VERSION}/ruanklein.synapseq.locale.en-US.yaml"
+          VERSION_FILE="${MANIFEST_ROOT}/${VERSION}/ruanklein.synapseq.yaml"
+
+          ruby <<'RUBY'
+          version = ENV.fetch("VERSION")
+          release_base_url = ENV.fetch("RELEASE_BASE_URL")
+          windows_amd64_sha = ENV.fetch("WINDOWS_AMD64_SHA")
+          windows_arm64_sha = ENV.fetch("WINDOWS_ARM64_SHA")
+
+          installer_file = ENV.fetch("INSTALLER_FILE")
+          locale_file = ENV.fetch("LOCALE_FILE")
+          version_file = ENV.fetch("VERSION_FILE")
+
+          installer = File.read(installer_file)
+          installer.gsub!(/^PackageVersion: .+$/, "PackageVersion: #{version}")
+          installer.gsub!(%r{https://github\.com/synapseq-foundation/synapseq/releases/download/v[^/]+/synapseq-v[^/]+-windows-amd64\.zip}, "#{release_base_url}/synapseq-v#{version}-windows-amd64.zip")
+          installer.gsub!(%r{https://github\.com/synapseq-foundation/synapseq/releases/download/v[^/]+/synapseq-v[^/]+-windows-arm64\.zip}, "#{release_base_url}/synapseq-v#{version}-windows-arm64.zip")
+          installer.gsub!(
+            /(Architecture: x64\n\s+InstallerUrl: .+\n\s+InstallerSha256: )(.+)/
+          ) { "#{$1}#{windows_amd64_sha}" }
+          installer.gsub!(
+            /(Architecture: arm64\n\s+InstallerUrl: .+\n\s+InstallerSha256: )(.+)/
+          ) { "#{$1}#{windows_arm64_sha}" }
+          installer.gsub!(%r{synapseq-v[^/]+-windows-amd64\.exe}, "synapseq-v#{version}-windows-amd64.exe")
+          installer.gsub!(%r{synapseq-v[^/]+-windows-arm64\.exe}, "synapseq-v#{version}-windows-arm64.exe")
+          File.write(installer_file, installer)
+
+          locale = File.read(locale_file)
+          locale.gsub!(/^PackageVersion: .+$/, "PackageVersion: #{version}")
+          locale.gsub!(%r{LicenseUrl: https://raw\.githubusercontent\.com/synapseq-foundation/synapseq/refs/tags/v[^/]+/COPYING\.txt}, "LicenseUrl: https://raw.githubusercontent.com/synapseq-foundation/synapseq/refs/tags/v#{version}/COPYING.txt")
+          File.write(locale_file, locale)
+
+          version_manifest = File.read(version_file)
+          version_manifest.gsub!(/^PackageVersion: .+$/, "PackageVersion: #{version}")
+          File.write(version_file, version_manifest)
+          RUBY
+
+      - name: Show manifest diff
+        working-directory: winget-pkgs
+        run: |
+          git diff -- "${{ env.WINGET_MANIFEST_ROOT }}/${{ steps.meta.outputs.version }}"
+
+      - name: Commit and push branch
+        working-directory: winget-pkgs
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+          BRANCH_NAME: ${{ steps.meta.outputs.branch_name }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add "${{ env.WINGET_MANIFEST_ROOT }}/${VERSION}"
+          git commit -m "New version: ruanklein.synapseq version ${VERSION}"
+          git push --force-with-lease origin "${BRANCH_NAME}"
+
+      - name: Create pull request to WinGet upstream
+        working-directory: winget-pkgs
+        env:
+          GH_TOKEN: ${{ secrets.WINGET_CREATE_GITHUB_TOKEN }}
+          VERSION: ${{ steps.meta.outputs.version }}
+          BRANCH_NAME: ${{ steps.meta.outputs.branch_name }}
+        run: |
+          gh pr create \
+            --repo "${{ env.WINGET_UPSTREAM_REPOSITORY }}" \
+            --base master \
+            --head "${{ env.WINGET_OWNER }}:${BRANCH_NAME}" \
+            --title "New version: ruanklein.synapseq version ${VERSION}" \
+            --body "Automated manifest update for SynapSeq ${VERSION}."
