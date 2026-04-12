@@ -24,10 +24,7 @@ jobs:
       contents: read
 
     env:
-      PACKAGE_IDENTIFIER: ruanklein.synapseq
-      WINGET_OWNER: ruanklein
       WINGET_FORK_REPOSITORY: ruanklein/winget-pkgs
-      WINGET_UPSTREAM_REPOSITORY: microsoft/winget-pkgs
       WINGET_MANIFEST_ROOT: manifests/r/ruanklein/synapseq
 
     steps:
@@ -177,17 +174,3 @@ jobs:
           git add "${{ env.WINGET_MANIFEST_ROOT }}/${VERSION}"
           git commit -m "New version: ruanklein.synapseq version ${VERSION}"
           git push --force-with-lease origin "${BRANCH_NAME}"
-
-      - name: Create pull request to WinGet upstream
-        working-directory: winget-pkgs
-        env:
-          GH_TOKEN: ${{ secrets.WINGET_CREATE_GITHUB_TOKEN }}
-          VERSION: ${{ steps.meta.outputs.version }}
-          BRANCH_NAME: ${{ steps.meta.outputs.branch_name }}
-        run: |
-          gh pr create \
-            --repo "${{ env.WINGET_UPSTREAM_REPOSITORY }}" \
-            --base master \
-            --head "${{ env.WINGET_OWNER }}:${BRANCH_NAME}" \
-            --title "New version: ruanklein.synapseq version ${VERSION}" \
-            --body "Automated manifest update for SynapSeq ${VERSION}."
