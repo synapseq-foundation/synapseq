@@ -89,7 +89,7 @@ func ExampleFFmpeg_Convert() {
 	// }
 
 	// Encode MP3 at 320 kbps CBR
-	// _ = encoder.Convert(loaded, "output.mp3", "mp3")
+	// _ = encoder.Convert(loaded, "output.mp3")
 
 	fmt.Printf("MP3 encoding executed successfully for output: %s\n", "output.mp3")
 	// Output:

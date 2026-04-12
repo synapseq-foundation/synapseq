@@ -151,6 +151,48 @@ beta
 	}
 }
 
+func TestLoadTextSequence_Success_TrackOverrideFromTemplate(ts *testing.T) {
+	seq := `
+base as template
+  waveform sine tone 300 binaural 10 amplitude 20
+
+alpha from base
+  track 1 tone +50
+  track 1 binaural +2
+  track 1 waveform square
+  track 1 amplitude +5
+
+00:00:00 alpha
+00:01:00 alpha
+`
+	path := writeSeqFile(ts, seq)
+
+	result, err := LoadTextSequence(path)
+	if err != nil {
+		ts.Fatalf("LoadTextSequence error: %v", err)
+	}
+
+	track := result.Periods[0].TrackStart[0]
+	if track.Type != t.TrackBinauralBeat {
+		ts.Fatalf("expected binaural track, got %v", track.Type)
+	}
+	if track.Carrier != 350 {
+		ts.Fatalf("expected carrier 350, got %v", track.Carrier)
+	}
+	if track.Resonance != 12 {
+		ts.Fatalf("expected resonance 12, got %v", track.Resonance)
+	}
+	if track.Waveform != t.WaveformSquare {
+		ts.Fatalf("expected waveform square, got %v", track.Waveform)
+	}
+	if track.Amplitude != t.AmplitudePercentToRaw(25) {
+		ts.Fatalf("expected amplitude 25%%, got %v", track.Amplitude)
+	}
+	if result.Periods[0].TrackEnd[0] != track {
+		ts.Fatalf("expected track end to match track start after override")
+	}
+}
+
 func TestLoadTextSequence_Error_TimelineBeforePreset(ts *testing.T) {
 	seq := `
 # Timeline first
@@ -160,6 +202,41 @@ func TestLoadTextSequence_Error_TimelineBeforePreset(ts *testing.T) {
 	_, err := LoadTextSequence(path)
 	if err == nil {
 		ts.Fatalf("expected error for timeline before preset")
+	}
+}
+
+func TestLoadTextSequence_Error_PresetFromUnknownTemplate(ts *testing.T) {
+	seq := `
+alpha from base-template
+  tone 100 binaural 1 amplitude 1
+00:00:00 alpha
+`
+	path := writeSeqFile(ts, seq)
+	_, err := LoadTextSequence(path)
+	if err == nil {
+		ts.Fatalf("expected error for unknown inherited preset")
+	}
+	if !strings.Contains(err.Error(), "unknown preset to inherit from") {
+		ts.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestLoadTextSequence_Error_PresetFromNonTemplate(ts *testing.T) {
+	seq := `
+base
+  tone 100 binaural 1 amplitude 1
+
+alpha from base
+  track 1 amplitude 10
+00:00:00 base
+`
+	path := writeSeqFile(ts, seq)
+	_, err := LoadTextSequence(path)
+	if err == nil {
+		ts.Fatalf("expected error for non-template inheritance")
+	}
+	if !strings.Contains(err.Error(), "can only inherit from a template preset") {
+		ts.Fatalf("unexpected error: %v", err)
 	}
 }
 
@@ -190,6 +267,88 @@ alpha
 	}
 }
 
+func TestLoadTextSequence_Error_TimelinePresetNotFound(ts *testing.T) {
+	seq := `
+alpha
+  tone 100 binaural 1 amplitude 1
+00:00:00 beta
+`
+	path := writeSeqFile(ts, seq)
+	_, err := LoadTextSequence(path)
+	if err == nil {
+		ts.Fatalf("expected error for missing timeline preset")
+	}
+	if !strings.Contains(err.Error(), "preset \"beta\" not found") {
+		ts.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestLoadTextSequence_Error_TimelineTemplatePreset(ts *testing.T) {
+	seq := `
+base as template
+  tone 100 binaural 1 amplitude 1
+00:00:00 base
+`
+	path := writeSeqFile(ts, seq)
+	_, err := LoadTextSequence(path)
+	if err == nil {
+		ts.Fatalf("expected error for template preset in timeline")
+	}
+	if !strings.Contains(err.Error(), "cannot use template preset") {
+		ts.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestLoadTextSequence_Error_AmbiancePathWithExtension(ts *testing.T) {
+	seq := `
+@ambiance rain audio/river.wav
+alpha
+  ambiance rain amplitude 10
+00:00:00 alpha
+00:01:00 alpha
+`
+	path := writeSeqFile(ts, seq)
+	_, err := LoadTextSequence(path)
+	if err == nil {
+		ts.Fatalf("expected error for ambiance path with extension")
+	}
+	if !strings.Contains(err.Error(), "ambiance local path must not include file extension") {
+		ts.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestLoadTextSequence_Error_ExtendsPathWithExtension(ts *testing.T) {
+	seq := `
+@extends shared/base.spsc
+`
+	path := writeSeqFile(ts, seq)
+	_, err := LoadTextSequence(path)
+	if err == nil {
+		ts.Fatalf("expected error for extends path with extension")
+	}
+	if !strings.Contains(err.Error(), "extends local path must not include file extension") {
+		ts.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestLoadTextSequence_Error_AbsoluteAmbiancePathRejected(ts *testing.T) {
+	seq := `
+@ambiance rain /tmp/river
+alpha
+  ambiance rain amplitude 10
+00:00:00 alpha
+00:01:00 alpha
+`
+	path := writeSeqFile(ts, seq)
+	_, err := LoadTextSequence(path)
+	if err == nil {
+		ts.Fatalf("expected error for absolute ambiance path")
+	}
+	if !strings.Contains(err.Error(), "absolute paths are not allowed") {
+		ts.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestLoadTextSequence_Error_OverlappingTimeline(ts *testing.T) {
 	seq := `
 alpha
@@ -202,6 +361,25 @@ alpha
 	_, err := LoadTextSequence(path)
 	if err == nil {
 		ts.Fatalf("expected error for overlapping timeline")
+	}
+}
+
+func TestLoadTextSequence_Error_StepsExceedDurationLimit(ts *testing.T) {
+	seq := `
+alpha
+  tone 100 binaural 1 amplitude 1
+beta
+  tone 120 binaural 4 amplitude 2
+00:00:00 alpha steady 3
+00:00:30 beta
+`
+	path := writeSeqFile(ts, seq)
+	_, err := LoadTextSequence(path)
+	if err == nil {
+		ts.Fatalf("expected error for steps above duration limit")
+	}
+	if !strings.Contains(err.Error(), "uses 3 steps") {
+		ts.Fatalf("expected steps validation error, got %v", err)
 	}
 }
 

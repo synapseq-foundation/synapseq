@@ -196,13 +196,15 @@ func ExampleLoadedContext_Preview() {
 	//	log.Fatal(err)
 	// }
 
-	// Generate the HTML preview file
-	// if err := loaded.Preview("preview.html"); err != nil {
+	// Generate the HTML preview bytes
+	// previewHTML, err := loaded.Preview()
+	// if err != nil {
 	//	log.Fatal(err)
 	// }
+	// _ = previewHTML
 
-	fmt.Printf("HTML preview generated successfully\n")
-	// Output: HTML preview generated successfully
+	fmt.Printf("HTML preview bytes generated successfully\n")
+	// Output: HTML preview bytes generated successfully
 }
 
 func ExampleLoadedContext_RawContent() {

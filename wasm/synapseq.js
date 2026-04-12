@@ -133,6 +133,36 @@ class SynapSeq {
      */
     this._playStartTime = 0;
 
+    /**
+     * @private
+     * @type {Array<{left: Float32Array, right: Float32Array}>}
+     */
+    this._prebufferedChunks = [];
+
+    /**
+     * @private
+     * @type {number}
+     */
+    this._minBufferedChunks = 4;
+
+    /**
+     * @private
+     * @type {boolean}
+     */
+    this._playbackPending = false;
+
+    /**
+     * @private
+     * @type {boolean}
+     */
+    this._audioConnected = false;
+
+    /**
+     * @private
+     * @type {Promise<void>|null}
+     */
+    this._beginPlaybackPromise = null;
+
     this._initializeWorker();
   }
 
@@ -144,6 +174,14 @@ class SynapSeq {
   _createWorker() {
     // Worker code as a standalone function
     function workerFunction() {
+      function toWorkerErrorMessage(error) {
+        if (error && typeof error.message === "string") {
+          return error.message;
+        }
+
+        return error || "Unknown error occurred";
+      }
+
       let wasmReady = false;
       let wasmPath = "";
       let wasmExecPath = "";
@@ -184,7 +222,7 @@ class SynapSeq {
           } catch (error) {
             self.postMessage({
               type: "error",
-              error: "Failed to load WASM: " + error.message,
+              error: "Failed to load WASM: " + toWorkerErrorMessage(error),
             });
           }
           return;
@@ -198,6 +236,8 @@ class SynapSeq {
             });
             return;
           }
+
+          let streamErrorReported = false;
 
           try {
             const contentBytes = e.data.contentBytes;
@@ -220,9 +260,10 @@ class SynapSeq {
             };
 
             const onError = (error) => {
+              streamErrorReported = true;
               self.postMessage({
                 type: "error",
-                error: error,
+                error: toWorkerErrorMessage(error),
               });
             };
 
@@ -234,10 +275,12 @@ class SynapSeq {
               format,
             );
           } catch (error) {
-            self.postMessage({
-              type: "error",
-              error: error.message || error || "Unknown error occurred",
-            });
+            if (!streamErrorReported) {
+              self.postMessage({
+                type: "error",
+                error: toWorkerErrorMessage(error),
+              });
+            }
           }
         }
       };
@@ -245,7 +288,28 @@ class SynapSeq {
 
     const workerCode = `(${workerFunction.toString()})();`;
     const blob = new Blob([workerCode], { type: "application/javascript" });
-    return new Worker(URL.createObjectURL(blob));
+    const url = URL.createObjectURL(blob);
+    const worker = new Worker(url);
+    URL.revokeObjectURL(url);
+    return worker;
+  }
+
+  /**
+   * Normalizes worker/runtime errors into Error instances.
+   * @private
+   * @param {unknown} error - Error value from worker or browser APIs
+   * @returns {Error}
+   */
+  _toError(error) {
+    if (error instanceof Error) {
+      return error;
+    }
+
+    if (error && typeof error.message === "string") {
+      return new Error(error.message);
+    }
+
+    return new Error(String(error || "Unknown error occurred"));
   }
 
   /**
@@ -274,7 +338,7 @@ class SynapSeq {
           } else if (data.type === "stream-done") {
             this._handleStreamDone();
           } else if (data.type === "error") {
-            this._handleError(new Error(data.error));
+            this._handleError(this._toError(data.error));
           }
         };
 
@@ -336,7 +400,57 @@ class SynapSeq {
       rightChannel[i] = signedRight / 32768.0;
     }
 
-    // Send both channels to AudioWorklet
+    if (this._audioConnected) {
+      this._enqueueWorkletChunk(leftChannel, rightChannel);
+      return;
+    }
+
+    this._prebufferedChunks.push({
+      left: leftChannel,
+      right: rightChannel,
+    });
+
+    if (this._prebufferedChunks.length >= this._minBufferedChunks) {
+      void this._beginPlaybackFromBuffer();
+    }
+  }
+
+  /**
+   * Handles stream completion
+   * @private
+   */
+  _handleStreamDone() {
+    if (!this._audioWorkletNode) {
+      return;
+    }
+
+    const sendDone = () => {
+      if (this._audioWorkletNode) {
+        this._audioWorkletNode.port.postMessage({
+          type: "done",
+        });
+      }
+    };
+
+    if (!this._audioConnected && this._prebufferedChunks.length > 0) {
+      void this._beginPlaybackFromBuffer().then(sendDone);
+      return;
+    }
+
+    sendDone();
+  }
+
+  /**
+   * Posts a decoded stereo chunk to the AudioWorklet.
+   * @private
+   * @param {Float32Array} leftChannel - Decoded left channel samples
+   * @param {Float32Array} rightChannel - Decoded right channel samples
+   */
+  _enqueueWorkletChunk(leftChannel, rightChannel) {
+    if (!this._audioWorkletNode) {
+      return;
+    }
+
     this._audioWorkletNode.port.postMessage({
       type: "chunk",
       left: leftChannel,
@@ -345,15 +459,52 @@ class SynapSeq {
   }
 
   /**
-   * Handles stream completion
+   * Connects and starts playback after enough audio has been buffered.
    * @private
+   * @returns {Promise<void>}
    */
-  _handleStreamDone() {
-    if (this._audioWorkletNode) {
-      this._audioWorkletNode.port.postMessage({
-        type: "done",
-      });
+  async _beginPlaybackFromBuffer() {
+    if (
+      this._audioConnected ||
+      !this._audioWorkletNode ||
+      !this._audioContext
+    ) {
+      return;
     }
+
+    if (this._beginPlaybackPromise) {
+      return this._beginPlaybackPromise;
+    }
+
+    this._beginPlaybackPromise = (async () => {
+      this._audioConnected = true;
+
+      const bufferedChunks = this._prebufferedChunks;
+      this._prebufferedChunks = [];
+
+      for (const chunk of bufferedChunks) {
+        this._enqueueWorkletChunk(chunk.left, chunk.right);
+      }
+
+      this._audioWorkletNode.connect(this._audioContext.destination);
+
+      if (this._audioContext.state === "suspended") {
+        await this._audioContext.resume();
+      }
+
+      if (!this._audioWorkletNode || !this._audioConnected) {
+        return;
+      }
+
+      this._isStreaming = true;
+      this._playbackPending = false;
+      this._playStartTime = this._audioContext.currentTime;
+      this._dispatchEvent("playing");
+    })().finally(() => {
+      this._beginPlaybackPromise = null;
+    });
+
+    return this._beginPlaybackPromise;
   }
 
   /**
@@ -384,6 +535,7 @@ class SynapSeq {
           super();
           this.leftChunks = [];
           this.rightChunks = [];
+          this.queueHead = 0;
           this.currentLeftChunk = null;
           this.currentRightChunk = null;
           this.currentIndex = 0;
@@ -391,6 +543,12 @@ class SynapSeq {
           
           this.port.onmessage = (e) => {
             if (e.data.type === 'chunk') {
+              if (this.queueHead > 32 && this.queueHead * 2 >= this.leftChunks.length) {
+                this.leftChunks = this.leftChunks.slice(this.queueHead);
+                this.rightChunks = this.rightChunks.slice(this.queueHead);
+                this.queueHead = 0;
+              }
+
               this.leftChunks.push(e.data.left);
               this.rightChunks.push(e.data.right);
             } else if (e.data.type === 'done') {
@@ -398,6 +556,7 @@ class SynapSeq {
             } else if (e.data.type === 'stop') {
               this.leftChunks = [];
               this.rightChunks = [];
+              this.queueHead = 0;
               this.currentLeftChunk = null;
               this.currentRightChunk = null;
               this.currentIndex = 0;
@@ -418,9 +577,10 @@ class SynapSeq {
           
           for (let i = 0; i < leftChannel.length; i++) {
             if (!this.currentLeftChunk || this.currentIndex >= this.currentLeftChunk.length) {
-              if (this.leftChunks.length > 0) {
-                this.currentLeftChunk = this.leftChunks.shift();
-                this.currentRightChunk = this.rightChunks.shift();
+              if (this.queueHead < this.leftChunks.length) {
+                this.currentLeftChunk = this.leftChunks[this.queueHead];
+                this.currentRightChunk = this.rightChunks[this.queueHead];
+                this.queueHead++;
                 this.currentIndex = 0;
               } else if (this.done) {
                 this.port.postMessage({ type: 'ended' });
@@ -605,16 +765,9 @@ class SynapSeq {
         }
       };
 
-      // Connect to destination
-      this._audioWorkletNode.connect(this._audioContext.destination);
-
-      // Resume AudioContext if suspended
-      if (this._audioContext.state === "suspended") {
-        await this._audioContext.resume();
-      }
-
-      this._isStreaming = true;
-      this._playStartTime = this._audioContext.currentTime;
+      this._prebufferedChunks = [];
+      this._audioConnected = false;
+      this._playbackPending = true;
       this._dispatchEvent("generating");
 
       // Start streaming (reuse contentBytes from above)
@@ -623,10 +776,10 @@ class SynapSeq {
         contentBytes: contentBytes,
         format: this._format,
       });
-
-      this._dispatchEvent("playing");
     } catch (error) {
-      throw new Error("Failed to start streaming: " + error.message);
+      throw new Error(
+        "Failed to start streaming: " + this._toError(error).message,
+      );
     }
   }
 
@@ -637,10 +790,16 @@ class SynapSeq {
    * synapseq.stop();
    */
   stop() {
-    if (this._isStreaming && this._audioWorkletNode) {
-      this._audioWorkletNode.port.postMessage({ type: "stop" });
-      this._audioWorkletNode.disconnect();
-      this._audioWorkletNode = null;
+    if (this._audioWorkletNode || this._playbackPending) {
+      if (this._audioWorkletNode) {
+        this._audioWorkletNode.port.postMessage({ type: "stop" });
+        this._audioWorkletNode.disconnect();
+        this._audioWorkletNode = null;
+      }
+
+      this._prebufferedChunks = [];
+      this._audioConnected = false;
+      this._playbackPending = false;
       this._isStreaming = false;
       this._playStartTime = 0;
       this._dispatchEvent("stopped");

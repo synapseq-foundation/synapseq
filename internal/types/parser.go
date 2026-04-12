@@ -171,32 +171,3 @@ func (po *ParseOptions) Build() (*SequenceOptions, error) {
 
 	return options, nil
 }
-
-// Parser defines the interface for parsing different content types
-type Parser interface {
-	// HasComment checks if the content is a comment
-	HasComment() bool
-	// HasOption checks if the content is an option
-	HasOption() bool
-	// HasPreset checks if the content is a preset
-	HasPreset() bool
-	// HasTrack checks if the content is a track
-	HasTrack() bool
-	// HasTrackOverride checks if the content is a track override
-	HasTrackOverride() bool
-	// HasTimeline checks if the content is a timeline
-	HasTimeline() bool
-
-	// ParseComment parses a comment content
-	ParseComment() string
-	// ParseOption parses an option content
-	ParseOption(string) (*ParseOptions, error)
-	// ParsePreset parses a preset content
-	ParsePreset(*[]Preset) (*Preset, error)
-	// ParseTrack parses a track content
-	ParseTrack() (*Track, error)
-	// ParseTrackOverride parses a track override content
-	ParseTrackOverride(*Preset) error
-	// ParseTimeline parses a timeline content
-	ParseTimeline(*[]Preset) (*Period, error)
-}

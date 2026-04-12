@@ -15,7 +15,6 @@ import (
 	"testing"
 
 	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
-	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 func TestHasPreset(ts *testing.T) {
@@ -45,156 +44,52 @@ func TestHasPreset(ts *testing.T) {
 	}
 }
 
-func TestParsePreset(ts *testing.T) {
-	tests := []struct {
-		line          string
-		expectedName  string
-		expectedError bool
-	}{
-		{"MyPreset", "mypreset", false},
-		{"%AnotherPreset", "", true},
-		{"preset1", "preset1", false},
-		{"123Preset", "", true},
-		{"", "", true},
-		{"   ", "", true},
-		{"Preset_", "preset_", false},
-		{"preset-01", "preset-01", false},
-		{"preset-", "preset-", false},
-		{"silence", "", true}, // reserved name
-		{"Pre$et", "", true},  // invalid character
-	}
-
-	for _, test := range tests {
-		ctx := NewTextParser(test.line)
-		preset, err := ctx.ParsePreset(nil)
-		if test.expectedError {
-			if err == nil {
-				ts.Errorf("For line '%s', expected an error but got none", test.line)
-			}
-			continue
-		}
-		if err != nil {
-			ts.Errorf("For line '%s', did not expect an error but got: %v", test.line, err)
-			continue
-		}
-		if preset.String() != test.expectedName {
-			ts.Errorf("For line '%s', expected preset name '%s' but got '%s'", test.line, test.expectedName, preset.String())
-		}
-	}
-}
-
-func TestParsePreset_WithTemplate(ts *testing.T) {
-	// Create base presets for inheritance tests
-	var presets []t.Preset
-
-	// Create a template preset
-	templatePreset, err := t.NewPreset("base-template", true, nil)
-	if err != nil {
-		ts.Fatalf("failed to create template preset: %v", err)
-	}
-	templatePreset.Track[0] = t.Track{
-		Type:      t.TrackBinauralBeat,
-		Carrier:   300,
-		Resonance: 10,
-		Amplitude: t.AmplitudePercentToRaw(20),
-		Waveform:  t.WaveformSine,
-	}
-	templatePreset.Track[1] = t.Track{
-		Type:      t.TrackPinkNoise,
-		Amplitude: t.AmplitudePercentToRaw(30),
-	}
-	presets = append(presets, *templatePreset)
-
-	// Create a regular preset for testing inheritance errors
-	regularPreset, err := t.NewPreset("regular", false, nil)
-	if err != nil {
-		ts.Fatalf("failed to create regular preset: %v", err)
-	}
-	presets = append(presets, *regularPreset)
-
+func TestParsePresetDeclaration(ts *testing.T) {
 	tests := []struct {
 		name          string
 		line          string
 		expectedName  string
+		expectedFrom  string
+		expectedTempl bool
 		expectedError bool
-		checkTemplate bool
-		isTemplate    bool
-		checkFrom     bool
-		hasFrom       bool
 	}{
-		{
-			name:          "template declaration",
-			line:          "alpha as template",
-			expectedName:  "alpha",
-			expectedError: false,
-			checkTemplate: true,
-			isTemplate:    true,
-		},
-		{
-			name:          "inherit from template",
-			line:          "derived from base-template",
-			expectedName:  "derived",
-			expectedError: false,
-			checkFrom:     true,
-			hasFrom:       true,
-		},
-		{
-			name:          "inherit from non-template should fail",
-			line:          "bad from regular",
-			expectedError: true,
-		},
-		{
-			name:          "inherit from unknown preset should fail",
-			line:          "bad from unknown-preset",
-			expectedError: true,
-		},
-		{
-			name:          "template with extra tokens should fail",
-			line:          "alpha as template extra",
-			expectedError: true,
-		},
-		{
-			name:          "from with missing preset name should fail",
-			line:          "alpha from",
-			expectedError: true,
-		},
-		{
-			name:          "invalid 'as' keyword usage should fail",
-			line:          "alpha as invalid",
-			expectedError: true,
-		},
+		{name: "plain preset", line: "MyPreset", expectedName: "MyPreset"},
+		{name: "template", line: "alpha as template", expectedName: "alpha", expectedTempl: true},
+		{name: "from template name", line: "derived from base-template", expectedName: "derived", expectedFrom: "base-template"},
+		{name: "invalid prefix", line: "%AnotherPreset", expectedError: true},
+		{name: "numeric start", line: "123Preset", expectedError: true},
+		{name: "empty", line: "", expectedError: true},
+		{name: "whitespace", line: "   ", expectedError: true},
+		{name: "underscore", line: "Preset_", expectedName: "Preset_"},
+		{name: "hyphen", line: "preset-01", expectedName: "preset-01"},
+		{name: "reserved name stays parser-valid", line: "silence", expectedName: "silence"},
+		{name: "invalid character", line: "Pre$et", expectedError: true},
+		{name: "template extra token", line: "alpha as template extra", expectedError: true},
+		{name: "from missing target", line: "alpha from", expectedError: true},
+		{name: "invalid as target", line: "alpha as invalid", expectedError: true},
 	}
 
-	for _, tt := range tests {
-		ctx := NewTextParser(tt.line)
-		preset, err := ctx.ParsePreset(&presets)
-
-		if tt.expectedError {
+	for _, test := range tests {
+		ctx := NewTextParser(test.line)
+		decl, err := ctx.ParsePresetDeclaration()
+		if test.expectedError {
 			if err == nil {
-				ts.Errorf("%s: expected error but got none", tt.name)
+				ts.Errorf("%s: expected an error but got none", test.name)
 			}
 			continue
 		}
-
 		if err != nil {
-			ts.Errorf("%s: unexpected error: %v", tt.name, err)
+			ts.Errorf("%s: did not expect an error but got: %v", test.name, err)
 			continue
 		}
-
-		if preset.String() != tt.expectedName {
-			ts.Errorf("%s: expected name %q, got %q", tt.name, tt.expectedName, preset.String())
+		if decl.Name != test.expectedName {
+			ts.Errorf("%s: expected preset name '%s' but got '%s'", test.name, test.expectedName, decl.Name)
 		}
-
-		if tt.checkTemplate && preset.IsTemplate != tt.isTemplate {
-			ts.Errorf("%s: expected IsTemplate=%v, got %v", tt.name, tt.isTemplate, preset.IsTemplate)
+		if decl.FromName != test.expectedFrom {
+			ts.Errorf("%s: expected from '%s' but got '%s'", test.name, test.expectedFrom, decl.FromName)
 		}
-
-		if tt.checkFrom {
-			if tt.hasFrom && preset.From == nil {
-				ts.Errorf("%s: expected From to be set", tt.name)
-			} else if !tt.hasFrom && preset.From != nil {
-				ts.Errorf("%s: expected From to be nil", tt.name)
-			}
+		if decl.IsTemplate != test.expectedTempl {
+			ts.Errorf("%s: expected IsTemplate=%v but got %v", test.name, test.expectedTempl, decl.IsTemplate)
 		}
 	}
 }
@@ -202,7 +97,7 @@ func TestParsePreset_WithTemplate(ts *testing.T) {
 func TestParsePresetTemplateTypoDiagnostic(ts *testing.T) {
 	ctx := NewTextParser("alpha as templat")
 
-	_, err := ctx.ParsePreset(nil)
+	_, err := ctx.ParsePresetDeclaration()
 	if err == nil {
 		ts.Fatal("expected preset diagnostic")
 	}

@@ -17,9 +17,15 @@ import (
 	"strings"
 
 	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
-	s "github.com/synapseq-foundation/synapseq/v4/internal/shared"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
+
+type ParsedTimelineDeclaration struct {
+	Time       int
+	PresetName string
+	Transition t.TransitionType
+	Steps      int
+}
 
 // parseTime parses a time string in HH:MM:SS format to milliseconds
 func parseTime(s string) (int, error) {
@@ -72,8 +78,7 @@ func (ctx *TextParser) HasTimeline() bool {
 	return true
 }
 
-// ParseTimeline parses a timeline line and returns a Period
-func (ctx *TextParser) ParseTimeline(presets *[]t.Preset) (*t.Period, error) {
+func (ctx *TextParser) ParseTimelineDeclaration() (*ParsedTimelineDeclaration, error) {
 	tok, ok := ctx.Line.NextToken()
 	if !ok {
 		return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "time")
@@ -85,59 +90,51 @@ func (ctx *TextParser) ParseTimeline(presets *[]t.Preset) (*t.Period, error) {
 		return nil, diag.Parse(err.Error()).WithSpan(timeSpan).WithFound(tok).WithExpected("HH:MM:SS")
 	}
 
-	tok, ok = ctx.Line.NextToken()
+	presetName, ok := ctx.Line.NextToken()
 	if !ok {
 		return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "preset name")
 	}
-	presetSpan, _ := ctx.Line.LastTokenSpan()
 
-	// default transition type
-	transitionType := t.TransitionSteady
+	decl := &ParsedTimelineDeclaration{
+		Time:       timeMs,
+		PresetName: presetName,
+		Transition: t.TransitionSteady,
+	}
+
 	transition, ok := ctx.Line.NextToken()
 	if ok {
 		transitionSpan, _ := ctx.Line.LastTokenSpan()
 		switch transition {
 		case t.KeywordTransitionSteady:
-			transitionType = t.TransitionSteady
+			decl.Transition = t.TransitionSteady
 		case t.KeywordTransitionEaseOut:
-			transitionType = t.TransitionEaseOut
+			decl.Transition = t.TransitionEaseOut
 		case t.KeywordTransitionEaseIn:
-			transitionType = t.TransitionEaseIn
+			decl.Transition = t.TransitionEaseIn
 		case t.KeywordTransitionSmooth:
-			transitionType = t.TransitionSmooth
+			decl.Transition = t.TransitionSmooth
 		default:
-			return nil, diag.UnexpectedToken(
-				transitionSpan,
-				transition,
-				t.KeywordTransitionSteady,
-				t.KeywordTransitionEaseOut,
-				t.KeywordTransitionEaseIn,
-				t.KeywordTransitionSmooth,
-			)
+			return nil, diag.UnexpectedToken(transitionSpan, transition, t.KeywordTransitionSteady, t.KeywordTransitionEaseOut, t.KeywordTransitionEaseIn, t.KeywordTransitionSmooth)
+		}
+
+		if stepToken, ok := ctx.Line.Peek(); ok {
+			if _, convErr := strconv.Atoi(stepToken); convErr == nil {
+				decl.Steps, err = ctx.Line.NextIntStrict()
+				if err != nil {
+					return nil, err
+				}
+				if decl.Steps < 0 {
+					stepSpan, _ := ctx.Line.LastTokenSpan()
+					return nil, diag.Validation("steps must be non-negative").WithSpan(stepSpan).WithFound(stepToken)
+				}
+			}
 		}
 	}
 
-	unknown, ok := ctx.Line.Peek()
-	if ok {
+	if unknown, ok := ctx.Line.Peek(); ok {
 		unknownSpan, _ := ctx.Line.PeekSpan()
 		return nil, diag.Parse("unexpected token on timeline").WithSpan(unknownSpan).WithFound(unknown)
 	}
 
-	p := s.FindPreset(strings.ToLower(tok), *presets)
-	if p == nil {
-		return nil, diag.Validation(fmt.Sprintf("preset %q not found", tok)).WithSpan(presetSpan).WithFound(tok)
-	}
-
-	if p.IsTemplate {
-		return nil, diag.Validation(fmt.Sprintf("cannot use template preset %q in timeline", p.String())).WithSpan(presetSpan).WithFound(tok)
-	}
-
-	period := &t.Period{
-		Time:       timeMs,
-		TrackStart: p.Track,
-		TrackEnd:   p.Track,
-		Transition: transitionType,
-	}
-
-	return period, nil
+	return decl, nil
 }

@@ -48,6 +48,7 @@ type Period struct {
 	TrackStart [NumberOfChannels]Track // Start tracks for each channel
 	TrackEnd   [NumberOfChannels]Track // End tracks for each channel
 	Transition TransitionType          // Transition type
+	Steps      int                     // Number of steps for the transition
 }
 
 // TimeString returns the time of this period as a formatted string

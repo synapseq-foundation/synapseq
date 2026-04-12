@@ -1,0 +1,78 @@
+name: Update WinGet Manifest
+
+on:
+  release:
+    types:
+      - published
+
+concurrency:
+  group: update-winget-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  update-winget:
+    if: ${{ github.event.release.draft == false && github.event.release.prerelease == false }}
+    runs-on: windows-latest
+
+    permissions:
+      contents: read
+
+    env:
+      PACKAGE_IDENTIFIER: ruanklein.synapseq
+
+    steps:
+      - name: Extract release metadata
+        id: meta
+        shell: pwsh
+        run: |
+          $tag = "${{ github.event.release.tag_name }}"
+          $version = $tag.TrimStart('v')
+          $releaseUrl = "https://github.com/${{ github.repository }}/releases/download/$tag"
+          $x64Url = "$releaseUrl/synapseq-$tag-windows-amd64.zip"
+          $arm64Url = "$releaseUrl/synapseq-$tag-windows-arm64.zip"
+
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "x64_url=$x64Url" >> $env:GITHUB_OUTPUT
+          "arm64_url=$arm64Url" >> $env:GITHUB_OUTPUT
+
+      - name: Validate release assets
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const assets = (context.payload.release.assets || []).map((asset) => asset.name);
+            const expected = [
+              `synapseq-${context.payload.release.tag_name}-windows-amd64.zip`,
+              `synapseq-${context.payload.release.tag_name}-windows-arm64.zip`,
+            ];
+
+            const missing = expected.filter((name) => !assets.includes(name));
+            if (missing.length > 0) {
+              core.setFailed(`Missing release assets: ${missing.join(", ")}`);
+            }
+
+      - name: Setup .NET runtime
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 6.0.x
+
+      - name: Download wingetcreate
+        shell: pwsh
+        run: |
+          Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
+          ./wingetcreate.exe --version
+
+      - name: Update WinGet manifest and submit PR
+        shell: pwsh
+        env:
+          WINGET_CREATE_GITHUB_TOKEN: ${{ secrets.WINGET_CREATE_GITHUB_TOKEN }}
+        run: |
+          if (-not $env:WINGET_CREATE_GITHUB_TOKEN) {
+            throw "The WINGET_CREATE_GITHUB_TOKEN secret is not configured."
+          }
+
+          ./wingetcreate.exe update $env:PACKAGE_IDENTIFIER `
+            --version "${{ steps.meta.outputs.version }}" `
+            --urls "${{ steps.meta.outputs.x64_url }}|x64" "${{ steps.meta.outputs.arm64_url }}|arm64" `
+            --token $env:WINGET_CREATE_GITHUB_TOKEN `
+            --submit
