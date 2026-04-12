@@ -132,47 +132,32 @@ jobs:
           RELEASE_BASE_URL: ${{ steps.meta.outputs.release_base_url }}
           WINDOWS_AMD64_SHA: ${{ steps.hashes.outputs.windows_amd64_sha }}
           WINDOWS_ARM64_SHA: ${{ steps.hashes.outputs.windows_arm64_sha }}
-          MANIFEST_ROOT: winget-pkgs/${{ env.WINGET_MANIFEST_ROOT }}
           INSTALLER_FILE: winget-pkgs/${{ env.WINGET_MANIFEST_ROOT }}/${{ steps.meta.outputs.version }}/ruanklein.synapseq.installer.yaml
           LOCALE_FILE: winget-pkgs/${{ env.WINGET_MANIFEST_ROOT }}/${{ steps.meta.outputs.version }}/ruanklein.synapseq.locale.en-US.yaml
           VERSION_FILE: winget-pkgs/${{ env.WINGET_MANIFEST_ROOT }}/${{ steps.meta.outputs.version }}/ruanklein.synapseq.yaml
+          INSTALLER_TEMPLATE: .github/workflows/templates/winget.installer.yaml.tpl
+          LOCALE_TEMPLATE: .github/workflows/templates/winget.locale.en-US.yaml.tpl
+          VERSION_TEMPLATE: .github/workflows/templates/winget.version.yaml.tpl
         run: |
-          INSTALLER_FILE="${MANIFEST_ROOT}/${VERSION}/ruanklein.synapseq.installer.yaml"
-          LOCALE_FILE="${MANIFEST_ROOT}/${VERSION}/ruanklein.synapseq.locale.en-US.yaml"
-          VERSION_FILE="${MANIFEST_ROOT}/${VERSION}/ruanklein.synapseq.yaml"
-
           ruby <<'RUBY'
-          version = ENV.fetch("VERSION")
-          release_base_url = ENV.fetch("RELEASE_BASE_URL")
-          windows_amd64_sha = ENV.fetch("WINDOWS_AMD64_SHA")
-          windows_arm64_sha = ENV.fetch("WINDOWS_ARM64_SHA")
+          replacements = {
+            "__VERSION__" => ENV.fetch("VERSION"),
+            "__RELEASE_BASE_URL__" => ENV.fetch("RELEASE_BASE_URL"),
+            "__WINDOWS_AMD64_SHA__" => ENV.fetch("WINDOWS_AMD64_SHA"),
+            "__WINDOWS_ARM64_SHA__" => ENV.fetch("WINDOWS_ARM64_SHA"),
+          }
 
-          installer_file = ENV.fetch("INSTALLER_FILE")
-          locale_file = ENV.fetch("LOCALE_FILE")
-          version_file = ENV.fetch("VERSION_FILE")
-
-          installer = File.read(installer_file)
-          installer.gsub!(/^PackageVersion: .+$/, "PackageVersion: #{version}")
-          installer.gsub!(%r{https://github\.com/synapseq-foundation/synapseq/releases/download/v[^/]+/synapseq-v[^/]+-windows-amd64\.zip}, "#{release_base_url}/synapseq-v#{version}-windows-amd64.zip")
-          installer.gsub!(%r{https://github\.com/synapseq-foundation/synapseq/releases/download/v[^/]+/synapseq-v[^/]+-windows-arm64\.zip}, "#{release_base_url}/synapseq-v#{version}-windows-arm64.zip")
-          installer.gsub!(
-            /(Architecture: x64\n\s+InstallerUrl: .+\n\s+InstallerSha256: )(.+)/
-          ) { "#{$1}#{windows_amd64_sha}" }
-          installer.gsub!(
-            /(Architecture: arm64\n\s+InstallerUrl: .+\n\s+InstallerSha256: )(.+)/
-          ) { "#{$1}#{windows_arm64_sha}" }
-          installer.gsub!(%r{synapseq-v[^/]+-windows-amd64\.exe}, "synapseq-v#{version}-windows-amd64.exe")
-          installer.gsub!(%r{synapseq-v[^/]+-windows-arm64\.exe}, "synapseq-v#{version}-windows-arm64.exe")
-          File.write(installer_file, installer)
-
-          locale = File.read(locale_file)
-          locale.gsub!(/^PackageVersion: .+$/, "PackageVersion: #{version}")
-          locale.gsub!(%r{LicenseUrl: https://raw\.githubusercontent\.com/synapseq-foundation/synapseq/refs/tags/v[^/]+/COPYING\.txt}, "LicenseUrl: https://raw.githubusercontent.com/synapseq-foundation/synapseq/refs/tags/v#{version}/COPYING.txt")
-          File.write(locale_file, locale)
-
-          version_manifest = File.read(version_file)
-          version_manifest.gsub!(/^PackageVersion: .+$/, "PackageVersion: #{version}")
-          File.write(version_file, version_manifest)
+          [
+            [ENV.fetch("INSTALLER_TEMPLATE"), ENV.fetch("INSTALLER_FILE")],
+            [ENV.fetch("LOCALE_TEMPLATE"), ENV.fetch("LOCALE_FILE")],
+            [ENV.fetch("VERSION_TEMPLATE"), ENV.fetch("VERSION_FILE")],
+          ].each do |template_path, output_path|
+            content = File.read(template_path)
+            replacements.each do |placeholder, value|
+              content = content.gsub(placeholder, value)
+            end
+            File.write(output_path, content)
+          end
           RUBY
 
       - name: Show manifest diff
