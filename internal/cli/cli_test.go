@@ -77,6 +77,12 @@ func TestParseFlags(ts *testing.T) {
 			expectedArgs: []string{},
 			expectError:  false,
 		},
+		{
+			args:         []string{"cmd", "-no-color", "-manual"},
+			expected:     &CLIOptions{NoColor: true, ShowManual: true},
+			expectedArgs: []string{},
+			expectError:  false,
+		},
 		// Quiet flag
 		{
 			args:         []string{"cmd", "-quiet", "input.spsq", "output.wav"},
@@ -88,6 +94,18 @@ func TestParseFlags(ts *testing.T) {
 			args:         []string{"cmd", "-no-color", "input.spsq"},
 			expected:     &CLIOptions{NoColor: true},
 			expectedArgs: []string{"input.spsq"},
+			expectError:  false,
+		},
+		{
+			args:         []string{"cmd", "-quiet", "-hub-list"},
+			expected:     &CLIOptions{Quiet: true, HubList: true},
+			expectedArgs: []string{},
+			expectError:  false,
+		},
+		{
+			args:         []string{"cmd", "-no-color", "-hub-get", "calm-state", "output.wav"},
+			expected:     &CLIOptions{NoColor: true, HubGet: "calm-state"},
+			expectedArgs: []string{"output.wav"},
 			expectError:  false,
 		},
 		// Test flag

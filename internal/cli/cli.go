@@ -18,7 +18,7 @@ import (
 type SpecialCommandKind string
 
 const (
-	SpecialCommandNone                     SpecialCommandKind = "none"
+	SpecialCommandNone                     SpecialCommandKind = ""
 	SpecialCommandShowVersion              SpecialCommandKind = "show-version"
 	SpecialCommandShowManual               SpecialCommandKind = "show-manual"
 	SpecialCommandHubUpdate                SpecialCommandKind = "hub-update"
