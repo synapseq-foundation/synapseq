@@ -242,6 +242,30 @@ func TestResolveSpecialCommandHubDownloadPrecedesHubInfo(ts *testing.T) {
 	}
 }
 
+func TestResolveSpecialCommandIgnoresNoColorBeforeManual(ts *testing.T) {
+	command := clistyle.ResolveSpecialCommand(&clistyle.CLIOptions{NoColor: true, ShowManual: true}, nil)
+	if command.Kind != clistyle.SpecialCommandShowManual {
+		ts.Fatalf("expected show-manual command, got %q", command.Kind)
+	}
+}
+
+func TestResolveSpecialCommandIgnoresQuietBeforeHubList(ts *testing.T) {
+	command := clistyle.ResolveSpecialCommand(&clistyle.CLIOptions{Quiet: true, HubList: true}, nil)
+	if command.Kind != clistyle.SpecialCommandHubList {
+		ts.Fatalf("expected hub-list command, got %q", command.Kind)
+	}
+}
+
+func TestResolveSpecialCommandIgnoresNoColorBeforeHubGet(ts *testing.T) {
+	command := clistyle.ResolveSpecialCommand(&clistyle.CLIOptions{NoColor: true, HubGet: "calm-state"}, []string{"out.wav"})
+	if command.Kind != clistyle.SpecialCommandHubGet {
+		ts.Fatalf("expected hub-get command, got %q", command.Kind)
+	}
+	if command.OptionalArg != "out.wav" {
+		ts.Fatalf("expected hub-get optional arg out.wav, got %q", command.OptionalArg)
+	}
+}
+
 func TestPrepareSequenceCommandRejectsInvalidArgCount(ts *testing.T) {
 	command, err := prepareSequenceCommand([]string{"one", "two", "three"}, &clistyle.CLIOptions{})
 	if err == nil {
