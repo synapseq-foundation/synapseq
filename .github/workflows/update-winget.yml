@@ -89,6 +89,11 @@ jobs:
           echo "windows_amd64_sha=${windows_amd64_sha}" >> "$GITHUB_OUTPUT"
           echo "windows_arm64_sha=${windows_arm64_sha}" >> "$GITHUB_OUTPUT"
 
+      - name: Checkout synapseq repository
+        uses: actions/checkout@v4
+        with:
+          path: synapseq
+
       - name: Checkout WinGet fork
         uses: actions/checkout@v4
         with:
@@ -132,9 +137,9 @@ jobs:
           INSTALLER_FILE: winget-pkgs/${{ env.WINGET_MANIFEST_ROOT }}/${{ steps.meta.outputs.version }}/ruanklein.synapseq.installer.yaml
           LOCALE_FILE: winget-pkgs/${{ env.WINGET_MANIFEST_ROOT }}/${{ steps.meta.outputs.version }}/ruanklein.synapseq.locale.en-US.yaml
           VERSION_FILE: winget-pkgs/${{ env.WINGET_MANIFEST_ROOT }}/${{ steps.meta.outputs.version }}/ruanklein.synapseq.yaml
-          INSTALLER_TEMPLATE: .github/workflows/templates/winget.installer.yaml.tpl
-          LOCALE_TEMPLATE: .github/workflows/templates/winget.locale.en-US.yaml.tpl
-          VERSION_TEMPLATE: .github/workflows/templates/winget.version.yaml.tpl
+          INSTALLER_TEMPLATE: synapseq/.github/workflows/templates/winget.installer.yaml.tpl
+          LOCALE_TEMPLATE: synapseq/.github/workflows/templates/winget.locale.en-US.yaml.tpl
+          VERSION_TEMPLATE: synapseq/.github/workflows/templates/winget.version.yaml.tpl
         run: |
           ruby <<'RUBY'
           replacements = {
