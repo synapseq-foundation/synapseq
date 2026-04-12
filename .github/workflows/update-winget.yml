@@ -82,7 +82,6 @@ jobs:
         shell: pwsh
         run: |
           Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
-          ./wingetcreate.exe version
 
       - name: Update WinGet manifest and submit PR
         shell: pwsh
