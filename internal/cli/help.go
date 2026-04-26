@@ -223,6 +223,7 @@ func commonHelpOptions() []helpOption {
 		{FlagText: "-no-color", ColumnWidth: 18, Description: "Disable ANSI colors in CLI output"},
 		{FlagText: "-manual", ColumnWidth: 18, Description: "Show links to the canonical docs"},
 		{FlagText: "-version", ColumnWidth: 18, Description: "Show version information"},
+		{FlagText: "-doctor", ColumnWidth: 18, Description: "Run the doctor check for tool dependencies"},
 		{FlagText: "-help", ColumnWidth: 18, Description: "Show this help message"},
 	}
 }
