@@ -31,6 +31,7 @@ const (
 	SpecialCommandInstallFileAssociation   SpecialCommandKind = "install-file-association"
 	SpecialCommandUninstallFileAssociation SpecialCommandKind = "uninstall-file-association"
 	SpecialCommandGenerateTemplate         SpecialCommandKind = "generate-template"
+	SpecialCommandDoctor                   SpecialCommandKind = "doctor"
 )
 
 type SpecialCommand struct {
@@ -84,6 +85,8 @@ type CLIOptions struct {
 	FFmpegPath string
 	// Path to ffprobe executable
 	FFprobePath string
+	// Show doctor diagnostic information
+	ShowDoctor bool
 }
 
 func init() {
