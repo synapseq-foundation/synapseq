@@ -116,25 +116,6 @@ func groupByCategory(checks []ToolCheck) map[string][]ToolCheck {
 	return result
 }
 
-func getInstallSuggestionForCategory(category string) string {
-	installCmd := getInstallCommand()
-	switch category {
-	case "Export":
-		return fmt.Sprintf("%s install ffmpeg", installCmd)
-	case "Playback":
-		return fmt.Sprintf("%s install ffplay", installCmd)
-	case "Hub":
-		return fmt.Sprintf("%s install git gh", installCmd)
-	default:
-		return fmt.Sprintf("%s install", installCmd)
-	}
-}
-
-func getInstallSuggestion(tool string) string {
-	installCmd := getInstallCommand()
-	return fmt.Sprintf("%s install %s", installCmd, tool)
-}
-
 func getInstallCommand() string {
 	switch runtime.GOOS {
 	case "windows":

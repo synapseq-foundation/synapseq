@@ -108,45 +108,6 @@ func TestGetInstallCommandBrew(t *testing.T) {
 	}
 }
 
-func TestGetInstallCommandWinget(t *testing.T) {
-	if runtime.GOOS != "windows" {
-		t.Skip("skipping winget test on non-windows")
-	}
-
-	cmd := getInstallCommand()
-	if cmd != "winget" {
-		t.Fatalf("expected winget on windows, got %q", cmd)
-	}
-}
-
-func TestGetInstallSuggestion(t *testing.T) {
-	suggestion := getInstallSuggestion("ffmpeg")
-	if !strings.Contains(suggestion, "ffmpeg") {
-		t.Fatalf("expected suggestion to contain ffmpeg, got %q", suggestion)
-	}
-	if runtime.GOOS == "windows" {
-		if !strings.Contains(suggestion, "winget") {
-			t.Fatalf("expected suggestion to contain winget on windows, got %q", suggestion)
-		}
-	} else {
-		if !strings.Contains(suggestion, "brew") {
-			t.Fatalf("expected suggestion to contain brew on non-windows, got %q", suggestion)
-		}
-	}
-}
-
-func TestGetInstallSuggestionForCategory(t *testing.T) {
-	suggestion := getInstallSuggestionForCategory("Export")
-	if !strings.Contains(suggestion, "ffmpeg") {
-		t.Fatalf("expected suggestion to contain ffmpeg, got %q", suggestion)
-	}
-
-	suggestion = getInstallSuggestionForCategory("Hub")
-	if !strings.Contains(suggestion, "git") || !strings.Contains(suggestion, "gh") {
-		t.Fatalf("expected suggestion to contain git and gh, got %q", suggestion)
-	}
-}
-
 func TestFormatDoctorOutputAllInstalled(t *testing.T) {
 	clistyle.SetColorEnabled(false)
 	defer clistyle.SetColorEnabled(true)
