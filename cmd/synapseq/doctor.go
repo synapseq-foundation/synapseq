@@ -25,41 +25,42 @@ import (
 
 type ToolCheck struct {
 	Name      string
+	Category  string
 	Installed bool
 	Error     string
 }
 
-type DoctorOutput struct {
-	writer io.Writer
-}
-
-func NewDoctorOutput(w io.Writer) *DoctorOutput {
-	if w == nil {
-		w = io.Discard
+func DoctorCategories() map[string][]string {
+	return map[string][]string{
+		"Export":   {"ffmpeg"},
+		"Playback": {"ffplay"},
+		"Hub":      {"git", "gh"},
 	}
-	return &DoctorOutput{writer: w}
 }
-
-const checkMark = "\u2714"
-const crossMark = "\u2716"
 
 func Doctor() []ToolCheck {
-	tools := []string{"ffmpeg", "ffplay", "git", "gh"}
-	checks := make([]ToolCheck, len(tools))
+	categories := DoctorCategories()
+	var checks []ToolCheck
 
-	for i, tool := range tools {
-		checks[i] = CheckTool(tool)
+	for category, tools := range categories {
+		for _, tool := range tools {
+			checks = append(checks, CheckToolWithCategory(tool, category))
+		}
 	}
 
 	return checks
 }
 
 func CheckTool(name string) ToolCheck {
+	return CheckToolWithCategory(name, "")
+}
+
+func CheckToolWithCategory(name, category string) ToolCheck {
 	_, err := exec.LookPath(name)
 	if err == nil {
-		return ToolCheck{Name: name, Installed: true}
+		return ToolCheck{Name: name, Category: category, Installed: true}
 	}
-	return ToolCheck{Name: name, Installed: false, Error: err.Error()}
+	return ToolCheck{Name: name, Category: category, Installed: false, Error: err.Error()}
 }
 
 func FormatDoctorOutput(checks []ToolCheck) {
@@ -71,12 +72,25 @@ func FormatDoctorOutputTo(checks []ToolCheck, w io.Writer) {
 		w = io.Discard
 	}
 
-	for _, check := range checks {
-		if check.Installed {
-			fmt.Fprintf(w, "%s %s installed\n", cli.SuccessText(checkMark), check.Name)
-		} else {
-			fmt.Fprintf(w, "%s %s not installed\n", cli.ErrorText(crossMark), check.Name)
+	categorized := groupByCategory(checks)
+	categories := []string{"Export", "Playback", "Hub"}
+
+	for _, category := range categories {
+		tools := categorized[category]
+		if len(tools) == 0 {
+			continue
 		}
+
+		fmt.Fprintln(w, cli.Label(category))
+
+		for _, check := range tools {
+			status := cli.SuccessText("✓")
+			if !check.Installed {
+				status = cli.ErrorText("✖")
+			}
+			fmt.Fprintf(w, " %s %s\n", status, check.Name)
+		}
+		fmt.Fprintln(w)
 	}
 
 	hasMissing := false
@@ -88,20 +102,18 @@ func FormatDoctorOutputTo(checks []ToolCheck, w io.Writer) {
 	}
 
 	if hasMissing {
-		fmt.Fprintln(w)
-		fmt.Fprintln(w, cli.Section("Suggested fixes:"))
-		for _, check := range checks {
-			if !check.Installed {
-				suggestion := getInstallSuggestion(check.Name)
-				fmt.Fprintf(w, "  %s\n", cli.Command(suggestion))
-			}
-		}
+		fmt.Fprintln(w, cli.ErrorText("Some tools are missing. Install them to use all features."))
+	} else {
+		fmt.Fprintln(w, cli.SuccessText("All tools installed. You're ready to go!"))
 	}
 }
 
-func getInstallSuggestion(tool string) string {
-	installCmd := getInstallCommand()
-	return fmt.Sprintf("%s install %s", installCmd, tool)
+func groupByCategory(checks []ToolCheck) map[string][]ToolCheck {
+	result := make(map[string][]ToolCheck)
+	for _, check := range checks {
+		result[check.Category] = append(result[check.Category], check)
+	}
+	return result
 }
 
 func getInstallCommand() string {
