@@ -67,13 +67,10 @@ These rules must be preserved when making changes:
 
 ## Git Workflow
 
-- **Development branch**: `development`
-- **Production branch**: `main`
-- **Feature branches**: `feature/*` (branched from `development`)
-- **Bugfix branches**: `bugfix/*` (branched from `development`)
+- **Default branch**: `main`
+- **Feature branches**: `feature/*` (branched from `main`)
+- **Bugfix branches**: `bugfix/*` (branched from `main`)
 - **Hotfix branches**: `hotfix/*` (branched from `main`)
-
-All PRs should target `development` except critical hotfixes.
 
 ## Commit Convention
 
