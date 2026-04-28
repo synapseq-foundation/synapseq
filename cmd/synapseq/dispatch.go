@@ -51,6 +51,8 @@ func dispatchSpecialCommand(opts *cli.CLIOptions, args []string) (bool, error) {
 			outputFile = command.OptionalArg
 		}
 		return true, generateTemplate(opts.New, outputFile)
+	case cli.SpecialCommandDoctor:
+		return true, runDoctor()
 	default:
 		return false, nil
 	}

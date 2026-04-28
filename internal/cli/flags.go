@@ -160,6 +160,7 @@ func flagBindings() []flagBinding {
 		{Name: "new", Usage: "Template type: meditation, focus, sleep, relaxation, example", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.New }, SpecialCommand: SpecialCommandGenerateTemplate},
 		{Name: "ffmpeg-path", Usage: "Path to ffmpeg executable", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.FFmpegPath }},
 		{Name: "ffplay-path", Usage: "Path to ffplay executable", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.FFplayPath }},
+		{Name: "doctor", Usage: "Check environment for required tools", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.ShowDoctor }, SpecialCommand: SpecialCommandDoctor},
 	}
 }
 
