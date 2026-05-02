@@ -51,6 +51,10 @@ After installation on any platform, run `synapseq -manual` to get links to the c
 - [SYNTAX](docs/SYNTAX.md)
 - [HOW IT WORKS](docs/HOW_IT_WORKS.md)
 
+### Examples
+
+Browse practical SynapSeq sequence examples in the [SynapSeq Hub](https://github.com/synapseq-foundation/synapseq-hub) repository.
+
 ## Go API
 
 If you want to integrate SynapSeq into a Go project, use the [Go module API](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4/core).
