@@ -87,6 +87,12 @@ type CLIOptions struct {
 	FFprobePath string
 	// Show doctor diagnostic information
 	ShowDoctor bool
+	// Print bash completion script
+	CompletionBash bool
+	// Print zsh completion script
+	CompletionZsh bool
+	// Print completion args (param:desc format)
+	CompletionArgs bool
 }
 
 func init() {
