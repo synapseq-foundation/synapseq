@@ -14,7 +14,6 @@
 package main
 
 import (
-	"runtime"
 	"strings"
 	"testing"
 
@@ -59,8 +58,6 @@ func TestDoctorReturnsAllTools(t *testing.T) {
 	expectedTools := map[string]string{
 		"ffmpeg": "Export",
 		"ffplay": "Playback",
-		"git":    "Hub",
-		"gh":     "Hub",
 	}
 
 	if len(checks) != len(expectedTools) {
@@ -83,7 +80,6 @@ func TestDoctorCategories(t *testing.T) {
 	expected := map[string][]string{
 		"Export":   {"ffmpeg"},
 		"Playback": {"ffplay"},
-		"Hub":      {"git", "gh"},
 	}
 
 	for cat, tools := range expected {
@@ -97,17 +93,6 @@ func TestDoctorCategories(t *testing.T) {
 	}
 }
 
-func TestGetInstallCommandBrew(t *testing.T) {
-	if runtime.GOOS != "darwin" && runtime.GOOS != "linux" {
-		t.Skip("skipping brew test on windows")
-	}
-
-	cmd := getInstallCommand()
-	if cmd != "brew" {
-		t.Fatalf("expected brew on darwin/linux, got %q", cmd)
-	}
-}
-
 func TestFormatDoctorOutputAllInstalled(t *testing.T) {
 	clistyle.SetColorEnabled(false)
 	defer clistyle.SetColorEnabled(true)
@@ -115,8 +100,6 @@ func TestFormatDoctorOutputAllInstalled(t *testing.T) {
 	checks := []ToolCheck{
 		{Name: "ffmpeg", Category: "Export", Installed: true},
 		{Name: "ffplay", Category: "Playback", Installed: true},
-		{Name: "git", Category: "Hub", Installed: true},
-		{Name: "gh", Category: "Hub", Installed: true},
 	}
 
 	var buf strings.Builder
@@ -128,9 +111,6 @@ func TestFormatDoctorOutputAllInstalled(t *testing.T) {
 	}
 	if !strings.Contains(output, "Playback") {
 		t.Fatalf("expected Playback category in output, got %s", output)
-	}
-	if !strings.Contains(output, "Hub") {
-		t.Fatalf("expected Hub category in output, got %s", output)
 	}
 	if !strings.Contains(output, "ffmpeg") {
 		t.Fatalf("expected ffmpeg in output, got %s", output)
@@ -153,8 +133,6 @@ func TestFormatDoctorOutputSomeMissing(t *testing.T) {
 	checks := []ToolCheck{
 		{Name: "ffmpeg", Category: "Export", Installed: true},
 		{Name: "ffplay", Category: "Playback", Installed: false},
-		{Name: "git", Category: "Hub", Installed: true},
-		{Name: "gh", Category: "Hub", Installed: false},
 	}
 
 	var buf strings.Builder
@@ -166,9 +144,6 @@ func TestFormatDoctorOutputSomeMissing(t *testing.T) {
 	}
 	if !strings.Contains(output, "✖ ffplay") {
 		t.Fatalf("expected ✖ ffplay in output, got %s", output)
-	}
-	if !strings.Contains(output, "✖ gh") {
-		t.Fatalf("expected ✖ gh in output, got %s", output)
 	}
 }
 
@@ -194,7 +169,6 @@ func TestGroupByCategory(t *testing.T) {
 	checks := []ToolCheck{
 		{Name: "ffmpeg", Category: "Export", Installed: true},
 		{Name: "ffplay", Category: "Playback", Installed: true},
-		{Name: "git", Category: "Hub", Installed: false},
 	}
 
 	grouped := groupByCategory(checks)
@@ -205,9 +179,6 @@ func TestGroupByCategory(t *testing.T) {
 	if len(grouped["Playback"]) != 1 {
 		t.Fatalf("expected 1 tool in Playback, got %d", len(grouped["Playback"]))
 	}
-	if len(grouped["Hub"]) != 1 {
-		t.Fatalf("expected 1 tool in Hub, got %d", len(grouped["Hub"]))
-	}
 }
 
 func TestFormatDoctorOutputAllMissing(t *testing.T) {
@@ -217,8 +188,6 @@ func TestFormatDoctorOutputAllMissing(t *testing.T) {
 	checks := []ToolCheck{
 		{Name: "ffmpeg", Category: "Export", Installed: false},
 		{Name: "ffplay", Category: "Playback", Installed: false},
-		{Name: "git", Category: "Hub", Installed: false},
-		{Name: "gh", Category: "Hub", Installed: false},
 	}
 
 	var buf strings.Builder
@@ -233,11 +202,5 @@ func TestFormatDoctorOutputAllMissing(t *testing.T) {
 	}
 	if !strings.Contains(output, "✖ ffplay") {
 		t.Fatalf("expected ✖ ffplay in output, got %s", output)
-	}
-	if !strings.Contains(output, "✖ git") {
-		t.Fatalf("expected ✖ git in output, got %s", output)
-	}
-	if !strings.Contains(output, "✖ gh") {
-		t.Fatalf("expected ✖ gh in output, got %s", output)
 	}
 }

@@ -18,7 +18,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"runtime"
 
 	"github.com/synapseq-foundation/synapseq/v4/internal/cli"
 )
@@ -34,7 +33,6 @@ func DoctorCategories() map[string][]string {
 	return map[string][]string{
 		"Export":   {"ffmpeg"},
 		"Playback": {"ffplay"},
-		"Hub":      {"git", "gh"},
 	}
 }
 
@@ -73,7 +71,7 @@ func FormatDoctorOutputTo(checks []ToolCheck, w io.Writer) {
 	}
 
 	categorized := groupByCategory(checks)
-	categories := []string{"Export", "Playback", "Hub"}
+	categories := []string{"Export", "Playback"}
 
 	for _, category := range categories {
 		tools := categorized[category]
@@ -114,15 +112,6 @@ func groupByCategory(checks []ToolCheck) map[string][]ToolCheck {
 		result[check.Category] = append(result[check.Category], check)
 	}
 	return result
-}
-
-func getInstallCommand() string {
-	switch runtime.GOOS {
-	case "windows":
-		return "winget"
-	default:
-		return "brew"
-	}
 }
 
 func runDoctor() error {
