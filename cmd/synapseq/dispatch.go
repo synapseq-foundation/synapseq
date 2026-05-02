@@ -18,6 +18,19 @@ import (
 )
 
 func dispatchSpecialCommand(opts *cli.CLIOptions, args []string) (bool, error) {
+	if opts.CompletionBash {
+		cli.PrintBashCompletion()
+		return true, nil
+	}
+	if opts.CompletionZsh {
+		cli.PrintZshCompletion()
+		return true, nil
+	}
+	if opts.CompletionArgs {
+		cli.PrintCompletionArgs()
+		return true, nil
+	}
+
 	command := cli.ResolveSpecialCommand(opts, args)
 
 	switch command.Kind {

@@ -161,6 +161,9 @@ func flagBindings() []flagBinding {
 		{Name: "ffmpeg-path", Usage: "Path to ffmpeg executable", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.FFmpegPath }},
 		{Name: "ffplay-path", Usage: "Path to ffplay executable", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.FFplayPath }},
 		{Name: "doctor", Usage: "Check environment for required tools", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.ShowDoctor }, SpecialCommand: SpecialCommandDoctor},
+		{Name: "completion-bash", Usage: "Print bash completion script", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.CompletionBash }},
+		{Name: "completion-zsh", Usage: "Print zsh completion script", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.CompletionZsh }},
+		{Name: "completion-args", Usage: "Print flags with descriptions", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.CompletionArgs }},
 	}
 }
 
