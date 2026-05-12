@@ -210,9 +210,9 @@ func renderRemoteEntriesTable(entries []t.RemoteEntry) string {
 	fmt.Fprintln(w, "ID\tDURATION\tCATEGORY\tCREATED")
 
 	for _, entry := range entries {
-		fmt.Fprintf(w, "%s\t%d\t%s\t%s\n",
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
 			entry.ID,
-			entry.DurationMinutes,
+			fmt.Sprintf("%d min", entry.DurationMinutes),
 			entry.Category,
 			shortDate(entry.CreatedAt),
 		)
