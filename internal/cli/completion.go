@@ -56,15 +56,25 @@ func PrintCompletionArgs() {
 func PrintBashCompletion() {
 	script := `# SynapSeq bash completion
 _synapseq_completion() {
-    local cur prev opts
+    local cur opts
+
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
-    prev="${COMP_WORDS[COMP_CWORD-1]}"
 
-    if [[ ${cur} == -* ]]; then
-        opts=$($(basename ${COMP_WORDS[0]}) -completion-args 2>/dev/null | sed 's/:.*//' | sed 's/^/-/' | tr '\n' ' ')
-        COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+    if [[ "$cur" == -* ]]; then
+        opts=$(
+            "$(basename "${COMP_WORDS[0]}")" -completion-args 2>/dev/null \
+            | sed 's/:.*//' \
+            | sed 's/^/-/' \
+            | tr '\n' ' '
+        )
+
+        COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
+        return 0
     fi
+
+    COMPREPLY=( $(compgen -f -- "$cur") )
+    return 0
 }
 
 complete -F _synapseq_completion synapseq
@@ -77,8 +87,21 @@ func PrintZshCompletion() {
 	script := `# SynapSeq zsh completion
 _synapseq_completion() {
     local -a opts
-    opts=($($(basename $words[1]) -completion-args 2>/dev/null | sed 's/:.*//' | sed 's/^/-/' ))
-    _describe 'synapseq flags' opts
+
+    if [[ "$words[CURRENT]" == -* ]]; then
+        opts=(
+            $(
+                "$(basename "$words[1]")" -completion-args 2>/dev/null \
+                | sed 's/:.*//' \
+                | sed 's/^/-/'
+            )
+        )
+
+        _describe 'synapseq flags' opts
+        return 0
+    fi
+
+    _files
 }
 
 compdef _synapseq_completion synapseq
