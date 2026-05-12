@@ -224,6 +224,8 @@ func commonHelpOptions() []helpOption {
 		{FlagText: "-manual", ColumnWidth: 18, Description: "Show links to the canonical docs"},
 		{FlagText: "-version", ColumnWidth: 18, Description: "Show version information"},
 		{FlagText: "-doctor", ColumnWidth: 18, Description: "Run the doctor check for tool dependencies"},
+		{FlagText: "-completion-bash", ColumnWidth: 18, Description: "Generate bash completion script"},
+		{FlagText: "-completion-zsh", ColumnWidth: 18, Description: "Generate zsh completion script"},
 		{FlagText: "-help", ColumnWidth: 18, Description: "Show this help message"},
 	}
 }
