@@ -9,7 +9,7 @@
  * See the file COPYING.txt for details.
  */
 
-package hub
+package remote
 
 import (
 	"net/http"
@@ -22,11 +22,11 @@ import (
 )
 
 func TestFindEntryByID(ts *testing.T) {
-	manifest := &t.HubManifest{
-		Entries: []t.HubEntry{{ID: "focus-pack"}, {ID: "sleep-pack"}},
+	index := &t.RemoteIndex{
+		Entries: []t.RemoteEntry{{ID: "focus-pack"}, {ID: "sleep-pack"}},
 	}
 
-	entry := findEntryByID(manifest, "sleep-pack")
+	entry := findEntryByID(index, "sleep-pack")
 	if entry == nil {
 		ts.Fatalf("expected entry to be found")
 	}
@@ -34,13 +34,13 @@ func TestFindEntryByID(ts *testing.T) {
 		ts.Fatalf("expected sleep-pack, got %q", entry.ID)
 	}
 
-	if missing := findEntryByID(manifest, "missing"); missing != nil {
+	if missing := findEntryByID(index, "missing"); missing != nil {
 		ts.Fatalf("expected missing entry lookup to return nil")
 	}
 }
 
-func TestManifestCatalogFindEntry(ts *testing.T) {
-	catalog := &manifestCatalog{manifest: &t.HubManifest{Entries: []t.HubEntry{{ID: "focus-pack"}}}}
+func TestIndexCatalogFindEntry(ts *testing.T) {
+	catalog := &indexCatalog{index: &t.RemoteIndex{Entries: []t.RemoteEntry{{ID: "focus-pack"}}}}
 	if entry := catalog.findEntry("focus-pack"); entry == nil || entry.ID != "focus-pack" {
 		ts.Fatalf("expected catalog to resolve focus-pack, got %#v", entry)
 	}
@@ -49,16 +49,12 @@ func TestManifestCatalogFindEntry(ts *testing.T) {
 	}
 }
 
-func TestGetDependencyPath(ts *testing.T) {
-	cache := entryCache{dir: "/tmp/hub-entry", entry: &t.HubEntry{ID: "focus-pack"}}
-	asset := cache.dependencyPath(t.HubDependency{ID: "rain", Type: t.HubDependencyTypeAmbiance})
-	if asset != filepath.Join(cache.dir, "rain.wav") {
-		ts.Fatalf("expected ambiance dependency path to end with .wav, got %q", asset)
+func TestRemoteSequenceURL(ts *testing.T) {
+	if got := remoteSequenceURL("/free/focus.spsq"); got != "https://sequence.synapseq.org/free/focus.spsq" {
+		ts.Fatalf("unexpected url: %q", got)
 	}
-
-	preset := cache.dependencyPath(t.HubDependency{ID: "intro", Type: t.HubDependencyTypeExtends})
-	if preset != filepath.Join(cache.dir, "intro.spsc") {
-		ts.Fatalf("expected preset dependency path to end with .spsc, got %q", preset)
+	if got := remoteSequenceURL("free/focus.spsq"); got != "https://sequence.synapseq.org/free/focus.spsq" {
+		ts.Fatalf("unexpected url: %q", got)
 	}
 }
 
@@ -88,7 +84,7 @@ func TestValidateJSONContentType(ts *testing.T) {
 }
 
 func TestEntryCacheSequencePath(ts *testing.T) {
-	cache := entryCache{dir: "/tmp/hub-entry", entry: &t.HubEntry{ID: "focus-pack"}}
+	cache := entryCache{dir: "/tmp/remote-entry", entry: &t.RemoteEntry{ID: "focus-pack"}}
 	if path := cache.sequencePath(); path != filepath.Join(cache.dir, "focus-pack.spsq") {
 		ts.Fatalf("expected sequence path to end with focus-pack.spsq, got %q", path)
 	}
@@ -96,7 +92,7 @@ func TestEntryCacheSequencePath(ts *testing.T) {
 
 func TestEntryCacheHasSequence(ts *testing.T) {
 	tempDir := ts.TempDir()
-	cache := entryCache{dir: tempDir, entry: &t.HubEntry{ID: "cached"}}
+	cache := entryCache{dir: tempDir, entry: &t.RemoteEntry{ID: "cached"}}
 	sequencePath := cache.sequencePath()
 
 	cached, err := cache.hasSequence()
@@ -120,18 +116,18 @@ func TestEntryCacheHasSequence(ts *testing.T) {
 	}
 }
 
-func TestManifestCacheExists(ts *testing.T) {
+func TestIndexCacheExists(ts *testing.T) {
 	tempDir := ts.TempDir()
-	cache := manifestCache{path: filepath.Join(tempDir, "manifest.json")}
+	cache := indexCache{path: filepath.Join(tempDir, "index.json")}
 	if cache.exists() {
-		ts.Fatalf("expected missing manifest cache to report false")
+		ts.Fatalf("expected missing index cache to report false")
 	}
 
 	if err := os.WriteFile(cache.path, []byte("{}"), 0644); err != nil {
-		ts.Fatalf("failed to seed manifest cache: %v", err)
+		ts.Fatalf("failed to seed index cache: %v", err)
 	}
 
 	if !cache.exists() {
-		ts.Fatalf("expected written manifest cache to report true")
+		ts.Fatalf("expected written index cache to report true")
 	}
 }

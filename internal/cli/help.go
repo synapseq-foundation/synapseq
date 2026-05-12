@@ -48,10 +48,10 @@ func Help() {
 	writeInputSection(writer)
 	writeOutputSection(writer)
 	writeOptionsSection(writer, "Most common options:", commonHelpOptions())
-	writeMutedLeadSection(writer, "Hub:", "Run -hub-update first to initialize the local Hub index.")
-	writeOptionsList(writer, hubHelpOptions())
+	writeMutedLeadSection(writer, "Remote:", "Run -remote-sync first to initialize the local Remote index.")
+	writeOptionsList(writer, remoteHelpOptions())
 	fmt.Fprintln(writer)
-	writeCommandListSection(writer, "Hub quick start:", hubQuickStartCommands())
+	writeCommandListSection(writer, "Remote quick start:", remoteQuickStartCommands())
 	writeOptionsSection(writer, "Advanced:", advancedHelpOptions())
 
 	if runtime.GOOS == "windows" {
@@ -228,15 +228,15 @@ func commonHelpOptions() []helpOption {
 	}
 }
 
-func hubHelpOptions() []helpOption {
+func remoteHelpOptions() []helpOption {
 	return []helpOption{
-		{FlagText: "-hub-update", ColumnWidth: 24, Description: "Update the local Hub index"},
-		{FlagText: "-hub-list", ColumnWidth: 24, Description: "List available sequences"},
-		{FlagText: "-hub-search WORD", ColumnWidth: 24, Description: "Search the Hub"},
-		{FlagText: "-hub-info NAME", ColumnWidth: 24, Description: "Show information about a sequence"},
-		{FlagText: "-hub-download NAME [DIR]", ColumnWidth: 24, Description: "Download a sequence and dependencies"},
-		{FlagText: "-hub-get NAME [OUTPUT]", ColumnWidth: 24, Description: "Download and generate in one step"},
-		{FlagText: "-hub-clean", ColumnWidth: 24, Description: "Clean up local Hub cache"},
+		{FlagText: "-remote-sync", ColumnWidth: 28, Description: "Sync the local Remote index"},
+		{FlagText: "-remote-list", ColumnWidth: 28, Description: "List available remote sequences"},
+		{FlagText: "-remote-search WORD", ColumnWidth: 28, Description: "Search remote sequences"},
+		{FlagText: "-remote-info NAME", ColumnWidth: 28, Description: "Show information about a remote sequence"},
+		{FlagText: "-remote-download NAME [DIR]", ColumnWidth: 28, Description: "Download a remote sequence"},
+		{FlagText: "-remote-get NAME [OUTPUT]", ColumnWidth: 28, Description: "Download and generate in one step"},
+		{FlagText: "-remote-clean", ColumnWidth: 28, Description: "Clean up local Remote cache"},
 	}
 }
 
@@ -254,13 +254,13 @@ func windowsHelpOptions() []helpOption {
 	}
 }
 
-func hubQuickStartCommands() []string {
+func remoteQuickStartCommands() []string {
 	return []string{
-		"synapseq -hub-update",
-		"synapseq -hub-list",
-		"synapseq -hub-search calm-state",
-		"synapseq -hub-get calm-state calm-state.wav",
-		"synapseq -hub-get calm-state calm-state.mp3",
+		"synapseq -remote-sync",
+		"synapseq -remote-list",
+		"synapseq -remote-search calm-state",
+		"synapseq -remote-get calm-state calm-state.wav",
+		"synapseq -remote-get calm-state calm-state.mp3",
 	}
 }
 

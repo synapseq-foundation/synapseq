@@ -40,20 +40,20 @@ func dispatchSpecialCommand(opts *cli.CLIOptions, args []string) (bool, error) {
 	case cli.SpecialCommandShowManual:
 		cli.ShowManual()
 		return true, nil
-	case cli.SpecialCommandHubUpdate:
-		return true, hubRunUpdate(opts.Quiet)
-	case cli.SpecialCommandHubClean:
-		return true, hubRunClean(opts.Quiet)
-	case cli.SpecialCommandHubGet:
-		return true, hubRunGet(opts.HubGet, command.OptionalArg, opts)
-	case cli.SpecialCommandHubList:
-		return true, hubRunList()
-	case cli.SpecialCommandHubSearch:
-		return true, hubRunSearch(opts.HubSearch)
-	case cli.SpecialCommandHubDownload:
-		return true, hubRunDownload(opts.HubDownload, command.OptionalArg, opts.Quiet)
-	case cli.SpecialCommandHubInfo:
-		return true, hubRunInfo(opts.HubInfo)
+	case cli.SpecialCommandRemoteSync:
+		return true, remoteRunSync(opts.Quiet)
+	case cli.SpecialCommandRemoteClean:
+		return true, remoteRunClean(opts.Quiet)
+	case cli.SpecialCommandRemoteGet:
+		return true, remoteRunGet(opts.RemoteGet, command.OptionalArg, opts)
+	case cli.SpecialCommandRemoteList:
+		return true, remoteRunList()
+	case cli.SpecialCommandRemoteSearch:
+		return true, remoteRunSearch(opts.RemoteSearch)
+	case cli.SpecialCommandRemoteDownload:
+		return true, remoteRunDownload(opts.RemoteDownload, command.OptionalArg, opts.Quiet)
+	case cli.SpecialCommandRemoteInfo:
+		return true, remoteRunInfo(opts.RemoteInfo)
 	case cli.SpecialCommandInstallFileAssociation:
 		return true, installWindowsFileAssociation(opts.Quiet)
 	case cli.SpecialCommandUninstallFileAssociation:

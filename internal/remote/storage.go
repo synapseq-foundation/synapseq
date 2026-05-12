@@ -9,59 +9,58 @@
  * See the file COPYING.txt for details.
  */
 
-package hub
+package remote
 
 import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"strings"
 
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
-type hubCache struct {
+type remoteCache struct {
 	root string
 }
 
-type manifestCache struct {
+type indexCache struct {
 	path string
 }
 
 type entryCache struct {
 	dir   string
-	entry *t.HubEntry
+	entry *t.RemoteEntry
 }
 
-func openHubCache() (*hubCache, error) {
+func openRemoteCache() (*remoteCache, error) {
 	root, err := GetCacheDir()
 	if err != nil {
 		return nil, err
 	}
 
-	return &hubCache{root: root}, nil
+	return &remoteCache{root: root}, nil
 }
 
-func (cache *hubCache) manifest() manifestCache {
-	return manifestCache{path: filepath.Join(cache.root, "manifest.json")}
+func (cache *remoteCache) index() indexCache {
+	return indexCache{path: filepath.Join(cache.root, "index.json")}
 }
 
-func (cache *hubCache) entry(entry *t.HubEntry) entryCache {
+func (cache *remoteCache) entry(entry *t.RemoteEntry) entryCache {
 	return entryCache{
-		dir:   filepath.Join(cache.root, strings.TrimSuffix(entry.Path, ".spsq")),
+		dir:   filepath.Join(cache.root, entry.ID),
 		entry: entry,
 	}
 }
 
-func (cache manifestCache) read() (*t.HubManifest, error) {
-	return readManifestFile(cache.path)
+func (cache indexCache) read() (*t.RemoteIndex, error) {
+	return readIndexFile(cache.path)
 }
 
-func (cache manifestCache) write(data []byte) error {
-	return writeManifestFile(cache.path, data)
+func (cache indexCache) write(data []byte) error {
+	return writeIndexFile(cache.path, data)
 }
 
-func (cache manifestCache) exists() bool {
+func (cache indexCache) exists() bool {
 	if _, err := os.Stat(cache.path); os.IsNotExist(err) {
 		return false
 	}
@@ -88,39 +87,30 @@ func (cache entryCache) hasSequence() (bool, error) {
 	}
 }
 
-func (cache entryCache) dependencyPath(dependency t.HubDependency) string {
-	extension := ".spsc"
-	if dependency.Type == t.HubDependencyTypeAmbiance {
-		extension = ".wav"
-	}
-
-	return filepath.Join(cache.dir, dependency.ID+extension)
-}
-
-func readManifestFile(path string) (*t.HubManifest, error) {
-	manifestData, err := os.ReadFile(path)
+func readIndexFile(path string) (*t.RemoteIndex, error) {
+	indexData, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	var manifest *t.HubManifest
-	if err := json.Unmarshal(manifestData, &manifest); err != nil {
+	var index *t.RemoteIndex
+	if err := json.Unmarshal(indexData, &index); err != nil {
 		return nil, err
 	}
 
-	return manifest, nil
+	return index, nil
 }
 
-func writeManifestFile(path string, data []byte) error {
+func writeIndexFile(path string, data []byte) error {
 	return os.WriteFile(path, data, 0644)
 }
 
-func findEntryByID(manifest *t.HubManifest, sequenceID string) *t.HubEntry {
-	if manifest == nil {
+func findEntryByID(index *t.RemoteIndex, sequenceID string) *t.RemoteEntry {
+	if index == nil {
 		return nil
 	}
 
-	for _, entry := range manifest.Entries {
+	for _, entry := range index.Entries {
 		if entry.ID == sequenceID {
 			match := entry
 			return &match
