@@ -9,27 +9,27 @@
  * See the file COPYING.txt for details.
  */
 
-package hub
+package remote
 
 import t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 
-type manifestCatalog struct {
-	manifest *t.HubManifest
+type indexCatalog struct {
+	index *t.RemoteIndex
 }
 
-func loadManifestCatalog() (*manifestCatalog, error) {
-	manifest, err := GetManifest()
+func loadIndexCatalog() (*indexCatalog, error) {
+	index, err := GetIndex()
 	if err != nil {
 		return nil, err
 	}
 
-	return &manifestCatalog{manifest: manifest}, nil
+	return &indexCatalog{index: index}, nil
 }
 
-func (catalog *manifestCatalog) findEntry(sequenceID string) *t.HubEntry {
+func (catalog *indexCatalog) findEntry(sequenceID string) *t.RemoteEntry {
 	if catalog == nil {
 		return nil
 	}
 
-	return findEntryByID(catalog.manifest, sequenceID)
+	return findEntryByID(catalog.index, sequenceID)
 }

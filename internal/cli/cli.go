@@ -21,13 +21,13 @@ const (
 	SpecialCommandNone                     SpecialCommandKind = ""
 	SpecialCommandShowVersion              SpecialCommandKind = "show-version"
 	SpecialCommandShowManual               SpecialCommandKind = "show-manual"
-	SpecialCommandHubUpdate                SpecialCommandKind = "hub-update"
-	SpecialCommandHubClean                 SpecialCommandKind = "hub-clean"
-	SpecialCommandHubGet                   SpecialCommandKind = "hub-get"
-	SpecialCommandHubList                  SpecialCommandKind = "hub-list"
-	SpecialCommandHubSearch                SpecialCommandKind = "hub-search"
-	SpecialCommandHubDownload              SpecialCommandKind = "hub-download"
-	SpecialCommandHubInfo                  SpecialCommandKind = "hub-info"
+	SpecialCommandRemoteSync               SpecialCommandKind = "remote-sync"
+	SpecialCommandRemoteClean              SpecialCommandKind = "remote-clean"
+	SpecialCommandRemoteGet                SpecialCommandKind = "remote-get"
+	SpecialCommandRemoteList               SpecialCommandKind = "remote-list"
+	SpecialCommandRemoteSearch             SpecialCommandKind = "remote-search"
+	SpecialCommandRemoteDownload           SpecialCommandKind = "remote-download"
+	SpecialCommandRemoteInfo               SpecialCommandKind = "remote-info"
 	SpecialCommandInstallFileAssociation   SpecialCommandKind = "install-file-association"
 	SpecialCommandUninstallFileAssociation SpecialCommandKind = "uninstall-file-association"
 	SpecialCommandGenerateTemplate         SpecialCommandKind = "generate-template"
@@ -63,20 +63,20 @@ type CLIOptions struct {
 	UninstallFileAssociation bool
 	// Play (with ffplay)
 	Play bool
-	// Hub update index of available sequences
-	HubUpdate bool
-	// Hub clean up local cache
-	HubClean bool
-	// Hub list available sequences
-	HubList bool
-	// Hub search sequences
-	HubSearch string
-	// Hub download sequences
-	HubDownload string
-	// Hub info of sequence
-	HubInfo string
-	// Hub get sequence
-	HubGet string
+	// Remote sync index of available sequences
+	RemoteSync bool
+	// Remote clean up local cache
+	RemoteClean bool
+	// Remote list available sequences
+	RemoteList bool
+	// Remote search sequences
+	RemoteSearch string
+	// Remote download sequence
+	RemoteDownload string
+	// Remote info of sequence
+	RemoteInfo string
+	// Remote get sequence
+	RemoteGet string
 	// Mp3 export with ffmpeg
 	Mp3 bool
 	// Path to ffplay executable

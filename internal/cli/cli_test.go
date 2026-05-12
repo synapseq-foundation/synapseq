@@ -97,14 +97,14 @@ func TestParseFlags(ts *testing.T) {
 			expectError:  false,
 		},
 		{
-			args:         []string{"cmd", "-quiet", "-hub-list"},
-			expected:     &CLIOptions{Quiet: true, HubList: true},
+			args:         []string{"cmd", "-quiet", "-remote-list"},
+			expected:     &CLIOptions{Quiet: true, RemoteList: true},
 			expectedArgs: []string{},
 			expectError:  false,
 		},
 		{
-			args:         []string{"cmd", "-no-color", "-hub-get", "calm-state", "output.wav"},
-			expected:     &CLIOptions{NoColor: true, HubGet: "calm-state"},
+			args:         []string{"cmd", "-no-color", "-remote-get", "calm-state", "output.wav"},
+			expected:     &CLIOptions{NoColor: true, RemoteGet: "calm-state"},
 			expectedArgs: []string{"output.wav"},
 			expectError:  false,
 		},
@@ -143,56 +143,56 @@ func TestParseFlags(ts *testing.T) {
 			expectedArgs: []string{},
 			expectError:  false,
 		},
-		// Hub boolean flags
+		// Remote boolean flags
 		{
-			args:         []string{"cmd", "-hub-update"},
-			expected:     &CLIOptions{HubUpdate: true},
+			args:         []string{"cmd", "-remote-sync"},
+			expected:     &CLIOptions{RemoteSync: true},
 			expectedArgs: []string{},
 			expectError:  false,
 		},
 		{
-			args:         []string{"cmd", "-hub-clean"},
-			expected:     &CLIOptions{HubClean: true},
+			args:         []string{"cmd", "-remote-clean"},
+			expected:     &CLIOptions{RemoteClean: true},
 			expectedArgs: []string{},
 			expectError:  false,
 		},
 		{
-			args:         []string{"cmd", "-hub-list"},
-			expected:     &CLIOptions{HubList: true},
+			args:         []string{"cmd", "-remote-list"},
+			expected:     &CLIOptions{RemoteList: true},
 			expectedArgs: []string{},
 			expectError:  false,
 		},
-		// Hub string flags
+		// Remote string flags
 		{
-			args:         []string{"cmd", "-hub-search", "focus"},
-			expected:     &CLIOptions{HubSearch: "focus"},
-			expectedArgs: []string{},
-			expectError:  false,
-		},
-		{
-			args:         []string{"cmd", "-hub-download", "baseline"},
-			expected:     &CLIOptions{HubDownload: "baseline"},
+			args:         []string{"cmd", "-remote-search", "focus"},
+			expected:     &CLIOptions{RemoteSearch: "focus"},
 			expectedArgs: []string{},
 			expectError:  false,
 		},
 		{
-			args:         []string{"cmd", "-hub-info", "deep-sleep"},
-			expected:     &CLIOptions{HubInfo: "deep-sleep"},
+			args:         []string{"cmd", "-remote-download", "baseline"},
+			expected:     &CLIOptions{RemoteDownload: "baseline"},
 			expectedArgs: []string{},
 			expectError:  false,
 		},
 		{
-			args:         []string{"cmd", "-hub-get", "alpha-pack"},
-			expected:     &CLIOptions{HubGet: "alpha-pack"},
+			args:         []string{"cmd", "-remote-info", "deep-sleep"},
+			expected:     &CLIOptions{RemoteInfo: "deep-sleep"},
 			expectedArgs: []string{},
 			expectError:  false,
 		},
-		// Combined hub options and positional args
 		{
-			args: []string{"cmd", "-hub-search", "relax", "-hub-download", "rain-pack", "input.spsq"},
+			args:         []string{"cmd", "-remote-get", "alpha-pack"},
+			expected:     &CLIOptions{RemoteGet: "alpha-pack"},
+			expectedArgs: []string{},
+			expectError:  false,
+		},
+		// Combined remote options and positional args
+		{
+			args: []string{"cmd", "-remote-search", "relax", "-remote-download", "rain-pack", "input.spsq"},
 			expected: &CLIOptions{
-				HubSearch:   "relax",
-				HubDownload: "rain-pack",
+				RemoteSearch:   "relax",
+				RemoteDownload: "rain-pack",
 			},
 			expectedArgs: []string{"input.spsq"},
 			expectError:  false,
@@ -279,26 +279,26 @@ func TestParseFlags(ts *testing.T) {
 		if opts.Play != test.expected.Play {
 			ts.Errorf("For args %v, Play: expected %v but got %v", test.args, test.expected.Play, opts.Play)
 		}
-		if opts.HubUpdate != test.expected.HubUpdate {
-			ts.Errorf("For args %v, HubUpdate: expected %v but got %v", test.args, test.expected.HubUpdate, opts.HubUpdate)
+		if opts.RemoteSync != test.expected.RemoteSync {
+			ts.Errorf("For args %v, RemoteSync: expected %v but got %v", test.args, test.expected.RemoteSync, opts.RemoteSync)
 		}
-		if opts.HubClean != test.expected.HubClean {
-			ts.Errorf("For args %v, HubClean: expected %v but got %v", test.args, test.expected.HubClean, opts.HubClean)
+		if opts.RemoteClean != test.expected.RemoteClean {
+			ts.Errorf("For args %v, RemoteClean: expected %v but got %v", test.args, test.expected.RemoteClean, opts.RemoteClean)
 		}
-		if opts.HubList != test.expected.HubList {
-			ts.Errorf("For args %v, HubList: expected %v but got %v", test.args, test.expected.HubList, opts.HubList)
+		if opts.RemoteList != test.expected.RemoteList {
+			ts.Errorf("For args %v, RemoteList: expected %v but got %v", test.args, test.expected.RemoteList, opts.RemoteList)
 		}
-		if opts.HubSearch != test.expected.HubSearch {
-			ts.Errorf("For args %v, HubSearch: expected %q but got %q", test.args, test.expected.HubSearch, opts.HubSearch)
+		if opts.RemoteSearch != test.expected.RemoteSearch {
+			ts.Errorf("For args %v, RemoteSearch: expected %q but got %q", test.args, test.expected.RemoteSearch, opts.RemoteSearch)
 		}
-		if opts.HubDownload != test.expected.HubDownload {
-			ts.Errorf("For args %v, HubDownload: expected %q but got %q", test.args, test.expected.HubDownload, opts.HubDownload)
+		if opts.RemoteDownload != test.expected.RemoteDownload {
+			ts.Errorf("For args %v, RemoteDownload: expected %q but got %q", test.args, test.expected.RemoteDownload, opts.RemoteDownload)
 		}
-		if opts.HubInfo != test.expected.HubInfo {
-			ts.Errorf("For args %v, HubInfo: expected %q but got %q", test.args, test.expected.HubInfo, opts.HubInfo)
+		if opts.RemoteInfo != test.expected.RemoteInfo {
+			ts.Errorf("For args %v, RemoteInfo: expected %q but got %q", test.args, test.expected.RemoteInfo, opts.RemoteInfo)
 		}
-		if opts.HubGet != test.expected.HubGet {
-			ts.Errorf("For args %v, HubGet: expected %q but got %q", test.args, test.expected.HubGet, opts.HubGet)
+		if opts.RemoteGet != test.expected.RemoteGet {
+			ts.Errorf("For args %v, RemoteGet: expected %q but got %q", test.args, test.expected.RemoteGet, opts.RemoteGet)
 		}
 		if opts.FFmpegPath != test.expected.FFmpegPath {
 			ts.Errorf("For args %v, FFmpegPath: expected %q but got %q", test.args, test.expected.FFmpegPath, opts.FFmpegPath)
@@ -448,11 +448,11 @@ func TestHelpIncludesQuickStart(ts *testing.T) {
 		"-new TYPE         Template type: meditation, focus, sleep, relaxation",
 		"-manual           Show links to the canonical docs",
 		"-preview          Render an HTML preview timeline",
-		"Hub quick start:",
-		"Run -hub-update first to initialize the local Hub index.",
-		"synapseq -hub-update",
-		"synapseq -hub-list",
-		"synapseq -hub-get calm-state calm-state.wav",
+		"Remote quick start:",
+		"Run -remote-sync first to initialize the local Remote index.",
+		"synapseq -remote-sync",
+		"synapseq -remote-list",
+		"synapseq -remote-get calm-state calm-state.wav",
 	}
 
 	for _, expected := range checks {

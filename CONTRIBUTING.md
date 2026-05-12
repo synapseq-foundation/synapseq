@@ -47,7 +47,7 @@ SynapSeq follows the **Git Flow** branching model:
 
 ## Contributing Sequence Files (`.spsq`)
 
-If you'd like to share your own `.spsq` sequence files with the community, please contribute them to the [SynapSeq Hub Repository](https://github.com/synapseq-foundation/synapseq-hub).
+If you'd like to share your own `.spsq` sequence files with the community, please contribute them to the SynapSeq Remote sequence repository.
 
 This process is separate from code contributions to the main SynapSeq project.
 

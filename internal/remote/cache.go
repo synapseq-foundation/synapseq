@@ -9,7 +9,7 @@
  * See the file COPYING.txt for details.
  */
 
-package hub
+package remote
 
 import (
 	"os"
@@ -17,7 +17,7 @@ import (
 	"runtime"
 )
 
-// GetCacheDir returns the path to the cache directory for storing Hub data
+// GetCacheDir returns the path to the cache directory for storing Remote data.
 func GetCacheDir() (string, error) {
 	var base string
 
@@ -45,8 +45,8 @@ func GetCacheDir() (string, error) {
 	return base, nil
 }
 
-// HubClean removes the cache directory and all its contents
-func HubClean() error {
+// RemoteClean removes the cache directory and all its contents.
+func RemoteClean() error {
 	cache, err := GetCacheDir()
 	if err != nil {
 		return err

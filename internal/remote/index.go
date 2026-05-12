@@ -9,26 +9,26 @@
  * See the file COPYING.txt for details.
  */
 
-package hub
+package remote
 
 import t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 
-// GetManifest retrieves and parses the Hub manifest file from the cache
-func GetManifest() (*t.HubManifest, error) {
-	cache, err := openHubCache()
+// GetIndex retrieves and parses the Remote index file from the cache.
+func GetIndex() (*t.RemoteIndex, error) {
+	cache, err := openRemoteCache()
 	if err != nil {
 		return nil, err
 	}
 
-	return cache.manifest().read()
+	return cache.index().read()
 }
 
-// ManifestExists checks if the Hub manifest file exists in the cache
-func ManifestExists() bool {
-	cache, err := openHubCache()
+// IndexExists checks if the Remote index file exists in the cache.
+func IndexExists() bool {
+	cache, err := openRemoteCache()
 	if err != nil {
 		return false
 	}
 
-	return cache.manifest().exists()
+	return cache.index().exists()
 }

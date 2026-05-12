@@ -9,20 +9,20 @@
  * See the file COPYING.txt for details.
  */
 
-package hub
+package remote
 
 import (
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
-// HubUpdate updates the local Hub manifest cache
-func HubUpdate() error {
-	cache, err := openHubCache()
+// RemoteSync updates the local Remote index cache.
+func RemoteSync() error {
+	cache, err := openRemoteCache()
 	if err != nil {
 		return err
 	}
 
-	data, response, err := downloadURL(t.HubManifestURL)
+	data, response, err := downloadURL(t.RemoteIndexURL)
 	if err != nil {
 		return err
 	}
@@ -30,7 +30,7 @@ func HubUpdate() error {
 		return err
 	}
 
-	if err = cache.manifest().write(data); err != nil {
+	if err = cache.index().write(data); err != nil {
 		return err
 	}
 

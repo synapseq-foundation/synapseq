@@ -23,7 +23,7 @@ These invariants are important when changing the codebase:
 4. `internal/sequence` owns sequence loading and construction. `internal/parser` parses the DSL, but `internal/sequence` is responsible for turning parsed content into a valid `types.Sequence`.
 5. `internal/audio` owns synthesis and rendering. `core` calls it, but does not reimplement audio concerns.
 6. `internal/preview` owns HTML preview generation and stays separate from audio rendering.
-7. `internal/hub` is an optional source of `.spsq` files and dependencies. Once a Hub sequence is downloaded, it goes through the same main pipeline as any local sequence.
+7. `internal/remote` is an optional source of `.spsq` files. Once a Remote sequence is downloaded, it goes through the same main pipeline as any local sequence.
 
 ## High-Level Runtime Flow
 
@@ -38,14 +38,14 @@ flowchart TD
 	Core --> Preview[internal/preview\nHTML preview generation]
 	Core --> Audio[internal/audio\nPCM and WAV rendering]
 	Audio --> External[external\nffplay and ffmpeg integration]
-	CLI --> Hub[internal/hub\nmanifest, cache, download]
-	Hub --> Core
+	CLI --> Remote[internal/remote\nindex, cache, download]
+	Remote --> Core
 ```
 
 There are two main paths:
 
 - a local sequence path, where the CLI loads a user-provided `.spsq` file;
-- a Hub path, where the CLI resolves a remote entry first, downloads it, and then reuses the same loading and rendering pipeline.
+- a Remote path, where the CLI resolves a remote entry first, downloads it, and then reuses the same loading and rendering pipeline.
 
 ## Package Map
 
@@ -54,10 +54,10 @@ There are two main paths:
 This is the executable entry layer.
 
 - `main.go` handles process startup, flag parsing, and top-level command routing.
-- `dispatch.go` executes special commands such as `-version`, `-manual`, `-hub-*`, and `-new`.
+- `dispatch.go` executes special commands such as `-version`, `-manual`, `-remote-*`, and `-new`.
 - `sequencehandlers.go` handles the standard local sequence flow.
 - `output.go` routes loaded sequences to preview, stream, WAV, playback, or MP3 conversion.
-- `hub.go` implements CLI-facing Hub commands.
+- `remote.go` implements CLI-facing Remote commands.
 
 This package should remain a shell around the rest of the system rather than a new home for parser, sequence, or renderer logic.
 
@@ -80,7 +80,7 @@ It includes:
 
 - `Sequence`, `SequenceOptions`, `Period`, `Track`, `Channel`, `Preset`;
 - domain enums such as waveform, track type, transition type, and effect type;
-- Hub metadata types such as `HubEntry` and `HubManifest`;
+- Remote metadata types such as `RemoteEntry` and `RemoteIndex`;
 - parser-side option accumulation types such as `ParseOptions`.
 
 This package is intentionally pure and should remain free of dependencies on other internal packages.
@@ -134,16 +134,16 @@ This package renders loaded sequences into interactive HTML previews.
 
 It is organized around template/view-model generation, track analysis, time series, graph metrics, and asset embedding. Preview is intentionally separate from audio rendering.
 
-### `internal/hub`
+### `internal/remote`
 
-This package manages the SynapSeq Hub:
+This package manages SynapSeq Remote sequences:
 
-- manifest loading and updates;
+- index loading and sync;
 - local cache management;
 - entry lookup;
-- downloading sequences and dependencies.
+- downloading sequences.
 
-The Hub is optional input infrastructure, not part of the renderer itself.
+Remote is optional input infrastructure, not part of the renderer itself.
 
 ### `internal/cli`
 
@@ -172,7 +172,7 @@ The current dependency shape can be summarized like this. It is intentionally si
 ```mermaid
 flowchart LR
 	CMD[cmd/synapseq] --> CLI[internal/cli]
-	CMD --> HUB[internal/hub]
+	CMD --> REMOTE[internal/remote]
 	CMD --> CORE[core]
 	CMD --> EXT[external]
 
@@ -189,7 +189,7 @@ flowchart LR
 	PRESET --> TYPES
 	PREVIEW --> TYPES
 	AUDIO --> TYPES
-	HUB --> TYPES
+	REMOTE --> TYPES
 
 	AUDIO --> SYNC[internal/audio/sync]
 	AUDIO --> SOURCES[internal/audio/sources]
@@ -330,28 +330,28 @@ Preview generation is a parallel path to audio rendering.
 
 The preview package was intentionally decomposed into focused modules such as formatting, track analysis, time series, graph metrics, presentation, assets, and view models. That separation should be preserved rather than collapsed back into a large monolithic file.
 
-## Hub Flow
+## Remote Flow
 
-The Hub is an optional sequence source, not a separate execution engine.
+Remote is an optional sequence source, not a separate execution engine.
 
 ```mermaid
 flowchart TD
-	HubCommand[cmd/synapseq hub command] --> HubAPI[internal/hub]
-	HubAPI --> Manifest[manifest cache and lookup]
-	HubAPI --> Download[download sequence and dependencies]
+	RemoteCommand[cmd/synapseq remote command] --> RemoteAPI[internal/remote]
+	RemoteAPI --> Index[index cache and lookup]
+	RemoteAPI --> Download[download sequence]
 	Download --> CachedSPSQ[cached .spsq file]
 	CachedSPSQ --> CoreLoad[core.AppContext.Load]
 	CoreLoad --> MainPipeline[standard preview or audio pipeline]
 ```
 
-That means Hub integration should stay shallow:
+That means Remote integration should stay shallow:
 
 - find the sequence;
 - update or query cache;
-- download dependencies;
+- download the `.spsq` file;
 - hand the downloaded `.spsq` file back to the normal load pipeline.
 
-The Hub should not fork the rendering architecture.
+Remote should not fork the rendering architecture.
 
 ## WASM Build Target
 
@@ -373,7 +373,7 @@ Internally, the WASM target is intentionally split into a small set of focused l
 
 This makes the WASM target intentionally narrower than the native CLI:
 
-- it does not participate in Hub workflows;
+- it does not participate in Remote workflows;
 - it does not use external tools such as ffplay or ffmpeg;
 - it does not generate preview HTML;
 - it acts as a browser runtime bridge rather than a general command interface.
@@ -414,7 +414,7 @@ When contributing changes, use these heuristics:
 4. Keep `cmd/synapseq` as orchestration, not business logic.
 5. If a change affects sequence loading, inspect both `internal/parser` and `internal/sequence` before deciding where the logic belongs.
 6. If a change affects output, check whether it belongs to preview, audio, external tools, or only the CLI shell.
-7. If a change touches Hub behavior, keep the Hub as an input source and cache layer rather than a second execution pipeline.
+7. If a change touches Remote behavior, keep Remote as an input source and cache layer rather than a second execution pipeline.
 
 ## Suggested Reading Order
 
@@ -427,6 +427,6 @@ For new contributors, the fastest way to build context is:
 5. `internal/parser/*`
 6. `internal/audio/renderer.go` and `internal/audio/rendercycle.go`
 7. `internal/preview/preview.go`
-8. `internal/hub/*` if working on remote sequence workflows
+8. `internal/remote/*` if working on remote sequence workflows
 
 That path mirrors how the application itself flows at runtime.

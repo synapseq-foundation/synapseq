@@ -139,23 +139,23 @@ func TestBuildOutputOptions(ts *testing.T) {
 	}
 }
 
-func TestFindHubEntryByID(ts *testing.T) {
-	manifest := &types.HubManifest{Entries: []types.HubEntry{{ID: "focus"}, {ID: "sleep"}}}
-	entry := findHubEntryByID(manifest, "sleep")
+func TestFindRemoteEntryByID(ts *testing.T) {
+	index := &types.RemoteIndex{Entries: []types.RemoteEntry{{ID: "focus"}, {ID: "sleep"}}}
+	entry := findRemoteEntryByID(index, "sleep")
 	if entry == nil || entry.ID != "sleep" {
 		ts.Fatalf("expected sleep entry, got %#v", entry)
 	}
-	if missing := findHubEntryByID(manifest, "missing"); missing != nil {
+	if missing := findRemoteEntryByID(index, "missing"); missing != nil {
 		ts.Fatalf("expected missing entry to return nil, got %#v", missing)
 	}
 }
 
-func TestFormatHubTable(ts *testing.T) {
+func TestFormatRemoteTable(ts *testing.T) {
 	clistyle.SetColorEnabled(false)
 	defer clistyle.SetColorEnabled(true)
 
-	table := formatHubTable("ID\tAUTHOR\nfocus\truan\n")
-	checks := []string{"ID\tAUTHOR", "focus\truan"}
+	table := formatRemoteTable("ID\tDURATION\nfocus\t15\n")
+	checks := []string{"ID\tDURATION", "focus\t15"}
 	for _, check := range checks {
 		if !strings.Contains(table, check) {
 			ts.Fatalf("expected formatted table to contain %q, got:\n%s", check, table)
@@ -163,31 +163,36 @@ func TestFormatHubTable(ts *testing.T) {
 	}
 }
 
-func TestFormatHubDependencies(ts *testing.T) {
+func TestFormatRemoteDescription(ts *testing.T) {
 	clistyle.SetColorEnabled(false)
 	defer clistyle.SetColorEnabled(true)
 
-	formatted := formatHubDependencies([]types.HubDependency{{ID: "rain", Type: types.HubDependencyTypeAmbiance}})
-	if !strings.Contains(formatted, "rain") || !strings.Contains(formatted, "ambiance") {
-		ts.Fatalf("expected formatted dependencies to include dependency details, got:\n%s", formatted)
+	formatted := formatRemoteDescription("first line")
+	if !strings.Contains(formatted, "Description:") || !strings.Contains(formatted, "first line") {
+		ts.Fatalf("expected formatted description, got:\n%s", formatted)
 	}
 
-	if empty := formatHubDependencies(nil); !strings.Contains(empty, "Dependencies: None") {
-		ts.Fatalf("expected empty dependency text, got:\n%s", empty)
+	if empty := formatRemoteDescription(""); !strings.Contains(empty, "No description available") {
+		ts.Fatalf("expected empty description fallback, got:\n%s", empty)
 	}
 }
 
-func TestFormatHubDescription(ts *testing.T) {
-	clistyle.SetColorEnabled(false)
-	defer clistyle.SetColorEnabled(true)
-
-	formatted := formatHubDescription([]string{"first line", "second line"})
-	if !strings.Contains(formatted, "Description:") || !strings.Contains(formatted, "first line") {
-		ts.Fatalf("expected formatted description with comments, got:\n%s", formatted)
+func TestSortedRemoteEntries(ts *testing.T) {
+	entries := sortedRemoteEntries([]types.RemoteEntry{
+		{ID: "old", CreatedAt: "2026-01-01T00:00:00Z"},
+		{ID: "new", CreatedAt: "2026-02-01T00:00:00Z"},
+	})
+	if entries[0].ID != "new" || entries[1].ID != "old" {
+		ts.Fatalf("expected newest entry first, got %#v", entries)
 	}
+}
 
-	if empty := formatHubDescription(nil); !strings.Contains(empty, "No description available") {
-		ts.Fatalf("expected empty description fallback, got:\n%s", empty)
+func TestShortDate(ts *testing.T) {
+	if got := shortDate("2026-01-02T03:04:05Z"); got != "2026-01-02" {
+		ts.Fatalf("expected date prefix, got %q", got)
+	}
+	if got := shortDate("short"); got != "short" {
+		ts.Fatalf("expected short value unchanged, got %q", got)
 	}
 }
 
@@ -195,8 +200,8 @@ func TestResolveSpecialCommandPrecedence(ts *testing.T) {
 	command := clistyle.ResolveSpecialCommand(&clistyle.CLIOptions{
 		ShowVersion: true,
 		ShowManual:  true,
-		HubUpdate:   true,
-		HubGet:      "focus",
+		RemoteSync:  true,
+		RemoteGet:   "focus",
 		New:         "sleep",
 	}, []string{"out.spsq"})
 
@@ -205,13 +210,13 @@ func TestResolveSpecialCommandPrecedence(ts *testing.T) {
 	}
 }
 
-func TestResolveSpecialCommandHubGetUsesOptionalArg(ts *testing.T) {
-	command := clistyle.ResolveSpecialCommand(&clistyle.CLIOptions{HubGet: "focus"}, []string{"out.wav"})
-	if command.Kind != clistyle.SpecialCommandHubGet {
-		ts.Fatalf("expected hub-get command, got %q", command.Kind)
+func TestResolveSpecialCommandRemoteGetUsesOptionalArg(ts *testing.T) {
+	command := clistyle.ResolveSpecialCommand(&clistyle.CLIOptions{RemoteGet: "focus"}, []string{"out.wav"})
+	if command.Kind != clistyle.SpecialCommandRemoteGet {
+		ts.Fatalf("expected remote-get command, got %q", command.Kind)
 	}
 	if command.OptionalArg != "out.wav" {
-		ts.Fatalf("expected hub-get optional arg out.wav, got %q", command.OptionalArg)
+		ts.Fatalf("expected remote-get optional arg out.wav, got %q", command.OptionalArg)
 	}
 }
 
@@ -232,10 +237,10 @@ func TestResolveSpecialCommandNoMatch(ts *testing.T) {
 	}
 }
 
-func TestResolveSpecialCommandHubDownloadPrecedesHubInfo(ts *testing.T) {
-	command := clistyle.ResolveSpecialCommand(&clistyle.CLIOptions{HubDownload: "focus", HubInfo: "sleep"}, []string{"downloads"})
-	if command.Kind != clistyle.SpecialCommandHubDownload {
-		ts.Fatalf("expected hub-download to win precedence over hub-info, got %q", command.Kind)
+func TestResolveSpecialCommandRemoteDownloadPrecedesRemoteInfo(ts *testing.T) {
+	command := clistyle.ResolveSpecialCommand(&clistyle.CLIOptions{RemoteDownload: "focus", RemoteInfo: "sleep"}, []string{"downloads"})
+	if command.Kind != clistyle.SpecialCommandRemoteDownload {
+		ts.Fatalf("expected remote-download to win precedence over remote-info, got %q", command.Kind)
 	}
 	if command.OptionalArg != "downloads" {
 		ts.Fatalf("expected download target arg downloads, got %q", command.OptionalArg)
@@ -249,20 +254,20 @@ func TestResolveSpecialCommandIgnoresNoColorBeforeManual(ts *testing.T) {
 	}
 }
 
-func TestResolveSpecialCommandIgnoresQuietBeforeHubList(ts *testing.T) {
-	command := clistyle.ResolveSpecialCommand(&clistyle.CLIOptions{Quiet: true, HubList: true}, nil)
-	if command.Kind != clistyle.SpecialCommandHubList {
-		ts.Fatalf("expected hub-list command, got %q", command.Kind)
+func TestResolveSpecialCommandIgnoresQuietBeforeRemoteList(ts *testing.T) {
+	command := clistyle.ResolveSpecialCommand(&clistyle.CLIOptions{Quiet: true, RemoteList: true}, nil)
+	if command.Kind != clistyle.SpecialCommandRemoteList {
+		ts.Fatalf("expected remote-list command, got %q", command.Kind)
 	}
 }
 
-func TestResolveSpecialCommandIgnoresNoColorBeforeHubGet(ts *testing.T) {
-	command := clistyle.ResolveSpecialCommand(&clistyle.CLIOptions{NoColor: true, HubGet: "calm-state"}, []string{"out.wav"})
-	if command.Kind != clistyle.SpecialCommandHubGet {
-		ts.Fatalf("expected hub-get command, got %q", command.Kind)
+func TestResolveSpecialCommandIgnoresNoColorBeforeRemoteGet(ts *testing.T) {
+	command := clistyle.ResolveSpecialCommand(&clistyle.CLIOptions{NoColor: true, RemoteGet: "calm-state"}, []string{"out.wav"})
+	if command.Kind != clistyle.SpecialCommandRemoteGet {
+		ts.Fatalf("expected remote-get command, got %q", command.Kind)
 	}
 	if command.OptionalArg != "out.wav" {
-		ts.Fatalf("expected hub-get optional arg out.wav, got %q", command.OptionalArg)
+		ts.Fatalf("expected remote-get optional arg out.wav, got %q", command.OptionalArg)
 	}
 }
 

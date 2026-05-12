@@ -9,7 +9,7 @@
  * See the file COPYING.txt for details.
  */
 
-package hub
+package remote
 
 import (
 	"fmt"
@@ -19,10 +19,10 @@ import (
 	"strings"
 )
 
-var hubHTTPGet = http.Get
+var remoteHTTPGet = http.Get
 
 func downloadURL(url string) ([]byte, *http.Response, error) {
-	response, err := hubHTTPGet(url)
+	response, err := remoteHTTPGet(url)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -51,7 +51,7 @@ func validateHTTPResponse(response *http.Response, url string) error {
 func validateJSONContentType(response *http.Response) error {
 	contentType := response.Header.Get("Content-Type")
 	if !strings.HasPrefix(contentType, "application/json") {
-		return fmt.Errorf("invalid content-type for manifest file: %s", contentType)
+		return fmt.Errorf("invalid content-type for index file: %s", contentType)
 	}
 
 	return nil

@@ -9,17 +9,20 @@
  * See the file COPYING.txt for details.
  */
 
-package hub
+package remote
 
 import (
 	"fmt"
+	"strings"
 
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
-// HubGet retrieves a sequence by its ID from the Hub
-func HubGet(sequenceID string) (*t.HubEntry, error) {
-	catalog, err := loadManifestCatalog()
+const remoteSequenceRootURL = "https://sequence.synapseq.org"
+
+// RemoteGet retrieves a sequence by its ID from the Remote index.
+func RemoteGet(sequenceID string) (*t.RemoteEntry, error) {
+	catalog, err := loadIndexCatalog()
 	if err != nil {
 		return nil, err
 	}
@@ -27,13 +30,13 @@ func HubGet(sequenceID string) (*t.HubEntry, error) {
 	return catalog.findEntry(sequenceID), nil
 }
 
-// HubDownload downloads a sequence and its dependencies from the Hub
-func HubDownload(entry *t.HubEntry) (string, error) {
+// RemoteDownload downloads a sequence from Remote.
+func RemoteDownload(entry *t.RemoteEntry) (string, error) {
 	if entry == nil {
-		return "", fmt.Errorf("hub entry is nil")
+		return "", fmt.Errorf("remote entry is nil")
 	}
 
-	cache, err := openHubCache()
+	cache, err := openRemoteCache()
 	if err != nil {
 		return "", err
 	}
@@ -51,10 +54,6 @@ func HubDownload(entry *t.HubEntry) (string, error) {
 		return entryCache.sequencePath(), nil
 	}
 
-	if err := downloadEntryDependencies(entryCache, entry); err != nil {
-		return "", err
-	}
-
 	if err := downloadEntrySequence(entryCache, entry); err != nil {
 		return "", err
 	}
@@ -62,7 +61,7 @@ func HubDownload(entry *t.HubEntry) (string, error) {
 	return entryCache.sequencePath(), nil
 }
 
-func prepareEntryDownload(cache *hubCache, entry *t.HubEntry) (entryCache, error) {
+func prepareEntryDownload(cache *remoteCache, entry *t.RemoteEntry) (entryCache, error) {
 	entryCache := cache.entry(entry)
 	if err := entryCache.prepare(); err != nil {
 		return entryCache, err
@@ -71,20 +70,14 @@ func prepareEntryDownload(cache *hubCache, entry *t.HubEntry) (entryCache, error
 	return entryCache, nil
 }
 
-func downloadEntryDependencies(cache entryCache, entry *t.HubEntry) error {
-	for _, dependency := range entry.Dependencies {
-		if err := downloadFile(dependency.DownloadUrl, cache.dependencyPath(dependency)); err != nil {
-			return fmt.Errorf("error saving dependency %s: %v", dependency.ID, err)
-		}
+func downloadEntrySequence(cache entryCache, entry *t.RemoteEntry) error {
+	if err := downloadFile(remoteSequenceURL(entry.Sequence), cache.sequencePath()); err != nil {
+		return fmt.Errorf("error saving sequence %s: %v", entry.ID, err)
 	}
 
 	return nil
 }
 
-func downloadEntrySequence(cache entryCache, entry *t.HubEntry) error {
-	if err := downloadFile(entry.DownloadUrl, cache.sequencePath()); err != nil {
-		return fmt.Errorf("error saving sequence %s: %v", entry.ID, err)
-	}
-
-	return nil
+func remoteSequenceURL(sequencePath string) string {
+	return remoteSequenceRootURL + "/" + strings.TrimPrefix(sequencePath, "/")
 }
