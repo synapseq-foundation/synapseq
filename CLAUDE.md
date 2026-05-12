@@ -45,7 +45,7 @@ make clean
 | `internal/sequence` | Sequence loading, extends/preset resolution, building validated Sequence |
 | `internal/audio` | Audio rendering - renderer, sources, effects, sync, wavetable, output |
 | `internal/preview` | HTML preview generation |
-| `internal/hub` | Remote sequence source - manifest, cache, download |
+| `internal/remote` | Remote sequence source - index, cache, download |
 | `internal/cli` | CLI infrastructure - flags, help, text styling |
 | `internal/diag` | Structured diagnostics and parse errors |
 | `internal/timeline` | Transition math |
@@ -110,7 +110,7 @@ The `cmd/wasm` package provides a browser-oriented WebAssembly target:
 
 - Does not use CLI flow
 - Exposes JavaScript bridge for `.spsq` content input and PCM chunk output
-- Does not support Hub workflows, preview HTML, or external tools
+- Does not support Remote workflows, preview HTML, or external tools
 - Entry points: `main.go`, `bridge_wasm.go`, `streamservice.go`
 
 ## Suggested Reading Order
@@ -124,6 +124,6 @@ For new contributors, the fastest way to understand the codebase:
 5. `internal/parser/*`
 6. `internal/audio/renderer.go` and `internal/audio/rendercycle.go`
 7. `internal/preview/preview.go`
-8. `internal/hub/*`
+8. `internal/remote/*`
 
 For detailed architecture, see `docs/ARCHITECTURE.md`. For DSL syntax, see `docs/SYNTAX.md`.
