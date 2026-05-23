@@ -145,6 +145,8 @@ const initializePreviewPage = () => {
             x: {
               type: "linear",
               display: false,
+              min: 0,
+              max: series.durationMs || undefined,
               ticks: {
                 maxTicksLimit: 6,
               },
