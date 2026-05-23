@@ -11,7 +11,7 @@ import (
 func TestGetPreviewContent(ts *testing.T) {
 	periods := []t.Period{
 		{
-			Time: 0,
+			Time:  0,
 			Steps: 1,
 			TrackStart: [t.NumberOfChannels]t.Track{
 				{
@@ -98,7 +98,25 @@ func TestGetPreviewContent(ts *testing.T) {
 	html := string(content)
 	checks := []string{
 		"SynapSeq Sequence Preview",
-		"Frequency timeline",
+		"window.Chart",
+		"createIcons",
+		"data-lucide=\"clock\"",
+		"data-lucide=\"activity\"",
+		"data-lucide=\"volume-2\"",
+		"class=\"navbar-logo\"",
+		"data:image/png;base64,",
+		"class=\"navbar-stats\"",
+		"class=\"panel preview-panel\"",
+		"URLSearchParams(window.location.search)",
+		"data-theme-switcher",
+		"data-home-link",
+		"requestedHome === \"false\"",
+		"hasThemeParam",
+		"Track lanes",
+		"class=\"daw-track\"",
+		"class=\"daw-lane\"",
+		"class=\"lane-chart\"",
+		"data-chart-series=",
 		"00:05:00",
 		"CH 01 Pink noise",
 		"CH 02 Binaural beat",
@@ -115,14 +133,9 @@ func TestGetPreviewContent(ts *testing.T) {
 		"CH 02 Binaural beat • Sine",
 		"CH 03 Ambiance • Square",
 		"Carrier",
-		"Beat",
-		"Smooth",
-		"Transition smooth - 1 step",
 		"Amplitude",
 		"Effect",
-		"Effect value",
 		"2.50",
-		"pan",
 		"Intensity",
 		"75.00%",
 		"35.00%",
@@ -144,6 +157,18 @@ func TestGetPreviewContent(ts *testing.T) {
 
 	if strings.Contains(html, "CH 01 Silence") || strings.Contains(html, "CH 02 Silence") {
 		ts.Fatalf("expected final node to reuse previous track labels instead of silence")
+	}
+
+	if strings.Contains(html, "node-card") || strings.Contains(html, "segment-card") {
+		ts.Fatalf("expected preview output to omit node and segment cards")
+	}
+
+	if strings.Contains(html, "hero-copy") || strings.Contains(html, "Multi-track session timeline.") {
+		ts.Fatalf("expected preview output to omit the sequence preview hero card")
+	}
+
+	if strings.Contains(html, "https://unpkg.com") {
+		ts.Fatalf("expected preview output to use embedded local vendor assets")
 	}
 }
 

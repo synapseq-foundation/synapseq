@@ -14,12 +14,15 @@ package preview
 import "html/template"
 
 type previewTemplateData struct {
-	Title      string
-	PreviewCSS template.CSS
-	PreviewJS  template.JS
-	Stats      previewStatsView
-	Timeline   previewTimelineSectionView
-	Nodes      previewNodesSectionView
+	Title       string
+	PreviewCSS  template.CSS
+	PreviewJS   template.JS
+	LucideJS    template.JS
+	ChartJS     template.JS
+	LogoDataURL template.URL
+	Stats       previewStatsView
+	Timeline    previewTimelineSectionView
+	Nodes       previewNodesSectionView
 }
 
 type previewStatsView struct {
@@ -92,15 +95,7 @@ type previewSeriesView struct {
 	LegendLabel  string
 	Class        string
 	Color        string
-	Points       string
-	Markers      []previewGraphPointView
-}
-
-type previewGraphPointView struct {
-	X          int
-	Y          int
-	TimeLabel  string
-	ValueLabel string
+	ChartData    template.JS
 }
 
 type previewSegmentView struct {
