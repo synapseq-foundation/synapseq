@@ -12,8 +12,9 @@
 package preview
 
 import (
+	"encoding/json"
 	"fmt"
-	"math"
+	"html/template"
 
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
@@ -45,12 +46,24 @@ type rawGraphSeries struct {
 	Markers []rawGraphSeriesPoint
 }
 
+type chartSeriesPayload struct {
+	Label   string            `json:"label"`
+	Color   string            `json:"color"`
+	Curve   []chartPointValue `json:"curve"`
+	Markers []chartPointValue `json:"markers"`
+}
+
+type chartPointValue struct {
+	X          int     `json:"x"`
+	Y          float64 `json:"y"`
+	TimeLabel  string  `json:"timeLabel"`
+	ValueLabel string  `json:"valueLabel"`
+	PointLabel string  `json:"pointLabel"`
+}
+
 const (
-	graphInsetPct   = 4.0
-	graphViewWidth  = 1000.0
-	graphInnerPct   = 100.0 - (graphInsetPct * 2)
-	graphInnerWidth = graphViewWidth * (graphInnerPct / 100.0)
-	graphMinX       = graphViewWidth * (graphInsetPct / 100.0)
+	graphInsetPct = 4.0
+	graphInnerPct = 100.0 - (graphInsetPct * 2)
 )
 
 func buildGraphMetrics(periods []t.Period, totalDurationMs int) []previewGraphMetricView {
@@ -178,7 +191,7 @@ func buildGraphMetricView(definition graphMetricDefinition, periods []t.Period, 
 	series := make([]previewSeriesView, 0, len(rawSeries))
 
 	if hasData {
-		series = buildPreviewSeriesFromRaw(rawSeries, minValue, maxValue, totalDurationMs, definition.FormatValue)
+		series = buildPreviewSeriesFromRaw(rawSeries, definition.FormatValue)
 	}
 
 	legendItems := buildMetricLegendItems(definition, series, periods)
@@ -312,49 +325,58 @@ func collectGraphMetricSeries(definition graphMetricDefinition, periods []t.Peri
 	return rawSeries, minValue, maxValue, hasData
 }
 
-func buildPreviewSeriesFromRaw(rawSeries []rawGraphSeries, minValue, maxValue float64, totalDurationMs int, formatValue func(value float64) string) []previewSeriesView {
+func buildPreviewSeriesFromRaw(rawSeries []rawGraphSeries, formatValue func(value float64) string) []previewSeriesView {
 	colors := graphSeriesColors()
 	series := make([]previewSeriesView, 0, len(rawSeries))
-	span := maxValue - minValue
-	if span == 0 {
-		span = 1
-	}
 
 	for _, raw := range rawSeries {
-		markers := make([]previewGraphPointView, 0, len(raw.Markers))
-		coordinates := make([]string, 0, len(raw.Curve))
 		color := colors[raw.Channel%len(colors)]
-
-		for _, point := range raw.Curve {
-			x := toGraphX(point.Time, totalDurationMs)
-			y := int(220 - ((point.Value-minValue)/span)*180)
-			coordinates = append(coordinates, fmt.Sprintf("%d,%d", x, y))
-		}
-
-		for _, point := range raw.Markers {
-			x := toGraphX(point.Time, totalDurationMs)
-			y := int(220 - ((point.Value-minValue)/span)*180)
-
-			markers = append(markers, previewGraphPointView{
-				X:          x,
-				Y:          y,
-				TimeLabel:  formatTime(point.Time),
-				ValueLabel: point.Label,
-			})
-		}
-
 		series = append(series, previewSeriesView{
 			ChannelLabel: fmt.Sprintf("CH %02d", raw.Channel+1),
 			LegendLabel:  raw.Legend,
 			Class:        raw.Class,
 			Color:        color,
-			Points:       joinCoordinates(coordinates),
-			Markers:      markers,
+			ChartData:    buildChartSeriesData(raw, color, formatValue),
 		})
 	}
 
-	_ = formatValue
 	return series
+}
+
+func buildChartSeriesData(raw rawGraphSeries, color string, formatValue func(value float64) string) template.JS {
+	payload := chartSeriesPayload{
+		Label:   raw.Legend,
+		Color:   color,
+		Curve:   make([]chartPointValue, 0, len(raw.Curve)),
+		Markers: make([]chartPointValue, 0, len(raw.Markers)),
+	}
+
+	for _, point := range raw.Curve {
+		payload.Curve = append(payload.Curve, chartPointValue{
+			X:          point.Time,
+			Y:          point.Value,
+			TimeLabel:  formatTime(point.Time),
+			ValueLabel: formatValue(point.Value),
+			PointLabel: point.Label,
+		})
+	}
+
+	for _, point := range raw.Markers {
+		payload.Markers = append(payload.Markers, chartPointValue{
+			X:          point.Time,
+			Y:          point.Value,
+			TimeLabel:  formatTime(point.Time),
+			ValueLabel: formatValue(point.Value),
+			PointLabel: point.Label,
+		})
+	}
+
+	content, err := json.Marshal(payload)
+	if err != nil {
+		return "{}"
+	}
+
+	return template.JS(content)
 }
 
 func buildMetricLegendItems(definition graphMetricDefinition, series []previewSeriesView, periods []t.Period) []previewGraphLegendItemView {
@@ -443,23 +465,4 @@ func toGraphPercent(part, total int) float64 {
 
 func toGraphWidth(part, total int) float64 {
 	return (toPercent(part, total) / 100.0) * graphInnerPct
-}
-
-func toGraphX(part, total int) int {
-	if total <= 0 {
-		return int(graphMinX)
-	}
-
-	return int(math.Round(graphMinX + (float64(part)/float64(total))*graphInnerWidth))
-}
-
-func joinCoordinates(items []string) string {
-	if len(items) == 0 {
-		return ""
-	}
-	result := items[0]
-	for i := 1; i < len(items); i++ {
-		result += " " + items[i]
-	}
-	return result
 }

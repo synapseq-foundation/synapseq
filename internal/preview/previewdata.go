@@ -59,12 +59,15 @@ func buildPreviewSectionData(periods []t.Period, totalDurationMs int) previewSec
 
 func buildPreviewTemplateData(periods []t.Period, totalDurationMs int, sectionData previewSectionData) *previewTemplateData {
 	return &previewTemplateData{
-		Title:      "SynapSeq Sequence Preview",
-		PreviewCSS: previewCSS,
-		PreviewJS:  previewJS,
-		Stats:      buildPreviewStatsView(periods, totalDurationMs, sectionData.NodeSection),
-		Timeline:   buildPreviewTimelineSectionView(periods, totalDurationMs, sectionData),
-		Nodes:      buildPreviewNodesSectionView(periods, sectionData.NodeSection),
+		Title:       "SynapSeq Sequence Preview",
+		PreviewCSS:  previewCSS,
+		PreviewJS:   previewJS,
+		LucideJS:    lucideJS,
+		ChartJS:     chartJS,
+		LogoDataURL: previewLogoDataURL,
+		Stats:       buildPreviewStatsView(periods, totalDurationMs, sectionData.NodeSection),
+		Timeline:    buildPreviewTimelineSectionView(periods, totalDurationMs, sectionData),
+		Nodes:       buildPreviewNodesSectionView(periods, sectionData.NodeSection),
 	}
 }
 
@@ -215,4 +218,3 @@ func buildSegmentViews(periods []t.Period, totalDurationMs int) []previewSegment
 
 	return segments
 }
-
