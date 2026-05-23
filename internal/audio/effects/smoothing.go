@@ -20,7 +20,7 @@ func (p *Processor) smoothedModulationGain(channel *t.Channel, targetGain float6
 		return targetGain
 	}
 
-	maxDelta := p.effectSlewMaxDelta()
+	maxDelta := p.effectSlewMaxDelta(modulationSlewTimeMs)
 	delta := targetGain - channel.Effect.ModulationGain
 	if delta > maxDelta {
 		delta = maxDelta
@@ -32,12 +32,12 @@ func (p *Processor) smoothedModulationGain(channel *t.Channel, targetGain float6
 	return channel.Effect.ModulationGain
 }
 
-func (p *Processor) effectSlewMaxDelta() float64 {
+func (p *Processor) effectSlewMaxDelta(slewTimeMs float64) float64 {
 	if p.sampleRate <= 0 {
 		return 1
 	}
 
-	rampSamples := float64(p.sampleRate) * modulationSlewTimeMs / 1000.0
+	rampSamples := float64(p.sampleRate) * slewTimeMs / 1000.0
 	if rampSamples < 1 {
 		return 1
 	}
@@ -52,7 +52,7 @@ func (p *Processor) smoothedPanPosition(channel *t.Channel, targetX float64) flo
 		return targetX
 	}
 
-	maxDelta := 2 * p.effectSlewMaxDelta()
+	maxDelta := 2 * p.effectSlewMaxDelta(panSlewTimeMs)
 	delta := targetX - channel.Effect.PanPosition
 	if delta > maxDelta {
 		delta = maxDelta

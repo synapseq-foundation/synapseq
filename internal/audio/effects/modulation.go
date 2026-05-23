@@ -15,6 +15,8 @@ import (
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
+const modulationSquareEdgeRatio = 0.08
+
 func (p *Processor) ApplyModulation(channel *t.Channel, effect t.Effect, waveform WaveformMorph, sample int) int {
 	p.advanceEffectPhase(channel)
 	return p.ApplyModulationToCurrentPhase(channel, effect, waveform, sample)
@@ -33,6 +35,11 @@ func (p *Processor) CalcModulationFactor(channel *t.Channel, offset int) float64
 }
 
 func (p *Processor) CalcModulationFactorForMorph(waveform WaveformMorph, offset int) float64 {
+	startWaveform, endWaveform, _ := normalizedWaveformMorph(waveform)
+	if startWaveform == t.WaveformSquare && endWaveform == t.WaveformSquare {
+		return softSquareModulationFactor(offset)
+	}
+
 	modVal := p.WaveformValueForMorph(waveform, offset)
 
 	threshold := 0.3 * float64(t.WaveTableAmplitude)
@@ -45,4 +52,34 @@ func (p *Processor) CalcModulationFactorForMorph(waveform WaveformMorph, offset 
 	}
 
 	return modFactor
+}
+
+func softSquareModulationFactor(offset int) float64 {
+	cycle := float64(t.SineTableSize * t.PhasePrecision)
+	phase := float64(offset&(t.SineTableSize*t.PhasePrecision-1)) / cycle
+	edge := modulationSquareEdgeRatio
+	halfEdge := edge / 2
+
+	switch {
+	case phase < halfEdge:
+		return smoothstep((phase + halfEdge) / edge)
+	case phase > 1-halfEdge:
+		return smoothstep((phase - (1 - halfEdge)) / edge)
+	case phase < 0.5-halfEdge:
+		return 1
+	case phase < 0.5+halfEdge:
+		return 1 - smoothstep((phase-(0.5-halfEdge))/edge)
+	default:
+		return 0
+	}
+}
+
+func smoothstep(x float64) float64 {
+	if x <= 0 {
+		return 0
+	}
+	if x >= 1 {
+		return 1
+	}
+	return x * x * (3 - 2*x)
 }
