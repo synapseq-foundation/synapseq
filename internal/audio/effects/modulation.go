@@ -35,13 +35,26 @@ func (p *Processor) CalcModulationFactor(channel *t.Channel, offset int) float64
 }
 
 func (p *Processor) CalcModulationFactorForMorph(waveform WaveformMorph, offset int) float64 {
-	startWaveform, endWaveform, _ := normalizedWaveformMorph(waveform)
-	if startWaveform == t.WaveformSquare && endWaveform == t.WaveformSquare {
+	startWaveform, endWaveform, alpha := normalizedWaveformMorph(waveform)
+	start := p.modulationFactorForWaveform(startWaveform, offset)
+	if alpha <= 0 || startWaveform == endWaveform {
+		return start
+	}
+
+	end := p.modulationFactorForWaveform(endWaveform, offset)
+	if alpha >= 1 {
+		return end
+	}
+
+	return lerpFloat64(start, end, alpha)
+}
+
+func (p *Processor) modulationFactorForWaveform(waveform t.WaveformType, offset int) float64 {
+	if waveform == t.WaveformSquare {
 		return softSquareModulationFactor(offset)
 	}
 
-	modVal := p.WaveformValueForMorph(waveform, offset)
-
+	modVal := p.WaveformValueForMorph(WaveformMorph{Start: waveform, End: waveform, Alpha: 0}, offset)
 	threshold := 0.3 * float64(t.WaveTableAmplitude)
 	den := 0.7 * float64(t.WaveTableAmplitude)
 
