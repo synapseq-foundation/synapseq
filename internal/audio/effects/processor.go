@@ -12,7 +12,8 @@
 package effects
 
 const (
-	modulationSlewTimeMs = 2.0
+	modulationSlewTimeMs = 8.0
+	panSlewTimeMs        = 2.0
 )
 
 type Processor struct {
