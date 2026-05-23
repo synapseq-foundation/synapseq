@@ -117,6 +117,7 @@ func TestGetPreviewContent(ts *testing.T) {
 		"class=\"daw-lane\"",
 		"class=\"lane-chart\"",
 		"data-chart-series=",
+		"durationMs",
 		"00:05:00",
 		"CH 01 Pink noise",
 		"CH 02 Binaural beat",

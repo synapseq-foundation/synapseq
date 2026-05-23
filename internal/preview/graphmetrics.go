@@ -47,10 +47,11 @@ type rawGraphSeries struct {
 }
 
 type chartSeriesPayload struct {
-	Label   string            `json:"label"`
-	Color   string            `json:"color"`
-	Curve   []chartPointValue `json:"curve"`
-	Markers []chartPointValue `json:"markers"`
+	Label      string            `json:"label"`
+	Color      string            `json:"color"`
+	DurationMs int               `json:"durationMs"`
+	Curve      []chartPointValue `json:"curve"`
+	Markers    []chartPointValue `json:"markers"`
 }
 
 type chartPointValue struct {
@@ -191,7 +192,7 @@ func buildGraphMetricView(definition graphMetricDefinition, periods []t.Period, 
 	series := make([]previewSeriesView, 0, len(rawSeries))
 
 	if hasData {
-		series = buildPreviewSeriesFromRaw(rawSeries, definition.FormatValue)
+		series = buildPreviewSeriesFromRaw(rawSeries, totalDurationMs, definition.FormatValue)
 	}
 
 	legendItems := buildMetricLegendItems(definition, series, periods)
@@ -325,7 +326,7 @@ func collectGraphMetricSeries(definition graphMetricDefinition, periods []t.Peri
 	return rawSeries, minValue, maxValue, hasData
 }
 
-func buildPreviewSeriesFromRaw(rawSeries []rawGraphSeries, formatValue func(value float64) string) []previewSeriesView {
+func buildPreviewSeriesFromRaw(rawSeries []rawGraphSeries, totalDurationMs int, formatValue func(value float64) string) []previewSeriesView {
 	colors := graphSeriesColors()
 	series := make([]previewSeriesView, 0, len(rawSeries))
 
@@ -336,19 +337,20 @@ func buildPreviewSeriesFromRaw(rawSeries []rawGraphSeries, formatValue func(valu
 			LegendLabel:  raw.Legend,
 			Class:        raw.Class,
 			Color:        color,
-			ChartData:    buildChartSeriesData(raw, color, formatValue),
+			ChartData:    buildChartSeriesData(raw, color, totalDurationMs, formatValue),
 		})
 	}
 
 	return series
 }
 
-func buildChartSeriesData(raw rawGraphSeries, color string, formatValue func(value float64) string) template.JS {
+func buildChartSeriesData(raw rawGraphSeries, color string, totalDurationMs int, formatValue func(value float64) string) template.JS {
 	payload := chartSeriesPayload{
-		Label:   raw.Legend,
-		Color:   color,
-		Curve:   make([]chartPointValue, 0, len(raw.Curve)),
-		Markers: make([]chartPointValue, 0, len(raw.Markers)),
+		Label:      raw.Legend,
+		Color:      color,
+		DurationMs: totalDurationMs,
+		Curve:      make([]chartPointValue, 0, len(raw.Curve)),
+		Markers:    make([]chartPointValue, 0, len(raw.Markers)),
 	}
 
 	for _, point := range raw.Curve {
