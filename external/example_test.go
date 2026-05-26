@@ -39,7 +39,7 @@ func ExampleFFplay_Play() {
 	_ = ctx
 
 	// Load sequence (required before playback)
-	// loaded, err := ctx.Load("input.spsq")
+	// loaded, err := ctx.LoadFile("input.spsq")
 	// if err != nil {
 	// 	log.Fatal(err)
 	// }
@@ -77,7 +77,7 @@ func ExampleFFmpeg_Convert() {
 	_ = ctx
 
 	// Load sequence (required before encoding)
-	// loaded, err := ctx.Load("input.spsq")
+	// loaded, err := ctx.LoadFile("input.spsq")
 	// if err != nil {
 	// 	log.Fatal(err)
 	// }

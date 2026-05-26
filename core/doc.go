@@ -31,7 +31,7 @@ SynapSeq currently supports text input in .spsq format.
 	    ctx = ctx.WithVerbose(os.Stderr, true)
 
 		// Load sequence (required before generating WAV or streaming)
-		loaded, err := ctx.Load("input.spsq")
+		loaded, err := ctx.LoadFile("input.spsq")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -55,6 +55,25 @@ Input paths support:
   - Local file paths: "path/to/file.spsq"
   - Standard input: "-" (input only)
   - HTTP/HTTPS URLs: "https://example.com/sequence.spsq"
+
+# Raw Content
+
+Use LoadContent when the .spsq source is already available as a string,
+such as content received from a web form, embedded resource, or another
+in-memory source:
+
+	content := `
+	alpha
+	  tone 100 binaural 1 amplitude 1
+	00:00:00 alpha
+	00:01:00 alpha
+	`
+
+	loaded, err := ctx.LoadContent(content)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_ = loaded
 
 Output methods:
   - loaded.WAV("output.wav") writes a WAV file

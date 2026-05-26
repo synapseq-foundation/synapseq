@@ -48,6 +48,22 @@ func writeRelFile(tst *testing.T, dir, relPath, content string) string {
 	return path
 }
 
+func loadTextSequenceFile(tst *testing.T, path string) (*t.Sequence, error) {
+	tst.Helper()
+
+	rawContent, err := os.ReadFile(path)
+	if err != nil {
+		tst.Fatalf("read temp sequence: %v", err)
+	}
+
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		tst.Fatalf("resolve temp sequence path: %v", err)
+	}
+
+	return LoadTextSequence(rawContent, absPath, filepath.Dir(absPath))
+}
+
 func eqTrackGotWant(got, want t.Track) bool {
 	if got.Type != want.Type {
 		return false
@@ -105,7 +121,7 @@ beta
 	path := writeSeqFile(ts, seq)
 	abPath := filepath.Join(filepath.Dir(path), "testdata", "noise.wav")
 
-	result, err := LoadTextSequence(path)
+	result, err := loadTextSequenceFile(ts, path)
 	if err != nil {
 		ts.Fatalf("LoadTextSequence error: %v", err)
 	}
@@ -167,7 +183,7 @@ alpha from base
 `
 	path := writeSeqFile(ts, seq)
 
-	result, err := LoadTextSequence(path)
+	result, err := loadTextSequenceFile(ts, path)
 	if err != nil {
 		ts.Fatalf("LoadTextSequence error: %v", err)
 	}
@@ -199,7 +215,7 @@ func TestLoadTextSequence_Error_TimelineBeforePreset(ts *testing.T) {
 00:00:00 alpha
 `
 	path := writeSeqFile(ts, seq)
-	_, err := LoadTextSequence(path)
+	_, err := loadTextSequenceFile(ts, path)
 	if err == nil {
 		ts.Fatalf("expected error for timeline before preset")
 	}
@@ -212,7 +228,7 @@ alpha from base-template
 00:00:00 alpha
 `
 	path := writeSeqFile(ts, seq)
-	_, err := LoadTextSequence(path)
+	_, err := loadTextSequenceFile(ts, path)
 	if err == nil {
 		ts.Fatalf("expected error for unknown inherited preset")
 	}
@@ -231,7 +247,7 @@ alpha from base
 00:00:00 base
 `
 	path := writeSeqFile(ts, seq)
-	_, err := LoadTextSequence(path)
+	_, err := loadTextSequenceFile(ts, path)
 	if err == nil {
 		ts.Fatalf("expected error for non-template inheritance")
 	}
@@ -247,7 +263,7 @@ alpha
 @volume 80
 `
 	path := writeSeqFile(ts, seq)
-	_, err := LoadTextSequence(path)
+	_, err := loadTextSequenceFile(ts, path)
 	if err == nil {
 		ts.Fatalf("expected error for options after preset")
 	}
@@ -261,7 +277,7 @@ alpha
 00:01:00 alpha
 `
 	path := writeSeqFile(ts, seq)
-	_, err := LoadTextSequence(path)
+	_, err := loadTextSequenceFile(ts, path)
 	if err == nil {
 		ts.Fatalf("expected error for first timeline not 00:00:00")
 	}
@@ -274,7 +290,7 @@ alpha
 00:00:00 beta
 `
 	path := writeSeqFile(ts, seq)
-	_, err := LoadTextSequence(path)
+	_, err := loadTextSequenceFile(ts, path)
 	if err == nil {
 		ts.Fatalf("expected error for missing timeline preset")
 	}
@@ -290,7 +306,7 @@ base as template
 00:00:00 base
 `
 	path := writeSeqFile(ts, seq)
-	_, err := LoadTextSequence(path)
+	_, err := loadTextSequenceFile(ts, path)
 	if err == nil {
 		ts.Fatalf("expected error for template preset in timeline")
 	}
@@ -308,7 +324,7 @@ alpha
 00:01:00 alpha
 `
 	path := writeSeqFile(ts, seq)
-	_, err := LoadTextSequence(path)
+	_, err := loadTextSequenceFile(ts, path)
 	if err == nil {
 		ts.Fatalf("expected error for ambiance path with extension")
 	}
@@ -322,7 +338,7 @@ func TestLoadTextSequence_Error_ExtendsPathWithExtension(ts *testing.T) {
 @extends shared/base.spsc
 `
 	path := writeSeqFile(ts, seq)
-	_, err := LoadTextSequence(path)
+	_, err := loadTextSequenceFile(ts, path)
 	if err == nil {
 		ts.Fatalf("expected error for extends path with extension")
 	}
@@ -340,7 +356,7 @@ alpha
 00:01:00 alpha
 `
 	path := writeSeqFile(ts, seq)
-	_, err := LoadTextSequence(path)
+	_, err := loadTextSequenceFile(ts, path)
 	if err == nil {
 		ts.Fatalf("expected error for absolute ambiance path")
 	}
@@ -358,7 +374,7 @@ alpha
 00:00:30 alpha
 `
 	path := writeSeqFile(ts, seq)
-	_, err := LoadTextSequence(path)
+	_, err := loadTextSequenceFile(ts, path)
 	if err == nil {
 		ts.Fatalf("expected error for overlapping timeline")
 	}
@@ -374,7 +390,7 @@ beta
 00:00:30 beta
 `
 	path := writeSeqFile(ts, seq)
-	_, err := LoadTextSequence(path)
+	_, err := loadTextSequenceFile(ts, path)
 	if err == nil {
 		ts.Fatalf("expected error for steps above duration limit")
 	}
@@ -389,7 +405,7 @@ alpha
   background amplitude 10
 `
 	path := writeSeqFile(ts, seq)
-	_, err := LoadTextSequence(path)
+	_, err := loadTextSequenceFile(ts, path)
 	if err == nil {
 		ts.Fatalf("expected error for background track without background option")
 	}
@@ -404,7 +420,7 @@ alpha
 `
 	path := writeSeqFile(ts, seq)
 
-	_, err := LoadTextSequence(path)
+	_, err := loadTextSequenceFile(ts, path)
 	if err == nil {
 		ts.Fatal("expected parse error")
 	}
@@ -433,7 +449,7 @@ alpha
 alpha
 `
 	path := writeSeqFile(ts, seq)
-	_, err := LoadTextSequence(path)
+	_, err := loadTextSequenceFile(ts, path)
 	if err == nil {
 		ts.Fatalf("expected error for duplicate preset")
 	}
@@ -448,7 +464,7 @@ func TestLoadTextSequence_Error_MaxPresets(ts *testing.T) {
 	}
 	b.WriteString("overflow\n")
 	path := writeSeqFile(ts, b.String())
-	_, err := LoadTextSequence(path)
+	_, err := loadTextSequenceFile(ts, path)
 	if err == nil {
 		ts.Fatalf("expected error for maximum number of presets reached")
 	}
@@ -470,7 +486,7 @@ alpha
 00:01:00 alpha
 `
 	path := writeSeqFile(ts, seq)
-	result, err := LoadTextSequence(path)
+	result, err := loadTextSequenceFile(ts, path)
 	if err != nil {
 		ts.Fatalf("LoadTextSequence with comments error: %v", err)
 	}
@@ -497,7 +513,7 @@ alpha
 00:01:00 alpha
 `
 	path := writeSeqFile(ts, seq)
-	_, err := LoadTextSequence(path)
+	_, err := loadTextSequenceFile(ts, path)
 	if err == nil {
 		ts.Fatalf("expected error for empty preset")
 	}
@@ -518,7 +534,7 @@ alpha
 00:01:00 alpha
 `
 	path := writeSeqFile(ts, seq)
-	_, err := LoadTextSequence(path)
+	_, err := loadTextSequenceFile(ts, path)
 	if err == nil {
 		ts.Fatalf("expected error for multiple background tracks in a preset")
 	}
@@ -531,7 +547,7 @@ alpha
 00:00:00 alpha
 `
 	path := writeSeqFile(ts, seq)
-	_, err := LoadTextSequence(path)
+	_, err := loadTextSequenceFile(ts, path)
 	if err == nil {
 		ts.Fatalf("expected error for less than two periods")
 	}
@@ -558,7 +574,7 @@ preparation
 		ts.Fatalf("write temp sequence: %v", err)
 	}
 
-	result, err := LoadTextSequence(seqPath)
+	result, err := loadTextSequenceFile(ts, seqPath)
 	if err != nil {
 		ts.Fatalf("LoadTextSequence with external extends error: %v", err)
 	}
@@ -608,7 +624,7 @@ alpha
 00:01:00 alpha
 `)
 
-	result, err := LoadTextSequence(seqPath)
+	result, err := loadTextSequenceFile(ts, seqPath)
 	if err != nil {
 		ts.Fatalf("LoadTextSequence with ordered extends error: %v", err)
 	}
@@ -641,7 +657,7 @@ alpha
 00:01:00 alpha
 `)
 
-	result, err := LoadTextSequence(seqPath)
+	result, err := loadTextSequenceFile(ts, seqPath)
 	if err != nil {
 		ts.Fatalf("LoadTextSequence with merged ambiance error: %v", err)
 	}

@@ -64,7 +64,7 @@ func loadSequenceContext(inputFile, outputFile string, verboseWriter io.Writer, 
 		appCtx = appCtx.WithVerbose(verboseWriter, !opts.NoColor)
 	}
 
-	return appCtx.Load(inputFile)
+	return appCtx.LoadFile(inputFile)
 }
 
 func runLoadedSequence(loadedCtx *synapseq.LoadedContext, outputFile, outputFormat string, opts *cli.CLIOptions) error {

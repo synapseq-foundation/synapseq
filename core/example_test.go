@@ -29,13 +29,13 @@ func ExampleNewAppContext() {
 	// Output: AppContext created successfully
 }
 
-func ExampleAppContext_Load() {
+func ExampleAppContext_LoadFile() {
 	// Create a new application context
 	ctx := synapseq.NewAppContext()
 	_ = ctx
 
 	// Load the sequence
-	// loaded, err := ctx.Load("input.spsq")
+	// loaded, err := ctx.LoadFile("input.spsq")
 	// if err != nil {
 	//	log.Fatal(err)
 	// }
@@ -43,6 +43,27 @@ func ExampleAppContext_Load() {
 
 	fmt.Printf("Sequence loaded successfully\n")
 	// Output: Sequence loaded successfully
+}
+
+func ExampleAppContext_LoadContent() {
+	// Create a new application context
+	ctx := synapseq.NewAppContext()
+
+	content := `
+alpha
+  tone 100 binaural 1 amplitude 1
+00:00:00 alpha
+00:01:00 alpha
+`
+
+	loaded, err := ctx.LoadContent(content)
+	if err != nil {
+		panic(err)
+	}
+	_ = loaded
+
+	fmt.Printf("Sequence content loaded successfully\n")
+	// Output: Sequence content loaded successfully
 }
 
 func ExampleLoadedContext_WAV() {
@@ -54,7 +75,7 @@ func ExampleLoadedContext_WAV() {
 	ctx = ctx.WithVerbose(os.Stderr, true)
 
 	// Load the sequence
-	// loaded, err := ctx.Load("input.spsq")
+	// loaded, err := ctx.LoadFile("input.spsq")
 	// if err != nil {
 	//	log.Fatal(err)
 	// }
@@ -74,7 +95,7 @@ func ExampleLoadedContext_Stream() {
 	_ = ctx
 
 	// Load the sequence
-	// loaded, err := ctx.Load("input.spsq")
+	// loaded, err := ctx.LoadFile("input.spsq")
 	// if err != nil {
 	//	log.Fatal(err)
 	// }
@@ -95,7 +116,7 @@ func ExampleLoadedContext_Comments() {
 	_ = ctx
 
 	// Load the sequence
-	// loaded, err := ctx.Load("input.spsq")
+	// loaded, err := ctx.LoadFile("input.spsq")
 	// if err != nil {
 	//	log.Fatal(err)
 	// }
@@ -115,7 +136,7 @@ func ExampleLoadedContext_SampleRate() {
 	_ = ctx
 
 	// Load the sequence
-	// loaded, err := ctx.Load("input.spsq")
+	// loaded, err := ctx.LoadFile("input.spsq")
 	// if err != nil {
 	//	log.Fatal(err)
 	// }
@@ -134,7 +155,7 @@ func ExampleLoadedContext_Volume() {
 	_ = ctx
 
 	// Load the sequence
-	// loaded, err := ctx.Load("input.spsq")
+	// loaded, err := ctx.LoadFile("input.spsq")
 	// if err != nil {
 	//	log.Fatal(err)
 	// }
@@ -153,7 +174,7 @@ func ExampleLoadedContext_Ambiance() {
 	_ = ctx
 
 	// Load the sequence
-	// loaded, err := ctx.Load("input.spsq")
+	// loaded, err := ctx.LoadFile("input.spsq")
 	// if err != nil {
 	//	log.Fatal(err)
 	// }
@@ -172,7 +193,7 @@ func ExampleLoadedContext_Extends() {
 	_ = ctx
 
 	// Load the sequence
-	// loaded, err := ctx.Load("input.spsq")
+	// loaded, err := ctx.LoadFile("input.spsq")
 	// if err != nil {
 	//	log.Fatal(err)
 	// }
@@ -191,7 +212,7 @@ func ExampleLoadedContext_Preview() {
 	_ = ctx
 
 	// Load the sequence
-	// loaded, err := ctx.Load("input.spsq")
+	// loaded, err := ctx.LoadFile("input.spsq")
 	// if err != nil {
 	//	log.Fatal(err)
 	// }
@@ -213,7 +234,7 @@ func ExampleLoadedContext_RawContent() {
 	_ = ctx
 
 	// Load the sequence
-	// loaded, err := ctx.Load("input.spsq")
+	// loaded, err := ctx.LoadFile("input.spsq")
 	// if err != nil {
 	//	log.Fatal(err)
 	// }
