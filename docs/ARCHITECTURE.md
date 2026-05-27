@@ -231,7 +231,7 @@ Sequence construction is a multi-step flow.
 
 ```mermaid
 flowchart TD
-	Load[core.AppContext.Load] --> LoadText[internal/sequence.LoadTextSequence]
+	LoadFile[core.AppContext.LoadFile] --> LoadText[internal/sequence.LoadTextSequence]
 	LoadText --> Resource[internal/resource.GetFile]
 	LoadText --> ParseContent[parseSequenceContent]
 	ParseContent --> File[SequenceFile line iteration]
@@ -340,7 +340,7 @@ flowchart TD
 	RemoteAPI --> Index[index cache and lookup]
 	RemoteAPI --> Download[download sequence]
 	Download --> CachedSPSQ[cached .spsq file]
-	CachedSPSQ --> CoreLoad[core.AppContext.Load]
+	CachedSPSQ --> CoreLoadFile[core.AppContext.LoadFile]
 	CoreLoad --> MainPipeline[standard preview or audio pipeline]
 ```
 
@@ -395,7 +395,7 @@ The public Go API should continue to revolve around the following mental model:
 
 1. Create an `AppContext`.
 2. Optionally configure it with `WithVerbose()`.
-3. Load an `.spsq` source with `Load()`.
+3. Load an `.spsq` file with `LoadFile()` or `LoadContent()` for string sequence content.
 4. Use the resulting `LoadedContext` to:
    - inspect comments, sample rate, volume, ambiance, extends, and raw content;
    - render WAV;

@@ -36,7 +36,7 @@ ffplay using streaming PCM audio.
 	func main() {
 	    ctx := synapseq.NewAppContext()
 
-	    loaded, err := ctx.Load("input.spsq")
+	    loaded, err := ctx.LoadFile("input.spsq")
 	    if err != nil {
 	        log.Fatal(err)
 	    }
@@ -68,7 +68,7 @@ using constant bit rate (CBR) at 320 kbps.
 	func main() {
 	    ctx := synapseq.NewAppContext()
 
-	    loaded, err := ctx.Load("input.spsq")
+	    loaded, err := ctx.LoadFile("input.spsq")
 	    if err != nil {
 	        log.Fatal(err)
 	    }

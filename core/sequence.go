@@ -16,14 +16,40 @@ package core
 import (
 	"fmt"
 	"maps"
+	"path/filepath"
 
 	preview "github.com/synapseq-foundation/synapseq/v4/internal/preview"
+	r "github.com/synapseq-foundation/synapseq/v4/internal/resource"
 	seq "github.com/synapseq-foundation/synapseq/v4/internal/sequence"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
-// Load loads the sequence from the input file.
-func (ac *AppContext) Load(path string) (*LoadedContext, error) {
-	sequence, err := seq.LoadTextSequence(path)
+// LoadFile loads the sequence from the input file.
+func (ac *AppContext) LoadFile(path string) (*LoadedContext, error) {
+	rawContent, err := r.GetFile(path, t.FormatText)
+	if err != nil {
+		return nil, fmt.Errorf("error loading sequence file: %v", err)
+	}
+
+	absInputFile, err := filepath.Abs(path)
+	if err != nil {
+		return nil, fmt.Errorf("cannot resolve absolute path: %w", err)
+	}
+
+	sequence, err := seq.LoadTextSequence(rawContent, absInputFile, filepath.Dir(absInputFile))
+	if err != nil {
+		return nil, err
+	}
+
+	return &LoadedContext{
+		appCtx:   ac,
+		sequence: sequence,
+	}, nil
+}
+
+// LoadContent loads the sequence from raw text content.
+func (ac *AppContext) LoadContent(content string) (*LoadedContext, error) {
+	sequence, err := seq.LoadTextSequence([]byte(content), "", "")
 	if err != nil {
 		return nil, err
 	}

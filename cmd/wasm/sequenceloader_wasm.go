@@ -10,5 +10,5 @@ import (
 type sequenceLoader struct{}
 
 func (sequenceLoader) Load(rawContent []byte) (*t.Sequence, error) {
-	return sequencepkg.LoadTextSequence(rawContent)
+	return sequencepkg.LoadTextSequence(rawContent, "", "")
 }
