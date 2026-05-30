@@ -42,6 +42,22 @@ func (s TransitionType) String() string {
 	}
 }
 
+// TransitionTypeString returns the TransitionType for a given transition string
+func TransitionTypeString(t string) TransitionType {
+	switch t {
+	case KeywordTransitionSteady:
+		return TransitionSteady
+	case KeywordTransitionEaseOut:
+		return TransitionEaseOut
+	case KeywordTransitionEaseIn:
+		return TransitionEaseIn
+	case KeywordTransitionSmooth:
+		return TransitionSmooth
+	default:
+		return TransitionSteady
+	}
+}
+
 // Period represents a time period with track configurations
 type Period struct {
 	Time       int                     // Start time (end time is ->Next->Time)
