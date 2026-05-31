@@ -25,7 +25,7 @@ func (b *Builder) SilenceAt(hh, mm, ss int) *Builder {
 }
 
 // At adds a timeline entry at the given time with the specified transition and steps
-func (b *Builder) At(hh, mm, ss int) *Builder {
+func (b *Builder) PresetAt(hh, mm, ss int) *Builder {
 	if b.lastPreset == "" {
 		return b
 	}
