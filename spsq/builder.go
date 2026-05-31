@@ -22,7 +22,6 @@ import (
 
 // Builder is responsible for building a sequence from a string sequence content
 type Builder struct {
-	extends  []string
 	timeline []timelineEntry
 	ambiance []ambianceOption
 	options  map[string]string
@@ -52,7 +51,6 @@ type timelineEntry struct {
 // New creates a new Builder
 func New() *Builder {
 	return &Builder{
-		extends:  make([]string, 0),
 		timeline: make([]timelineEntry, 0),
 		ambiance: make([]ambianceOption, 0),
 		options:  make(map[string]string),
@@ -84,9 +82,6 @@ func (b *Builder) content() string {
 	}
 	for _, ambiance := range b.ambiance {
 		fmt.Fprintf(&content, "%s%s %s %s\n", opt, t.KeywordOptionAmbiance, ambiance.name, ambiance.path)
-	}
-	for _, extend := range b.extends {
-		fmt.Fprintf(&content, "%s%s %s\n", opt, t.KeywordOptionExtends, extend)
 	}
 
 	fmt.Fprintf(&content, "\n%s Presets\n", cmm)

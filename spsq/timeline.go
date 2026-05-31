@@ -44,8 +44,8 @@ func (b *Builder) At(at time.Duration, preset *Preset) *Builder {
 	return b
 }
 
-// WithSteadyTransition sets the transition of the last timeline entry to steady
-func (b *Builder) WithSteadyTransition() *Builder {
+// Steady sets the transition of the last timeline entry to steady.
+func (b *Builder) Steady() *Builder {
 	if len(b.timeline) == 0 {
 		return b
 	}
@@ -55,8 +55,8 @@ func (b *Builder) WithSteadyTransition() *Builder {
 	return b
 }
 
-// WithEaseInTransition sets the transition of the last timeline entry to ease-in
-func (b *Builder) WithEaseInTransition() *Builder {
+// EaseIn sets the transition of the last timeline entry to ease-in.
+func (b *Builder) EaseIn() *Builder {
 	if len(b.timeline) == 0 {
 		return b
 	}
@@ -66,8 +66,8 @@ func (b *Builder) WithEaseInTransition() *Builder {
 	return b
 }
 
-// WithEaseOutTransition sets the transition of the last timeline entry to ease-out
-func (b *Builder) WithEaseOutTransition() *Builder {
+// EaseOut sets the transition of the last timeline entry to ease-out.
+func (b *Builder) EaseOut() *Builder {
 	if len(b.timeline) == 0 {
 		return b
 	}
@@ -77,8 +77,8 @@ func (b *Builder) WithEaseOutTransition() *Builder {
 	return b
 }
 
-// WithSmoothTransition sets the transition of the last timeline entry to ease-out
-func (b *Builder) WithSmoothTransition() *Builder {
+// Smooth sets the transition of the last timeline entry to smooth.
+func (b *Builder) Smooth() *Builder {
 	if len(b.timeline) == 0 {
 		return b
 	}
@@ -88,8 +88,8 @@ func (b *Builder) WithSmoothTransition() *Builder {
 	return b
 }
 
-// WithStep sets the step of the last timeline entry
-func (b *Builder) WithStep(s int) *Builder {
+// Step sets the step count of the last timeline entry.
+func (b *Builder) Step(s int) *Builder {
 	if len(b.timeline) == 0 {
 		return b
 	}

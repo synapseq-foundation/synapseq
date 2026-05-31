@@ -34,9 +34,3 @@ func (b *Builder) Ambiance(name, path string) *Builder {
 	b.ambiance = append(b.ambiance, ambianceOption{name: name, path: path})
 	return b
 }
-
-// Extends adds a sequence dependency.
-func (b *Builder) Extends(extends string) *Builder {
-	b.extends = append(b.extends, extends)
-	return b
-}

@@ -57,7 +57,7 @@ and audio packages.
 # Builder Flow
 
 Typical builder usage follows the .spsq document shape:
-  - add sequence options such as sample rate, volume, ambiance, or extends;
+  - add sequence options such as sample rate, volume, or ambiance;
   - create presets and add tracks with track modifiers;
   - add timeline entries that select presets or silence at specific times;
   - call Build to validate and load the generated .spsq content.
