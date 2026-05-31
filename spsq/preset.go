@@ -237,3 +237,66 @@ func (b *Builder) WithAmplitude(amplitude float64) *Builder {
 	b.presets[b.lastPreset][trackIdx].Amplitude = t.AmplitudePercentToRaw(amplitude)
 	return b
 }
+
+// WithPanEffect adds a pan effect to the last track in the sequence
+func (b *Builder) WithPanEffect(pan float64) *Builder {
+	if b.lastPreset == "" {
+		return b
+	}
+
+	trackIdx := len(b.presets[b.lastPreset]) - 1
+	if trackIdx < 0 {
+		return b
+	}
+
+	b.presets[b.lastPreset][trackIdx].Effect.Type = t.EffectPan
+	b.presets[b.lastPreset][trackIdx].Effect.Value = pan
+	return b
+}
+
+// WithModulationEffect adds a modulation effect to the last track in the sequence
+func (b *Builder) WithModulationEffect(modulation float64) *Builder {
+	if b.lastPreset == "" {
+		return b
+	}
+
+	trackIdx := len(b.presets[b.lastPreset]) - 1
+	if trackIdx < 0 {
+		return b
+	}
+
+	b.presets[b.lastPreset][trackIdx].Effect.Type = t.EffectModulation
+	b.presets[b.lastPreset][trackIdx].Effect.Value = modulation
+	return b
+}
+
+// WithDopplerEffect adds a doppler effect to the last track in the sequence
+func (b *Builder) WithDopplerEffect(modulation float64) *Builder {
+	if b.lastPreset == "" {
+		return b
+	}
+
+	trackIdx := len(b.presets[b.lastPreset]) - 1
+	if trackIdx < 0 {
+		return b
+	}
+
+	b.presets[b.lastPreset][trackIdx].Effect.Type = t.EffectDoppler
+	b.presets[b.lastPreset][trackIdx].Effect.Value = modulation
+	return b
+}
+
+// WithIntensity sets the intensity of the effect on the last track in the sequence
+func (b *Builder) WithIntensity(value float64) *Builder {
+	if b.lastPreset == "" {
+		return b
+	}
+
+	trackIdx := len(b.presets[b.lastPreset]) - 1
+	if trackIdx < 0 {
+		return b
+	}
+
+	b.presets[b.lastPreset][trackIdx].Effect.Intensity = t.IntensityPercentToRaw(value)
+	return b
+}
