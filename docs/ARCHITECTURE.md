@@ -24,6 +24,7 @@ These invariants are important when changing the codebase:
 5. `internal/audio` owns synthesis and rendering. `core` calls it, but does not reimplement audio concerns.
 6. `internal/preview` owns HTML preview generation and stays separate from audio rendering.
 7. `internal/remote` is an optional source of `.spsq` files. Once a Remote sequence is downloaded, it goes through the same main pipeline as any local sequence.
+8. `spsq` is the public programmatic builder API for generating `.spsq` text. It should remain a construction helper that hands generated content to `core.LoadContent` rather than owning parsing, validation, preview, or rendering.
 
 ## High-Level Runtime Flow
 
@@ -32,6 +33,7 @@ The main end-to-end runtime looks like this:
 ```mermaid
 flowchart TD
 	CLI[cmd/synapseq\nCLI entry and dispatch] --> Core[core\nAppContext and LoadedContext]
+	SPSQ[spsq\nprogrammatic .spsq builder] --> Core
 	Core --> Seq[internal/sequence\nload and build Sequence]
 	Seq --> Parser[internal/parser\nparse DSL tokens and structures]
 	Seq --> Types[internal/types\ndomain model]
@@ -46,6 +48,8 @@ There are two main paths:
 
 - a local sequence path, where the CLI loads a user-provided `.spsq` file;
 - a Remote path, where the CLI resolves a remote entry first, downloads it, and then reuses the same loading and rendering pipeline.
+
+Programmatic Go callers can also build `.spsq` content with `spsq.Builder` and pass the resulting string to `core.AppContext.LoadContent`. From that point on, the content uses the same sequence loading, validation, preview, and audio rendering pipeline as hand-written text.
 
 ## Package Map
 
@@ -71,6 +75,16 @@ This is the public API of SynapSeq.
 - `LoadedContext` wraps a loaded sequence and exposes the main operations: `WAV`, `Stream`, `Preview`, and metadata accessors.
 
 The purpose of `core` is to hide internal package wiring behind a small and stable surface.
+
+### `spsq`
+
+This is the public Go API for constructing `.spsq` sequence text programmatically.
+
+- `Builder` records options, presets, tracks, effects, and timeline entries through fluent method calls.
+- `String()` renders the accumulated builder state as `.spsq` text.
+- Generated content should be loaded through `core.AppContext.LoadContent` when callers need validation, metadata inspection, preview generation, streaming, or rendered audio.
+
+This package is intentionally a builder, not a parser or renderer. It may use shared domain constants and formatting helpers, but final sequence loading and validation remain owned by `internal/sequence`, and synthesis remains owned by `internal/audio`.
 
 ### `internal/types`
 
@@ -175,6 +189,7 @@ flowchart LR
 	CMD --> REMOTE[internal/remote]
 	CMD --> CORE[core]
 	CMD --> EXT[external]
+	SPSQ[spsq] --> TYPES
 
 	CORE --> SEQ[internal/sequence]
 	CORE --> PREVIEW[internal/preview]
@@ -213,6 +228,8 @@ flowchart LR
 ```
 
 The most important part of this graph is that `internal/types` stays at the bottom as a shared model package.
+
+At the user-flow level, `spsq.Builder.String()` output is intended to enter the main pipeline through `core.AppContext.LoadContent`. The dependency graph above shows package imports; the runtime handoff is text content passed by the caller, not `spsq` importing `core`.
 
 ## CLI and Command Dispatch Flow
 
@@ -395,7 +412,7 @@ The public Go API should continue to revolve around the following mental model:
 
 1. Create an `AppContext`.
 2. Optionally configure it with `WithVerbose()`.
-3. Load an `.spsq` file with `LoadFile()` or `LoadContent()` for string sequence content.
+3. Load an `.spsq` file with `LoadFile()` or `LoadContent()` for string sequence content. If the sequence is constructed programmatically, use `spsq.New()` and pass `Builder.String()` to `LoadContent()`.
 4. Use the resulting `LoadedContext` to:
    - inspect comments, sample rate, volume, ambiance, extends, and raw content;
    - render WAV;

@@ -53,7 +53,9 @@ After installation on any platform, run `synapseq -manual` to get links to the c
 
 ## Go API
 
-If you want to integrate SynapSeq into a Go project, use the [Go module API](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4/core).
+If you want to integrate SynapSeq into a Go project, use the [core Go API](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4/core) to load, inspect, preview, stream, and render sequences.
+
+To build `.spsq` content programmatically in Go, use the [spsq builder API](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4/spsq).
 
 ## WASM API
 
