@@ -17,21 +17,21 @@ import (
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
-// WithSilence adds a silence track to the sequence
+// SilenceAt adds a silence timeline entry at the given time.
 func (b *Builder) SilenceAt(hh, mm, ss int) *Builder {
 	time := fmt.Sprintf("%02d:%02d:%02d", hh, mm, ss)
 	b.timeline = append(b.timeline, [4]string{time, t.KeywordSilence, t.KeywordTransitionSteady, "0"})
 	return b
 }
 
-// At adds a timeline entry at the given time with the specified transition and steps
-func (b *Builder) PresetAt(hh, mm, ss int) *Builder {
-	if b.lastPreset == "" {
+// At adds a preset timeline entry at the given time.
+func (b *Builder) At(hh, mm, ss int, preset *Preset) *Builder {
+	if preset == nil {
 		return b
 	}
 
 	time := fmt.Sprintf("%02d:%02d:%02d", hh, mm, ss)
-	b.timeline = append(b.timeline, [4]string{time, b.lastPreset, t.KeywordTransitionSteady, "0"})
+	b.timeline = append(b.timeline, [4]string{time, preset.name, t.KeywordTransitionSteady, "0"})
 	return b
 }
 

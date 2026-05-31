@@ -13,290 +13,216 @@ package spsq
 
 import t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 
-// AddPreset create a new preset with the given name
-func (b *Builder) AddPreset(name string) *Builder {
-	b.presets[name] = []t.Track{}
-	b.lastPreset = name
-	return b
+// Preset builds the tracks for one named .spsq preset.
+type Preset struct {
+	builder *Builder
+	name    string
+	index   int
 }
 
-// AddToneTrack adds a tone track to the last preset
-func (b *Builder) AddToneTrack(carrier float64) *Builder {
-	if b.lastPreset == "" {
-		return b
+// NewPreset creates a new preset with the given name.
+func (b *Builder) NewPreset(name string) *Preset {
+	if index := b.presetIndex(name); index >= 0 {
+		b.presets[index].tracks = []t.Track{}
+		return &Preset{builder: b, name: name, index: index}
 	}
 
-	track := &t.Track{
+	b.presets = append(b.presets, presetEntry{name: name, tracks: []t.Track{}})
+	return &Preset{builder: b, name: name, index: len(b.presets) - 1}
+}
+
+// Tone adds a pure tone track.
+func (p *Preset) Tone(carrier float64) *Preset {
+	return p.addTrack(t.Track{
 		Type:    t.TrackPureTone,
 		Carrier: carrier,
-	}
-
-	b.presets[b.lastPreset] = append(b.presets[b.lastPreset], *track)
-	return b
+	})
 }
 
-// AddNoiseTrack adds a noise track to the last preset
-func (b *Builder) AddNoiseTrack() *Builder {
-	if b.lastPreset == "" {
-		return b
-	}
-
-	track := &t.Track{
-		Type: t.TrackPinkNoise,
-	}
-
-	b.presets[b.lastPreset] = append(b.presets[b.lastPreset], *track)
-	return b
-}
-
-// AddAmbianceTrack adds an ambiance track to the last preset
-func (b *Builder) AddAmbianceTrack(name string) *Builder {
-	if b.lastPreset == "" {
-		return b
-	}
-
-	track := &t.Track{
+// Ambiance adds an ambiance track.
+func (p *Preset) Ambiance(name string) *Preset {
+	return p.addTrack(t.Track{
 		Type:         t.TrackAmbiance,
 		AmbianceName: name,
-	}
-
-	b.presets[b.lastPreset] = append(b.presets[b.lastPreset], *track)
-	return b
+	})
 }
 
-// WithSineWaveform sets the waveform of the last track to sine
-func (b *Builder) WithSineWaveform() *Builder {
-	if b.lastPreset == "" {
-		return b
-	}
-
-	lastPreset := b.presets[b.lastPreset]
-	if len(lastPreset) == 0 {
-		return b
-	}
-
-	trackIdx := len(lastPreset) - 1
-	b.presets[b.lastPreset][trackIdx].Waveform = t.WaveformSine
-	return b
+// WhiteNoise adds a white noise track.
+func (p *Preset) WhiteNoise(smooth float64) *Preset {
+	return p.addTrack(t.Track{
+		Type:        t.TrackWhiteNoise,
+		NoiseSmooth: smooth,
+	})
 }
 
-// WithSquareWaveform sets the waveform of the last track to square
-func (b *Builder) WithSquareWaveform() *Builder {
-	if b.lastPreset == "" {
-		return b
-	}
-
-	lastPreset := b.presets[b.lastPreset]
-	if len(lastPreset) == 0 {
-		return b
-	}
-
-	trackIdx := len(lastPreset) - 1
-	b.presets[b.lastPreset][trackIdx].Waveform = t.WaveformSquare
-	return b
+// PinkNoise adds a pink noise track.
+func (p *Preset) PinkNoise(smooth float64) *Preset {
+	return p.addTrack(t.Track{
+		Type:        t.TrackPinkNoise,
+		NoiseSmooth: smooth,
+	})
 }
 
-// WithTriangleWaveform sets the waveform of the last track to triangle
-func (b *Builder) WithTriangleWaveform() *Builder {
-	if b.lastPreset == "" {
-		return b
-	}
-
-	lastPreset := b.presets[b.lastPreset]
-	if len(lastPreset) == 0 {
-		return b
-	}
-
-	trackIdx := len(lastPreset) - 1
-	b.presets[b.lastPreset][trackIdx].Waveform = t.WaveformTriangle
-	return b
+// BrownNoise adds a brown noise track.
+func (p *Preset) BrownNoise(smooth float64) *Preset {
+	return p.addTrack(t.Track{
+		Type:        t.TrackBrownNoise,
+		NoiseSmooth: smooth,
+	})
 }
 
-// WithSawtoothWaveform sets the waveform of the last track to sawtooth
-func (b *Builder) WithSawtoothWaveform() *Builder {
-	if b.lastPreset == "" {
-		return b
-	}
-
-	lastPreset := b.presets[b.lastPreset]
-	if len(lastPreset) == 0 {
-		return b
-	}
-
-	trackIdx := len(lastPreset) - 1
-	b.presets[b.lastPreset][trackIdx].Waveform = t.WaveformSawtooth
-	return b
+// Sine sets the waveform of the last track to sine.
+func (p *Preset) Sine() *Preset {
+	return p.setWaveform(t.WaveformSine)
 }
 
-// WithBinauralTone adds a binaural tone track to the sequence
-func (b *Builder) WithBinauralTone(beat float64) *Builder {
-	if b.lastPreset == "" {
-		return b
-	}
-
-	trackIdx := len(b.presets[b.lastPreset]) - 1
-	if trackIdx < 0 {
-		return b
-	}
-
-	b.presets[b.lastPreset][trackIdx].Type = t.TrackBinauralBeat
-	b.presets[b.lastPreset][trackIdx].Resonance = beat
-	return b
+// Square sets the waveform of the last track to square.
+func (p *Preset) Square() *Preset {
+	return p.setWaveform(t.WaveformSquare)
 }
 
-// WithMonauralTone adds a monaural tone track to the sequence
-func (b *Builder) WithMonauralTone(beat float64) *Builder {
-	if b.lastPreset == "" {
-		return b
-	}
-
-	trackIdx := len(b.presets[b.lastPreset]) - 1
-	if trackIdx < 0 {
-		return b
-	}
-
-	b.presets[b.lastPreset][trackIdx].Type = t.TrackMonauralBeat
-	b.presets[b.lastPreset][trackIdx].Resonance = beat
-	return b
+// Triangle sets the waveform of the last track to triangle.
+func (p *Preset) Triangle() *Preset {
+	return p.setWaveform(t.WaveformTriangle)
 }
 
-// WithIsochronicTone adds an isochronic tone track to the sequence
-func (b *Builder) WithIsochronicTone(beat float64) *Builder {
-	if b.lastPreset == "" {
-		return b
-	}
-
-	trackIdx := len(b.presets[b.lastPreset]) - 1
-	if trackIdx < 0 {
-		return b
-	}
-
-	b.presets[b.lastPreset][trackIdx].Type = t.TrackIsochronicBeat
-	b.presets[b.lastPreset][trackIdx].Resonance = beat
-	return b
+// Sawtooth sets the waveform of the last track to sawtooth.
+func (p *Preset) Sawtooth() *Preset {
+	return p.setWaveform(t.WaveformSawtooth)
 }
 
-// WithBrownNoise adds a brown noise track to the sequence
-func (b *Builder) WithBrownNoise(smooth float64) *Builder {
-	if b.lastPreset == "" {
-		return b
+// Binaural converts the last tone track to a binaural beat.
+func (p *Preset) Binaural(beat float64) *Preset {
+	track := p.lastTrack()
+	if track == nil {
+		return p
 	}
 
-	trackIdx := len(b.presets[b.lastPreset]) - 1
-	if trackIdx < 0 {
-		return b
-	}
-
-	b.presets[b.lastPreset][trackIdx].Type = t.TrackBrownNoise
-	b.presets[b.lastPreset][trackIdx].NoiseSmooth = smooth
-	return b
+	track.Type = t.TrackBinauralBeat
+	track.Resonance = beat
+	return p
 }
 
-// WithPinkNoise adds a pink noise track to the sequence
-func (b *Builder) WithPinkNoise(smooth float64) *Builder {
-	if b.lastPreset == "" {
-		return b
+// Monaural converts the last tone track to a monaural beat.
+func (p *Preset) Monaural(beat float64) *Preset {
+	track := p.lastTrack()
+	if track == nil {
+		return p
 	}
 
-	trackIdx := len(b.presets[b.lastPreset]) - 1
-	if trackIdx < 0 {
-		return b
-	}
-	b.presets[b.lastPreset][trackIdx].Type = t.TrackPinkNoise
-	b.presets[b.lastPreset][trackIdx].NoiseSmooth = smooth
-	return b
+	track.Type = t.TrackMonauralBeat
+	track.Resonance = beat
+	return p
 }
 
-// WithWhiteNoise adds a white noise track to the sequence
-func (b *Builder) WithWhiteNoise(smooth float64) *Builder {
-	if b.lastPreset == "" {
-		return b
+// Isochronic converts the last tone track to an isochronic beat.
+func (p *Preset) Isochronic(beat float64) *Preset {
+	track := p.lastTrack()
+	if track == nil {
+		return p
 	}
 
-	trackIdx := len(b.presets[b.lastPreset]) - 1
-	if trackIdx < 0 {
-		return b
-	}
-
-	b.presets[b.lastPreset][trackIdx].Type = t.TrackWhiteNoise
-	b.presets[b.lastPreset][trackIdx].NoiseSmooth = smooth
-	return b
+	track.Type = t.TrackIsochronicBeat
+	track.Resonance = beat
+	return p
 }
 
-// WithAmplitude sets the amplitude of the last track in the sequence
-func (b *Builder) WithAmplitude(amplitude float64) *Builder {
-	if b.lastPreset == "" {
-		return b
-	}
-
-	trackIdx := len(b.presets[b.lastPreset]) - 1
-	if trackIdx < 0 {
-		return b
-	}
-
-	b.presets[b.lastPreset][trackIdx].Amplitude = t.AmplitudePercentToRaw(amplitude)
-	return b
+// Pan adds a pan effect to the last track.
+func (p *Preset) Pan(value float64) *Preset {
+	return p.setEffect(t.EffectPan, value)
 }
 
-// WithPanEffect adds a pan effect to the last track in the sequence
-func (b *Builder) WithPanEffect(pan float64) *Builder {
-	if b.lastPreset == "" {
-		return b
-	}
-
-	trackIdx := len(b.presets[b.lastPreset]) - 1
-	if trackIdx < 0 {
-		return b
-	}
-
-	b.presets[b.lastPreset][trackIdx].Effect.Type = t.EffectPan
-	b.presets[b.lastPreset][trackIdx].Effect.Value = pan
-	return b
+// Modulation adds a modulation effect to the last track.
+func (p *Preset) Modulation(value float64) *Preset {
+	return p.setEffect(t.EffectModulation, value)
 }
 
-// WithModulationEffect adds a modulation effect to the last track in the sequence
-func (b *Builder) WithModulationEffect(modulation float64) *Builder {
-	if b.lastPreset == "" {
-		return b
-	}
-
-	trackIdx := len(b.presets[b.lastPreset]) - 1
-	if trackIdx < 0 {
-		return b
-	}
-
-	b.presets[b.lastPreset][trackIdx].Effect.Type = t.EffectModulation
-	b.presets[b.lastPreset][trackIdx].Effect.Value = modulation
-	return b
+// Doppler adds a doppler effect to the last track.
+func (p *Preset) Doppler(value float64) *Preset {
+	return p.setEffect(t.EffectDoppler, value)
 }
 
-// WithDopplerEffect adds a doppler effect to the last track in the sequence
-func (b *Builder) WithDopplerEffect(modulation float64) *Builder {
-	if b.lastPreset == "" {
-		return b
+// Intensity sets the effect intensity on the last track.
+func (p *Preset) Intensity(value float64) *Preset {
+	track := p.lastTrack()
+	if track == nil {
+		return p
 	}
 
-	trackIdx := len(b.presets[b.lastPreset]) - 1
-	if trackIdx < 0 {
-		return b
-	}
-
-	b.presets[b.lastPreset][trackIdx].Effect.Type = t.EffectDoppler
-	b.presets[b.lastPreset][trackIdx].Effect.Value = modulation
-	return b
+	track.Effect.Intensity = t.IntensityPercentToRaw(value)
+	return p
 }
 
-// WithIntensity sets the intensity of the effect on the last track in the sequence
-func (b *Builder) WithIntensity(value float64) *Builder {
-	if b.lastPreset == "" {
-		return b
+// Amplitude sets the amplitude of the last track.
+func (p *Preset) Amplitude(amplitude float64) *Preset {
+	track := p.lastTrack()
+	if track == nil {
+		return p
 	}
 
-	trackIdx := len(b.presets[b.lastPreset]) - 1
-	if trackIdx < 0 {
-		return b
+	track.Amplitude = t.AmplitudePercentToRaw(amplitude)
+	return p
+}
+
+// addTrack adds a track to the current preset.
+func (p *Preset) addTrack(track t.Track) *Preset {
+	if p == nil || p.builder == nil || !p.valid() {
+		return p
 	}
 
-	b.presets[b.lastPreset][trackIdx].Effect.Intensity = t.IntensityPercentToRaw(value)
-	return b
+	p.builder.presets[p.index].tracks = append(p.builder.presets[p.index].tracks, track)
+	return p
+}
+
+// setWaveform sets the waveform of the last track.
+func (p *Preset) setWaveform(waveform t.WaveformType) *Preset {
+	track := p.lastTrack()
+	if track == nil {
+		return p
+	}
+
+	track.Waveform = waveform
+	return p
+}
+
+// setEffect sets the effect type and value on the last track.
+func (p *Preset) setEffect(effect t.EffectType, value float64) *Preset {
+	track := p.lastTrack()
+	if track == nil {
+		return p
+	}
+
+	track.Effect.Type = effect
+	track.Effect.Value = value
+	return p
+}
+
+// lastTrack returns the last track in the current preset.
+func (p *Preset) lastTrack() *t.Track {
+	if p == nil || p.builder == nil || !p.valid() {
+		return nil
+	}
+
+	tracks := p.builder.presets[p.index].tracks
+	if len(tracks) == 0 {
+		return nil
+	}
+
+	return &p.builder.presets[p.index].tracks[len(tracks)-1]
+}
+
+// valid returns whether the preset is valid (i.e. the index is within bounds and the name matches).
+func (p *Preset) valid() bool {
+	return p.index >= 0 && p.index < len(p.builder.presets) && p.builder.presets[p.index].name == p.name
+}
+
+// presetIndex returns the index of the given preset name, or -1 if not found.
+func (b *Builder) presetIndex(name string) int {
+	for i, preset := range b.presets {
+		if preset.name == name {
+			return i
+		}
+	}
+
+	return -1
 }

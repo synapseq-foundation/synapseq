@@ -17,26 +17,26 @@ import (
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
-// AddSampleRateOption sets the sample rate for the sequence
-func (b *Builder) AddSampleRateOption(sampleRate int) *Builder {
+// SampleRate sets the sample rate for the sequence.
+func (b *Builder) SampleRate(sampleRate int) *Builder {
 	b.options[t.KeywordOptionSampleRate] = strconv.Itoa(sampleRate)
 	return b
 }
 
-// AddVolumeOption sets the volume for the sequence
-func (b *Builder) AddVolumeOption(volume int) *Builder {
+// Volume sets the volume for the sequence.
+func (b *Builder) Volume(volume int) *Builder {
 	b.options[t.KeywordOptionVolume] = strconv.Itoa(volume)
 	return b
 }
 
-// AddAmbianceOption sets the ambiance for the sequence
-func (b *Builder) AddAmbianceOption(name, path string) *Builder {
-	b.ambiance = append(b.ambiance, []string{name, path})
+// Ambiance registers an ambiance source for the sequence.
+func (b *Builder) Ambiance(name, path string) *Builder {
+	b.ambiance = append(b.ambiance, ambianceOption{name: name, path: path})
 	return b
 }
 
-// AddExtendsOption sets the extends for the sequence
-func (b *Builder) AddExtendsOption(extends string) *Builder {
+// Extends adds a sequence dependency.
+func (b *Builder) Extends(extends string) *Builder {
 	b.extends = append(b.extends, extends)
 	return b
 }

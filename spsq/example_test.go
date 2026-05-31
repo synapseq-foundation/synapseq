@@ -16,21 +16,20 @@ package spsq_test
 import (
 	"fmt"
 
-	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
 	"github.com/synapseq-foundation/synapseq/v4/spsq"
 )
 
 func ExampleNew() {
-	sequence := spsq.New().
-		AddPreset("alpha").
-		AddNoiseTrack().WithPinkNoise(0).WithAmplitude(30).
-		AddToneTrack(300).WithBinauralTone(10).WithAmplitude(15).
-		SilenceAt(0, 0, 0).
-		PresetAt(0, 0, 15).
-		SilenceAt(0, 1, 0)
+	builder := spsq.New().SampleRate(44100).Volume(100)
+	alpha := builder.NewPreset("alpha")
+	alpha.PinkNoise(0).Amplitude(30)
+	alpha.Tone(300).Binaural(10).Amplitude(15)
 
-	ctx := synapseq.NewAppContext()
-	loaded, err := ctx.LoadContent(sequence.String())
+	loaded, err := builder.
+		SilenceAt(0, 0, 0).
+		At(0, 0, 15, alpha).
+		SilenceAt(0, 1, 0).
+		Build()
 	if err != nil {
 		panic(err)
 	}
