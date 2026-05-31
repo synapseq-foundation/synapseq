@@ -42,7 +42,7 @@ and audio packages.
 
 	    loaded, err := builder.
 	        SilenceAt(0).
-	        At(15*time.Second, alpha).
+	        PresetAt(15*time.Second, alpha).
 	        SilenceAt(time.Minute).
 	        Build()
 	    if err != nil {

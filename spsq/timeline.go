@@ -29,8 +29,8 @@ func (b *Builder) SilenceAt(at time.Duration) *Builder {
 	return b
 }
 
-// At adds a preset timeline entry at the given time.
-func (b *Builder) At(at time.Duration, preset *Preset) *Builder {
+// PresetAt adds a preset timeline entry at the given time.
+func (b *Builder) PresetAt(at time.Duration, preset *Preset) *Builder {
 	if preset == nil {
 		return b
 	}

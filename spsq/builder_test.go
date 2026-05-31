@@ -34,8 +34,8 @@ func TestBuilderBuildPreservesOrder(t *testing.T) {
 
 	loaded, err := builder.
 		SilenceAt(0).
-		At(15*time.Second, alpha).
-		At(time.Minute, beta).
+		PresetAt(15*time.Second, alpha).
+		PresetAt(time.Minute, beta).
 		Build()
 	if err != nil {
 		t.Fatalf("Build error: %v", err)
@@ -74,7 +74,7 @@ func TestBuilderBuildReturnsValidationError(t *testing.T) {
 	alpha := builder.NewPreset("alpha")
 	alpha.Tone(300).Binaural(10).Amplitude(15)
 
-	_, err := builder.At(99*time.Minute, alpha).Build()
+	_, err := builder.PresetAt(99*time.Minute, alpha).Build()
 	if err == nil {
 		t.Fatal("expected validation error")
 	}
