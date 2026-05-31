@@ -15,6 +15,7 @@ package spsq_test
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/synapseq-foundation/synapseq/v4/spsq"
 )
@@ -26,9 +27,9 @@ func ExampleNew() {
 	alpha.Tone(300).Binaural(10).Amplitude(15)
 
 	loaded, err := builder.
-		SilenceAt(0, 0, 0).
-		At(0, 0, 15, alpha).
-		SilenceAt(0, 1, 0).
+		SilenceAt(0).
+		At(15*time.Second, alpha).
+		SilenceAt(time.Minute).
 		Build()
 	if err != nil {
 		panic(err)

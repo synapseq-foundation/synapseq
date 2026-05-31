@@ -16,6 +16,7 @@ package spsq
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestBuilderBuildPreservesOrder(t *testing.T) {
@@ -32,9 +33,9 @@ func TestBuilderBuildPreservesOrder(t *testing.T) {
 	beta.PinkNoise(10).Amplitude(15)
 
 	loaded, err := builder.
-		SilenceAt(0, 0, 0).
-		At(0, 0, 15, alpha).
-		At(0, 1, 0, beta).
+		SilenceAt(0).
+		At(15*time.Second, alpha).
+		At(time.Minute, beta).
 		Build()
 	if err != nil {
 		t.Fatalf("Build error: %v", err)
@@ -73,7 +74,7 @@ func TestBuilderBuildReturnsValidationError(t *testing.T) {
 	alpha := builder.NewPreset("alpha")
 	alpha.Tone(300).Binaural(10).Amplitude(15)
 
-	_, err := builder.At(0, 99, 0, alpha).Build()
+	_, err := builder.At(99*time.Minute, alpha).Build()
 	if err == nil {
 		t.Fatal("expected validation error")
 	}

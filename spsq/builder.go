@@ -14,23 +14,16 @@ package spsq
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
-// Timeline constants define the indices of timeline fields
-const (
-	timelineTime       = 0
-	timelinePreset     = 1
-	timelineTransition = 2
-	timelineStep       = 3
-)
-
 // Builder is responsible for building a sequence from a string sequence content
 type Builder struct {
 	extends  []string
-	timeline [][4]string
+	timeline []timelineEntry
 	ambiance []ambianceOption
 	options  map[string]string
 	presets  []presetEntry
@@ -48,11 +41,19 @@ type presetEntry struct {
 	tracks []t.Track
 }
 
+// timelineEntry holds one generated timeline declaration.
+type timelineEntry struct {
+	at         time.Duration
+	presetName string
+	transition string
+	steps      int
+}
+
 // New creates a new Builder
 func New() *Builder {
 	return &Builder{
 		extends:  make([]string, 0),
-		timeline: make([][4]string, 0),
+		timeline: make([]timelineEntry, 0),
 		ambiance: make([]ambianceOption, 0),
 		options:  make(map[string]string),
 		presets:  make([]presetEntry, 0),
@@ -98,7 +99,7 @@ func (b *Builder) content() string {
 
 	fmt.Fprintf(&content, "\n%s Timeline\n", cmm)
 	for _, timeline := range b.timeline {
-		fmt.Fprintf(&content, "%s %s %s %s\n", timeline[timelineTime], timeline[timelinePreset], timeline[timelineTransition], timeline[timelineStep])
+		fmt.Fprintf(&content, "%s %s %s %d\n", formatTimelineTime(timeline.at), timeline.presetName, timeline.transition, timeline.steps)
 	}
 
 	return content.String()

@@ -13,25 +13,34 @@ package spsq
 
 import (
 	"fmt"
+	"time"
 
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 // SilenceAt adds a silence timeline entry at the given time.
-func (b *Builder) SilenceAt(hh, mm, ss int) *Builder {
-	time := fmt.Sprintf("%02d:%02d:%02d", hh, mm, ss)
-	b.timeline = append(b.timeline, [4]string{time, t.KeywordSilence, t.KeywordTransitionSteady, "0"})
+func (b *Builder) SilenceAt(at time.Duration) *Builder {
+	b.timeline = append(b.timeline, timelineEntry{
+		at:         at,
+		presetName: t.KeywordSilence,
+		transition: t.KeywordTransitionSteady,
+		steps:      0,
+	})
 	return b
 }
 
 // At adds a preset timeline entry at the given time.
-func (b *Builder) At(hh, mm, ss int, preset *Preset) *Builder {
+func (b *Builder) At(at time.Duration, preset *Preset) *Builder {
 	if preset == nil {
 		return b
 	}
 
-	time := fmt.Sprintf("%02d:%02d:%02d", hh, mm, ss)
-	b.timeline = append(b.timeline, [4]string{time, preset.name, t.KeywordTransitionSteady, "0"})
+	b.timeline = append(b.timeline, timelineEntry{
+		at:         at,
+		presetName: preset.name,
+		transition: t.KeywordTransitionSteady,
+		steps:      0,
+	})
 	return b
 }
 
@@ -42,7 +51,7 @@ func (b *Builder) WithSteadyTransition() *Builder {
 	}
 
 	timeIdx := len(b.timeline) - 1
-	b.timeline[timeIdx][timelineTransition] = t.KeywordTransitionSteady
+	b.timeline[timeIdx].transition = t.KeywordTransitionSteady
 	return b
 }
 
@@ -53,7 +62,7 @@ func (b *Builder) WithEaseInTransition() *Builder {
 	}
 
 	timeIdx := len(b.timeline) - 1
-	b.timeline[timeIdx][timelineTransition] = t.KeywordTransitionEaseIn
+	b.timeline[timeIdx].transition = t.KeywordTransitionEaseIn
 	return b
 }
 
@@ -64,7 +73,7 @@ func (b *Builder) WithEaseOutTransition() *Builder {
 	}
 
 	timeIdx := len(b.timeline) - 1
-	b.timeline[timeIdx][timelineTransition] = t.KeywordTransitionEaseOut
+	b.timeline[timeIdx].transition = t.KeywordTransitionEaseOut
 	return b
 }
 
@@ -75,7 +84,7 @@ func (b *Builder) WithSmoothTransition() *Builder {
 	}
 
 	timeIdx := len(b.timeline) - 1
-	b.timeline[timeIdx][timelineTransition] = t.KeywordTransitionSmooth
+	b.timeline[timeIdx].transition = t.KeywordTransitionSmooth
 	return b
 }
 
@@ -86,6 +95,16 @@ func (b *Builder) WithStep(s int) *Builder {
 	}
 
 	timeIdx := len(b.timeline) - 1
-	b.timeline[timeIdx][timelineStep] = fmt.Sprintf("%d", s)
+	b.timeline[timeIdx].steps = s
 	return b
+}
+
+// formatTimelineTime formats a time duration as a string in the format "HH:MM:SS"
+func formatTimelineTime(at time.Duration) string {
+	totalSeconds := int(at / time.Second)
+	hh := totalSeconds / 3600
+	mm := (totalSeconds % 3600) / 60
+	ss := totalSeconds % 60
+
+	return fmt.Sprintf("%02d:%02d:%02d", hh, mm, ss)
 }

@@ -29,6 +29,7 @@ and audio packages.
 
 	import (
 	    "log"
+	    "time"
 
 	    "github.com/synapseq-foundation/synapseq/v4/spsq"
 	)
@@ -40,9 +41,9 @@ and audio packages.
 	    alpha.Tone(300).Binaural(10).Amplitude(15)
 
 	    loaded, err := builder.
-	        SilenceAt(0, 0, 0).
-	        At(0, 0, 15, alpha).
-	        SilenceAt(0, 1, 0).
+	        SilenceAt(0).
+	        At(15*time.Second, alpha).
+	        SilenceAt(time.Minute).
 	        Build()
 	    if err != nil {
 	        log.Fatal(err)
