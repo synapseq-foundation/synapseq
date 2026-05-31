@@ -17,9 +17,11 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
 )
 
-func TestBuilderBuildPreservesOrder(t *testing.T) {
+func TestBuilderLoadPreservesOrder(t *testing.T) {
 	builder := New().
 		SampleRate(48000).
 		Volume(80).
@@ -32,13 +34,14 @@ func TestBuilderBuildPreservesOrder(t *testing.T) {
 	beta := builder.NewPreset("beta")
 	beta.PinkNoise(10).Amplitude(15)
 
+	ctx := synapseq.NewAppContext()
 	loaded, err := builder.
 		SilenceAt(0).
 		PresetAt(15*time.Second, alpha).
 		PresetAt(time.Minute, beta).
-		Build()
+		Load(ctx)
 	if err != nil {
-		t.Fatalf("Build error: %v", err)
+		t.Fatalf("Load error: %v", err)
 	}
 	content := string(loaded.RawContent())
 
@@ -69,13 +72,20 @@ func TestBuilderBuildPreservesOrder(t *testing.T) {
 	}
 }
 
-func TestBuilderBuildReturnsValidationError(t *testing.T) {
+func TestBuilderLoadReturnsValidationError(t *testing.T) {
 	builder := New()
 	alpha := builder.NewPreset("alpha")
 	alpha.Tone(300).Binaural(10).Amplitude(15)
 
-	_, err := builder.PresetAt(99*time.Minute, alpha).Build()
+	_, err := builder.PresetAt(99*time.Minute, alpha).Load(synapseq.NewAppContext())
 	if err == nil {
 		t.Fatal("expected validation error")
+	}
+}
+
+func TestBuilderLoadRequiresContext(t *testing.T) {
+	_, err := New().Load(nil)
+	if err == nil {
+		t.Fatal("expected nil context error")
 	}
 }

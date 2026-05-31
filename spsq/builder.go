@@ -58,10 +58,12 @@ func New() *Builder {
 	}
 }
 
-// Build returns a loaded context for the generated .spsq content.
-func (b *Builder) Build() (*synapseq.LoadedContext, error) {
-	content := b.content()
-	return synapseq.NewAppContext().LoadContent(content)
+// Load renders and loads the generated .spsq content through ctx.
+func (b *Builder) Load(ctx *synapseq.AppContext) (*synapseq.LoadedContext, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("context is nil")
+	}
+	return ctx.LoadContent(b.content())
 }
 
 // content returns the generated .spsq content as a string.

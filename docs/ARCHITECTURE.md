@@ -49,7 +49,7 @@ There are two main paths:
 - a local sequence path, where the CLI loads a user-provided `.spsq` file;
 - a Remote path, where the CLI resolves a remote entry first, downloads it, and then reuses the same loading and rendering pipeline.
 
-Programmatic Go callers can also build `.spsq` content with `spsq.Builder` and pass the resulting string to `core.AppContext.LoadContent`. From that point on, the content uses the same sequence loading, validation, preview, and audio rendering pipeline as hand-written text.
+Programmatic Go callers can also construct `.spsq` content with `spsq.Builder` and load it through `Builder.Load(ctx)`. From that point on, the content uses the same sequence loading, validation, preview, and audio rendering pipeline as hand-written text.
 
 ## Package Map
 
@@ -82,7 +82,7 @@ This is a public Go API for constructing `.spsq` sequence text programmatically.
 
 - `Builder` records options and timeline entries through fluent method calls.
 - `Preset` records tracks and effects for a named preset.
-- `Build()` renders the accumulated builder state as `.spsq` text, validates it through `core.AppContext.LoadContent`, and returns the resulting `LoadedContext`.
+- `Load(ctx)` renders the accumulated builder state as `.spsq` text, validates it through the provided `core.AppContext`, and returns the resulting `LoadedContext`.
 - Generated content remains available through `LoadedContext.RawContent()` when callers need the source text.
 
 This package is intentionally a builder, not a parser or renderer. Final sequence loading and validation remain owned by `internal/sequence`, and synthesis remains owned by `internal/audio`.
@@ -231,7 +231,7 @@ flowchart LR
 
 The most important part of this graph is that `internal/types` stays at the bottom as a shared model package.
 
-At the user-flow level, `spsq.Builder.Build()` validates generated text through `core.AppContext.LoadContent` and returns the resulting loaded context to the caller.
+At the user-flow level, `spsq.Builder.Load(ctx)` validates generated text through the provided `core.AppContext` and returns the resulting loaded context to the caller.
 
 ## CLI and Command Dispatch Flow
 
@@ -414,7 +414,7 @@ The public Go API should continue to revolve around the following mental model:
 
 1. Create an `AppContext`.
 2. Optionally configure it with `WithVerbose()`.
-3. Load an `.spsq` file with `LoadFile()` or `LoadContent()` for string sequence content. If the sequence is constructed programmatically, use `spsq.New()` and `Builder.Build()` to get a `LoadedContext`.
+3. Load an `.spsq` file with `LoadFile()` or `LoadContent()` for string sequence content. If the sequence is constructed programmatically, use `spsq.New()` and `Builder.Load(ctx)` to get a `LoadedContext`.
 4. Use the resulting `LoadedContext` to:
    - inspect comments, sample rate, volume, ambiance, extends, and raw content;
    - render WAV;
