@@ -44,9 +44,12 @@ jobs:
           make build-linux-arm64
           make build-macos
 
-      - name: Build WASM
-        run: |
-          make build-wasm
+      # WASM release artifacts are deprecated. The browser runtime is kept only
+      # for historical reference and is no longer built or published in releases.
+      #
+      # - name: Build WASM
+      #   run: |
+      #     make build-wasm
 
       - name: Prepare packaging directory
         run: |
@@ -112,36 +115,39 @@ jobs:
           # Package macOS binaries (TAR.GZ format)
           package_binary "macos" "arm64" "" "tar.gz"
 
-      - name: Package WASM
-        run: |
-          VERSION="${{ steps.get_version.outputs.version }}"
-          pkg_name="synapseq-${VERSION}-wasm"
-
-          echo "Packaging WASM version..."
-
-          # Create temporary directory for packaging
-          mkdir -p "temp-${pkg_name}"
-
-          # Copy WASM files
-          cp wasm/synapseq.wasm "temp-${pkg_name}/"
-          cp wasm/synapseq.js "temp-${pkg_name}/"
-          cp wasm/wasm_exec.js "temp-${pkg_name}/"
-          cp wasm/example.html "temp-${pkg_name}/"
-
-          # Generate SHA256 checksums for WASM files
-          cd "temp-${pkg_name}"
-          sha256sum synapseq.wasm synapseq.js wasm_exec.js example.html > checksums.txt
-          cd ..
-          echo "✓ SHA256 checksums generated for WASM files"
-
-          # Create ZIP package
-          cd "temp-${pkg_name}"
-          zip "../packages/${pkg_name}.zip" synapseq.wasm synapseq.js wasm_exec.js example.html checksums.txt
-          cd ..
-
-          # Clean up temporary directory
-          rm -rf "temp-${pkg_name}"
-          echo "✓ ${pkg_name} packaged successfully"
+      # WASM release artifacts are deprecated. The browser runtime is kept only
+      # for historical reference and is no longer built or published in releases.
+      #
+      # - name: Package WASM
+      #   run: |
+      #     VERSION="${{ steps.get_version.outputs.version }}"
+      #     pkg_name="synapseq-${VERSION}-wasm"
+      #
+      #     echo "Packaging WASM version..."
+      #
+      #     # Create temporary directory for packaging
+      #     mkdir -p "temp-${pkg_name}"
+      #
+      #     # Copy WASM files
+      #     cp wasm/synapseq.wasm "temp-${pkg_name}/"
+      #     cp wasm/synapseq.js "temp-${pkg_name}/"
+      #     cp wasm/wasm_exec.js "temp-${pkg_name}/"
+      #     cp wasm/example.html "temp-${pkg_name}/"
+      #
+      #     # Generate SHA256 checksums for WASM files
+      #     cd "temp-${pkg_name}"
+      #     sha256sum synapseq.wasm synapseq.js wasm_exec.js example.html > checksums.txt
+      #     cd ..
+      #     echo "✓ SHA256 checksums generated for WASM files"
+      #
+      #     # Create ZIP package
+      #     cd "temp-${pkg_name}"
+      #     zip "../packages/${pkg_name}.zip" synapseq.wasm synapseq.js wasm_exec.js example.html checksums.txt
+      #     cd ..
+      #
+      #     # Clean up temporary directory
+      #     rm -rf "temp-${pkg_name}"
+      #     echo "✓ ${pkg_name} packaged successfully"
 
       - name: Generate checksums
         run: |

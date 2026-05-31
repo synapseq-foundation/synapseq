@@ -1,4 +1,5 @@
 /*/*
+ * WARNING: This is a deprecated runtime entrypoint and should not be used for new integrations.
  * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org
  *
@@ -540,7 +541,7 @@ class SynapSeq {
           this.currentRightChunk = null;
           this.currentIndex = 0;
           this.done = false;
-          
+
           this.port.onmessage = (e) => {
             if (e.data.type === 'chunk') {
               if (this.queueHead > 32 && this.queueHead * 2 >= this.leftChunks.length) {
@@ -564,17 +565,17 @@ class SynapSeq {
             }
           };
         }
-        
+
         process(inputs, outputs, parameters) {
           const output = outputs[0];
-          
+
           if (!output || output.length === 0) {
             return true;
           }
-          
+
           const leftChannel = output[0];
           const rightChannel = output.length > 1 ? output[1] : output[0];
-          
+
           for (let i = 0; i < leftChannel.length; i++) {
             if (!this.currentLeftChunk || this.currentIndex >= this.currentLeftChunk.length) {
               if (this.queueHead < this.leftChunks.length) {
@@ -591,7 +592,7 @@ class SynapSeq {
                 continue;
               }
             }
-            
+
             if (this.currentLeftChunk && this.currentIndex < this.currentLeftChunk.length) {
               leftChannel[i] = this.currentLeftChunk[this.currentIndex];
               rightChannel[i] = this.currentRightChunk[this.currentIndex];
@@ -601,11 +602,11 @@ class SynapSeq {
               rightChannel[i] = 0;
             }
           }
-          
+
           return true;
         }
       }
-      
+
       registerProcessor('stream-processor', StreamProcessor);
     `;
 

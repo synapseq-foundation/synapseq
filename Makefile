@@ -75,6 +75,7 @@ build-macos: prepare
 
 # WASM build
 build-wasm:
+	@echo "WARNING: SynapSeq WASM support is deprecated and is no longer published in release artifacts."
 	GOOS=js GOARCH=wasm go build -tags=wasm $(GO_BUILD_FLAGS) -o wasm/$(BIN_NAME).wasm ./cmd/wasm
 	cp $(shell go env GOROOT)/lib/wasm/wasm_exec.js wasm/wasm_exec.js
 

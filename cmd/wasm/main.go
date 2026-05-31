@@ -1,5 +1,7 @@
 //go:build wasm
 
+// Deprecated: the SynapSeq WebAssembly runtime is kept only for historical
+// reference and is no longer recommended for new integrations.
 /*
  * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
  * https://synapseq.org

@@ -57,10 +57,6 @@ If you want to integrate SynapSeq into a Go project, use the [core Go API](https
 
 To build `.spsq` content programmatically in Go, use the [spsq builder API](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4/spsq).
 
-## WASM API
-
-If you want to integrate SynapSeq into a browser-based application, see the [WASM JavaScript API Reference](wasm/README.md).
-
 ## Contributing
 
 We welcome contributions!
