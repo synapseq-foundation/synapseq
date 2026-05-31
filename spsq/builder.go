@@ -42,6 +42,7 @@ type ambianceOption struct {
 	path string
 }
 
+// presetEntry holds the name and tracks of a preset.
 type presetEntry struct {
 	name   string
 	tracks []t.Track
@@ -64,6 +65,7 @@ func (b *Builder) Build() (*synapseq.LoadedContext, error) {
 	return synapseq.NewAppContext().LoadContent(content)
 }
 
+// content returns the generated .spsq content as a string.
 func (b *Builder) content() string {
 	var content strings.Builder
 
