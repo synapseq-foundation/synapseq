@@ -12,13 +12,14 @@
 package types
 
 const (
-	BufferSize         = 1024    // Buffer size for audio processing
-	SineTableSize      = 16384   // Number of elements in sine-table (power of 2)
-	WaveTableAmplitude = 0x7FFFF // Amplitude of wave in wave-table
-	PhasePrecision     = 65536   // Phase precision (1/65536 of a cycle)
+	BufferSize         = 1024
+	SineTableSize      = 16384
+	WaveTableAmplitude = 0x7FFFF
+	PhasePrecision     = 65536
 )
 
-type AmplitudeType float64 // Amplitude level (0-4096 for 0-100%)
+// AmplitudeType represents the amplitude level of an audio signal
+type AmplitudeType float64
 
 // ToPercent converts a raw amplitude value to a float64 percentage
 func (a AmplitudeType) ToPercent() float64 {
@@ -30,7 +31,8 @@ func AmplitudePercentToRaw(v float64) AmplitudeType {
 	return AmplitudeType(v * 40.96)
 }
 
-type IntensityType float64 // Intensity level (0-1.0 for 0-100%)
+// IntensityType represents the intensity level of an audio signal
+type IntensityType float64
 
 // ToPercent converts a raw intensity value to a float64 percentage
 func (i IntensityType) ToPercent() float64 {

@@ -60,11 +60,11 @@ func TransitionTypeString(t string) TransitionType {
 
 // Period represents a time period with track configurations
 type Period struct {
-	Time       int                     // Start time (end time is ->Next->Time)
-	TrackStart [NumberOfChannels]Track // Start tracks for each channel
-	TrackEnd   [NumberOfChannels]Track // End tracks for each channel
-	Transition TransitionType          // Transition type
-	Steps      int                     // Number of steps for the transition
+	Time       int
+	TrackStart [NumberOfChannels]Track
+	TrackEnd   [NumberOfChannels]Track
+	Transition TransitionType
+	Steps      int
 }
 
 // TimeString returns the time of this period as a formatted string
