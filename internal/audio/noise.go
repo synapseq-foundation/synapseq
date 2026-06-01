@@ -18,45 +18,26 @@ import (
 )
 
 const (
-	// NoiseShift is the bit shift for noise generation
-	noiseShift = 12
-	// NoiseAmplitude is the amplitude for noise generation
-	noiseAmplitude = t.WaveTableAmplitude << noiseShift
-	// NoiseBands is the number of bands for noise generation
-	noiseBands = 9
-	// Initial seed for deterministic noise generation
-	initialNoiseSeed uint32 = 0x9E3779B9
-	// Max centered random value for 16-bit signed samples
-	maxCenteredRandom = 1 << 15
-	// White/brown noise scale to the wave table amplitude range
-	whiteNoiseScale = t.WaveTableAmplitude / maxCenteredRandom
-	// Pink noise contribution for the base value and each band
-	pinkContributionScale = noiseAmplitude / maxCenteredRandom / (noiseBands + 1)
-	// Brown noise input attenuation to keep integration stable
-	brownInputDivisor = 16
-	// Brown noise decay factor expressed as an integer fraction
-	brownDecayNumerator   = 9
-	brownDecayDenominator = 10
-	// Number of cascaded low-pass stages used for noise smoothing.
-	noiseSmoothnessStages = 3
-	// User smoothness is mapped almost linearly up to this point.
-	noiseSmoothnessLinearCeiling = 60.0
-	// Minimum EMA alpha used at maximum smoothness to keep the signal moving.
-	noiseSmoothnessMinAlpha = 0.02
+	noiseShift                          = 12
+	noiseAmplitude                      = t.WaveTableAmplitude << noiseShift
+	noiseBands                          = 9
+	initialNoiseSeed             uint32 = 0x9E3779B9
+	maxCenteredRandom                   = 1 << 15
+	whiteNoiseScale                     = t.WaveTableAmplitude / maxCenteredRandom
+	pinkContributionScale               = noiseAmplitude / maxCenteredRandom / (noiseBands + 1)
+	brownInputDivisor                   = 16
+	brownDecayNumerator                 = 9
+	brownDecayDenominator               = 10
+	noiseSmoothnessStages               = 3
+	noiseSmoothnessLinearCeiling        = 60.0
+	noiseSmoothnessMinAlpha             = 0.02
 )
 
 // NoiseGenerator handles all noise generation
 type NoiseGenerator struct {
-	// Pink noise state
-	pinkState pinkNoiseState
-
-	// Random seed (shared across all noise types)
-	seed uint32
-
-	// Brown noise state
-	brownLast int
-
-	// Per-track low-pass state, preserved while smoothness ramps.
+	pinkState   pinkNoiseState
+	seed        uint32
+	brownLast   int
 	smoothState map[t.TrackType]noiseSmoothnessState
 }
 
@@ -72,11 +53,13 @@ type pinkNoiseBand struct {
 	increment int
 }
 
+// noiseSmoothnessState holds the per-track state for noise smoothing.
 type noiseSmoothnessState struct {
 	initialized bool
 	stages      [noiseSmoothnessStages]float64
 }
 
+// noiseSmoothnessProfile holds the linear target and max effective alpha for a noise smoothness stage.
 type noiseSmoothnessProfile struct {
 	linearTarget float64
 	maxEffective float64
@@ -128,10 +111,12 @@ func (ng *NoiseGenerator) nextCenteredRandom() int {
 	return int(ng.nextRandom()>>16) - maxCenteredRandom
 }
 
+// nextPinkContribution returns a scaled pink noise contribution.
 func (ng *NoiseGenerator) nextPinkContribution() int {
 	return ng.nextCenteredRandom() * pinkContributionScale
 }
 
+// initPinkNoise initializes the pink noise state with random contributions.
 func (ng *NoiseGenerator) initPinkNoise() {
 	for i := range ng.pinkState.bands {
 		ng.pinkState.bands[i].value = ng.nextPinkContribution()
@@ -184,6 +169,7 @@ func (ng *NoiseGenerator) generatePinkNoise() int {
 	return total >> noiseShift
 }
 
+// applySmoothness applies noise smoothing to a sample using the per-track state.
 func (ng *NoiseGenerator) applySmoothness(tr t.TrackType, smooth float64, sample int) int {
 	if smooth <= 0 {
 		return sample
@@ -214,12 +200,14 @@ func (ng *NoiseGenerator) applySmoothness(tr t.TrackType, smooth float64, sample
 	return clampNoiseSample(int(value))
 }
 
+// noiseSmoothnessAlpha returns the noise smoothing alpha for a given track and smoothness level.
 func noiseSmoothnessAlpha(tr t.TrackType, smoothness float64) float64 {
 	normalized := effectiveNoiseSmoothness(tr, smoothness) / 100.0
 	inverse := 1.0 - normalized
 	return noiseSmoothnessMinAlpha + (1.0-noiseSmoothnessMinAlpha)*inverse*inverse
 }
 
+// effectiveNoiseSmoothness returns the effective noise smoothness for a given track and smoothness level.
 func effectiveNoiseSmoothness(tr t.TrackType, smoothness float64) float64 {
 	profile := noiseSmoothnessProfileForTrack(tr)
 
@@ -237,6 +225,7 @@ func effectiveNoiseSmoothness(tr t.TrackType, smoothness float64) float64 {
 	return profile.linearTarget + (profile.maxEffective-profile.linearTarget)*progress*progress
 }
 
+// noiseSmoothnessProfileForTrack returns the noise smoothness profile for a given track type.
 func noiseSmoothnessProfileForTrack(tr t.TrackType) noiseSmoothnessProfile {
 	switch tr {
 	case t.TrackWhiteNoise:
@@ -250,6 +239,7 @@ func noiseSmoothnessProfileForTrack(tr t.TrackType) noiseSmoothnessProfile {
 	}
 }
 
+// clampNoiseSample clamps a noise sample to the wave table amplitude range.
 func clampNoiseSample(sample int) int {
 	if sample > int(t.WaveTableAmplitude) {
 		return int(t.WaveTableAmplitude)

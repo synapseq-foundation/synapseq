@@ -11,26 +11,17 @@
 
 package types
 
-const (
-	NumberOfChannels = 16 // Max number of channels
-)
+const NumberOfChannels = 16
 
 // Channel represents a channel state
 type Channel struct {
-	// Current track setting (updated from current period)
-	Track Track
-	// Waveform morph state for transitions within the current period
+	Track         Track
 	WaveformStart WaveformType
 	WaveformEnd   WaveformType
 	WaveformAlpha float64
-	// Track type
-	Type TrackType
-	// Current amplitude state
-	Amplitude [2]int
-	// Increment (for binaural tones, offset + increment into sine table * 65536)
-	Increment [2]int
-	// Offset into waveform table (for tones, offset + increment into sine table * 65536)
-	Offset [2]int
-
-	Effect EffectState
+	Type          TrackType
+	Amplitude     [2]int
+	Increment     [2]int
+	Offset        [2]int
+	Effect        EffectState
 }
