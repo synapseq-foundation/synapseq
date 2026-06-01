@@ -24,6 +24,7 @@ These invariants are important when changing the codebase:
 5. `internal/audio` owns synthesis and rendering. `core` calls it, but does not reimplement audio concerns.
 6. `internal/preview` owns HTML preview generation and stays separate from audio rendering.
 7. `internal/remote` is an optional source of `.spsq` files. Once a Remote sequence is downloaded, it goes through the same main pipeline as any local sequence.
+8. `spsq` is the public programmatic builder API for generating `.spsq` text. It should remain a construction helper that hands generated content to `core.LoadContent` rather than owning parsing, validation, preview, or rendering.
 
 ## High-Level Runtime Flow
 
@@ -32,6 +33,7 @@ The main end-to-end runtime looks like this:
 ```mermaid
 flowchart TD
 	CLI[cmd/synapseq\nCLI entry and dispatch] --> Core[core\nAppContext and LoadedContext]
+	SPSQ[spsq\nprogrammatic .spsq builder] --> Core
 	Core --> Seq[internal/sequence\nload and build Sequence]
 	Seq --> Parser[internal/parser\nparse DSL tokens and structures]
 	Seq --> Types[internal/types\ndomain model]
@@ -46,6 +48,8 @@ There are two main paths:
 
 - a local sequence path, where the CLI loads a user-provided `.spsq` file;
 - a Remote path, where the CLI resolves a remote entry first, downloads it, and then reuses the same loading and rendering pipeline.
+
+Programmatic Go callers can also construct `.spsq` content with `spsq.Builder` and load it through `Builder.Load(ctx)`. From that point on, the content uses the same sequence loading, validation, preview, and audio rendering pipeline as hand-written text.
 
 ## Package Map
 
@@ -71,6 +75,17 @@ This is the public API of SynapSeq.
 - `LoadedContext` wraps a loaded sequence and exposes the main operations: `WAV`, `Stream`, `Preview`, and metadata accessors.
 
 The purpose of `core` is to hide internal package wiring behind a small and stable surface.
+
+### `spsq`
+
+This is a public Go API for constructing `.spsq` sequence text programmatically.
+
+- `Builder` records options and timeline entries through fluent method calls.
+- `Preset` records tracks and effects for a named preset.
+- `Load(ctx)` renders the accumulated builder state as `.spsq` text, validates it through the provided `core.AppContext`, and returns the resulting `LoadedContext`.
+- Generated content remains available through `LoadedContext.RawContent()` when callers need the source text.
+
+This package is intentionally a builder, not a parser or renderer. Final sequence loading and validation remain owned by `internal/sequence`, and synthesis remains owned by `internal/audio`.
 
 ### `internal/types`
 
@@ -175,6 +190,8 @@ flowchart LR
 	CMD --> REMOTE[internal/remote]
 	CMD --> CORE[core]
 	CMD --> EXT[external]
+	SPSQ[spsq] --> CORE
+	SPSQ --> TYPES
 
 	CORE --> SEQ[internal/sequence]
 	CORE --> PREVIEW[internal/preview]
@@ -213,6 +230,8 @@ flowchart LR
 ```
 
 The most important part of this graph is that `internal/types` stays at the bottom as a shared model package.
+
+At the user-flow level, `spsq.Builder.Load(ctx)` validates generated text through the provided `core.AppContext` and returns the resulting loaded context to the caller.
 
 ## CLI and Command Dispatch Flow
 
@@ -355,30 +374,21 @@ Remote should not fork the rendering architecture.
 
 ## WASM Build Target
 
-SynapSeq also ships a browser-oriented WebAssembly target under [cmd/wasm/main.go](cmd/wasm/main.go).
-
-This target does not go through the CLI flow in `cmd/synapseq`. Instead, it exposes a JavaScript bridge that:
-
-- receives `.spsq` content as bytes from browser code;
-- loads the sequence through `internal/sequence`;
-- renders audio through `internal/audio`;
-- streams raw PCM chunks back to JavaScript callbacks.
-
-Internally, the WASM target is intentionally split into a small set of focused layers:
+Internally, the deprecated WASM target is split into a small set of focused layers:
 
 - `main.go` only boots the runtime and registers global exports;
 - `bridge_wasm.go` owns the `syscall/js` boundary, Promise handling, and callback delivery;
 - `streamservice.go` coordinates load, renderer construction, PCM encoding, and chunk streaming without JavaScript concerns;
 - `rendererbuilder.go` and `pcmencoder.go` keep renderer configuration and PCM byte encoding isolated and testable.
 
-This makes the WASM target intentionally narrower than the native CLI:
+The WASM target is narrower than the native CLI:
 
 - it does not participate in Remote workflows;
 - it does not use external tools such as ffplay or ffmpeg;
 - it does not generate preview HTML;
 - it acts as a browser runtime bridge rather than a general command interface.
 
-Detailed browser-facing API behavior belongs in [wasm/README.md](wasm/README.md). This architecture document should only describe the WASM target as a separate runtime entrypoint with its own environment constraints.
+Detailed deprecated browser-facing API behavior belongs in [wasm](wasm/README.md).
 
 ## External Tool Integration
 
@@ -395,7 +405,7 @@ The public Go API should continue to revolve around the following mental model:
 
 1. Create an `AppContext`.
 2. Optionally configure it with `WithVerbose()`.
-3. Load an `.spsq` file with `LoadFile()` or `LoadContent()` for string sequence content.
+3. Load an `.spsq` file with `LoadFile()` or `LoadContent()` for string sequence content. If the sequence is constructed programmatically, use `spsq.New()` and `Builder.Load(ctx)` to get a `LoadedContext`.
 4. Use the resulting `LoadedContext` to:
    - inspect comments, sample rate, volume, ambiance, extends, and raw content;
    - render WAV;

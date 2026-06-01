@@ -1,5 +1,34 @@
 # SynapSeq JavaScript API Reference
 
+> [!WARNING]
+> The SynapSeq WebAssembly runtime is deprecated and will no longer receive
+> feature updates or release artifacts.
+>
+> This package remains documented only for historical reference. It was
+> deprecated because the browser runtime adds substantial overhead for
+> real-time audio generation: Go renders PCM inside WebAssembly, crosses the
+> `syscall/js` boundary, copies buffers into JavaScript, transfers chunks from
+> a Worker to the main thread, converts PCM16 data into `Float32Array` channel
+> buffers, and then queues those buffers into an `AudioWorklet`. In practice,
+> this layering can increase CPU usage, heat, and battery drain on user
+> devices, especially for long-running entrainment sessions.
+>
+> Go's `syscall/js` package is also still documented by the Go project as
+> **experimental** and outside the Go compatibility promise. The official API
+> exposes `CopyBytesToGo` and `CopyBytesToJS`, which copy bytes between
+> JavaScript typed arrays and Go memory. That model is workable for occasional
+> calls, but it is a poor fit for continuous low-latency audio streaming.
+>
+> For new integrations, use the new `spsq` public Go API on a backend or native process:
+> build sequences with `spsq`, load them through `core.AppContext`, and render
+> WAV/MP3/PCM server-side or in a native CLI flow.
+>
+> References:
+>
+> - Go `syscall/js` package documentation: https://pkg.go.dev/syscall/js
+> - Go WebAssembly wiki: https://go.dev/wiki/WebAssembly
+> - MDN WebAssembly concepts: https://developer.mozilla.org/en-US/docs/WebAssembly/Guides/Concepts
+
 Browser-facing JavaScript wrapper for the SynapSeq WebAssembly runtime.
 
 `SynapSeq` loads the Go WASM runtime in a Web Worker, streams generated PCM audio to the main thread, and plays it through the Web Audio API.

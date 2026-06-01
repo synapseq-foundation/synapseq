@@ -37,3 +37,19 @@ func (wt WaveformType) String() string {
 		return ""
 	}
 }
+
+// WaveformString returns the WaveformType from a string representation
+func WaveformString(s string) WaveformType {
+	switch s {
+	case KeywordSine:
+		return WaveformSine
+	case KeywordSquare:
+		return WaveformSquare
+	case KeywordTriangle:
+		return WaveformTriangle
+	case KeywordSawtooth:
+		return WaveformSawtooth
+	default:
+		return WaveformSine
+	}
+}

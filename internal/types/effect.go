@@ -63,3 +63,19 @@ type EffectState struct {
 	PanPosition    float64
 	PanInitialized bool
 }
+
+// EffectString returns the EffectType from a string representation
+func EffectString(s string) EffectType {
+	switch s {
+	case KeywordOff:
+		return EffectOff
+	case KeywordPan:
+		return EffectPan
+	case KeywordModulation:
+		return EffectModulation
+	case KeywordDoppler:
+		return EffectDoppler
+	default:
+		return EffectOff
+	}
+}
