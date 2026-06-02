@@ -121,6 +121,54 @@ func TestRenderPlanCueResolvesInterpolatedTrackState(ts *testing.T) {
 	}
 }
 
+func TestRenderPlanCueInterpolatesEffectIntensityFadeIn(ts *testing.T) {
+	var p0, p1 t.Period
+	p0.Time = 0
+	p1.Time = 1000
+	p0.TrackStart[0] = t.Track{
+		Type:      t.TrackBinauralBeat,
+		Amplitude: t.AmplitudePercentToRaw(20),
+		Carrier:   200,
+		Resonance: 8,
+		Waveform:  t.WaveformSine,
+		Effect:    t.Effect{Type: t.EffectPan, Value: 2, Intensity: 0},
+	}
+	p0.TrackEnd[0] = p0.TrackStart[0]
+	p0.TrackEnd[0].Effect.Intensity = t.IntensityPercentToRaw(60)
+
+	plan := compileRenderPlan([]t.Period{p0, p1}, 44100)
+	effect := plan.cue(0, 500).Channels[0].Track.Effect
+
+	if effect.Type != t.EffectPan || effect.Value != 2 {
+		ts.Fatalf("unexpected effect identity: %+v", effect)
+	}
+	assertAlmostEqual(ts, float64(effect.Intensity), float64(t.IntensityPercentToRaw(30)), 0.0001)
+}
+
+func TestRenderPlanCueInterpolatesEffectIntensityFadeOut(ts *testing.T) {
+	var p0, p1 t.Period
+	p0.Time = 0
+	p1.Time = 1000
+	p0.TrackStart[0] = t.Track{
+		Type:      t.TrackBinauralBeat,
+		Amplitude: t.AmplitudePercentToRaw(20),
+		Carrier:   200,
+		Resonance: 8,
+		Waveform:  t.WaveformSine,
+		Effect:    t.Effect{Type: t.EffectModulation, Value: 4, Intensity: t.IntensityPercentToRaw(60)},
+	}
+	p0.TrackEnd[0] = p0.TrackStart[0]
+	p0.TrackEnd[0].Effect.Intensity = 0
+
+	plan := compileRenderPlan([]t.Period{p0, p1}, 44100)
+	effect := plan.cue(0, 500).Channels[0].Track.Effect
+
+	if effect.Type != t.EffectModulation || effect.Value != 4 {
+		ts.Fatalf("unexpected effect identity: %+v", effect)
+	}
+	assertAlmostEqual(ts, float64(effect.Intensity), float64(t.IntensityPercentToRaw(30)), 0.0001)
+}
+
 func TestRenderPlanCueAppliesFullBoundaryCrossfadeDuration(ts *testing.T) {
 	var p0, p1, p2 t.Period
 	p0.Time = 0

@@ -113,6 +113,57 @@ func TestAdjustPeriods_AllowsWaveformChangeWhileOn(ts *testing.T) {
 	}
 }
 
+func TestAdjustPeriods_FadesInNewEffectByIntensity(ts *testing.T) {
+	var last, next t.Period
+
+	last.TrackStart[0] = t.Track{Type: t.TrackBinauralBeat, Carrier: 200, Resonance: 8, Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectOff}}
+	last.TrackEnd[0] = last.TrackStart[0]
+	next.TrackStart[0] = t.Track{Type: t.TrackBinauralBeat, Carrier: 220, Resonance: 10, Amplitude: t.AmplitudePercentToRaw(25), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectPan, Value: 3, Intensity: t.IntensityPercentToRaw(70)}}
+
+	if err := AdjustPeriods(&last, &next); err != nil {
+		ts.Fatalf("unexpected error: %v", err)
+	}
+
+	if last.CrossfadeOut[0].Active || next.CrossfadeIn[0].Active {
+		ts.Fatalf("unexpected crossfade metadata: out=%+v in=%+v", last.CrossfadeOut[0], next.CrossfadeIn[0])
+	}
+	startEffect := last.TrackStart[0].Effect
+	if startEffect.Type != t.EffectPan || startEffect.Value != 3 || startEffect.Intensity != 0 {
+		ts.Fatalf("fade-in start effect mismatch: %+v", startEffect)
+	}
+	if last.TrackEnd[0] != next.TrackStart[0] {
+		ts.Fatalf("carry-forward mismatch after effect fade-in: last.TrackEnd != next.TrackStart\nlast=%+v\nnext=%+v", last.TrackEnd[0], next.TrackStart[0])
+	}
+	if last.TrackEnd[0].Effect.Type != t.EffectPan || last.TrackEnd[0].Effect.Value != 3 || last.TrackEnd[0].Effect.Intensity != t.IntensityPercentToRaw(70) {
+		ts.Fatalf("fade-in end effect mismatch: %+v", last.TrackEnd[0].Effect)
+	}
+}
+
+func TestAdjustPeriods_FadesOutRemovedEffectByIntensity(ts *testing.T) {
+	var last, next t.Period
+
+	last.TrackStart[0] = t.Track{Type: t.TrackBinauralBeat, Carrier: 200, Resonance: 8, Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectModulation, Value: 4, Intensity: t.IntensityPercentToRaw(60)}}
+	last.TrackEnd[0] = last.TrackStart[0]
+	next.TrackStart[0] = t.Track{Type: t.TrackBinauralBeat, Carrier: 220, Resonance: 10, Amplitude: t.AmplitudePercentToRaw(25), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectOff}}
+
+	if err := AdjustPeriods(&last, &next); err != nil {
+		ts.Fatalf("unexpected error: %v", err)
+	}
+
+	if last.CrossfadeOut[0].Active || next.CrossfadeIn[0].Active {
+		ts.Fatalf("unexpected crossfade metadata: out=%+v in=%+v", last.CrossfadeOut[0], next.CrossfadeIn[0])
+	}
+	if last.TrackStart[0].Effect.Type != t.EffectModulation || last.TrackStart[0].Effect.Value != 4 || last.TrackStart[0].Effect.Intensity != t.IntensityPercentToRaw(60) {
+		ts.Fatalf("fade-out start effect mismatch: %+v", last.TrackStart[0].Effect)
+	}
+	if last.TrackEnd[0] != next.TrackStart[0] {
+		ts.Fatalf("carry-forward mismatch after effect fade-out: last.TrackEnd != next.TrackStart\nlast=%+v\nnext=%+v", last.TrackEnd[0], next.TrackStart[0])
+	}
+	if last.TrackEnd[0].Effect.Type != t.EffectModulation || last.TrackEnd[0].Effect.Value != 4 || last.TrackEnd[0].Effect.Intensity != 0 {
+		ts.Fatalf("fade-out end effect mismatch: %+v", last.TrackEnd[0].Effect)
+	}
+}
+
 func TestAdjustPeriods_CreatesBoundaryCrossfades(ts *testing.T) {
 	makePer := func(trackStart, trackEnd, nextStart t.Track) (t.Period, t.Period) {
 		var last, next t.Period

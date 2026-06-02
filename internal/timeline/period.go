@@ -55,6 +55,7 @@ func AdjustPeriods(last, next *t.Period) error {
 
 		last.CrossfadeOut[ch] = t.TrackCrossfade{}
 		next.CrossfadeIn[ch] = t.TrackCrossfade{}
+		prepareEffectOnOffTransition(tr0, tr1, tr2)
 		if requiresBoundaryCrossfade(*tr1, *tr2) {
 			if isActiveTrack(*tr1) {
 				last.CrossfadeOut[ch] = t.TrackCrossfade{Active: true, Track: *tr1}
@@ -90,9 +91,38 @@ func requiresBoundaryCrossfade(last, next t.Track) bool {
 	if !isActiveTrack(last) || !isActiveTrack(next) {
 		return false
 	}
+	if isEffectOnOffTransition(last, next) {
+		return false
+	}
 	return last.Type != next.Type ||
 		last.Effect.Type != next.Effect.Type ||
 		last.AmbianceName != next.AmbianceName
+}
+
+func prepareEffectOnOffTransition(start, end, next *t.Track) {
+	if !isEffectOnOffTransition(*end, *next) {
+		return
+	}
+	if end.Effect.Type == t.EffectOff {
+		start.Effect.Type = next.Effect.Type
+		start.Effect.Value = next.Effect.Value
+		start.Effect.Intensity = 0
+		return
+	}
+	next.Effect.Type = end.Effect.Type
+	next.Effect.Value = end.Effect.Value
+	next.Effect.Intensity = 0
+}
+
+func isEffectOnOffTransition(last, next t.Track) bool {
+	if !isActiveTrack(last) || !isActiveTrack(next) {
+		return false
+	}
+	if last.Type != next.Type || last.AmbianceName != next.AmbianceName {
+		return false
+	}
+	return (last.Effect.Type == t.EffectOff && next.Effect.Type != t.EffectOff) ||
+		(last.Effect.Type != t.EffectOff && next.Effect.Type == t.EffectOff)
 }
 
 func isActiveTrack(track t.Track) bool {
