@@ -176,6 +176,34 @@ func TestAudioRendererMix_PureToneMorphsBetweenWaveforms(ts *testing.T) {
 	}
 }
 
+func TestAudioRendererMix_UsesCrossfadeCueAmplitude(ts *testing.T) {
+	var p0, p1 t.Period
+	p0.Time = 0
+	p1.Time = 60_000
+
+	track := t.Track{Type: t.TrackPureTone, Carrier: 440, Amplitude: t.AmplitudePercentToRaw(40), Waveform: t.WaveformSquare}
+	p0.TrackStart[0] = track
+	p0.TrackEnd[0] = track
+	p0.CrossfadeOut[0] = t.TrackCrossfade{Active: true, Track: track}
+
+	plan := compileRenderPlan([]t.Period{p0, p1}, 44100)
+	renderer := newMixTestRenderer()
+
+	fullCue := plan.cue(0, 30_000)
+	renderer.applyCueSignalState(fullCue)
+	renderer.channels[0].Offset = [2]int{}
+	fullSamples := renderer.mix(make([]int, t.BufferSize*audioChannels))
+
+	halfCue := plan.cue(0, 45_000)
+	renderer.applyCueSignalState(halfCue)
+	renderer.channels[0].Offset = [2]int{}
+	halfSamples := renderer.mix(make([]int, t.BufferSize*audioChannels))
+
+	if absInt(halfSamples[0]) >= absInt(fullSamples[0]) {
+		ts.Fatalf("expected crossfade cue to reduce mixed output: full=%d half=%d", fullSamples[0], halfSamples[0])
+	}
+}
+
 func TestAudioRendererMix_ModulationSlewsAbruptSquareGainChanges(ts *testing.T) {
 	renderer := newMixTestRenderer()
 	channel := &renderer.channels[0]
@@ -259,10 +287,10 @@ func TestAudioRendererMix_AmbianceUsesPreparedStereoBuffer(ts *testing.T) {
 
 func newMixTestRenderer() *AudioRenderer {
 	renderer := &AudioRenderer{
-		waveTables:       wt.Init(),
-		noiseGenerator:   NewNoiseGenerator(),
-		effectProcessor:  efx.NewProcessor(44100, wt.Init()),
-		ambianceState:    amb.NewTestRuntime(0),
+		waveTables:      wt.Init(),
+		noiseGenerator:  NewNoiseGenerator(),
+		effectProcessor: efx.NewProcessor(44100, wt.Init()),
+		ambianceState:   amb.NewTestRuntime(0),
 		AudioRendererOptions: &AudioRendererOptions{
 			SampleRate: 44100,
 			Volume:     100,

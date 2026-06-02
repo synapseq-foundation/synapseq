@@ -19,7 +19,10 @@ import (
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
-const defaultPlanWindowMs = 1000
+const (
+	defaultPlanWindowMs = 1000
+	maxCrossfadeMs      = 30000
+)
 
 type renderPlan struct {
 	periods     []t.Period
@@ -76,22 +79,67 @@ func (rp renderPlan) cue(periodIdx int, currentTimeMs int) audiosync.Cue {
 	}
 
 	for index := 0; index < t.NumberOfChannels; index++ {
+		track, waveformStart, waveformEnd, waveformAlpha, crossfade := rp.trackStateAt(window, period, index, alpha, currentTimeMs)
 		signal := compileSignalState(planTrackState{
-			track:      interpolateTrack(period.TrackStart[index], period.TrackEnd[index], alpha),
+			track:      track,
 			sampleRate: rp.sampleRate,
 		})
 		cue.Channels[index] = audiosync.ChannelCue{
 			Track:         signal.Track,
-			WaveformStart: period.TrackStart[index].Waveform,
-			WaveformEnd:   period.TrackEnd[index].Waveform,
-			WaveformAlpha: alpha,
+			WaveformStart: waveformStart,
+			WaveformEnd:   waveformEnd,
+			WaveformAlpha: waveformAlpha,
 			Amplitude:     signal.Amplitude,
 			Increment:     signal.Increment,
 			EffectStep:    signal.EffectStep,
+			Crossfade:     crossfade,
 		}
 	}
 
 	return cue
+}
+
+func (rp renderPlan) trackStateAt(window renderWindow, period t.Period, ch int, alpha float64, currentTimeMs int) (t.Track, t.WaveformType, t.WaveformType, float64, audiosync.CrossfadeCue) {
+	if crossfade := period.CrossfadeOut[ch]; crossfade.Active {
+		duration := crossfadeDuration(window.EndMs - window.StartMs)
+		if duration > 0 && currentTimeMs >= window.EndMs-duration {
+			progress := clampUnit(float64(currentTimeMs-(window.EndMs-duration)) / float64(duration))
+			track := scaleTrackAmplitude(crossfade.Track, 1-progress)
+			return track, track.Waveform, track.Waveform, 0, audiosync.CrossfadeCue{Active: true, Direction: audiosync.CrossfadeOut, Alpha: progress}
+		}
+		track := crossfade.Track
+		return track, track.Waveform, track.Waveform, 0, audiosync.CrossfadeCue{}
+	}
+
+	if crossfade := period.CrossfadeIn[ch]; crossfade.Active {
+		duration := crossfadeDuration(window.EndMs - window.StartMs)
+		if duration > 0 && currentTimeMs <= window.StartMs+duration {
+			progress := clampUnit(float64(currentTimeMs-window.StartMs) / float64(duration))
+			track := scaleTrackAmplitude(crossfade.Track, progress)
+			return track, track.Waveform, track.Waveform, 0, audiosync.CrossfadeCue{Active: true, Direction: audiosync.CrossfadeIn, Alpha: progress}
+		}
+		track := crossfade.Track
+		return track, track.Waveform, track.Waveform, 0, audiosync.CrossfadeCue{}
+	}
+
+	track := interpolateTrack(period.TrackStart[ch], period.TrackEnd[ch], alpha)
+	return track, period.TrackStart[ch].Waveform, period.TrackEnd[ch].Waveform, alpha, audiosync.CrossfadeCue{}
+}
+
+func crossfadeDuration(availableMs int) int {
+	if availableMs <= 0 {
+		return 0
+	}
+	if availableMs < maxCrossfadeMs {
+		return availableMs
+	}
+	return maxCrossfadeMs
+}
+
+func scaleTrackAmplitude(track t.Track, scale float64) t.Track {
+	scale = clampUnit(scale)
+	track.Amplitude = t.AmplitudeType(float64(track.Amplitude) * scale)
+	return track
 }
 
 func (rp renderPlan) interpolationProgress(window renderWindow, currentTimeMs int) float64 {

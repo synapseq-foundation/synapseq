@@ -380,6 +380,38 @@ alpha
 	}
 }
 
+func TestLoadTextSequence_AutomaticCrossfadeDoesNotInsertPeriods(ts *testing.T) {
+	seq := `
+alpha
+  tone 200 binaural 8 amplitude 20
+
+beta
+  noise pink amplitude 15
+  tone 220 isochronic 6 amplitude 25
+
+00:00:00 alpha
+00:01:00 beta
+`
+	path := writeSeqFile(ts, seq)
+
+	result, err := loadTextSequenceFile(ts, path)
+	if err != nil {
+		ts.Fatalf("LoadTextSequence error: %v", err)
+	}
+	if len(result.Periods) != 2 {
+		ts.Fatalf("expected declared period count to remain 2, got %d", len(result.Periods))
+	}
+	if !result.Periods[0].CrossfadeOut[0].Active {
+		ts.Fatalf("expected alpha track to fade out on channel 1")
+	}
+	if !result.Periods[1].CrossfadeIn[0].Active {
+		ts.Fatalf("expected beta noise track to fade in on channel 1")
+	}
+	if !result.Periods[1].CrossfadeIn[1].Active {
+		ts.Fatalf("expected beta tone track to fade in on channel 2")
+	}
+}
+
 func TestLoadTextSequence_Error_StepsExceedDurationLimit(ts *testing.T) {
 	seq := `
 alpha

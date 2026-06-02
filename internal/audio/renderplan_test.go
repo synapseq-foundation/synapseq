@@ -15,6 +15,7 @@ import (
 	"math"
 	"testing"
 
+	audiosync "github.com/synapseq-foundation/synapseq/v4/internal/audio/sync"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -118,6 +119,99 @@ func TestRenderPlanCueResolvesInterpolatedTrackState(ts *testing.T) {
 	if channel.WaveformStart != t.WaveformSine || channel.WaveformEnd != t.WaveformTriangle {
 		ts.Fatalf("unexpected waveform state: got %v -> %v", channel.WaveformStart, channel.WaveformEnd)
 	}
+}
+
+func TestRenderPlanCueAppliesFullBoundaryCrossfadeDuration(ts *testing.T) {
+	var p0, p1, p2 t.Period
+	p0.Time = 0
+	p1.Time = 60_000
+	p2.Time = 120_000
+
+	outTrack := t.Track{Type: t.TrackBinauralBeat, Amplitude: t.AmplitudePercentToRaw(40), Carrier: 200, Resonance: 8, Waveform: t.WaveformSine}
+	inTrack := t.Track{Type: t.TrackMonauralBeat, Amplitude: t.AmplitudePercentToRaw(30), Carrier: 220, Resonance: 6, Waveform: t.WaveformTriangle}
+	p0.TrackStart[0] = outTrack
+	p0.TrackEnd[0] = outTrack
+	p0.CrossfadeOut[0] = t.TrackCrossfade{Active: true, Track: outTrack}
+	p1.TrackStart[0] = inTrack
+	p1.TrackEnd[0] = inTrack
+	p1.CrossfadeIn[0] = t.TrackCrossfade{Active: true, Track: inTrack}
+
+	plan := compileRenderPlan([]t.Period{p0, p1, p2}, 44100)
+
+	outCue := plan.cue(0, 45_000).Channels[0]
+	assertAlmostEqual(ts, float64(outCue.Track.Amplitude), float64(outTrack.Amplitude)*0.5, 0.0001)
+	if !outCue.Crossfade.Active || outCue.Crossfade.Direction != audiosync.CrossfadeOut {
+		ts.Fatalf("expected active fade-out cue, got %+v", outCue.Crossfade)
+	}
+	if outCue.Track.Type != t.TrackBinauralBeat {
+		ts.Fatalf("unexpected fade-out track type: got %v", outCue.Track.Type)
+	}
+
+	inCue := plan.cue(1, 75_000).Channels[0]
+	assertAlmostEqual(ts, float64(inCue.Track.Amplitude), float64(inTrack.Amplitude)*0.5, 0.0001)
+	if !inCue.Crossfade.Active || inCue.Crossfade.Direction != audiosync.CrossfadeIn {
+		ts.Fatalf("expected active fade-in cue, got %+v", inCue.Crossfade)
+	}
+	if inCue.Track.Type != t.TrackMonauralBeat {
+		ts.Fatalf("unexpected fade-in track type: got %v", inCue.Track.Type)
+	}
+
+	fullCue := plan.cue(1, 90_000).Channels[0]
+	assertAlmostEqual(ts, float64(fullCue.Track.Amplitude), float64(inTrack.Amplitude), 0.0001)
+}
+
+func TestRenderPlanCueClampsBoundaryCrossfadeToShortPeriod(ts *testing.T) {
+	var p0, p1, p2 t.Period
+	p0.Time = 0
+	p1.Time = 10_000
+	p2.Time = 20_000
+
+	outTrack := t.Track{Type: t.TrackBinauralBeat, Amplitude: t.AmplitudePercentToRaw(40), Carrier: 200, Resonance: 8, Waveform: t.WaveformSine}
+	inTrack := t.Track{Type: t.TrackMonauralBeat, Amplitude: t.AmplitudePercentToRaw(30), Carrier: 220, Resonance: 6, Waveform: t.WaveformTriangle}
+	p0.TrackStart[0] = outTrack
+	p0.TrackEnd[0] = outTrack
+	p0.CrossfadeOut[0] = t.TrackCrossfade{Active: true, Track: outTrack}
+	p1.TrackStart[0] = inTrack
+	p1.TrackEnd[0] = inTrack
+	p1.CrossfadeIn[0] = t.TrackCrossfade{Active: true, Track: inTrack}
+
+	plan := compileRenderPlan([]t.Period{p0, p1, p2}, 44100)
+
+	outCue := plan.cue(0, 5_000).Channels[0]
+	assertAlmostEqual(ts, float64(outCue.Track.Amplitude), float64(outTrack.Amplitude)*0.5, 0.0001)
+
+	inCue := plan.cue(1, 15_000).Channels[0]
+	assertAlmostEqual(ts, float64(inCue.Track.Amplitude), float64(inTrack.Amplitude)*0.5, 0.0001)
+}
+
+func TestRenderPlanCueCrossfadesDifferentAmbianceNames(ts *testing.T) {
+	var p0, p1, p2 t.Period
+	p0.Time = 0
+	p1.Time = 60_000
+	p2.Time = 120_000
+
+	rain := t.Track{Type: t.TrackAmbiance, AmbianceName: "rain", Amplitude: t.AmplitudePercentToRaw(40), Waveform: t.WaveformSine}
+	river := t.Track{Type: t.TrackAmbiance, AmbianceName: "river", Amplitude: t.AmplitudePercentToRaw(30), Waveform: t.WaveformSine}
+	p0.TrackStart[0] = rain
+	p0.TrackEnd[0] = rain
+	p0.CrossfadeOut[0] = t.TrackCrossfade{Active: true, Track: rain}
+	p1.TrackStart[0] = river
+	p1.TrackEnd[0] = river
+	p1.CrossfadeIn[0] = t.TrackCrossfade{Active: true, Track: river}
+
+	plan := compileRenderPlan([]t.Period{p0, p1, p2}, 44100)
+
+	outCue := plan.cue(0, 45_000).Channels[0]
+	if outCue.Track.AmbianceName != "rain" {
+		ts.Fatalf("expected outgoing ambiance rain, got %q", outCue.Track.AmbianceName)
+	}
+	assertAlmostEqual(ts, float64(outCue.Track.Amplitude), float64(rain.Amplitude)*0.5, 0.0001)
+
+	inCue := plan.cue(1, 75_000).Channels[0]
+	if inCue.Track.AmbianceName != "river" {
+		ts.Fatalf("expected incoming ambiance river, got %q", inCue.Track.AmbianceName)
+	}
+	assertAlmostEqual(ts, float64(inCue.Track.Amplitude), float64(river.Amplitude)*0.5, 0.0001)
 }
 
 func assertAlmostEqual(ts *testing.T, got, want, tolerance float64) {

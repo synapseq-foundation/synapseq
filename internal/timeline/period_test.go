@@ -113,7 +113,7 @@ func TestAdjustPeriods_AllowsWaveformChangeWhileOn(ts *testing.T) {
 	}
 }
 
-func TestAdjustPeriods_Errors(ts *testing.T) {
+func TestAdjustPeriods_CreatesBoundaryCrossfades(ts *testing.T) {
 	makePer := func(trackStart, trackEnd, nextStart t.Track) (t.Period, t.Period) {
 		var last, next t.Period
 		last.TrackStart[0] = trackStart
@@ -127,17 +127,32 @@ func TestAdjustPeriods_Errors(ts *testing.T) {
 		tr0  t.Track
 		tr1  t.Track
 		tr2  t.Track
+		out  bool
+		in   bool
 	}{
-		{"turn off directly", t.Track{}, t.Track{Type: t.TrackBinauralBeat, Amplitude: t.AmplitudePercentToRaw(10), Waveform: t.WaveformSine}, t.Track{Type: t.TrackOff}},
-		{"turn on directly", t.Track{}, t.Track{Type: t.TrackOff}, t.Track{Type: t.TrackBinauralBeat, Amplitude: t.AmplitudePercentToRaw(10), Waveform: t.WaveformSine}},
-		{"change type while on", t.Track{}, t.Track{Type: t.TrackBinauralBeat, Amplitude: t.AmplitudePercentToRaw(10), Waveform: t.WaveformSine}, t.Track{Type: t.TrackMonauralBeat, Amplitude: t.AmplitudePercentToRaw(12), Waveform: t.WaveformSine}},
-		{"change effect type while on (ambiance)", t.Track{}, t.Track{Type: t.TrackAmbiance, Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectPan}}, t.Track{Type: t.TrackAmbiance, Amplitude: t.AmplitudePercentToRaw(25), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectModulation}}},
+		{"turn off directly", t.Track{Type: t.TrackBinauralBeat, Amplitude: t.AmplitudePercentToRaw(10), Waveform: t.WaveformSine}, t.Track{Type: t.TrackBinauralBeat, Amplitude: t.AmplitudePercentToRaw(10), Waveform: t.WaveformSine}, t.Track{Type: t.TrackOff}, true, false},
+		{"turn on directly", t.Track{Type: t.TrackOff}, t.Track{Type: t.TrackOff}, t.Track{Type: t.TrackBinauralBeat, Amplitude: t.AmplitudePercentToRaw(10), Waveform: t.WaveformSine}, false, true},
+		{"change type while on", t.Track{Type: t.TrackBinauralBeat, Amplitude: t.AmplitudePercentToRaw(10), Waveform: t.WaveformSine}, t.Track{Type: t.TrackBinauralBeat, Amplitude: t.AmplitudePercentToRaw(10), Waveform: t.WaveformSine}, t.Track{Type: t.TrackMonauralBeat, Amplitude: t.AmplitudePercentToRaw(12), Waveform: t.WaveformSine}, true, true},
+		{"change effect type while on", t.Track{Type: t.TrackAmbiance, AmbianceName: "rain", Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectPan}}, t.Track{Type: t.TrackAmbiance, AmbianceName: "rain", Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectPan}}, t.Track{Type: t.TrackAmbiance, AmbianceName: "rain", Amplitude: t.AmplitudePercentToRaw(25), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectModulation}}, true, true},
+		{"change ambiance while on", t.Track{Type: t.TrackAmbiance, AmbianceName: "rain", Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformSine}, t.Track{Type: t.TrackAmbiance, AmbianceName: "rain", Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformSine}, t.Track{Type: t.TrackAmbiance, AmbianceName: "river", Amplitude: t.AmplitudePercentToRaw(25), Waveform: t.WaveformSine}, true, true},
 	}
 
 	for _, test := range tests {
 		last, next := makePer(test.tr0, test.tr1, test.tr2)
-		if err := AdjustPeriods(&last, &next); err == nil {
-			ts.Fatalf("%s: expected error, got nil", test.name)
+		if err := AdjustPeriods(&last, &next); err != nil {
+			ts.Fatalf("%s: unexpected error: %v", test.name, err)
+		}
+		if last.CrossfadeOut[0].Active != test.out {
+			ts.Fatalf("%s: unexpected fade-out metadata: %+v", test.name, last.CrossfadeOut[0])
+		}
+		if next.CrossfadeIn[0].Active != test.in {
+			ts.Fatalf("%s: unexpected fade-in metadata: %+v", test.name, next.CrossfadeIn[0])
+		}
+		if test.out && last.CrossfadeOut[0].Track != test.tr1 {
+			ts.Fatalf("%s: fade-out track mismatch: got %+v want %+v", test.name, last.CrossfadeOut[0].Track, test.tr1)
+		}
+		if test.in && next.CrossfadeIn[0].Track != test.tr2 {
+			ts.Fatalf("%s: fade-in track mismatch: got %+v want %+v", test.name, next.CrossfadeIn[0].Track, test.tr2)
 		}
 	}
 }

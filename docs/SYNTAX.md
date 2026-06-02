@@ -186,7 +186,16 @@ flowchart LR
 
 The actual transition curve still follows the transition configured on the period itself, such as `steady`, `ease-in`, `ease-out`, or `smooth`.
 
-`silence` is also the safe bridge between otherwise incompatible consecutive presets. If two timeline entries would switch a channel directly between incompatible active track types, effects, or ambiance sources, inserting a `silence` period between them is the intended way to make the transition valid.
+If two consecutive timeline entries use incompatible active track types, effect types, or ambiance sources on the same channel, SynapSeq applies an automatic boundary crossfade instead of requiring an explicit `silence` bridge.
+
+The automatic crossfade is adaptive. It uses up to 30 seconds before the boundary for fade-out and up to 30 seconds after the boundary for fade-in, clamping each side to the available adjacent period duration when the periods are shorter.
+
+Inactive `off` channels also participate in boundary fades:
+
+- `active -> off` fades the active channel out before the boundary, then leaves the channel disabled;
+- `off -> active` keeps the channel disabled before the boundary, then fades the active channel in after the boundary.
+
+The crossfade is applied per channel and does not insert additional timeline periods into the loaded sequence.
 
 ## Track Declarations
 

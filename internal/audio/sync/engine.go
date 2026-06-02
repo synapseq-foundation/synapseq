@@ -31,6 +31,21 @@ type ChannelCue struct {
 	Amplitude     [2]int
 	Increment     [2]int
 	EffectStep    int
+	Crossfade     CrossfadeCue
+}
+
+type CrossfadeDirection int
+
+const (
+	CrossfadeNone CrossfadeDirection = iota
+	CrossfadeOut
+	CrossfadeIn
+)
+
+type CrossfadeCue struct {
+	Active    bool
+	Direction CrossfadeDirection
+	Alpha     float64
 }
 
 func NewEngine(sampleRate int, updateAmbianceIndex func(ch int, periodIdx int, trackType t.TrackType)) *Engine {
@@ -89,8 +104,6 @@ func (e *Engine) resetRuntimeState(channel *t.Channel, previousTrackType t.Track
 	}
 }
 
-
 func (e *Engine) applyEffectState(channel *t.Channel, cue ChannelCue) {
 	channel.Effect.Increment = cue.EffectStep
 }
-

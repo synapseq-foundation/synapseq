@@ -194,11 +194,18 @@ func buildSegmentViews(periods []t.Period, totalDurationMs int) []previewSegment
 		for ch := range t.NumberOfChannels {
 			startTrack := current.TrackStart[ch]
 			endTrack := current.TrackEnd[ch]
-			if !shouldRenderSegmentItem(startTrack, endTrack) {
+			crossfade := current.CrossfadeOut[ch].Active || next.CrossfadeIn[ch].Active
+			if !crossfade && !shouldRenderSegmentItem(startTrack, endTrack) {
 				continue
 			}
+			if crossfade && current.CrossfadeOut[ch].Active {
+				startTrack = current.CrossfadeOut[ch].Track
+			}
+			if crossfade && next.CrossfadeIn[ch].Active {
+				endTrack = next.CrossfadeIn[ch].Track
+			}
 
-			items = append(items, buildSegmentItemView(ch, startTrack, endTrack))
+			items = append(items, buildSegmentItemView(ch, startTrack, endTrack, crossfade))
 		}
 
 		segments = append(segments, previewSegmentView{

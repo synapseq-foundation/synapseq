@@ -117,6 +117,7 @@ type previewSegmentItemView struct {
 	Class        string
 	Label        string
 	Summary      string
+	Crossfade    bool
 }
 
 type previewNodeView struct {
