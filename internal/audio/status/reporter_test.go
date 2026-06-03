@@ -80,6 +80,124 @@ func TestReporter_DisplayPeriodChange_ShowsEndTrackWhenChanged(ts *testing.T) {
 	}
 }
 
+func TestReporter_DisplayPeriodChange_AppendsFadeOutLabel(ts *testing.T) {
+	var p0, p1 t.Period
+	p0.Time = 0
+	p1.Time = 60_000
+
+	track := t.Track{Type: t.TrackBinauralBeat, Carrier: 220, Resonance: 8, Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformSine}
+	p0.TrackStart[0] = track
+	p0.TrackEnd[0] = track
+	p0.CrossfadeOut[0] = t.TrackCrossfade{Active: true, Track: track}
+
+	view := View{Periods: []t.Period{p0, p1}, Channels: make([]t.Channel, t.NumberOfChannels)}
+	var buf bytes.Buffer
+	sr := NewReporter(&buf, false)
+	sr.DisplayPeriodChange(view, 0)
+	out := buf.String()
+
+	if !strings.Contains(out, track.String()+" (fade-out 30s)") {
+		ts.Fatalf("missing fade-out label: %q", out)
+	}
+}
+
+func TestReporter_DisplayPeriodChange_AppendsFadeInLabelWithAdaptiveDuration(ts *testing.T) {
+	var p0, p1 t.Period
+	p0.Time = 60_000
+	p1.Time = 67_500
+
+	track := t.Track{Type: t.TrackIsochronicBeat, Carrier: 300, Resonance: 10, Amplitude: t.AmplitudePercentToRaw(15), Waveform: t.WaveformSine}
+	p0.TrackStart[0] = track
+	p0.TrackEnd[0] = track
+	p0.CrossfadeIn[0] = t.TrackCrossfade{Active: true, Track: track}
+
+	view := View{Periods: []t.Period{p0, p1}, Channels: make([]t.Channel, t.NumberOfChannels)}
+	var buf bytes.Buffer
+	sr := NewReporter(&buf, false)
+	sr.DisplayPeriodChange(view, 0)
+	out := buf.String()
+
+	if !strings.Contains(out, track.String()+" (fade-in 7.5s)") {
+		ts.Fatalf("missing adaptive fade-in label: %q", out)
+	}
+}
+
+func TestReporter_DisplayPeriodChange_ColorsFadeLabel(ts *testing.T) {
+	var p0, p1 t.Period
+	p0.Time = 0
+	p1.Time = 60_000
+
+	track := t.Track{Type: t.TrackBinauralBeat, Carrier: 220, Resonance: 8, Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformSine}
+	p0.TrackStart[0] = track
+	p0.TrackEnd[0] = track
+	p0.CrossfadeOut[0] = t.TrackCrossfade{Active: true, Track: track}
+
+	view := View{Periods: []t.Period{p0, p1}, Channels: make([]t.Channel, t.NumberOfChannels)}
+	var buf bytes.Buffer
+	sr := NewReporter(&buf, true)
+	sr.DisplayPeriodChange(view, 0)
+	out := buf.String()
+	plain := stripANSI(out)
+
+	if !strings.Contains(plain, "(fade-out 30s)") {
+		ts.Fatalf("missing plain fade label after stripping ANSI: %q", plain)
+	}
+	labelColor := regexp.MustCompile(`\x1b\[[0-9;]*m\(fade-out 30s\)\x1b\[[0-9;]*m`)
+	if !labelColor.MatchString(out) {
+		ts.Fatalf("fade label was not colorized independently: %q", out)
+	}
+}
+
+func TestReporter_DisplayPeriodChange_IncludesCrossfadeMetadataChannels(ts *testing.T) {
+	var p0, p1 t.Period
+	p0.Time = 0
+	p1.Time = 60_000
+
+	track := t.Track{Type: t.TrackMonauralBeat, Carrier: 180, Resonance: 6, Amplitude: t.AmplitudePercentToRaw(18), Waveform: t.WaveformSine}
+	p0.TrackStart[2] = track
+	p0.TrackEnd[2] = track
+	p0.CrossfadeIn[2] = t.TrackCrossfade{Active: true, Track: track}
+
+	view := View{Periods: []t.Period{p0, p1}, Channels: make([]t.Channel, t.NumberOfChannels)}
+	var buf bytes.Buffer
+	sr := NewReporter(&buf, false)
+	sr.DisplayPeriodChange(view, 0)
+	out := buf.String()
+
+	if !strings.Contains(out, track.String()+" (fade-in 30s)") {
+		ts.Fatalf("crossfade metadata channel was not displayed: %q", out)
+	}
+}
+
+func TestReporter_DisplayPeriodChange_DoesNotShowDisabledChannelsWithoutCrossfade(ts *testing.T) {
+	var p0, p1 t.Period
+	p0.Time = 0
+	p1.Time = 15_000
+
+	track := t.Track{Type: t.TrackBinauralBeat, Carrier: 300, Resonance: 10, Amplitude: t.AmplitudePercentToRaw(15), Waveform: t.WaveformSine}
+	p0.TrackStart[0] = track
+	p0.TrackEnd[0] = track
+	for ch := 1; ch < t.NumberOfChannels; ch++ {
+		p0.TrackStart[ch] = t.Track{Type: t.TrackOff}
+		p0.TrackEnd[ch] = t.Track{Type: t.TrackSilence}
+	}
+
+	channels := make([]t.Channel, t.NumberOfChannels)
+	channels[0].Track = track
+	view := View{Periods: []t.Period{p0, p1}, Channels: channels}
+	var buf bytes.Buffer
+	sr := NewReporter(&buf, false)
+	sr.DisplayPeriodChange(view, 0)
+	out := buf.String()
+
+	if strings.Count(out, "\n   ->  --") > 0 {
+		ts.Fatalf("disabled channels should not be displayed: %q", out)
+	}
+	if strings.Count(out, track.String()) != 1 {
+		ts.Fatalf("expected only the active channel track to be displayed once: %q", out)
+	}
+}
+
 func TestReporter_CheckPeriodChange_DetectsTransitions(ts *testing.T) {
 	var p0, p1, p2 t.Period
 	p0.Time = 0
@@ -185,6 +303,26 @@ func TestReporter_DisplayStatus_UsesChannelView(ts *testing.T) {
 	}
 }
 
+func TestFormatFadeDuration(ts *testing.T) {
+	tests := []struct {
+		durationMs int
+		want       string
+	}{
+		{0, "0ms"},
+		{750, "750ms"},
+		{1000, "1s"},
+		{7500, "7.5s"},
+		{12_250, "12.25s"},
+		{30_000, "30s"},
+	}
+
+	for _, test := range tests {
+		if got := formatFadeDuration(test.durationMs); got != test.want {
+			ts.Fatalf("formatFadeDuration(%d) = %q, want %q", test.durationMs, got, test.want)
+		}
+	}
+}
+
 func TestCountActiveChannels(ts *testing.T) {
 	tests := []struct {
 		name     string
@@ -193,12 +331,39 @@ func TestCountActiveChannels(ts *testing.T) {
 	}{
 		{"empty slice -> at least 1", []t.Channel{}, 1},
 		{"all off -> 1", make([]t.Channel, 5), 1},
-		{"single active at 0 -> 1", func() []t.Channel { channels := make([]t.Channel, 4); channels[0].Track.Type = t.TrackBinauralBeat; return channels }(), 1},
-		{"last active at end -> len", func() []t.Channel { channels := make([]t.Channel, 4); channels[3].Track.Type = t.TrackPinkNoise; return channels }(), 4},
-		{"last active in the middle -> index+1", func() []t.Channel { channels := make([]t.Channel, 5); channels[2].Track.Type = t.TrackBrownNoise; return channels }(), 3},
-		{"multiple actives -> last index+1", func() []t.Channel { channels := make([]t.Channel, 8); channels[1].Track.Type = t.TrackBinauralBeat; channels[6].Track.Type = t.TrackAmbiance; return channels }(), 7},
-		{"all active -> len", func() []t.Channel { channels := make([]t.Channel, 7); for i := range channels { channels[i].Track.Type = t.TrackPinkNoise }; return channels }(), 7},
-		{"last off but previous active", func() []t.Channel { channels := make([]t.Channel, 6); channels[4].Track.Type = t.TrackAmbiance; return channels }(), 5},
+		{"single active at 0 -> 1", func() []t.Channel {
+			channels := make([]t.Channel, 4)
+			channels[0].Track.Type = t.TrackBinauralBeat
+			return channels
+		}(), 1},
+		{"last active at end -> len", func() []t.Channel {
+			channels := make([]t.Channel, 4)
+			channels[3].Track.Type = t.TrackPinkNoise
+			return channels
+		}(), 4},
+		{"last active in the middle -> index+1", func() []t.Channel {
+			channels := make([]t.Channel, 5)
+			channels[2].Track.Type = t.TrackBrownNoise
+			return channels
+		}(), 3},
+		{"multiple actives -> last index+1", func() []t.Channel {
+			channels := make([]t.Channel, 8)
+			channels[1].Track.Type = t.TrackBinauralBeat
+			channels[6].Track.Type = t.TrackAmbiance
+			return channels
+		}(), 7},
+		{"all active -> len", func() []t.Channel {
+			channels := make([]t.Channel, 7)
+			for i := range channels {
+				channels[i].Track.Type = t.TrackPinkNoise
+			}
+			return channels
+		}(), 7},
+		{"last off but previous active", func() []t.Channel {
+			channels := make([]t.Channel, 6)
+			channels[4].Track.Type = t.TrackAmbiance
+			return channels
+		}(), 5},
 	}
 
 	for _, test := range tests {

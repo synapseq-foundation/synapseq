@@ -41,6 +41,27 @@ func TestMaxPeriodSteps(ts *testing.T) {
 	}
 }
 
+func TestCrossfadeDuration(ts *testing.T) {
+	tests := []struct {
+		availableMs int
+		want        int
+	}{
+		{-1, 0},
+		{0, 0},
+		{750, 750},
+		{7_500, 7_500},
+		{29_999, 29_999},
+		{30_000, 30_000},
+		{60_000, 30_000},
+	}
+
+	for _, test := range tests {
+		if got := CrossfadeDuration(test.availableMs); got != test.want {
+			ts.Fatalf("CrossfadeDuration(%d) = %d, want %d", test.availableMs, got, test.want)
+		}
+	}
+}
+
 func TestAdjustPeriods_NormalCopy(ts *testing.T) {
 	var last, next t.Period
 

@@ -61,7 +61,7 @@ The system SHALL preserve the existing fade-in and fade-out behavior for `TrackS
 - **THEN** the next side preserves the previous track shape with zero amplitude so the active track fades out
 
 ### Requirement: Use adaptive crossfade duration
-The system SHALL use 30 seconds as the maximum before and after an incompatible boundary and clamp each side to the available adjacent period duration.
+The system SHALL use 30 seconds as the maximum before and after an incompatible boundary and clamp each side to the available adjacent period duration. The system SHALL expose this duration resolution as shared timeline behavior so render planning and status reporting use the same adaptive duration.
 
 #### Scenario: Sufficient adjacent duration
 - **WHEN** both adjacent sides of an incompatible boundary have at least 30 seconds available
@@ -74,6 +74,10 @@ The system SHALL use 30 seconds as the maximum before and after an incompatible 
 #### Scenario: Short next side
 - **WHEN** the next period has less than 30 seconds available after an incompatible boundary
 - **THEN** the fade-in duration equals the available next period duration
+
+#### Scenario: Status and render use the same resolved duration
+- **WHEN** an automatic crossfade is present on a period boundary
+- **THEN** both render planning and status reporting resolve the crossfade duration through the shared timeline duration rule
 
 ### Requirement: Keep automatic crossfades hidden from timeline structure
 The system SHALL apply automatic crossfades without inserting additional user-visible periods into the loaded sequence.

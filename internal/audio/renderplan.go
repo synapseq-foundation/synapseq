@@ -21,7 +21,6 @@ import (
 
 const (
 	defaultPlanWindowMs = 1000
-	maxCrossfadeMs      = 30000
 )
 
 type renderPlan struct {
@@ -101,7 +100,7 @@ func (rp renderPlan) cue(periodIdx int, currentTimeMs int) audiosync.Cue {
 
 func (rp renderPlan) trackStateAt(window renderWindow, period t.Period, ch int, alpha float64, currentTimeMs int) (t.Track, t.WaveformType, t.WaveformType, float64, audiosync.CrossfadeCue) {
 	if crossfade := period.CrossfadeOut[ch]; crossfade.Active {
-		duration := crossfadeDuration(window.EndMs - window.StartMs)
+		duration := tl.CrossfadeDuration(window.EndMs - window.StartMs)
 		if duration > 0 && currentTimeMs >= window.EndMs-duration {
 			progress := clampUnit(float64(currentTimeMs-(window.EndMs-duration)) / float64(duration))
 			track := scaleTrackAmplitude(crossfade.Track, 1-progress)
@@ -112,7 +111,7 @@ func (rp renderPlan) trackStateAt(window renderWindow, period t.Period, ch int, 
 	}
 
 	if crossfade := period.CrossfadeIn[ch]; crossfade.Active {
-		duration := crossfadeDuration(window.EndMs - window.StartMs)
+		duration := tl.CrossfadeDuration(window.EndMs - window.StartMs)
 		if duration > 0 && currentTimeMs <= window.StartMs+duration {
 			progress := clampUnit(float64(currentTimeMs-window.StartMs) / float64(duration))
 			track := scaleTrackAmplitude(crossfade.Track, progress)
@@ -124,16 +123,6 @@ func (rp renderPlan) trackStateAt(window renderWindow, period t.Period, ch int, 
 
 	track := interpolateTrack(period.TrackStart[ch], period.TrackEnd[ch], alpha)
 	return track, period.TrackStart[ch].Waveform, period.TrackEnd[ch].Waveform, alpha, audiosync.CrossfadeCue{}
-}
-
-func crossfadeDuration(availableMs int) int {
-	if availableMs <= 0 {
-		return 0
-	}
-	if availableMs < maxCrossfadeMs {
-		return availableMs
-	}
-	return maxCrossfadeMs
 }
 
 func scaleTrackAmplitude(track t.Track, scale float64) t.Track {
