@@ -20,6 +20,7 @@ import (
 const (
 	periodStepMinLegMs = 5000
 	periodStepHardCap  = 12
+	maxCrossfadeMs     = 30000
 )
 
 // MaxPeriodSteps returns the maximum number of steps supported for a period duration.
@@ -38,6 +39,17 @@ func MaxPeriodSteps(durationMs int) int {
 	}
 
 	return maxSteps
+}
+
+// CrossfadeDuration resolves the adaptive automatic crossfade duration for the available period duration.
+func CrossfadeDuration(availableMs int) int {
+	if availableMs <= 0 {
+		return 0
+	}
+	if availableMs < maxCrossfadeMs {
+		return availableMs
+	}
+	return maxCrossfadeMs
 }
 
 // ApplyTransitionAlpha maps linear progress through the configured transition curve.

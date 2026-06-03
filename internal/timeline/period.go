@@ -53,32 +53,18 @@ func AdjustPeriods(last, next *t.Period) error {
 			tr2.Waveform = tr1.Waveform
 		}
 
-		if (tr1.Type != t.TrackOff && tr1.Type != t.TrackSilence && tr2.Type == t.TrackOff) ||
-			(tr1.Type == t.TrackOff && tr2.Type != t.TrackOff && tr2.Type != t.TrackSilence) {
-			return diag.Validation(
-				fmt.Sprintf("channel %d cannot switch directly between an active track and off on consecutive timeline entries: %s -> %s", ch+1, tr1.Type.String(), tr2.Type.String()),
-			).WithHint("the current timeline entry conflicts with the previous one on this channel; insert a silence entry between them")
-		}
-
-		if tr1.Type != t.TrackOff &&
-			tr1.Type != t.TrackSilence &&
-			tr2.Type != t.TrackOff &&
-			tr2.Type != t.TrackSilence {
-			if tr1.Type != tr2.Type {
-				return diag.Validation(
-					fmt.Sprintf("channel %d cannot move directly from %s to %s on consecutive timeline entries", ch+1, tr1.Type.String(), tr2.Type.String()),
-				).WithHint("the current timeline entry reuses this channel with an incompatible track type; insert a silence entry between the two presets")
+		last.CrossfadeOut[ch] = t.TrackCrossfade{}
+		next.CrossfadeIn[ch] = t.TrackCrossfade{}
+		prepareEffectOnOffTransition(tr0, tr1, tr2)
+		if requiresBoundaryCrossfade(*tr1, *tr2) {
+			if isActiveTrack(*tr1) {
+				last.CrossfadeOut[ch] = t.TrackCrossfade{Active: true, Track: *tr1}
+				*tr1 = *lastCrossfadeSteadyTrack(tr0, tr1)
 			}
-			if tr1.Effect.Type != tr2.Effect.Type {
-				return diag.Validation(
-					fmt.Sprintf("channel %d cannot move directly from %s effect to %s effect on consecutive timeline entries", ch+1, tr1.Effect.Type.String(), tr2.Effect.Type.String()),
-				).WithHint("the current timeline entry reuses this channel with an incompatible effect; insert a silence entry between the two presets")
+			if isActiveTrack(*tr2) {
+				next.CrossfadeIn[ch] = t.TrackCrossfade{Active: true, Track: *tr2}
 			}
-			if tr1.AmbianceName != tr2.AmbianceName {
-				return diag.Validation(
-					fmt.Sprintf("channel %d cannot move directly from ambiance %q to %q on consecutive timeline entries", ch+1, tr1.AmbianceName, tr2.AmbianceName),
-				).WithHint("the current timeline entry reuses this channel with a different ambiance source; insert a silence entry between the two presets")
-			}
+			continue
 		}
 
 		tr1.Type = tr2.Type
@@ -93,6 +79,65 @@ func AdjustPeriods(last, next *t.Period) error {
 		tr1.AmbianceName = tr2.AmbianceName
 	}
 	return nil
+}
+
+func requiresBoundaryCrossfade(last, next t.Track) bool {
+	if isSilenceTrack(last) || isSilenceTrack(next) {
+		return false
+	}
+	if isActiveTrack(last) != isActiveTrack(next) {
+		return true
+	}
+	if !isActiveTrack(last) || !isActiveTrack(next) {
+		return false
+	}
+	if isEffectOnOffTransition(last, next) {
+		return false
+	}
+	return last.Type != next.Type ||
+		last.Effect.Type != next.Effect.Type ||
+		last.AmbianceName != next.AmbianceName
+}
+
+func prepareEffectOnOffTransition(start, end, next *t.Track) {
+	if !isEffectOnOffTransition(*end, *next) {
+		return
+	}
+	if end.Effect.Type == t.EffectOff {
+		start.Effect.Type = next.Effect.Type
+		start.Effect.Value = next.Effect.Value
+		start.Effect.Intensity = 0
+		return
+	}
+	next.Effect.Type = end.Effect.Type
+	next.Effect.Value = end.Effect.Value
+	next.Effect.Intensity = 0
+}
+
+func isEffectOnOffTransition(last, next t.Track) bool {
+	if !isActiveTrack(last) || !isActiveTrack(next) {
+		return false
+	}
+	if last.Type != next.Type || last.AmbianceName != next.AmbianceName {
+		return false
+	}
+	return (last.Effect.Type == t.EffectOff && next.Effect.Type != t.EffectOff) ||
+		(last.Effect.Type != t.EffectOff && next.Effect.Type == t.EffectOff)
+}
+
+func isActiveTrack(track t.Track) bool {
+	return track.Type != t.TrackOff && track.Type != t.TrackSilence
+}
+
+func isSilenceTrack(track t.Track) bool {
+	return track.Type == t.TrackSilence
+}
+
+func lastCrossfadeSteadyTrack(start, end *t.Track) *t.Track {
+	if isActiveTrack(*start) {
+		return start
+	}
+	return end
 }
 
 func validatePeriodSteps(last, next *t.Period) error {

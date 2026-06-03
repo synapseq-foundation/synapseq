@@ -53,14 +53,19 @@ func buildTrackView(channel int, track t.Track) previewTrackView {
 	}
 }
 
-func buildSegmentItemView(channel int, startTrack, endTrack t.Track) previewSegmentItemView {
+func buildSegmentItemView(channel int, startTrack, endTrack t.Track, crossfade bool) previewSegmentItemView {
 	class := trackClassForType(primaryTrackType(startTrack, endTrack))
+	summary := buildSegmentSummary(startTrack, endTrack)
+	if crossfade {
+		summary = "automatic crossfade | " + summary
+	}
 
 	return previewSegmentItemView{
 		ChannelLabel: fmt.Sprintf("CH %02d", channel+1),
 		Class:        previewClass(class),
 		Label:        humanTrackType(preferredTrack(startTrack, endTrack)),
-		Summary:      buildSegmentSummary(startTrack, endTrack),
+		Summary:      summary,
+		Crossfade:    crossfade,
 	}
 }
 

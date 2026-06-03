@@ -60,11 +60,19 @@ func TransitionTypeString(t string) TransitionType {
 
 // Period represents a time period with track configurations
 type Period struct {
-	Time       int
-	TrackStart [NumberOfChannels]Track
-	TrackEnd   [NumberOfChannels]Track
-	Transition TransitionType
-	Steps      int
+	Time         int
+	TrackStart   [NumberOfChannels]Track
+	TrackEnd     [NumberOfChannels]Track
+	CrossfadeIn  [NumberOfChannels]TrackCrossfade
+	CrossfadeOut [NumberOfChannels]TrackCrossfade
+	Transition   TransitionType
+	Steps        int
+}
+
+// TrackCrossfade describes an automatic boundary fade for a channel.
+type TrackCrossfade struct {
+	Active bool
+	Track  Track
 }
 
 // TimeString returns the time of this period as a formatted string

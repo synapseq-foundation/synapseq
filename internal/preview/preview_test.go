@@ -324,7 +324,7 @@ func TestBuildTrackViewAndSegmentItemView(ts *testing.T) {
 		}
 	}
 
-	segment := buildSegmentItemView(2, t.Track{Type: t.TrackSilence}, track)
+	segment := buildSegmentItemView(2, t.Track{Type: t.TrackSilence}, track, false)
 	if segment.ChannelLabel != "CH 03" {
 		ts.Fatalf("expected segment channel label CH 03, got %q", segment.ChannelLabel)
 	}
@@ -333,5 +333,43 @@ func TestBuildTrackViewAndSegmentItemView(ts *testing.T) {
 	}
 	if segment.Class != "track-ambiance" {
 		ts.Fatalf("expected segment class track-ambiance, got %q", segment.Class)
+	}
+}
+
+func TestBuildSegmentViewsMarksAutomaticCrossfade(ts *testing.T) {
+	outTrack := t.Track{Type: t.TrackBinauralBeat, Carrier: 220, Resonance: 8, Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformSine}
+	inTrack := t.Track{Type: t.TrackIsochronicBeat, Carrier: 220, Resonance: 8, Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformSine}
+	periods := []t.Period{
+		{
+			Time:       0,
+			TrackStart: [t.NumberOfChannels]t.Track{outTrack},
+			TrackEnd:   [t.NumberOfChannels]t.Track{outTrack},
+			CrossfadeOut: [t.NumberOfChannels]t.TrackCrossfade{
+				{Active: true, Track: outTrack},
+			},
+		},
+		{
+			Time:       60_000,
+			TrackStart: [t.NumberOfChannels]t.Track{inTrack},
+			TrackEnd:   [t.NumberOfChannels]t.Track{inTrack},
+			CrossfadeIn: [t.NumberOfChannels]t.TrackCrossfade{
+				{Active: true, Track: inTrack},
+			},
+		},
+	}
+
+	segments := buildSegmentViews(periods, 60_000)
+	if len(segments) != 1 {
+		ts.Fatalf("expected one segment, got %d", len(segments))
+	}
+	if len(segments[0].Items) != 1 {
+		ts.Fatalf("expected one segment item, got %d", len(segments[0].Items))
+	}
+	item := segments[0].Items[0]
+	if !item.Crossfade {
+		ts.Fatalf("expected segment item to be marked as automatic crossfade")
+	}
+	if !strings.Contains(item.Summary, "automatic crossfade") {
+		ts.Fatalf("expected crossfade summary, got %q", item.Summary)
 	}
 }

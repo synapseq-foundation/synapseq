@@ -14,10 +14,12 @@ package status
 import (
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/fatih/color"
 	"github.com/synapseq-foundation/synapseq/v4/internal/palette"
+	tl "github.com/synapseq-foundation/synapseq/v4/internal/timeline"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -68,16 +70,17 @@ func (sr *Reporter) DisplayPeriodChange(view View, periodIdx int) {
 		sr.formatTransition(period))
 
 	line2 := ""
-	for ch := range CountActiveChannels(view.Channels) {
+	duration := tl.CrossfadeDuration(nextPeriod.Time - period.Time)
+	for ch := range CountPeriodDisplayChannels(view, period) {
 		startTrack := period.TrackStart[ch]
 		endTrack := period.TrackEnd[ch]
 
 		if startTrack.Type != t.TrackOff && startTrack.Type != t.TrackSilence {
-			line2 += fmt.Sprintf("\n%s %s", strings.Repeat(" ", 6), sr.statusTrack(startTrack.String()))
+			line2 += fmt.Sprintf("\n%s %s", strings.Repeat(" ", 6), sr.formatTrackWithFadeLabels(startTrack, sr.crossfadeLabels(period, ch, duration)...))
 		}
 
 		if !IsTrackEqual(&startTrack, &endTrack) {
-			line2 += fmt.Sprintf("\n   %s  %s", sr.statusArrow("->"), sr.statusTrack(endTrack.String()))
+			line2 += fmt.Sprintf("\n   %s  %s", sr.statusArrow("->"), sr.formatTrackWithFadeLabels(endTrack))
 		}
 	}
 
@@ -142,6 +145,19 @@ func CountActiveChannels(channels []t.Channel) int {
 	return 1
 }
 
+func CountPeriodDisplayChannels(view View, period t.Period) int {
+	count := CountActiveChannels(view.Channels)
+	for i := t.NumberOfChannels - 1; i >= 0; i-- {
+		if period.CrossfadeIn[i].Active || period.CrossfadeOut[i].Active {
+			if i+1 > count {
+				return i + 1
+			}
+			return count
+		}
+	}
+	return count
+}
+
 func IsTrackEqual(trackA, trackB *t.Track) bool {
 	return trackA.Type == trackB.Type &&
 		trackA.Amplitude == trackB.Amplitude &&
@@ -149,6 +165,41 @@ func IsTrackEqual(trackA, trackB *t.Track) bool {
 		trackA.Resonance == trackB.Resonance &&
 		trackA.Waveform == trackB.Waveform &&
 		trackA.Effect.Intensity == trackB.Effect.Intensity
+}
+
+func (sr *Reporter) crossfadeLabels(period t.Period, ch int, durationMs int) []string {
+	labels := []string{}
+	if period.CrossfadeIn[ch].Active {
+		labels = append(labels, sr.formatFadeLabel("fade-in", durationMs))
+	}
+	if period.CrossfadeOut[ch].Active {
+		labels = append(labels, sr.formatFadeLabel("fade-out", durationMs))
+	}
+	return labels
+}
+
+func (sr *Reporter) formatTrackWithFadeLabels(track t.Track, labels ...string) string {
+	out := sr.statusTrack(track.String())
+	for _, label := range labels {
+		if label != "" {
+			out += " " + label
+		}
+	}
+	return out
+}
+
+func (sr *Reporter) formatFadeLabel(direction string, durationMs int) string {
+	return sr.statusFadeLabel(fmt.Sprintf("(%s %s)", direction, formatFadeDuration(durationMs)))
+}
+
+func formatFadeDuration(durationMs int) string {
+	if durationMs < 1000 {
+		return fmt.Sprintf("%dms", durationMs)
+	}
+	if durationMs%1000 == 0 {
+		return fmt.Sprintf("%ds", durationMs/1000)
+	}
+	return strconv.FormatFloat(float64(durationMs)/1000, 'f', -1, 64) + "s"
 }
 
 func (sr *Reporter) statusRGB(text string, token palette.RGBColor, attrs ...color.Attribute) string {
@@ -195,6 +246,10 @@ func (sr *Reporter) statusSteps(text string) string {
 
 func (sr *Reporter) statusTrack(text string) string {
 	return sr.statusRGB(text, palette.Green)
+}
+
+func (sr *Reporter) statusFadeLabel(text string) string {
+	return sr.statusRGB(text, palette.Ochre)
 }
 
 func (sr *Reporter) statusBullet(text string) string {

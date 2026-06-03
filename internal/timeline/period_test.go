@@ -41,6 +41,27 @@ func TestMaxPeriodSteps(ts *testing.T) {
 	}
 }
 
+func TestCrossfadeDuration(ts *testing.T) {
+	tests := []struct {
+		availableMs int
+		want        int
+	}{
+		{-1, 0},
+		{0, 0},
+		{750, 750},
+		{7_500, 7_500},
+		{29_999, 29_999},
+		{30_000, 30_000},
+		{60_000, 30_000},
+	}
+
+	for _, test := range tests {
+		if got := CrossfadeDuration(test.availableMs); got != test.want {
+			ts.Fatalf("CrossfadeDuration(%d) = %d, want %d", test.availableMs, got, test.want)
+		}
+	}
+}
+
 func TestAdjustPeriods_NormalCopy(ts *testing.T) {
 	var last, next t.Period
 
@@ -113,7 +134,58 @@ func TestAdjustPeriods_AllowsWaveformChangeWhileOn(ts *testing.T) {
 	}
 }
 
-func TestAdjustPeriods_Errors(ts *testing.T) {
+func TestAdjustPeriods_FadesInNewEffectByIntensity(ts *testing.T) {
+	var last, next t.Period
+
+	last.TrackStart[0] = t.Track{Type: t.TrackBinauralBeat, Carrier: 200, Resonance: 8, Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectOff}}
+	last.TrackEnd[0] = last.TrackStart[0]
+	next.TrackStart[0] = t.Track{Type: t.TrackBinauralBeat, Carrier: 220, Resonance: 10, Amplitude: t.AmplitudePercentToRaw(25), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectPan, Value: 3, Intensity: t.IntensityPercentToRaw(70)}}
+
+	if err := AdjustPeriods(&last, &next); err != nil {
+		ts.Fatalf("unexpected error: %v", err)
+	}
+
+	if last.CrossfadeOut[0].Active || next.CrossfadeIn[0].Active {
+		ts.Fatalf("unexpected crossfade metadata: out=%+v in=%+v", last.CrossfadeOut[0], next.CrossfadeIn[0])
+	}
+	startEffect := last.TrackStart[0].Effect
+	if startEffect.Type != t.EffectPan || startEffect.Value != 3 || startEffect.Intensity != 0 {
+		ts.Fatalf("fade-in start effect mismatch: %+v", startEffect)
+	}
+	if last.TrackEnd[0] != next.TrackStart[0] {
+		ts.Fatalf("carry-forward mismatch after effect fade-in: last.TrackEnd != next.TrackStart\nlast=%+v\nnext=%+v", last.TrackEnd[0], next.TrackStart[0])
+	}
+	if last.TrackEnd[0].Effect.Type != t.EffectPan || last.TrackEnd[0].Effect.Value != 3 || last.TrackEnd[0].Effect.Intensity != t.IntensityPercentToRaw(70) {
+		ts.Fatalf("fade-in end effect mismatch: %+v", last.TrackEnd[0].Effect)
+	}
+}
+
+func TestAdjustPeriods_FadesOutRemovedEffectByIntensity(ts *testing.T) {
+	var last, next t.Period
+
+	last.TrackStart[0] = t.Track{Type: t.TrackBinauralBeat, Carrier: 200, Resonance: 8, Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectModulation, Value: 4, Intensity: t.IntensityPercentToRaw(60)}}
+	last.TrackEnd[0] = last.TrackStart[0]
+	next.TrackStart[0] = t.Track{Type: t.TrackBinauralBeat, Carrier: 220, Resonance: 10, Amplitude: t.AmplitudePercentToRaw(25), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectOff}}
+
+	if err := AdjustPeriods(&last, &next); err != nil {
+		ts.Fatalf("unexpected error: %v", err)
+	}
+
+	if last.CrossfadeOut[0].Active || next.CrossfadeIn[0].Active {
+		ts.Fatalf("unexpected crossfade metadata: out=%+v in=%+v", last.CrossfadeOut[0], next.CrossfadeIn[0])
+	}
+	if last.TrackStart[0].Effect.Type != t.EffectModulation || last.TrackStart[0].Effect.Value != 4 || last.TrackStart[0].Effect.Intensity != t.IntensityPercentToRaw(60) {
+		ts.Fatalf("fade-out start effect mismatch: %+v", last.TrackStart[0].Effect)
+	}
+	if last.TrackEnd[0] != next.TrackStart[0] {
+		ts.Fatalf("carry-forward mismatch after effect fade-out: last.TrackEnd != next.TrackStart\nlast=%+v\nnext=%+v", last.TrackEnd[0], next.TrackStart[0])
+	}
+	if last.TrackEnd[0].Effect.Type != t.EffectModulation || last.TrackEnd[0].Effect.Value != 4 || last.TrackEnd[0].Effect.Intensity != 0 {
+		ts.Fatalf("fade-out end effect mismatch: %+v", last.TrackEnd[0].Effect)
+	}
+}
+
+func TestAdjustPeriods_CreatesBoundaryCrossfades(ts *testing.T) {
 	makePer := func(trackStart, trackEnd, nextStart t.Track) (t.Period, t.Period) {
 		var last, next t.Period
 		last.TrackStart[0] = trackStart
@@ -127,17 +199,32 @@ func TestAdjustPeriods_Errors(ts *testing.T) {
 		tr0  t.Track
 		tr1  t.Track
 		tr2  t.Track
+		out  bool
+		in   bool
 	}{
-		{"turn off directly", t.Track{}, t.Track{Type: t.TrackBinauralBeat, Amplitude: t.AmplitudePercentToRaw(10), Waveform: t.WaveformSine}, t.Track{Type: t.TrackOff}},
-		{"turn on directly", t.Track{}, t.Track{Type: t.TrackOff}, t.Track{Type: t.TrackBinauralBeat, Amplitude: t.AmplitudePercentToRaw(10), Waveform: t.WaveformSine}},
-		{"change type while on", t.Track{}, t.Track{Type: t.TrackBinauralBeat, Amplitude: t.AmplitudePercentToRaw(10), Waveform: t.WaveformSine}, t.Track{Type: t.TrackMonauralBeat, Amplitude: t.AmplitudePercentToRaw(12), Waveform: t.WaveformSine}},
-		{"change effect type while on (ambiance)", t.Track{}, t.Track{Type: t.TrackAmbiance, Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectPan}}, t.Track{Type: t.TrackAmbiance, Amplitude: t.AmplitudePercentToRaw(25), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectModulation}}},
+		{"turn off directly", t.Track{Type: t.TrackBinauralBeat, Amplitude: t.AmplitudePercentToRaw(10), Waveform: t.WaveformSine}, t.Track{Type: t.TrackBinauralBeat, Amplitude: t.AmplitudePercentToRaw(10), Waveform: t.WaveformSine}, t.Track{Type: t.TrackOff}, true, false},
+		{"turn on directly", t.Track{Type: t.TrackOff}, t.Track{Type: t.TrackOff}, t.Track{Type: t.TrackBinauralBeat, Amplitude: t.AmplitudePercentToRaw(10), Waveform: t.WaveformSine}, false, true},
+		{"change type while on", t.Track{Type: t.TrackBinauralBeat, Amplitude: t.AmplitudePercentToRaw(10), Waveform: t.WaveformSine}, t.Track{Type: t.TrackBinauralBeat, Amplitude: t.AmplitudePercentToRaw(10), Waveform: t.WaveformSine}, t.Track{Type: t.TrackMonauralBeat, Amplitude: t.AmplitudePercentToRaw(12), Waveform: t.WaveformSine}, true, true},
+		{"change effect type while on", t.Track{Type: t.TrackAmbiance, AmbianceName: "rain", Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectPan}}, t.Track{Type: t.TrackAmbiance, AmbianceName: "rain", Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectPan}}, t.Track{Type: t.TrackAmbiance, AmbianceName: "rain", Amplitude: t.AmplitudePercentToRaw(25), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectModulation}}, true, true},
+		{"change ambiance while on", t.Track{Type: t.TrackAmbiance, AmbianceName: "rain", Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformSine}, t.Track{Type: t.TrackAmbiance, AmbianceName: "rain", Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformSine}, t.Track{Type: t.TrackAmbiance, AmbianceName: "river", Amplitude: t.AmplitudePercentToRaw(25), Waveform: t.WaveformSine}, true, true},
 	}
 
 	for _, test := range tests {
 		last, next := makePer(test.tr0, test.tr1, test.tr2)
-		if err := AdjustPeriods(&last, &next); err == nil {
-			ts.Fatalf("%s: expected error, got nil", test.name)
+		if err := AdjustPeriods(&last, &next); err != nil {
+			ts.Fatalf("%s: unexpected error: %v", test.name, err)
+		}
+		if last.CrossfadeOut[0].Active != test.out {
+			ts.Fatalf("%s: unexpected fade-out metadata: %+v", test.name, last.CrossfadeOut[0])
+		}
+		if next.CrossfadeIn[0].Active != test.in {
+			ts.Fatalf("%s: unexpected fade-in metadata: %+v", test.name, next.CrossfadeIn[0])
+		}
+		if test.out && last.CrossfadeOut[0].Track != test.tr1 {
+			ts.Fatalf("%s: fade-out track mismatch: got %+v want %+v", test.name, last.CrossfadeOut[0].Track, test.tr1)
+		}
+		if test.in && next.CrossfadeIn[0].Track != test.tr2 {
+			ts.Fatalf("%s: fade-in track mismatch: got %+v want %+v", test.name, next.CrossfadeIn[0].Track, test.tr2)
 		}
 	}
 }
