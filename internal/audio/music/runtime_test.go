@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package ambiance
+package music
 
 import (
 	"testing"
@@ -49,7 +49,7 @@ func (fa *finiteSampleAudio) Close() error {
 	return nil
 }
 
-func TestMusicRuntimeKeepsEOFStatePerChannel(ts *testing.T) {
+func TestRuntimeKeepsEOFStatePerChannel(ts *testing.T) {
 	var p0, p1, p2 t.Period
 	p0.Time = 0
 	p1.Time = 1000
@@ -59,7 +59,7 @@ func TestMusicRuntimeKeepsEOFStatePerChannel(ts *testing.T) {
 	p1.TrackStart[1] = t.Track{Type: t.TrackMusic, SourceName: "meditation"}
 
 	sourceData := [][]int{{10, 11, 12, 13}}
-	runtime, err := NewMusicRuntime(
+	runtime, err := NewRuntime(
 		[]t.Period{p0, p1, p2},
 		map[string]string{"meditation": "meditation.mp3"},
 		44100,
@@ -68,7 +68,7 @@ func TestMusicRuntimeKeepsEOFStatePerChannel(ts *testing.T) {
 		},
 	)
 	if err != nil {
-		ts.Fatalf("NewMusicRuntime: %v", err)
+		ts.Fatalf("NewRuntime: %v", err)
 	}
 	defer runtime.Close()
 
@@ -78,10 +78,9 @@ func TestMusicRuntimeKeepsEOFStatePerChannel(ts *testing.T) {
 	runtime.CollectActiveIndices(channels)
 	runtime.PrepareBuffers(3)
 
-	gotCh0 := append([]int(nil), runtime.ChannelBuffer(0)...)
 	wantEOF := []int{10, 11, 12, 13, 0, 0}
-	if !equalSamples(gotCh0, wantEOF) {
-		ts.Fatalf("channel 0 expected EOF-padded samples %v, got %v", wantEOF, gotCh0)
+	if got := append([]int(nil), runtime.ChannelBuffer(0)...); !equalSamples(got, wantEOF) {
+		ts.Fatalf("channel 0 expected EOF-padded samples %v, got %v", wantEOF, got)
 	}
 
 	channels[0].Track.Type = t.TrackOff
@@ -91,9 +90,8 @@ func TestMusicRuntimeKeepsEOFStatePerChannel(ts *testing.T) {
 	runtime.CollectActiveIndices(channels)
 	runtime.PrepareBuffers(3)
 
-	gotCh1 := append([]int(nil), runtime.ChannelBuffer(1)...)
-	if !equalSamples(gotCh1, wantEOF) {
-		ts.Fatalf("channel 1 should start the same music from the beginning, want %v got %v", wantEOF, gotCh1)
+	if got := append([]int(nil), runtime.ChannelBuffer(1)...); !equalSamples(got, wantEOF) {
+		ts.Fatalf("channel 1 should start the same music from the beginning, want %v got %v", wantEOF, got)
 	}
 }
 

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package ambiance
+package music
 
 import (
 	"github.com/synapseq-foundation/synapseq/v4/internal/audio/audiosource"
@@ -13,8 +13,8 @@ type Audio = audiosource.Audio
 
 func NewAudio(filePaths []string, expectedSampleRate int) (*Audio, error) {
 	return audiosource.New(filePaths, expectedSampleRate, audiosource.Options{
-		PlaybackMode: audiosource.PlaybackLoop,
-		LoadFile:     r.GetAmbianceFile,
-		SourceKind:   "ambiance",
+		PlaybackMode: audiosource.PlaybackFinite,
+		LoadFile:     r.GetMusicFile,
+		SourceKind:   "music",
 	})
 }

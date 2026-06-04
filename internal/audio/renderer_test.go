@@ -9,6 +9,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/gopxl/beep/v2"
@@ -147,6 +148,21 @@ func TestAudioRenderer_RenderWav_Integration(ts *testing.T) {
 	}
 	if !foundNonZero {
 		ts.Fatalf("All samples are zero - audio generation may be broken")
+	}
+}
+
+func TestAudioRenderer_UsesDedicatedMusicPackage(ts *testing.T) {
+	source, err := os.ReadFile("renderer.go")
+	if err != nil {
+		ts.Fatalf("read renderer source: %v", err)
+	}
+
+	text := string(source)
+	if strings.Contains(text, "amb.NewMusic") {
+		ts.Fatalf("renderer must not construct music through the ambiance package")
+	}
+	if !strings.Contains(text, "internal/audio/music") {
+		ts.Fatalf("renderer should import the dedicated music package")
 	}
 }
 

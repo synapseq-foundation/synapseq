@@ -10,6 +10,7 @@ import (
 
 	amb "github.com/synapseq-foundation/synapseq/v4/internal/audio/ambiance"
 	efx "github.com/synapseq-foundation/synapseq/v4/internal/audio/effects"
+	mus "github.com/synapseq-foundation/synapseq/v4/internal/audio/music"
 	audiosync "github.com/synapseq-foundation/synapseq/v4/internal/audio/sync"
 	wt "github.com/synapseq-foundation/synapseq/v4/internal/audio/wavetable"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
@@ -34,7 +35,7 @@ type AudioRenderer struct {
 	syncEngine      *audiosync.Engine
 	effectProcessor *efx.Processor
 	ambianceState   *amb.Runtime
-	musicState      *amb.Runtime
+	musicState      *mus.Runtime
 
 	// Embedding options
 	*AudioRendererOptions
@@ -74,8 +75,8 @@ func NewAudioRenderer(p []t.Period, ar *AudioRendererOptions) (*AudioRenderer, e
 	if err != nil {
 		return nil, err
 	}
-	musicState, err := amb.NewMusicRuntime(p, ar.Music, ar.SampleRate, func(paths []string, sampleRate int) (amb.SampleAudio, error) {
-		return amb.NewMusicAudio(paths, sampleRate)
+	musicState, err := mus.NewRuntime(p, ar.Music, ar.SampleRate, func(paths []string, sampleRate int) (mus.SampleAudio, error) {
+		return mus.NewAudio(paths, sampleRate)
 	})
 	if err != nil {
 		return nil, err

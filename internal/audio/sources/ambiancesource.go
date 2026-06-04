@@ -4,7 +4,7 @@
 
 package sources
 
-import amb "github.com/synapseq-foundation/synapseq/v4/internal/audio/ambiance"
+import "github.com/synapseq-foundation/synapseq/v4/internal/audio/audiosource"
 
 type Ambiance struct {
 	amplitude int
@@ -14,7 +14,7 @@ func NewAmbiance(signal Signal) Ambiance {
 	return Ambiance{amplitude: signal.Amplitude[0]}
 }
 
-func (source Ambiance) Sample(runtime *amb.Runtime, ch, frame int) (int, int, bool) {
+func (source Ambiance) Sample(runtime *audiosource.Runtime, ch, frame int) (int, int, bool) {
 	const bgScaleFactor = 16
 
 	if runtime == nil {
