@@ -14,6 +14,26 @@
 
 Visit [synapseq.org](https://synapseq.org) for more information.
 
+## What It Looks Like
+
+A basic `.spsq` sequence is plain text: define options, declare presets with indented tracks, then place presets on a timeline.
+
+```spsq
+@samplerate 44100
+@volume 80
+
+focus
+  tone 220 binaural 10 amplitude 25
+  noise pink smooth 15 amplitude 12
+
+00:00:00 silence
+00:00:15 focus
+00:04:30 focus 
+00:05:00 silence
+```
+
+See [SYNTAX](docs/SYNTAX.md) for the complete language reference.
+
 ## Quick Start
 
 The recommended way to install SynapSeq is through the platform package manager.
@@ -56,6 +76,23 @@ After installation on any platform, run `synapseq -manual` to get links to the c
 If you want to integrate SynapSeq into a Go project, use the [core Go API](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4/core) to load, inspect, preview, stream, and render sequences.
 
 To build `.spsq` content programmatically in Go, use the [spsq builder API](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4/spsq).
+
+```go
+ctx := synapseq.NewAppContext()
+
+builder := spsq.New().SampleRate(44100).Volume(80)
+focus := builder.NewPreset("focus")
+focus.Tone(220).Binaural(10).Amplitude(25)
+
+loaded, err := builder.
+	SilenceAt(0).
+	PresetAt(15*time.Second, focus).
+	PresetAt(4*time.Minute + 30*time.Second, focus).
+	SilenceAt(5 * time.Minute).
+	Load(ctx)
+```
+
+`Load(ctx)` validates the generated `.spsq` content through the normal SynapSeq loading pipeline.
 
 ## Contributing
 
