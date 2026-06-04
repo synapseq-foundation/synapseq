@@ -127,7 +127,9 @@ This package renders audio from sequence periods and tracks.
 
 The root package owns `AudioRenderer` and the main rendering loop. Supporting responsibilities are split into focused subpackages such as:
 
-- `audio/ambiance` for WAV/MP3 external audio loading, decoding, resampling, looping ambiance playback, and finite music playback. WAV is preferred for loopable ambiance; MP3 is supported but may contain codec delay or padding that creates loop gaps. Music does not loop automatically and prefers MP3 before WAV during local path resolution;
+- `audio/audiosource` for shared WAV/MP3 external audio mechanics: loading callbacks, decoding, caching, resampling, sample reading, playback mode handling, named-source indexing, and prepared runtime buffers;
+- `audio/ambiance` for ambiance-specific policy around external audio: looped playback, ambiance file loading, and source-scoped runtime behavior. WAV is preferred for loopable ambiance; MP3 is supported but may contain codec delay or padding that creates loop gaps;
+- `audio/music` for music-specific policy around external audio: finite playback, music file loading, and channel-scoped runtime behavior. Music does not loop automatically and prefers MP3 before WAV during local path resolution;
 - `audio/effects` for panning, modulation, doppler, waveform morph, and effect runtime helpers;
 - `audio/sources` for compiled source evaluators such as pure tone, binaural, monaural, isochronic, noise, ambiance, and music;
 - `audio/sync` for temporal synchronization and per-period updates;
@@ -212,6 +214,8 @@ flowchart LR
 	AUDIO --> SOURCES[internal/audio/sources]
 	AUDIO --> EFFECTS[internal/audio/effects]
 	AUDIO --> AMB[internal/audio/ambiance]
+	AUDIO --> MUSIC[internal/audio/music]
+	AUDIO --> ASRC[internal/audio/audiosource]
 	AUDIO --> WAVETABLE[internal/audio/wavetable]
 	AUDIO --> STATUS[internal/audio/status]
 	AUDIO --> OUTPUT[internal/audio/output]
@@ -219,10 +223,14 @@ flowchart LR
 
 	OUTPUT --> PCM
 	SOURCES --> EFFECTS
+	SOURCES --> ASRC
 	SOURCES --> TYPES
 	EFFECTS --> TYPES
 	SYNC --> TYPES
-	AMB --> PCM
+	AMB --> ASRC
+	MUSIC --> ASRC
+	ASRC --> PCM
+	ASRC --> TYPES
 
 	TYPES:::leaf
 
@@ -293,6 +301,9 @@ flowchart TD
 	Mix --> Sources[audio/sources]
 	Mix --> Effects[audio/effects]
 	Mix --> Ambiance[audio/ambiance]
+	Mix --> Music[audio/music]
+	Ambiance --> AudioSource[audio/audiosource]
+	Music --> AudioSource
 	Mix --> Wavetable[audio/wavetable]
 	Mix --> Output[audio/output and audio/pcm]
 ```
@@ -305,7 +316,8 @@ At a high level:
 4. The renderer compiles a temporal plan and resolves per-period cues before entering the hot render loop.
 5. The render loop applies each cue into mutable channel runtime state and then synthesizes PCM samples through the mix loop.
 6. The mixer and effects path consume compiled signal state instead of recomputing semantics directly from `Period` on every chunk.
-7. The output path writes either WAV or raw PCM.
+7. Ambiance and music tracks read prepared external-audio buffers through their policy wrappers, which share the neutral `audio/audiosource` implementation underneath.
+8. The output path writes either WAV or raw PCM.
 
 ### Current Engine Refactor Direction
 
