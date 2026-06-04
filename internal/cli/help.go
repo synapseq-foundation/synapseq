@@ -1,13 +1,6 @@
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package cli
 
@@ -100,7 +93,7 @@ func ShowManual() {
 }
 
 func writeHelpHeader(writer io.Writer) {
-	fmt.Fprintf(writer, "%s\n\n", Title(fmt.Sprintf("SynapSeq %s - Text-Driven Audio Sequencer for Brainwave Entrainment", info.VERSION)))
+	fmt.Fprintf(writer, "%s\n\n", Title("SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment"))
 }
 
 func writeUsageSection(writer io.Writer) {

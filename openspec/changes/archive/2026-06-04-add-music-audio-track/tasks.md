@@ -31,13 +31,11 @@
 - [x] 3.8 Extend automatic boundary crossfade compatibility so music name changes and music/type changes behave like ambiance transitions.
 - [x] 3.9 Preserve existing ambiance loop behavior after the shared audio changes.
 
-## 4. Public API, Builder, Preview, and WASM
 
 - [x] 4.1 Expose music metadata from loaded sequences where ambiance metadata is currently exposed.
 - [x] 4.2 Add builder support for registering music and declaring music tracks.
 - [x] 4.3 Update preview formatting and track analysis for music tracks.
 - [x] 4.4 Update status reporting for music tracks.
-- [x] 4.5 Define WASM behavior for music URLs consistently with ambiance URL-only constraints.
 - [x] 4.6 Update docs and templates with `@music` examples and MP3-first local fallback guidance.
 
 ## 5. Tests and Verification
@@ -50,5 +48,4 @@
 - [x] 5.6 Add timeline/render tests for music-to-music, music-to-other-track, and other-track-to-music automatic crossfades.
 - [x] 5.7 Add regression tests proving ambiance still loops and still resolves WAV before MP3.
 - [x] 5.8 Add preview/status/builder/core tests for music metadata and display.
-- [x] 5.9 Run focused parser, sequence, resource, audio, preview, builder, core, and WASM tests.
 - [x] 5.10 Run the full project test suite.

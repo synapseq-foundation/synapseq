@@ -8,7 +8,7 @@ SynapSeq is a text-driven audio sequencer for brainwave entrainment, written in 
 
 - **Module**: `github.com/synapseq-foundation/synapseq/v4`
 - **Go Version**: 1.26.0
-- **License**: GPL v2
+- **License**: GPL v3 or later
 
 ## Key Commands
 
@@ -18,9 +18,6 @@ make test
 
 # Build CLI binary
 make build
-
-# Build WASM target for browser
-make build-wasm
 
 # Cross-platform builds
 make build-macos
@@ -38,7 +35,6 @@ make clean
 | Package | Responsibility |
 |---------|----------------|
 | `cmd/synapseq` | CLI entry, flag parsing, command dispatch, orchestration |
-| `cmd/wasm` | WASM browser runtime - loads sequences, renders PCM, streams to JavaScript |
 | `core` | Public API - `AppContext`, `LoadedContext` |
 | `internal/types` | Domain model - Sequence, Period, Track, Channel, Preset (dependency leaf) |
 | `internal/parser` | `.spsq` DSL parsing - lexical and syntactic interpretation |
@@ -103,15 +99,6 @@ This project uses a custom workflow for proposing and implementing changes:
 - **Propose**: Use `opsx-propose` command to create a new change proposal
 - **Apply**: Use `opsx-apply` command or `openspec-apply-change` skill to implement tasks
 - **Archive**: Use `opsx-archive` command or `openspec-archive-change` skill to finalize completed changes
-
-## WASM Target
-
-The `cmd/wasm` package provides a browser-oriented WebAssembly target:
-
-- Does not use CLI flow
-- Exposes JavaScript bridge for `.spsq` content input and PCM chunk output
-- Does not support Remote workflows, preview HTML, or external tools
-- Entry points: `main.go`, `bridge_wasm.go`, `streamservice.go`
 
 ## Suggested Reading Order
 

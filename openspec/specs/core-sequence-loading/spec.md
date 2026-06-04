@@ -43,10 +43,6 @@ The `internal/sequence` package SHALL expose a unified text sequence loading fun
 - **WHEN** native code asks `internal/sequence` to load a text sequence
 - **THEN** it passes already-read content bytes instead of a file path
 
-#### Scenario: WASM sequence parsing
-- **WHEN** WASM code asks `internal/sequence` to load a text sequence
-- **THEN** it continues to pass content bytes without requiring filesystem access
-
 ### Requirement: Resolve local ambiance files with WAV priority
 The sequence loader SHALL resolve extensionless local ambiance option paths by selecting an existing WAV file before considering an MP3 file.
 

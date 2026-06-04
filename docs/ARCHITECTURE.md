@@ -372,24 +372,6 @@ That means Remote integration should stay shallow:
 
 Remote should not fork the rendering architecture.
 
-## WASM Build Target
-
-Internally, the deprecated WASM target is split into a small set of focused layers:
-
-- `main.go` only boots the runtime and registers global exports;
-- `bridge_wasm.go` owns the `syscall/js` boundary, Promise handling, and callback delivery;
-- `streamservice.go` coordinates load, renderer construction, PCM encoding, and chunk streaming without JavaScript concerns;
-- `rendererbuilder.go` and `pcmencoder.go` keep renderer configuration and PCM byte encoding isolated and testable.
-
-The WASM target is narrower than the native CLI:
-
-- it does not participate in Remote workflows;
-- it does not use external tools such as ffplay or ffmpeg;
-- it does not generate preview HTML;
-- it acts as a browser runtime bridge rather than a general command interface.
-
-Detailed deprecated browser-facing API behavior belongs in [wasm](wasm/README.md).
-
 ## External Tool Integration
 
 The `external` package is a small adapter layer for ffplay and ffmpeg.

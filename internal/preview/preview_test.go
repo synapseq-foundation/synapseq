@@ -1,3 +1,7 @@
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 package preview
 
 import (

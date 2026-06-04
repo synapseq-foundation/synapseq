@@ -3,7 +3,7 @@
 <p align="center">
   <p align="center">
   <a href="https://github.com/synapseq-foundation/synapseq/releases/latest"><img src="https://img.shields.io/github/v/release/synapseq-foundation/synapseq?color=blue&logo=github" alt="Release"></a>
-  <a href="COPYING.txt"><img src="https://img.shields.io/badge/license-GPL%20v2-blue.svg?logo=open-source-initiative&logoColor=white" alt="License"></a>
+  <a href="COPYING.txt"><img src="https://img.shields.io/badge/license-GPL%20v3%20or%20later-blue.svg?logo=open-source-initiative&logoColor=white" alt="License"></a>
   <a href="https://github.com/synapseq-foundation/synapseq/commits"><img src="https://img.shields.io/github/commit-activity/m/synapseq-foundation/synapseq?color=ff69b4&logo=git" alt="Commit Activity"></a>
 </p>
 </p>
@@ -65,11 +65,11 @@ Please read the [CONTRIBUTING](CONTRIBUTING.md) file for guidelines on how to co
 
 ## License
 
-SynapSeq is distributed under the GPL v2 license. See the [COPYING](COPYING.txt) file for details.
+SynapSeq is distributed under the GPL v3 or later license. See the [COPYING](COPYING.txt) file for details.
 
 ### Third-Party Licenses
 
-All original code in SynapSeq is licensed under the GNU GPL v2, but the following components are included and redistributed under their respective terms:
+All original code in SynapSeq is licensed under the GNU GPL v3 or later, but the following components are included and redistributed under their respective terms:
 
 - **[fatih/color](https://github.com/fatih/color)**  
   License: MIT  

@@ -40,6 +40,4 @@ The `internal/sequence` package SHALL expose a unified text sequence loading fun
 - **WHEN** native code asks `internal/sequence` to load a text sequence
 - **THEN** it passes already-read content bytes instead of a file path
 
-#### Scenario: WASM sequence parsing
-- **WHEN** WASM code asks `internal/sequence` to load a text sequence
 - **THEN** it continues to pass content bytes without requiring filesystem access

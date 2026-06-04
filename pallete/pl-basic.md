@@ -12,7 +12,6 @@ This document is broader than the Go package because it also documents CSS-only 
 Current implementation references:
 
 - `/internal/preview/index.html`
-- `/wasm/example.html`
 
 This file is not a full design system specification.
 It does not define layout, typography, spacing, components, or motion.
