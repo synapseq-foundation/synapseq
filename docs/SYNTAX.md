@@ -117,7 +117,10 @@ Local option paths are normalized and validated before use:
 - absolute paths and Windows drive paths are rejected;
 - parent directory traversal such as `..` is rejected;
 - local paths must not include file extensions;
-- local ambiance paths resolve to `.wav`;
+- local ambiance paths first resolve to `.wav`, then to `.mp3` only when the WAV file is missing;
+- WAV is the recommended ambiance format, especially for continuous or seamless loops;
+- MP3 is supported as a fallback format, but MP3 encoding can add delay or padding that may create audible gaps when the file loops;
+- remote ambiance URLs must identify a WAV or MP3 file by extension, or provide a WAV or MP3 MIME type when the URL has no extension;
 - local extends paths resolve to `.spsc`.
 
 ## Presets

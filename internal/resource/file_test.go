@@ -94,11 +94,11 @@ func TestGetFile_LocalFile_Truncate_Text(ts *testing.T) {
 }
 
 func TestGetFile_LocalFile_Truncate_WAV(ts *testing.T) {
-	const maxSize = t.MaxWavFileSize
+	const maxSize = t.MaxAmbianceFileSize
 	bigContent := makeBigContent(100, int(maxSize+4096))
 	path := writeTempFile(ts, "big.wav", bigContent)
 
-	got, err := GetFile(path, t.FormatWAV)
+	got, err := GetFile(path, t.FormatAmbiance)
 	if err != nil {
 		ts.Fatalf("GetFile() error: %v", err)
 	}
@@ -194,13 +194,89 @@ func TestGetFile_HTTP_WAV(ts *testing.T) {
 	}))
 	defer server.Close()
 
-	got, err := GetFile(server.URL+"/test.wav", t.FormatWAV)
+	got, err := GetFile(server.URL+"/test.wav", t.FormatAmbiance)
 	if err != nil {
 		ts.Fatalf("GetFile() error: %v", err)
 	}
 
 	if !bytes.Equal(got, content) {
 		ts.Errorf("content mismatch")
+	}
+}
+
+func TestGetAmbianceFile_HTTPFormatFromExtension(ts *testing.T) {
+	content := []byte("mp3 data")
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "application/octet-stream")
+		_, _ = writer.Write(content)
+	}))
+	defer server.Close()
+
+	got, format, err := GetAmbianceFile(server.URL + "/test.mp3")
+	if err != nil {
+		ts.Fatalf("GetAmbianceFile() error: %v", err)
+	}
+
+	if format != t.AmbianceAudioMP3 {
+		ts.Fatalf("expected MP3 format, got %v", format)
+	}
+	if !bytes.Equal(got, content) {
+		ts.Errorf("content mismatch")
+	}
+}
+
+func TestGetAmbianceFile_HTTPFormatFromMIMEWhenExtensionless(ts *testing.T) {
+	content := []byte("wav data")
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "audio/wav")
+		_, _ = writer.Write(content)
+	}))
+	defer server.Close()
+
+	got, format, err := GetAmbianceFile(server.URL + "/ambiance")
+	if err != nil {
+		ts.Fatalf("GetAmbianceFile() error: %v", err)
+	}
+
+	if format != t.AmbianceAudioWAV {
+		ts.Fatalf("expected WAV format, got %v", format)
+	}
+	if !bytes.Equal(got, content) {
+		ts.Errorf("content mismatch")
+	}
+}
+
+func TestGetAmbianceFile_HTTPUnsupportedExtension(ts *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "audio/wav")
+		_, _ = writer.Write([]byte("wav data"))
+	}))
+	defer server.Close()
+
+	_, _, err := GetAmbianceFile(server.URL + "/test.flac")
+	if err == nil {
+		ts.Fatal("expected unsupported extension error")
+	}
+	if !strings.Contains(err.Error(), "unsupported ambiance audio format") {
+		ts.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestGetAmbianceFile_HTTPUnsupportedMIME(ts *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "application/octet-stream")
+		_, _ = writer.Write([]byte("audio data"))
+	}))
+	defer server.Close()
+
+	_, _, err := GetAmbianceFile(server.URL + "/ambiance")
+	if err == nil {
+		ts.Fatal("expected unsupported MIME error")
+	}
+	if !strings.Contains(err.Error(), "unsupported ambiance audio MIME type") {
+		ts.Fatalf("unexpected error: %v", err)
 	}
 }
 

@@ -17,6 +17,7 @@ import (
 	"io"
 
 	"github.com/gopxl/beep/v2"
+	bmp3 "github.com/gopxl/beep/v2/mp3"
 	bwav "github.com/gopxl/beep/v2/wav"
 
 	p "github.com/synapseq-foundation/synapseq/v4/internal/audio/pcm"
@@ -38,6 +39,7 @@ type Audio struct {
 	hasReachedEOF bool
 
 	cachedData [][]byte
+	formats    []t.AmbianceAudioFormat
 	decoders   []beep.StreamSeekCloser
 
 	buffer     []int
@@ -54,6 +56,7 @@ func NewAudio(filePaths []string, expectedSampleRate int) (*Audio, error) {
 		currentIndex: 0,
 		bufferSize:   t.BufferSize * stereoChannels,
 		cachedData:   make([][]byte, len(filePaths)),
+		formats:      make([]t.AmbianceAudioFormat, len(filePaths)),
 		decoders:     make([]beep.StreamSeekCloser, len(filePaths)),
 	}
 
@@ -96,11 +99,12 @@ func (aa *Audio) loadAndCacheAll() error {
 			continue
 		}
 
-		data, err := r.GetFile(path, t.FormatWAV)
+		data, format, err := r.GetAmbianceFile(path)
 		if err != nil {
 			return fmt.Errorf("failed to load ambiance file [%d] (%s): %w", i, path, err)
 		}
 		aa.cachedData[i] = data
+		aa.formats[i] = format
 	}
 	return nil
 }
@@ -114,8 +118,7 @@ func (aa *Audio) validateTracks(expectedSampleRate int) error {
 	}
 
 	for i, data := range aa.cachedData {
-		reader := bytes.NewReader(data)
-		stream, format, err := bwav.Decode(reader)
+		stream, format, err := decodeAmbianceData(data, aa.formats[i])
 		if err != nil {
 			return fmt.Errorf("failed to decode ambiance file [%d] (%s): %w", i, aa.filePaths[i], err)
 		}
@@ -132,15 +135,15 @@ func (aa *Audio) validateTracks(expectedSampleRate int) error {
 		}
 
 		if sr != expectedSampleRate {
-			resampled, err := resampleWAVData(data, expectedSampleRate)
+			resampled, err := resampleAudioData(data, aa.formats[i], expectedSampleRate)
 			if err != nil {
 				return fmt.Errorf("failed to resample ambiance file [%d] (%s) from %d Hz to %d Hz: %w", i, aa.filePaths[i], sr, expectedSampleRate, err)
 			}
 
 			aa.cachedData[i] = resampled
+			aa.formats[i] = t.AmbianceAudioWAV
 
-			reader = bytes.NewReader(resampled)
-			stream, format, err = bwav.Decode(reader)
+			stream, format, err = decodeAmbianceData(resampled, aa.formats[i])
 			if err != nil {
 				return fmt.Errorf("failed to decode resampled ambiance file [%d] (%s): %w", i, aa.filePaths[i], err)
 			}
@@ -167,9 +170,20 @@ func (aa *Audio) validateTracks(expectedSampleRate int) error {
 	return nil
 }
 
-func resampleWAVData(data []byte, expectedSampleRate int) ([]byte, error) {
-	reader := bytes.NewReader(data)
-	stream, format, err := bwav.Decode(reader)
+func decodeAmbianceData(data []byte, audioFormat t.AmbianceAudioFormat) (beep.StreamSeekCloser, beep.Format, error) {
+	reader := &bytesReadSeekCloser{Reader: bytes.NewReader(data)}
+	switch audioFormat {
+	case t.AmbianceAudioWAV:
+		return bwav.Decode(reader)
+	case t.AmbianceAudioMP3:
+		return bmp3.Decode(reader)
+	default:
+		return nil, beep.Format{}, fmt.Errorf("unsupported ambiance audio format %q", audioFormat.String())
+	}
+}
+
+func resampleAudioData(data []byte, audioFormat t.AmbianceAudioFormat, expectedSampleRate int) ([]byte, error) {
+	stream, format, err := decodeAmbianceData(data, audioFormat)
 	if err != nil {
 		return nil, err
 	}
@@ -196,6 +210,14 @@ func resampleWAVData(data []byte, expectedSampleRate int) ([]byte, error) {
 	}
 
 	return out.Bytes(), nil
+}
+
+type bytesReadSeekCloser struct {
+	*bytes.Reader
+}
+
+func (b *bytesReadSeekCloser) Close() error {
+	return nil
 }
 
 type memoryWriteSeeker struct {
@@ -253,8 +275,7 @@ func (aa *Audio) openFromCache(index int) error {
 		return nil
 	}
 
-	reader := bytes.NewReader(aa.cachedData[index])
-	stream, format, err := bwav.Decode(reader)
+	stream, format, err := decodeAmbianceData(aa.cachedData[index], aa.formats[index])
 	if err != nil {
 		return err
 	}

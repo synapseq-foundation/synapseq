@@ -42,6 +42,13 @@ alpha
 	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		t.Fatalf("write temp sequence: %v", err)
 	}
+	ambiancePath := filepath.Join(dir, "audio", "rain.wav")
+	if err := os.MkdirAll(filepath.Dir(ambiancePath), 0o755); err != nil {
+		t.Fatalf("create temp ambiance dir: %v", err)
+	}
+	if err := os.WriteFile(ambiancePath, nil, 0o600); err != nil {
+		t.Fatalf("write temp ambiance: %v", err)
+	}
 
 	loaded, err := NewAppContext().LoadFile(path)
 	if err != nil {

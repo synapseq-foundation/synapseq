@@ -14,7 +14,9 @@ package resource
 import (
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -33,8 +35,8 @@ func GetFile(filePath string, typ t.FileFormat) ([]byte, error) {
 	switch typ {
 	case t.FormatText:
 		maxSize = t.MaxTextFileSize
-	case t.FormatWAV:
-		maxSize = t.MaxWavFileSize
+	case t.FormatAmbiance:
+		maxSize = t.MaxAmbianceFileSize
 	}
 
 	if maxSize == 0 {
@@ -62,6 +64,63 @@ func GetFile(filePath string, typ t.FileFormat) ([]byte, error) {
 			return nil, fmt.Errorf("error reading file: %v", err)
 		}
 		return data, nil
+	}
+}
+
+// GetAmbianceFile retrieves a WAV or MP3 ambiance file from a local path or URL.
+func GetAmbianceFile(filePath string) ([]byte, t.AmbianceAudioFormat, error) {
+	if filePath == "-" {
+		return nil, t.AmbianceAudioUnknown, fmt.Errorf("stdin (-) is not supported for ambiance audio")
+	}
+
+	if IsRemoteFile(filePath) {
+		return getRemoteAmbianceFile(filePath, t.MaxAmbianceFileSize)
+	}
+
+	format, err := ambianceFormatFromPath(filePath)
+	if err != nil {
+		return nil, t.AmbianceAudioUnknown, err
+	}
+
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, t.AmbianceAudioUnknown, fmt.Errorf("error opening file: %v", err)
+	}
+	defer file.Close()
+
+	data, err := readFile(file, t.MaxAmbianceFileSize)
+	if err != nil {
+		return nil, t.AmbianceAudioUnknown, fmt.Errorf("error reading file: %v", err)
+	}
+	return data, format, nil
+}
+
+func ambianceFormatFromPath(filePath string) (t.AmbianceAudioFormat, error) {
+	ext := strings.ToLower(filepath.Ext(filePath))
+	switch ext {
+	case ".wav":
+		return t.AmbianceAudioWAV, nil
+	case ".mp3":
+		return t.AmbianceAudioMP3, nil
+	case "":
+		return t.AmbianceAudioUnknown, nil
+	default:
+		return t.AmbianceAudioUnknown, fmt.Errorf("unsupported ambiance audio format %q", ext)
+	}
+}
+
+func ambianceFormatFromMIME(contentType string) (t.AmbianceAudioFormat, error) {
+	mediaType, _, err := mime.ParseMediaType(contentType)
+	if err != nil {
+		mediaType = strings.TrimSpace(strings.Split(contentType, ";")[0])
+	}
+	switch strings.ToLower(mediaType) {
+	case "audio/wav", "audio/wave", "audio/x-wav", "audio/vnd.wave":
+		return t.AmbianceAudioWAV, nil
+	case "audio/mpeg", "audio/mp3", "audio/x-mpeg":
+		return t.AmbianceAudioMP3, nil
+	default:
+		return t.AmbianceAudioUnknown, fmt.Errorf("unsupported ambiance audio MIME type %q", contentType)
 	}
 }
 
@@ -132,4 +191,36 @@ func getRemoteFile(url string, maxSize int64) ([]byte, error) {
 	}
 
 	return data, nil
+}
+
+func getRemoteAmbianceFile(rawURL string, maxSize int64) ([]byte, t.AmbianceAudioFormat, error) {
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return nil, t.AmbianceAudioUnknown, fmt.Errorf("invalid remote ambiance URL: %v", err)
+	}
+
+	format, err := ambianceFormatFromPath(parsed.Path)
+	if err != nil {
+		return nil, t.AmbianceAudioUnknown, err
+	}
+
+	resp, err := http.Get(rawURL)
+	if err != nil {
+		return nil, t.AmbianceAudioUnknown, fmt.Errorf("error fetching remote file: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if format == t.AmbianceAudioUnknown {
+		format, err = ambianceFormatFromMIME(resp.Header.Get("Content-Type"))
+		if err != nil {
+			return nil, t.AmbianceAudioUnknown, err
+		}
+	}
+
+	data, err := readFile(resp.Body, maxSize)
+	if err != nil {
+		return nil, t.AmbianceAudioUnknown, fmt.Errorf("error reading remote file: %v", err)
+	}
+
+	return data, format, nil
 }

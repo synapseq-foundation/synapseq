@@ -17,10 +17,12 @@
 # Set sample rate (default: 44100)
 #@samplerate 44100
 
-# Add a ambiance audio file (considering the audio/rain.wav file exists)
+# Add a ambiance audio file without extension.
+# SynapSeq prefers audio/rain.wav and falls back to audio/rain.mp3 if the WAV is missing.
+# Prefer WAV for ambiance loops. MP3 is supported, but the format can introduce loop gaps.
 #@ambiance rain audio/rain
 
-# Add a ambiance audio file from a URL
+# Add a ambiance audio file from a URL. URLs include the file extension.
 #@ambiance ocean https://example.com/ocean.wav
 
 # Add other ambiance audio files as needed

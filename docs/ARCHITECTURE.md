@@ -127,7 +127,7 @@ This package renders audio from sequence periods and tracks.
 
 The root package owns `AudioRenderer` and the main rendering loop. Supporting responsibilities are split into focused subpackages such as:
 
-- `audio/ambiance` for ambiance loading and playback runtime;
+- `audio/ambiance` for WAV/MP3 ambiance loading, decoding, resampling, looping, and playback runtime. WAV is preferred for loopable ambiance; MP3 is supported but may contain codec delay or padding that creates loop gaps;
 - `audio/effects` for panning, modulation, doppler, waveform morph, and effect runtime helpers;
 - `audio/sources` for compiled source evaluators such as pure tone, binaural, monaural, isochronic, noise, and ambiance;
 - `audio/sync` for temporal synchronization and per-period updates;

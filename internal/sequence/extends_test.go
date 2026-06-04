@@ -46,6 +46,7 @@ func TestExtendsSuccess(ts *testing.T) {
 base
   noise pink amplitude 50
 `)
+	writeRelBytes(ts, filepath.Dir(filepath.Dir(path)), "configs/testdata/noise.wav", nil)
 
 	got, err := extends(path)
 	if err != nil {

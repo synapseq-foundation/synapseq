@@ -14,6 +14,7 @@
 package spsq
 
 import (
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -22,6 +23,14 @@ import (
 )
 
 func TestBuilderLoadPreservesOrder(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	for _, name := range []string{"rain.wav", "wind.wav"} {
+		if err := os.WriteFile(name, nil, 0o600); err != nil {
+			t.Fatalf("write temp ambiance %s: %v", name, err)
+		}
+	}
+
 	builder := New().
 		SampleRate(48000).
 		Volume(80).
