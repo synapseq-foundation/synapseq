@@ -5,7 +5,19 @@ github.com/fatih/color
 ## explicit; go 1.21
 github.com/gopxl/beep/v2
 github.com/gopxl/beep/v2/internal/util
+github.com/gopxl/beep/v2/mp3
 github.com/gopxl/beep/v2/wav
+# github.com/hajimehoshi/go-mp3 v0.3.4
+## explicit; go 1.14
+github.com/hajimehoshi/go-mp3
+github.com/hajimehoshi/go-mp3/internal/bits
+github.com/hajimehoshi/go-mp3/internal/consts
+github.com/hajimehoshi/go-mp3/internal/frame
+github.com/hajimehoshi/go-mp3/internal/frameheader
+github.com/hajimehoshi/go-mp3/internal/huffman
+github.com/hajimehoshi/go-mp3/internal/imdct
+github.com/hajimehoshi/go-mp3/internal/maindata
+github.com/hajimehoshi/go-mp3/internal/sideinfo
 # github.com/mattn/go-colorable v0.1.13
 ## explicit; go 1.15
 github.com/mattn/go-colorable
