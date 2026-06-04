@@ -35,6 +35,8 @@ func (r *AudioRenderer) mixChannelSample(ch, frame int) stereoSample {
 		return r.mixNoise(channel, signal)
 	case t.TrackAmbiance:
 		return r.mixAmbiance(channel, signal, ch, frame)
+	case t.TrackMusic:
+		return r.mixMusic(channel, signal, ch, frame)
 	default:
 		return stereoSample{}
 	}

@@ -52,6 +52,7 @@ func (lc *LoadedContext) buildAudioRendererOptions(sequence *t.Sequence) *audio.
 		SampleRate:   sequence.Options.SampleRate,
 		Volume:       sequence.Options.Volume,
 		Ambiance:     sequence.Options.Ambiance,
+		Music:        sequence.Options.Music,
 		StatusOutput: lc.appCtx.statusOutput,
 		Colors:       lc.appCtx.statusColors,
 	}

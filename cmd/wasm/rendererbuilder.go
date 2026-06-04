@@ -34,6 +34,7 @@ func buildWASMRendererOptions(sequence *t.Sequence) (*audio.AudioRendererOptions
 		SampleRate: sequence.Options.SampleRate,
 		Volume:     sequence.Options.Volume,
 		Ambiance:   sequence.Options.Ambiance,
+		Music:      sequence.Options.Music,
 		Colors:     false,
 	}, nil
 }

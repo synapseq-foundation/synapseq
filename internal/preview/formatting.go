@@ -68,10 +68,15 @@ func buildTrackSummary(track t.Track) string {
 	case t.TrackWhiteNoise, t.TrackPinkNoise, t.TrackBrownNoise:
 		return fmt.Sprintf("%s texture layer with %s smooth", humanTrackType(track), formatPercent(track.NoiseSmooth))
 	case t.TrackAmbiance:
-		if track.AmbianceName != "" {
-			return fmt.Sprintf("Ambiance layer %q", track.AmbianceName)
+		if track.SourceName != "" {
+			return fmt.Sprintf("Ambiance layer %q", track.SourceName)
 		}
 		return "Ambiance layer"
+	case t.TrackMusic:
+		if track.SourceName != "" {
+			return fmt.Sprintf("Music layer %q", track.SourceName)
+		}
+		return "Music layer"
 	default:
 		return track.Type.String()
 	}
@@ -99,6 +104,8 @@ func humanTrackType(track t.Track) string {
 		return "Brown noise"
 	case t.TrackAmbiance:
 		return "Ambiance"
+	case t.TrackMusic:
+		return "Music"
 	default:
 		return "Unknown"
 	}
@@ -133,6 +140,8 @@ func trackClassForType(trackType t.TrackType) string {
 		return "noise"
 	case t.TrackAmbiance:
 		return "ambiance"
+	case t.TrackMusic:
+		return "music"
 	case t.TrackSilence:
 		return "silence"
 	default:

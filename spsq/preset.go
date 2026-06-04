@@ -42,8 +42,18 @@ func (p *Preset) Tone(carrier float64) *Preset {
 // Ambiance adds an ambiance track.
 func (p *Preset) Ambiance(name string) *Preset {
 	return p.addTrack(t.Track{
-		Type:         t.TrackAmbiance,
-		AmbianceName: name,
+		Type:       t.TrackAmbiance,
+		SourceName: name,
+		Waveform:   t.WaveformSine,
+	})
+}
+
+// Music adds a music track.
+func (p *Preset) Music(name string) *Preset {
+	return p.addTrack(t.Track{
+		Type:       t.TrackMusic,
+		SourceName: name,
+		Waveform:   t.WaveformSine,
 	})
 }
 

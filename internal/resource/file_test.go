@@ -280,6 +280,99 @@ func TestGetAmbianceFile_HTTPUnsupportedMIME(ts *testing.T) {
 	}
 }
 
+func TestGetMusicFile_HTTPFormatFromExtension(ts *testing.T) {
+	content := []byte("mp3 data")
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "application/octet-stream")
+		_, _ = writer.Write(content)
+	}))
+	defer server.Close()
+
+	got, format, err := GetMusicFile(server.URL + "/test.mp3")
+	if err != nil {
+		ts.Fatalf("GetMusicFile() error: %v", err)
+	}
+
+	if format != t.AmbianceAudioMP3 {
+		ts.Fatalf("expected MP3 format, got %v", format)
+	}
+	if !bytes.Equal(got, content) {
+		ts.Errorf("content mismatch")
+	}
+}
+
+func TestGetMusicFile_HTTPFormatFromMIMEWhenExtensionless(ts *testing.T) {
+	content := []byte("wav data")
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "audio/wav")
+		_, _ = writer.Write(content)
+	}))
+	defer server.Close()
+
+	got, format, err := GetMusicFile(server.URL + "/music")
+	if err != nil {
+		ts.Fatalf("GetMusicFile() error: %v", err)
+	}
+
+	if format != t.AmbianceAudioWAV {
+		ts.Fatalf("expected WAV format, got %v", format)
+	}
+	if !bytes.Equal(got, content) {
+		ts.Errorf("content mismatch")
+	}
+}
+
+func TestGetMusicFile_HTTPUnsupportedExtension(ts *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "audio/wav")
+		_, _ = writer.Write([]byte("wav data"))
+	}))
+	defer server.Close()
+
+	_, _, err := GetMusicFile(server.URL + "/test.flac")
+	if err == nil {
+		ts.Fatal("expected unsupported extension error")
+	}
+	if !strings.Contains(err.Error(), "unsupported music audio format") {
+		ts.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestGetMusicFile_HTTPUnsupportedMIME(ts *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "application/octet-stream")
+		_, _ = writer.Write([]byte("audio data"))
+	}))
+	defer server.Close()
+
+	_, _, err := GetMusicFile(server.URL + "/music")
+	if err == nil {
+		ts.Fatal("expected unsupported MIME error")
+	}
+	if !strings.Contains(err.Error(), "unsupported music audio MIME type") {
+		ts.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestGetMusicFile_Local80MBLimit(ts *testing.T) {
+	bigContent := makeBigContent(100, int(t.MaxMusicFileSize+4096))
+	path := writeTempFile(ts, "big.mp3", bigContent)
+
+	got, format, err := GetMusicFile(path)
+	if err != nil {
+		ts.Fatalf("GetMusicFile() error: %v", err)
+	}
+
+	if format != t.AmbianceAudioMP3 {
+		ts.Fatalf("expected MP3 format, got %v", format)
+	}
+	if len(got) != int(t.MaxMusicFileSize) {
+		ts.Fatalf("expected %d bytes (truncated), got %d", t.MaxMusicFileSize, len(got))
+	}
+}
+
 func TestGetFile_HTTP_Truncate(ts *testing.T) {
 	const maxSize = t.MaxTextFileSize
 	bigContent := makeBigContent(100, int(maxSize+8192))

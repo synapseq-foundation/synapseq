@@ -29,6 +29,8 @@ type SequenceOptions struct {
 	Volume int
 	// List of ambiance audio files
 	Ambiance map[string]string
+	// List of music audio files
+	Music map[string]string
 	// List of configuration for options and presets to extend from
 	Extends []string
 }

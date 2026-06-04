@@ -33,7 +33,7 @@ func TestGetPreviewContent(ts *testing.T) {
 				},
 				{
 					Type:         t.TrackAmbiance,
-					AmbianceName: "river",
+					SourceName: "river",
 					Waveform:     t.WaveformSquare,
 					Amplitude:    t.AmplitudePercentToRaw(40),
 				},
@@ -58,7 +58,7 @@ func TestGetPreviewContent(ts *testing.T) {
 				},
 				{
 					Type:         t.TrackSilence,
-					AmbianceName: "river",
+					SourceName: "river",
 					Waveform:     t.WaveformSquare,
 					Amplitude:    0,
 				},
@@ -293,7 +293,7 @@ func TestBuildTrackViewAndSegmentItemView(ts *testing.T) {
 		Carrier:      180,
 		Resonance:    7,
 		Waveform:     t.WaveformTriangle,
-		AmbianceName: "rain",
+		SourceName: "rain",
 		Amplitude:    t.AmplitudePercentToRaw(45),
 		Effect: t.Effect{
 			Type:      t.EffectPan,
@@ -333,6 +333,42 @@ func TestBuildTrackViewAndSegmentItemView(ts *testing.T) {
 	}
 	if segment.Class != "track-ambiance" {
 		ts.Fatalf("expected segment class track-ambiance, got %q", segment.Class)
+	}
+}
+
+func TestBuildTrackViewAndSegmentItemViewForMusic(ts *testing.T) {
+	track := t.Track{
+		Type:         t.TrackMusic,
+		Waveform:     t.WaveformSine,
+		SourceName:   "meditation",
+		Amplitude:    t.AmplitudePercentToRaw(45),
+		Effect:       t.Effect{Type: t.EffectPan, Value: 1.5, Intensity: t.IntensityPercentToRaw(60)},
+	}
+
+	view := buildTrackView(1, track)
+	if view.TypeLabel != "Music" {
+		ts.Fatalf("expected type label Music, got %q", view.TypeLabel)
+	}
+	if view.Summary != "Music layer \"meditation\"" {
+		ts.Fatalf("unexpected track summary %q", view.Summary)
+	}
+
+	labels := make(map[string]string, len(view.Meta))
+	for _, item := range view.Meta {
+		labels[item.Label] = item.Value
+	}
+	for _, expected := range []string{"Waveform", "Music", "Amplitude", "Effect", "Effect value", "Intensity"} {
+		if _, ok := labels[expected]; !ok {
+			ts.Fatalf("expected metadata item %q", expected)
+		}
+	}
+
+	segment := buildSegmentItemView(1, t.Track{Type: t.TrackSilence}, track, false)
+	if segment.Label != "Music" {
+		ts.Fatalf("expected segment label Music, got %q", segment.Label)
+	}
+	if segment.Class != "track-music" {
+		ts.Fatalf("expected segment class track-music, got %q", segment.Class)
 	}
 }
 

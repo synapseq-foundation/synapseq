@@ -139,7 +139,7 @@ They are not limited to volume fades. They shape the interpolation across compat
 
 If you imagine a transition as a path from `start` to `target`, the transition type controls the curve of that path.
 
-When consecutive presets use incompatible channel states, such as a different track type, effect type, or ambiance source, SynapSeq uses an automatic boundary crossfade instead of direct parameter interpolation. The outgoing channel can fade for up to 30 seconds before the boundary, and the incoming channel can fade for up to 30 seconds after it. If the adjacent periods are shorter than that, the fade duration adapts to the available time.
+When consecutive presets use incompatible channel states, such as a different track type, effect type, ambiance source, or music source, SynapSeq uses an automatic boundary crossfade instead of direct parameter interpolation. The outgoing channel can fade for up to 30 seconds before the boundary, and the incoming channel can fade for up to 30 seconds after it. If the adjacent periods are shorter than that, the fade duration adapts to the available time.
 
 `off` channels use the same boundary idea: an active channel can fade out into `off`, and an `off` channel can fade into an active track without adding extra timeline entries.
 
@@ -428,7 +428,7 @@ In listening terms, `doppler` adds gentle motion and a sense of passing or orbit
 
 A typical SynapSeq session combines several layers of perception at once:
 
-- a source identity, such as binaural, monaural, isochronic, noise, or ambiance;
+- a source identity, such as binaural, monaural, isochronic, noise, ambiance, or music;
 - a movement profile, shaped by transitions and optional steps;
 - an animation layer, shaped by effects such as `pan`, `modulation`, or `doppler`.
 

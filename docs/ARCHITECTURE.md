@@ -127,9 +127,9 @@ This package renders audio from sequence periods and tracks.
 
 The root package owns `AudioRenderer` and the main rendering loop. Supporting responsibilities are split into focused subpackages such as:
 
-- `audio/ambiance` for WAV/MP3 ambiance loading, decoding, resampling, looping, and playback runtime. WAV is preferred for loopable ambiance; MP3 is supported but may contain codec delay or padding that creates loop gaps;
+- `audio/ambiance` for WAV/MP3 external audio loading, decoding, resampling, looping ambiance playback, and finite music playback. WAV is preferred for loopable ambiance; MP3 is supported but may contain codec delay or padding that creates loop gaps. Music does not loop automatically and prefers MP3 before WAV during local path resolution;
 - `audio/effects` for panning, modulation, doppler, waveform morph, and effect runtime helpers;
-- `audio/sources` for compiled source evaluators such as pure tone, binaural, monaural, isochronic, noise, and ambiance;
+- `audio/sources` for compiled source evaluators such as pure tone, binaural, monaural, isochronic, noise, ambiance, and music;
 - `audio/sync` for temporal synchronization and per-period updates;
 - `audio/wavetable` for waveform lookup tables;
 - `audio/output` and `audio/pcm` for output encoding;
@@ -301,7 +301,7 @@ At a high level:
 
 1. `core` validates that a loaded sequence is renderable.
 2. `core` builds renderer options from sequence options and `AppContext` verbosity settings.
-3. `internal/audio` constructs an `AudioRenderer` with waveform tables, ambiance runtime, sync engine, and effect processor.
+3. `internal/audio` constructs an `AudioRenderer` with waveform tables, ambiance/music runtimes, sync engine, and effect processor.
 4. The renderer compiles a temporal plan and resolves per-period cues before entering the hot render loop.
 5. The render loop applies each cue into mutable channel runtime state and then synthesizes PCM samples through the mix loop.
 6. The mixer and effects path consume compiled signal state instead of recomputing semantics directly from `Period` on every chunk.
@@ -325,7 +325,7 @@ Today, that migration lives in the `internal/audio/sources` subpackage:
 - monaural rendering uses a dedicated `monauralBeatSource`;
 - isochronic rendering uses a dedicated `isochronicBeatSource`;
 - noise rendering uses a dedicated `noiseSource`;
-- ambiance rendering uses a dedicated `ambianceSource`;
+- ambiance and music rendering use the prepared external-audio source path;
 - the remaining legacy aspect is not missing source evaluators, but the runtime model itself: these evaluators are still driven by mutable `Channel` state, `Offset`, and `Increment` inside the current renderer loop.
 
 Within `internal/audio/effects`, the supporting effect processor code is also now split by concern rather than concentrated in one file:

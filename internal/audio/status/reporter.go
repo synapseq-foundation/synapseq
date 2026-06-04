@@ -161,6 +161,7 @@ func CountPeriodDisplayChannels(view View, period t.Period) int {
 func IsTrackEqual(trackA, trackB *t.Track) bool {
 	return trackA.Type == trackB.Type &&
 		trackA.Amplitude == trackB.Amplitude &&
+		trackA.SourceName == trackB.SourceName &&
 		trackA.Carrier == trackB.Carrier &&
 		trackA.Resonance == trackB.Resonance &&
 		trackA.Waveform == trackB.Waveform &&

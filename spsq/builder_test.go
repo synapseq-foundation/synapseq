@@ -25,9 +25,9 @@ import (
 func TestBuilderLoadPreservesOrder(t *testing.T) {
 	dir := t.TempDir()
 	t.Chdir(dir)
-	for _, name := range []string{"rain.wav", "wind.wav"} {
+	for _, name := range []string{"rain.wav", "wind.wav", "meditation.mp3"} {
 		if err := os.WriteFile(name, nil, 0o600); err != nil {
-			t.Fatalf("write temp ambiance %s: %v", name, err)
+			t.Fatalf("write temp audio %s: %v", name, err)
 		}
 	}
 
@@ -35,10 +35,12 @@ func TestBuilderLoadPreservesOrder(t *testing.T) {
 		SampleRate(48000).
 		Volume(80).
 		Ambiance("rain", "rain").
-		Ambiance("wind", "wind")
+		Ambiance("wind", "wind").
+		Music("meditation", "meditation")
 
 	alpha := builder.NewPreset("alpha")
 	alpha.PinkNoise(0).Amplitude(30)
+	alpha.Music("meditation").Amplitude(20)
 
 	beta := builder.NewPreset("beta")
 	beta.PinkNoise(10).Amplitude(15)
@@ -62,10 +64,12 @@ func TestBuilderLoadPreservesOrder(t *testing.T) {
 		"@volume 80",
 		"@ambiance rain rain",
 		"@ambiance wind wind",
+		"@music meditation meditation",
 		"",
 		"# Presets",
 		"alpha",
 		"  noise pink smooth 0.00 amplitude 30.00",
+		"  music meditation amplitude 20.00",
 		"beta",
 		"  noise pink smooth 10.00 amplitude 15.00",
 		"",

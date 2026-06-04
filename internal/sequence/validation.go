@@ -164,6 +164,7 @@ func unexpectedSequenceLine(sourceFile string, lineNumber int, lineText string, 
 		firstToken == t.KeywordTone ||
 		firstToken == t.KeywordNoise ||
 		firstToken == t.KeywordAmbiance ||
+		firstToken == t.KeywordMusic ||
 		firstToken == t.KeywordTrack {
 		return lineDiagnostic(sourceFile, lineNumber, lineText, "expected two-space indentation for elements under preset definition")
 	}

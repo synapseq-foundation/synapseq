@@ -73,7 +73,7 @@ you want progress output from later operations such as WAV, MP3, or Stream:
 # Builder Flow
 
 Typical builder usage follows the .spsq document shape:
-  - add sequence options such as sample rate, volume, or ambiance;
+  - add sequence options such as sample rate, volume, ambiance, or music;
   - create presets and add tracks with track modifiers;
   - add timeline entries that select presets or silence at specific times;
   - call Load with a core AppContext to validate and load the generated .spsq content.

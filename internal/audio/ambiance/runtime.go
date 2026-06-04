@@ -27,20 +27,38 @@ type SampleAudio interface {
 
 type Runtime struct {
 	audio        SampleAudio
+	newAudio     func(paths []string, sampleRate int) (SampleAudio, error)
+	paths        []string
+	sampleRate   int
+	sourceKind   string
+	trackType    t.TrackType
+	perChannel   bool
 	samplesByIdx [][]int
+	samplesByCh  [t.NumberOfChannels][]int
 	activeIdx    []int
 	activeMask   []bool
+	activeCh     []int
+	activeChMask [t.NumberOfChannels]bool
 	channelIdx   [t.NumberOfChannels]int
+	channelAudio [t.NumberOfChannels]SampleAudio
 	periodStart  [][]int
 }
 
 func NewRuntime(periods []t.Period, ambiance map[string]string, sampleRate int, newAudio func(paths []string, sampleRate int) (SampleAudio, error)) (*Runtime, error) {
-	paths, nameToIndex, err := BuildIndex(ambiance)
+	return newRuntime(periods, ambiance, sampleRate, t.TrackAmbiance, "ambiance", false, newAudio)
+}
+
+func NewMusicRuntime(periods []t.Period, music map[string]string, sampleRate int, newAudio func(paths []string, sampleRate int) (SampleAudio, error)) (*Runtime, error) {
+	return newRuntime(periods, music, sampleRate, t.TrackMusic, "music", true, newAudio)
+}
+
+func newRuntime(periods []t.Period, sources map[string]string, sampleRate int, trackType t.TrackType, sourceKind string, perChannel bool, newAudio func(paths []string, sampleRate int) (SampleAudio, error)) (*Runtime, error) {
+	paths, nameToIndex, err := BuildIndex(sources, sourceKind)
 	if err != nil {
 		return nil, err
 	}
 
-	periodStart, err := PrecomputePeriodStart(periods, nameToIndex)
+	periodStart, err := PrecomputePeriodStart(periods, nameToIndex, trackType, sourceKind)
 	if err != nil {
 		return nil, err
 	}
@@ -55,9 +73,16 @@ func NewRuntime(periods []t.Period, ambiance map[string]string, sampleRate int, 
 
 	runtime := &Runtime{
 		audio:        audio,
+		newAudio:     newAudio,
+		paths:        paths,
+		sampleRate:   sampleRate,
+		sourceKind:   sourceKind,
+		trackType:    trackType,
+		perChannel:   perChannel,
 		samplesByIdx: make([][]int, len(paths)),
 		activeIdx:    make([]int, 0, t.NumberOfChannels),
 		activeMask:   make([]bool, len(paths)),
+		activeCh:     make([]int, 0, t.NumberOfChannels),
 		periodStart:  periodStart,
 	}
 
@@ -82,13 +107,13 @@ func NewTestRuntime(sampleCount int) *Runtime {
 	return runtime
 }
 
-func BuildIndex(ambiance map[string]string) ([]string, map[string]int, error) {
-	if len(ambiance) == 0 {
+func BuildIndex(sources map[string]string, sourceKind string) ([]string, map[string]int, error) {
+	if len(sources) == 0 {
 		return nil, map[string]int{}, nil
 	}
 
-	names := make([]string, 0, len(ambiance))
-	for name := range ambiance {
+	names := make([]string, 0, len(sources))
+	for name := range sources {
 		names = append(names, name)
 	}
 	sort.Strings(names)
@@ -97,9 +122,9 @@ func BuildIndex(ambiance map[string]string) ([]string, map[string]int, error) {
 	nameToIndex := make(map[string]int, len(names))
 
 	for i, name := range names {
-		path := ambiance[name]
+		path := sources[name]
 		if path == "" {
-			return nil, nil, fmt.Errorf("ambiance %q has empty path", name)
+			return nil, nil, fmt.Errorf("%s %q has empty path", sourceKind, name)
 		}
 		paths[i] = path
 		nameToIndex[name] = i
@@ -108,7 +133,7 @@ func BuildIndex(ambiance map[string]string) ([]string, map[string]int, error) {
 	return paths, nameToIndex, nil
 }
 
-func PrecomputePeriodStart(periods []t.Period, nameToIndex map[string]int) ([][]int, error) {
+func PrecomputePeriodStart(periods []t.Period, nameToIndex map[string]int, trackType t.TrackType, sourceKind string) ([][]int, error) {
 	out := make([][]int, len(periods))
 	for pIdx := range periods {
 		row := make([]int, t.NumberOfChannels)
@@ -118,12 +143,12 @@ func PrecomputePeriodStart(periods []t.Period, nameToIndex map[string]int) ([][]
 				continue
 			}
 			tr := periods[pIdx].TrackStart[ch]
-			if tr.Type != t.TrackAmbiance {
+			if tr.Type != trackType {
 				continue
 			}
-			idx, ok := nameToIndex[tr.AmbianceName]
+			idx, ok := nameToIndex[tr.SourceName]
 			if !ok {
-				return nil, fmt.Errorf("unknown ambiance name %q (period %d, channel %d)", tr.AmbianceName, pIdx, ch)
+				return nil, fmt.Errorf("unknown %s name %q (period %d, channel %d)", sourceKind, tr.SourceName, pIdx, ch)
 			}
 			row[ch] = idx
 		}
@@ -133,28 +158,68 @@ func PrecomputePeriodStart(periods []t.Period, nameToIndex map[string]int) ([][]
 }
 
 func (ar *Runtime) Close() error {
-	if ar == nil || ar.audio == nil {
+	if ar == nil {
 		return nil
 	}
 
-	return ar.audio.Close()
+	var firstErr error
+	if ar.audio != nil {
+		if err := ar.audio.Close(); err != nil {
+			firstErr = err
+		}
+		ar.audio = nil
+	}
+	for ch := range ar.channelAudio {
+		if ar.channelAudio[ch] != nil {
+			if err := ar.channelAudio[ch].Close(); err != nil && firstErr == nil {
+				firstErr = err
+			}
+			ar.channelAudio[ch] = nil
+		}
+	}
+	return firstErr
 }
 
 func (ar *Runtime) UpdateChannelIndex(ch int, periodIdx int, trackType t.TrackType) {
-	if ar == nil {
+	if ar == nil || ch < 0 || ch >= len(ar.channelIdx) {
 		return
 	}
 
-	if trackType == t.TrackAmbiance {
-		ar.channelIdx[ch] = ar.periodStart[periodIdx][ch]
-		return
+	nextIdx := -1
+	if trackType == ar.trackType {
+		nextIdx = ar.periodStart[periodIdx][ch]
 	}
 
-	ar.channelIdx[ch] = -1
+	if ar.perChannel && nextIdx != ar.channelIdx[ch] {
+		ar.closeChannelAudio(ch)
+	}
+	ar.channelIdx[ch] = nextIdx
 }
 
 func (ar *Runtime) CollectActiveIndices(channels []t.Channel) {
 	if ar == nil {
+		return
+	}
+
+	if ar.perChannel {
+		for _, ch := range ar.activeCh {
+			ar.activeChMask[ch] = false
+		}
+		ar.activeCh = ar.activeCh[:0]
+
+		for ch := range channels {
+			if ch >= len(ar.channelIdx) || channels[ch].Track.Type != ar.trackType {
+				continue
+			}
+			idx := ar.channelIdx[ch]
+			if idx < 0 || idx >= len(ar.paths) {
+				continue
+			}
+			if !ar.activeChMask[ch] {
+				ar.activeChMask[ch] = true
+				ar.activeCh = append(ar.activeCh, ch)
+			}
+		}
 		return
 	}
 
@@ -164,7 +229,7 @@ func (ar *Runtime) CollectActiveIndices(channels []t.Channel) {
 	ar.activeIdx = ar.activeIdx[:0]
 
 	for ch := range channels {
-		if channels[ch].Track.Type != t.TrackAmbiance {
+		if channels[ch].Track.Type != ar.trackType {
 			continue
 		}
 
@@ -182,6 +247,11 @@ func (ar *Runtime) CollectActiveIndices(channels []t.Channel) {
 
 func (ar *Runtime) PrepareBuffers(bufferSize int) {
 	if ar == nil {
+		return
+	}
+
+	if ar.perChannel {
+		ar.prepareChannelBuffers(bufferSize)
 		return
 	}
 
@@ -204,9 +274,70 @@ func (ar *Runtime) PrepareBuffers(bufferSize int) {
 	}
 }
 
+func (ar *Runtime) prepareChannelBuffers(bufferSize int) {
+	need := bufferSize * stereoChannels
+	for _, ch := range ar.activeCh {
+		idx := ar.channelIdx[ch]
+		if idx < 0 || idx >= len(ar.paths) {
+			continue
+		}
+
+		buf := ar.samplesByCh[ch]
+		if len(buf) != need {
+			buf = make([]int, need)
+			ar.samplesByCh[ch] = buf
+		}
+
+		audio, err := ar.audioForChannel(ch)
+		if err != nil || audio == nil {
+			zeroSamples(buf)
+			continue
+		}
+
+		if _, err := audio.ReadSamplesAt(idx, buf, need); err != nil {
+			zeroSamples(buf)
+		}
+	}
+}
+
+func (ar *Runtime) audioForChannel(ch int) (SampleAudio, error) {
+	if ch < 0 || ch >= len(ar.channelAudio) {
+		return nil, fmt.Errorf("invalid channel index: %d", ch)
+	}
+	if ar.channelAudio[ch] != nil {
+		return ar.channelAudio[ch], nil
+	}
+	if ar.newAudio == nil {
+		return nil, nil
+	}
+
+	audio, err := ar.newAudio(ar.paths, ar.sampleRate)
+	if err != nil {
+		return nil, err
+	}
+	ar.channelAudio[ch] = audio
+	return audio, nil
+}
+
+func (ar *Runtime) closeChannelAudio(ch int) {
+	if ch < 0 || ch >= len(ar.channelAudio) || ar.channelAudio[ch] == nil {
+		return
+	}
+	_ = ar.channelAudio[ch].Close()
+	ar.channelAudio[ch] = nil
+	ar.samplesByCh[ch] = nil
+}
+
 func (ar *Runtime) ChannelBuffer(ch int) []int {
 	if ar == nil {
 		return nil
+	}
+
+	if ar.perChannel {
+		if ch < 0 || ch >= len(ar.samplesByCh) {
+			return nil
+		}
+		return ar.samplesByCh[ch]
 	}
 
 	idx := ar.channelIdx[ch]

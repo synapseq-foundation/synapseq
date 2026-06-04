@@ -24,12 +24,19 @@ import (
 type Builder struct {
 	timeline []timelineEntry
 	ambiance []ambianceOption
+	music    []musicOption
 	options  map[string]string
 	presets  []presetEntry
 }
 
 // ambianceOption holds the name and path of an ambiance source
 type ambianceOption struct {
+	name string
+	path string
+}
+
+// musicOption holds the name and path of a music source.
+type musicOption struct {
 	name string
 	path string
 }
@@ -53,6 +60,7 @@ func New() *Builder {
 	return &Builder{
 		timeline: make([]timelineEntry, 0),
 		ambiance: make([]ambianceOption, 0),
+		music:    make([]musicOption, 0),
 		options:  make(map[string]string),
 		presets:  make([]presetEntry, 0),
 	}
@@ -84,6 +92,9 @@ func (b *Builder) content() string {
 	}
 	for _, ambiance := range b.ambiance {
 		fmt.Fprintf(&content, "%s%s %s %s\n", opt, t.KeywordOptionAmbiance, ambiance.name, ambiance.path)
+	}
+	for _, music := range b.music {
+		fmt.Fprintf(&content, "%s%s %s %s\n", opt, t.KeywordOptionMusic, music.name, music.path)
 	}
 
 	fmt.Fprintf(&content, "\n%s Presets\n", cmm)

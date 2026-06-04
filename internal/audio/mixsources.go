@@ -73,3 +73,13 @@ func (r *AudioRenderer) mixAmbiance(channel *t.Channel, signal channelSignalStat
 
 	return r.applyEffectToStereo(channel, signal, left, right)
 }
+
+func (r *AudioRenderer) mixMusic(channel *t.Channel, signal channelSignalState, ch, frame int) stereoSample {
+	source := src.NewAmbiance(signal.sourceSignal())
+	left, right, ok := source.Sample(r.musicState, ch, frame)
+	if !ok {
+		return stereoSample{}
+	}
+
+	return r.applyEffectToStereo(channel, signal, left, right)
+}

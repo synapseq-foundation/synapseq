@@ -16,6 +16,8 @@ const (
 	MaxTextFileSize = 32 * 1024
 	// MaxAmbianceFileSize is the maximum allowed size for ambiance audio files (20MB)
 	MaxAmbianceFileSize = 20 * 1024 * 1024
+	// MaxMusicFileSize is the maximum allowed size for music audio files (80MB)
+	MaxMusicFileSize = 80 * 1024 * 1024
 )
 
 // FileFormat represents the format of the input/output file

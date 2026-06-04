@@ -20,6 +20,7 @@
   --isochronic: #b45309;
   --noise: #9a3412;
   --ambiance: #047857;
+  --music: #7c3aed;
   --silence: #6b7280;
   --off: #94a3b8;
 }
@@ -644,6 +645,10 @@ html[data-theme="dark"] .pill {
 
 .track-ambiance {
   color: var(--ambiance);
+}
+
+.track-music {
+  color: var(--music);
 }
 
 .track-silence {

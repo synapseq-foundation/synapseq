@@ -35,7 +35,7 @@ func testTemplatePreset(ts *testing.T) *t.Preset {
 		ts.Fatalf("failed to create template: %v", err)
 	}
 	templatePreset.Track[0] = t.Track{Type: t.TrackBinauralBeat, Carrier: 300, Resonance: 10, Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformSine}
-	templatePreset.Track[1] = t.Track{Type: t.TrackAmbiance, AmbianceName: "rain", Amplitude: t.AmplitudePercentToRaw(40), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectPan, Value: 5, Intensity: t.IntensityPercentToRaw(75)}}
+	templatePreset.Track[1] = t.Track{Type: t.TrackAmbiance, SourceName: "rain", Amplitude: t.AmplitudePercentToRaw(40), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectPan, Value: 5, Intensity: t.IntensityPercentToRaw(75)}}
 	templatePreset.Track[2] = t.Track{Type: t.TrackMonauralBeat, Carrier: 440, Resonance: 8, Amplitude: t.AmplitudePercentToRaw(15), Waveform: t.WaveformSquare}
 	templatePreset.Track[3] = t.Track{Type: t.TrackPinkNoise, NoiseSmooth: 20, Amplitude: t.AmplitudePercentToRaw(25)}
 	return templatePreset
@@ -84,7 +84,7 @@ func TestApplyTrackOverride_Success(ts *testing.T) {
 
 func TestApplyTrackOverride_Errors(ts *testing.T) {
 	templatePreset := testTemplatePreset(ts)
-	templatePreset.Track[2] = t.Track{Type: t.TrackAmbiance, AmbianceName: "river", Resonance: 2.5, Amplitude: t.AmplitudePercentToRaw(40), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectModulation, Intensity: t.IntensityPercentToRaw(60)}}
+	templatePreset.Track[2] = t.Track{Type: t.TrackAmbiance, SourceName: "river", Resonance: 2.5, Amplitude: t.AmplitudePercentToRaw(40), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectModulation, Intensity: t.IntensityPercentToRaw(60)}}
 	templatePreset.Track[3] = t.Track{Type: t.TrackBrownNoise, NoiseSmooth: 15, Amplitude: t.AmplitudePercentToRaw(30)}
 	derivedPreset := testDerivedPreset(ts, templatePreset)
 

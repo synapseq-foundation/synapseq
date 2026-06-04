@@ -257,6 +257,65 @@ func TestAudio_MP3LoopsWithinSingleRead(t *testing.T) {
 	}
 }
 
+func TestMusicAudio_MP3ReturnsSilenceAfterEOF(t *testing.T) {
+	path := filepath.Join("..", "testdata", "short.mp3")
+	data, sr, _, _ := mustReadMP3All(t, path)
+
+	aa, err := NewMusicAudio([]string{path}, int(sr))
+	if err != nil {
+		t.Fatalf("NewMusicAudio short mp3: %v", err)
+	}
+	defer aa.Close()
+
+	buf := make([]int, len(data)+128)
+
+	n, err := aa.ReadSamplesAt(0, buf, len(buf))
+	if err != nil {
+		t.Fatalf("ReadSamplesAt short music mp3 error: %v", err)
+	}
+	if n != len(buf) {
+		t.Fatalf("ReadSamplesAt short music mp3 count: got %d want %d", n, len(buf))
+	}
+	for i := 0; i < len(data) && i < len(buf); i++ {
+		if buf[i] != data[i] {
+			t.Fatalf("music mp3 prefix mismatch at %d: got %d want %d", i, buf[i], data[i])
+		}
+	}
+	for i := len(data); i < len(buf); i++ {
+		if buf[i] != 0 {
+			t.Fatalf("expected silence after music EOF at %d, got %d", i, buf[i])
+		}
+	}
+}
+
+func TestMusicAudio_WAVReturnsSilenceAfterEOF(t *testing.T) {
+	tempDir := t.TempDir()
+	path := filepath.Join(tempDir, "short.wav")
+	writeConstWav(t, path, 44100)
+	data, sr, _, _ := mustReadWavAll(t, path)
+
+	aa, err := NewMusicAudio([]string{path}, int(sr))
+	if err != nil {
+		t.Fatalf("NewMusicAudio short wav: %v", err)
+	}
+	defer aa.Close()
+
+	buf := make([]int, len(data)+128)
+
+	n, err := aa.ReadSamplesAt(0, buf, len(buf))
+	if err != nil {
+		t.Fatalf("ReadSamplesAt short music wav error: %v", err)
+	}
+	if n != len(buf) {
+		t.Fatalf("ReadSamplesAt short music wav count: got %d want %d", n, len(buf))
+	}
+	for i := len(data); i < len(buf); i++ {
+		if buf[i] != 0 {
+			t.Fatalf("expected silence after music EOF at %d, got %d", i, buf[i])
+		}
+	}
+}
+
 func TestAudio_MultipleIndicesHaveIndependentReadPosition(t *testing.T) {
 	path := filepath.Join("..", "testdata", "noise.wav")
 	data, sr, _, _ := mustReadWavAll(t, path)

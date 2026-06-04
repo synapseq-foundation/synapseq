@@ -36,7 +36,7 @@ func isToneTrack(track t.Track) bool {
 
 func isTextureTrack(track t.Track) bool {
 	switch track.Type {
-	case t.TrackWhiteNoise, t.TrackPinkNoise, t.TrackBrownNoise, t.TrackAmbiance:
+	case t.TrackWhiteNoise, t.TrackPinkNoise, t.TrackBrownNoise, t.TrackAmbiance, t.TrackMusic:
 		return true
 	default:
 		return false
@@ -53,7 +53,7 @@ func isNoiseTrack(track t.Track) bool {
 }
 
 func supportsWaveform(track t.Track) bool {
-	return isToneTrack(track) || track.Type == t.TrackSilence || track.Type == t.TrackAmbiance
+	return isToneTrack(track) || track.Type == t.TrackSilence || track.Type == t.TrackAmbiance || track.Type == t.TrackMusic
 }
 
 func usesBeat(track t.Track) bool {

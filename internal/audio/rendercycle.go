@@ -84,6 +84,10 @@ func (rr *renderRuntime) syncAndPrepare(currentTimeMs int) {
 		rr.renderer.ambianceState.CollectActiveIndices(rr.renderer.channels[:])
 		rr.renderer.ambianceState.PrepareBuffers(t.BufferSize)
 	}
+	if rr.renderer.musicState != nil {
+		rr.renderer.musicState.CollectActiveIndices(rr.renderer.channels[:])
+		rr.renderer.musicState.PrepareBuffers(t.BufferSize)
+	}
 }
 
 func (rr *renderRuntime) reportPeriodChange() {

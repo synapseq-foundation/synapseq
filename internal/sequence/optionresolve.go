@@ -36,6 +36,14 @@ func resolveParsedOptions(baseRef string, parsedOptions *t.ParseOptions) error {
 		parsedOptions.Ambiance[name] = resolved
 	}
 
+	for name, path := range parsedOptions.Music {
+		resolved, err := resolveMusicOptionFile(baseRef, path)
+		if err != nil {
+			return err
+		}
+		parsedOptions.Music[name] = resolved
+	}
+
 	for i := range parsedOptions.Extends {
 		resolved, err := resolveOptionFile(baseRef, parsedOptions.Extends[i], ".spsc", "extends")
 		if err != nil {
@@ -73,6 +81,34 @@ func resolveAmbianceOptionFile(baseRef, content string) (string, error) {
 	}
 
 	return "", fmt.Errorf("ambiance file not found; tried %q and %q", wavPath, mp3Path)
+}
+
+func resolveMusicOptionFile(baseRef, content string) (string, error) {
+	if r.IsRemoteFile(content) {
+		return content, nil
+	}
+
+	basePath, err := resolveOptionFileBase(baseRef, content, "music")
+	if err != nil {
+		return "", err
+	}
+
+	mp3Path := basePath + ".mp3"
+	wavPath := basePath + ".wav"
+
+	if exists, err := fileExists(mp3Path); err != nil {
+		return "", err
+	} else if exists {
+		return mp3Path, nil
+	}
+
+	if exists, err := fileExists(wavPath); err != nil {
+		return "", err
+	} else if exists {
+		return wavPath, nil
+	}
+
+	return "", fmt.Errorf("music file not found; tried %q and %q", mp3Path, wavPath)
 }
 
 func resolveOptionFile(baseRef, content, ext, optionName string) (string, error) {
@@ -123,5 +159,5 @@ func fileExists(path string) (bool, error) {
 	if errors.Is(err, os.ErrNotExist) {
 		return false, nil
 	}
-	return false, fmt.Errorf("failed to inspect ambiance file %q: %w", path, err)
+	return false, fmt.Errorf("failed to inspect audio file %q: %w", path, err)
 }

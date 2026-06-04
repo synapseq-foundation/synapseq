@@ -29,8 +29,8 @@ func buildTrackView(channel int, track t.Track) previewTrackView {
 	if waveform := track.Waveform.String(); waveform != "" && supportsWaveform(track) {
 		meta = append(meta, previewMetaView{Label: "Waveform", Value: waveform})
 	}
-	if track.AmbianceName != "" {
-		meta = append(meta, previewMetaView{Label: "Ambiance", Value: track.AmbianceName})
+	if track.SourceName != "" {
+		meta = append(meta, previewMetaView{Label: humanTrackType(track), Value: track.SourceName})
 	}
 	if isNoiseTrack(track) {
 		meta = append(meta, previewMetaView{Label: "Smooth", Value: formatPercent(track.NoiseSmooth)})

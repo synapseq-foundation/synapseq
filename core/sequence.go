@@ -114,6 +114,18 @@ func (lc *LoadedContext) Ambiance() map[string]string {
 	return ambiance
 }
 
+// Music returns a defensive copy of music map.
+func (lc *LoadedContext) Music() map[string]string {
+	if lc.sequence == nil || lc.sequence.Options == nil || len(lc.sequence.Options.Music) == 0 {
+		return map[string]string{}
+	}
+
+	music := make(map[string]string, len(lc.sequence.Options.Music))
+	maps.Copy(music, lc.sequence.Options.Music)
+
+	return music
+}
+
 // RawContent returns a defensive copy of raw content.
 func (lc *LoadedContext) RawContent() []byte {
 	if lc.sequence == nil || len(lc.sequence.RawContent) == 0 {

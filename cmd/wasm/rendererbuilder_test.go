@@ -27,6 +27,9 @@ func TestBuildWASMRendererOptions(t *testing.T) {
 			Ambiance: map[string]string{
 				"rain": "rain.wav",
 			},
+			Music: map[string]string{
+				"meditation": "meditation.mp3",
+			},
 		},
 	}
 
@@ -39,6 +42,9 @@ func TestBuildWASMRendererOptions(t *testing.T) {
 	}
 	if options.Ambiance["rain"] != "rain.wav" {
 		t.Fatalf("expected ambiance to be preserved, got %#v", options.Ambiance)
+	}
+	if options.Music["meditation"] != "meditation.mp3" {
+		t.Fatalf("expected music to be preserved, got %#v", options.Music)
 	}
 	if options.Colors {
 		t.Fatal("expected colors to be disabled in wasm renderer options")

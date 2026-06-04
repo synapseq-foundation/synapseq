@@ -41,6 +41,7 @@ type AudioRenderer struct {
 	syncEngine      *audiosync.Engine
 	effectProcessor *efx.Processor
 	ambianceState   *amb.Runtime
+	musicState      *amb.Runtime
 
 	// Embedding options
 	*AudioRendererOptions
@@ -51,6 +52,7 @@ type AudioRendererOptions struct {
 	SampleRate   int
 	Volume       int
 	Ambiance     map[string]string
+	Music        map[string]string
 	StatusOutput io.Writer
 	Colors       bool
 }
@@ -79,6 +81,12 @@ func NewAudioRenderer(p []t.Period, ar *AudioRendererOptions) (*AudioRenderer, e
 	if err != nil {
 		return nil, err
 	}
+	musicState, err := amb.NewMusicRuntime(p, ar.Music, ar.SampleRate, func(paths []string, sampleRate int) (amb.SampleAudio, error) {
+		return amb.NewMusicAudio(paths, sampleRate)
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	renderer := &AudioRenderer{
 		plan:                 compileRenderPlan(p, ar.SampleRate),
@@ -86,14 +94,16 @@ func NewAudioRenderer(p []t.Period, ar *AudioRendererOptions) (*AudioRenderer, e
 		waveTables:           wt.Init(),
 		noiseGenerator:       NewNoiseGenerator(),
 		ambianceState:        ambianceState,
+		musicState:           musicState,
 		AudioRendererOptions: ar,
 	}
 	renderer.syncEngine = audiosync.NewEngine(renderer.SampleRate, func(ch int, periodIdx int, trackType t.TrackType) {
-		if renderer.ambianceState == nil {
-			return
+		if renderer.ambianceState != nil {
+			renderer.ambianceState.UpdateChannelIndex(ch, periodIdx, trackType)
 		}
-
-		renderer.ambianceState.UpdateChannelIndex(ch, periodIdx, trackType)
+		if renderer.musicState != nil {
+			renderer.musicState.UpdateChannelIndex(ch, periodIdx, trackType)
+		}
 	})
 	renderer.effectProcessor = efx.NewProcessor(renderer.SampleRate, renderer.waveTables)
 
@@ -105,6 +115,9 @@ func (r *AudioRenderer) Render(consume func(samples []int) error) error {
 	defer func() {
 		if r.ambianceState != nil {
 			r.ambianceState.Close()
+		}
+		if r.musicState != nil {
+			r.musicState.Close()
 		}
 	}()
 

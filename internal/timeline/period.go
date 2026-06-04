@@ -39,7 +39,7 @@ func AdjustPeriods(last, next *t.Period) error {
 			tr0.Effect.Type = tr2.Effect.Type
 			tr0.Effect.Value = tr2.Effect.Value
 			tr0.Effect.Intensity = tr2.Effect.Intensity
-			tr0.AmbianceName = tr2.AmbianceName
+			tr0.SourceName = tr2.SourceName
 		}
 
 		if tr2.Type == t.TrackSilence {
@@ -49,7 +49,7 @@ func AdjustPeriods(last, next *t.Period) error {
 			tr2.Effect.Intensity = tr1.Effect.Intensity
 			tr2.Effect.Value = tr1.Effect.Value
 			tr2.Effect.Type = tr1.Effect.Type
-			tr2.AmbianceName = tr1.AmbianceName
+			tr2.SourceName = tr1.SourceName
 			tr2.Waveform = tr1.Waveform
 		}
 
@@ -76,7 +76,7 @@ func AdjustPeriods(last, next *t.Period) error {
 		tr1.NoiseSmooth = tr2.NoiseSmooth
 		tr1.Effect.Intensity = tr2.Effect.Intensity
 		tr1.Waveform = tr2.Waveform
-		tr1.AmbianceName = tr2.AmbianceName
+		tr1.SourceName = tr2.SourceName
 	}
 	return nil
 }
@@ -96,7 +96,7 @@ func requiresBoundaryCrossfade(last, next t.Track) bool {
 	}
 	return last.Type != next.Type ||
 		last.Effect.Type != next.Effect.Type ||
-		last.AmbianceName != next.AmbianceName
+		last.SourceName != next.SourceName
 }
 
 func prepareEffectOnOffTransition(start, end, next *t.Track) {
@@ -118,7 +118,7 @@ func isEffectOnOffTransition(last, next t.Track) bool {
 	if !isActiveTrack(last) || !isActiveTrack(next) {
 		return false
 	}
-	if last.Type != next.Type || last.AmbianceName != next.AmbianceName {
+	if last.Type != next.Type || last.SourceName != next.SourceName {
 		return false
 	}
 	return (last.Effect.Type == t.EffectOff && next.Effect.Type != t.EffectOff) ||

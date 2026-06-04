@@ -30,6 +30,7 @@ const resampleQuality = 4
 type Audio struct {
 	filePaths    []string
 	currentIndex int
+	loop         bool
 
 	decoder       beep.StreamSeekCloser
 	sampleRate    int
@@ -47,20 +48,29 @@ type Audio struct {
 }
 
 func NewAudio(filePaths []string, expectedSampleRate int) (*Audio, error) {
+	return newAudio(filePaths, expectedSampleRate, true, r.GetAmbianceFile)
+}
+
+func NewMusicAudio(filePaths []string, expectedSampleRate int) (*Audio, error) {
+	return newAudio(filePaths, expectedSampleRate, false, r.GetMusicFile)
+}
+
+func newAudio(filePaths []string, expectedSampleRate int, loop bool, getFile func(string) ([]byte, t.AmbianceAudioFormat, error)) (*Audio, error) {
 	if len(filePaths) == 0 {
-		return &Audio{}, nil
+		return &Audio{loop: loop}, nil
 	}
 
 	aa := &Audio{
 		filePaths:    filePaths,
 		currentIndex: 0,
+		loop:         loop,
 		bufferSize:   t.BufferSize * stereoChannels,
 		cachedData:   make([][]byte, len(filePaths)),
 		formats:      make([]t.AmbianceAudioFormat, len(filePaths)),
 		decoders:     make([]beep.StreamSeekCloser, len(filePaths)),
 	}
 
-	if err := aa.loadAndCacheAll(); err != nil {
+	if err := aa.loadAndCacheAll(getFile); err != nil {
 		return nil, err
 	}
 	if err := aa.validateTracks(expectedSampleRate); err != nil {
@@ -93,13 +103,13 @@ func (aa *Audio) CachedData() [][]byte {
 	return aa.cachedData
 }
 
-func (aa *Audio) loadAndCacheAll() error {
+func (aa *Audio) loadAndCacheAll(getFile func(string) ([]byte, t.AmbianceAudioFormat, error)) error {
 	for i, path := range aa.filePaths {
 		if aa.cachedData[i] != nil {
 			continue
 		}
 
-		data, format, err := r.GetAmbianceFile(path)
+		data, format, err := getFile(path)
 		if err != nil {
 			return fmt.Errorf("failed to load ambiance file [%d] (%s): %w", i, path, err)
 		}
@@ -331,6 +341,12 @@ func (aa *Audio) ReadSamplesAt(index int, samples []int, numSamples int) (int, e
 		samplesRead += n
 
 		if err == io.EOF || n < remaining {
+			if !aa.loop {
+				for i := samplesRead; i < numSamples; i++ {
+					samples[i] = 0
+				}
+				return numSamples, nil
+			}
 			if restartErr := aa.restartAt(index); restartErr != nil {
 				for i := samplesRead; i < numSamples; i++ {
 					samples[i] = 0

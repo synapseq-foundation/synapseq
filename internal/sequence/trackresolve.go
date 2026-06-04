@@ -18,13 +18,13 @@ import (
 
 func buildTrackFromDeclaration(sourceFile string, lineNumber int, lineText string, decl *parser.ParsedTrackDeclaration) (*t.Track, error) {
 	track := &t.Track{
-		Type:         decl.Type,
-		Carrier:      decl.Carrier,
-		Resonance:    decl.Resonance,
-		Amplitude:    t.AmplitudePercentToRaw(decl.AmplitudePercent),
-		AmbianceName: decl.AmbianceName,
-		NoiseSmooth:  decl.NoiseSmooth,
-		Waveform:     decl.Waveform,
+		Type:        decl.Type,
+		Carrier:     decl.Carrier,
+		Resonance:   decl.Resonance,
+		Amplitude:   t.AmplitudePercentToRaw(decl.AmplitudePercent),
+		SourceName:  decl.SourceName,
+		NoiseSmooth: decl.NoiseSmooth,
+		Waveform:    decl.Waveform,
 		Effect: t.Effect{
 			Type:      decl.EffectType,
 			Value:     decl.EffectValue,

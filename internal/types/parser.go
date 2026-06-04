@@ -32,6 +32,8 @@ const (
 	KeywordOptionVolume = "volume"
 	// Represents an ambiance option
 	KeywordOptionAmbiance = "ambiance"
+	// Represents a music option
+	KeywordOptionMusic = "music"
 	// Represents an extends option
 	KeywordOptionExtends = "extends"
 	// Represents a waveform option
@@ -68,6 +70,8 @@ const (
 	KeywordEffect = "effect"
 	// Represents an ambiance sound
 	KeywordAmbiance = "ambiance"
+	// Represents a music sound
+	KeywordMusic = "music"
 	// Represents a modulation effect
 	KeywordModulation = "modulation"
 	// Represents an intensity parameter
@@ -100,6 +104,7 @@ const (
 type ParseOptions struct {
 	Values   map[string]string
 	Ambiance map[string]string
+	Music    map[string]string
 	Extends  []string
 }
 
@@ -108,6 +113,7 @@ func NewParseOptions() *ParseOptions {
 	return &ParseOptions{
 		Values:   make(map[string]string),
 		Ambiance: make(map[string]string),
+		Music:    make(map[string]string),
 		Extends:  []string{},
 	}
 }
@@ -124,12 +130,16 @@ func (po *ParseOptions) Merge(other *ParseOptions) {
 	if po.Ambiance == nil {
 		po.Ambiance = make(map[string]string)
 	}
+	if po.Music == nil {
+		po.Music = make(map[string]string)
+	}
 	if po.Extends == nil {
 		po.Extends = []string{}
 	}
 
 	maps.Copy(po.Values, other.Values)
 	maps.Copy(po.Ambiance, other.Ambiance)
+	maps.Copy(po.Music, other.Music)
 	po.Extends = append(po.Extends, other.Extends...)
 }
 
@@ -139,6 +149,7 @@ func (po *ParseOptions) Build() (*SequenceOptions, error) {
 		SampleRate: 44100,
 		Volume:     100,
 		Ambiance:   make(map[string]string),
+		Music:      make(map[string]string),
 		Extends:    []string{},
 	}
 
@@ -163,6 +174,7 @@ func (po *ParseOptions) Build() (*SequenceOptions, error) {
 	}
 
 	maps.Copy(options.Ambiance, po.Ambiance)
+	maps.Copy(options.Music, po.Music)
 	options.Extends = append(options.Extends, po.Extends...)
 
 	if err := options.Validate(); err != nil {

@@ -34,3 +34,9 @@ func (b *Builder) Ambiance(name, path string) *Builder {
 	b.ambiance = append(b.ambiance, ambianceOption{name: name, path: path})
 	return b
 }
+
+// Music registers a music source for the sequence.
+func (b *Builder) Music(name, path string) *Builder {
+	b.music = append(b.music, musicOption{name: name, path: path})
+	return b
+}

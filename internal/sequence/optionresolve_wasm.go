@@ -27,6 +27,12 @@ func resolveParsedOptions(_ string, parsedOptions *t.ParseOptions) error {
 		}
 	}
 
+	for _, path := range parsedOptions.Music {
+		if !r.IsRemoteFile(path) {
+			return fmt.Errorf("WASM only supports remote URLs for music audio")
+		}
+	}
+
 	for _, path := range parsedOptions.Extends {
 		if !r.IsRemoteFile(path) {
 			return fmt.Errorf("WASM only supports remote URLs for extends")

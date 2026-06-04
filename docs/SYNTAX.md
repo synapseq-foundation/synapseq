@@ -13,7 +13,7 @@ This table is meant to answer the most common question quickly: what kind of lin
 | Comment        | `# ...` or `## ...`                     | any                | anywhere                   | `##` comments are also stored in sequence metadata                     |
 | Option         | `@samplerate ...`                       | top-level          | before presets or timeline | options lock after the first preset, track, override, or timeline line |
 | Preset         | `alpha`                                 | top-level          | before timeline            | may also use `from` or `as template`                                   |
-| Track          | `tone ...`, `noise ...`, `ambiance ...` | exactly two spaces | under the current preset   | not allowed on presets created with `from`                             |
+| Track          | `tone ...`, `noise ...`, `ambiance ...`, `music ...` | exactly two spaces | under the current preset   | not allowed on presets created with `from`                             |
 | Track override | `track 1 amplitude 35`                  | exactly two spaces | under an inherited preset  | only valid on non-template presets created with `from`                 |
 | Timeline       | `00:00:20 alpha smooth 5`               | top-level          | after presets              | first entry must be `00:00:00`                                         |
 
@@ -105,6 +105,8 @@ The currently supported `.spsq` options are:
 - `@volume <value>`
 - `@ambiance <name> <path-or-url>`
 - `@ambiance <name>` as shorthand, where the path defaults to the same name
+- `@music <name> <path-or-url>`
+- `@music <name>` as shorthand, where the path defaults to the same name
 - `@extends <path-or-url>`
 
 Options must appear before presets or timeline entries. Once the builder has seen a preset, track, override, or timeline line, options are locked.
@@ -121,6 +123,9 @@ Local option paths are normalized and validated before use:
 - WAV is the recommended ambiance format, especially for continuous or seamless loops;
 - MP3 is supported as a fallback format, but MP3 encoding can add delay or padding that may create audible gaps when the file loops;
 - remote ambiance URLs must identify a WAV or MP3 file by extension, or provide a WAV or MP3 MIME type when the URL has no extension;
+- local music paths first resolve to `.mp3`, then to `.wav` only when the MP3 file is missing;
+- music does not loop automatically, so MP3 is the preferred local fallback order for this use case;
+- remote music URLs follow the same WAV/MP3 extension or MIME type rules as ambiance URLs;
 - local extends paths resolve to `.spsc`.
 
 ## Presets
@@ -189,7 +194,7 @@ flowchart LR
 
 The actual transition curve still follows the transition configured on the period itself, such as `steady`, `ease-in`, `ease-out`, or `smooth`.
 
-If two consecutive timeline entries use incompatible active track types, effect types, or ambiance sources on the same channel, SynapSeq applies an automatic boundary crossfade instead of requiring an explicit `silence` bridge.
+If two consecutive timeline entries use incompatible active track types, effect types, ambiance sources, or music sources on the same channel, SynapSeq applies an automatic boundary crossfade instead of requiring an explicit `silence` bridge.
 
 The automatic crossfade is adaptive. It uses up to 30 seconds before the boundary for fade-out and up to 30 seconds after the boundary for fade-in, clamping each side to the available adjacent period duration when the periods are shorter.
 
@@ -216,6 +221,8 @@ alpha
   tone 300 binaural 10 effect doppler 0.9 intensity 80 amplitude 40
   ambiance rain amplitude 25
   ambiance rain effect pan 0.5 intensity 60 amplitude 30
+  music meditation amplitude 50
+  music meditation effect pan 0.5 intensity 60 amplitude 30
 ```
 
 Supported track families are:
@@ -223,6 +230,7 @@ Supported track families are:
 - `tone`
 - `noise`
 - `ambiance`
+- `music`
 
 Tone lines can describe:
 
@@ -236,6 +244,8 @@ Tone lines can describe:
 Noise lines can describe white, pink, or brown noise, optionally with `smooth`, optional effects, and then `amplitude`.
 
 Ambiance lines reference a named ambiance option and then define amplitude, with optional supported effects. The current parser also accepts a leading `waveform` token before ambiance declarations, even though waveform selection is primarily a tone-oriented concept.
+
+Music lines reference a named music option and use the same amplitude/effect forms as ambiance. Music is finite: when the file ends, that channel becomes silent and rendering continues until the sequence timeline ends.
 
 Track declarations are rejected when:
 
@@ -585,6 +595,7 @@ comment-line         = [indent] "#" text
 option-line          = "@samplerate" integer
                      | "@volume" integer
                      | "@ambiance" name [path-or-url]
+                     | "@music" name [path-or-url]
                      | "@extends" path-or-url ;
 
 preset-line          = name
@@ -593,7 +604,8 @@ preset-line          = name
 
 track-line           = indent2 tone-track
                      | indent2 noise-track
-                     | indent2 ambiance-track ;
+                     | indent2 ambiance-track
+                     | indent2 music-track ;
 
 tone-track           = [waveform-prefix] "tone" float tone-tail ;
 tone-tail            = "amplitude" float
@@ -611,6 +623,10 @@ ambiance-track       = [waveform-prefix] "ambiance" name ambiance-tail ;
 ambiance-tail        = "amplitude" float
                      | "effect" ambiance-effect float "intensity" float "amplitude" float ;
 
+music-track          = [waveform-prefix] "music" name music-tail ;
+music-tail           = "amplitude" float
+                     | "effect" music-effect float "intensity" float "amplitude" float ;
+
 waveform-prefix      = "waveform" waveform ;
 waveform             = "sine" | "square" | "triangle" | "sawtooth" ;
 beat-kind            = "binaural" | "monaural" | "isochronic" ;
@@ -618,6 +634,7 @@ noise-kind           = "white" | "pink" | "brown" ;
 tone-effect          = "pan" | "modulation" | "doppler" ;
 noise-effect         = "pan" | "modulation" ;
 ambiance-effect      = "pan" | "modulation" ;
+music-effect         = "pan" | "modulation" ;
 
 track-override-line  = indent2 "track" track-index override-kind override-value ;
 track-index          = integer ;

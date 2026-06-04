@@ -54,6 +54,7 @@ func (ctx *TextParser) ParseOption(_ string) (*t.ParseOptions, error) {
 		t.KeywordOptionSampleRate,
 		t.KeywordOptionVolume,
 		t.KeywordOptionAmbiance,
+		t.KeywordOptionMusic,
 		t.KeywordOptionExtends,
 	}
 
@@ -89,6 +90,23 @@ func (ctx *TextParser) ParseOption(_ string) (*t.ParseOptions, error) {
 		}
 
 		parsed.Ambiance[name] = content
+	case t.KeywordOptionMusic:
+		name, ok := ctx.Line.NextToken()
+		if !ok {
+			return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "music name")
+		}
+		nameSpan, _ := ctx.Line.LastTokenSpan()
+
+		if err := nr.IsValid(name); err != nil {
+			return nil, diag.Validation(err.Error()).WithSpan(nameSpan).WithFound(name).WithCause(err)
+		}
+
+		content, ok := ctx.Line.NextToken()
+		if !ok {
+			content = name
+		}
+
+		parsed.Music[name] = content
 	case t.KeywordOptionExtends:
 		content, ok := ctx.Line.NextToken()
 		if !ok {

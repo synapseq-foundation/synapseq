@@ -33,6 +33,7 @@ func TestAppContext_LoadFile(t *testing.T) {
 	path := filepath.Join(dir, "seq.spsq")
 	content := strings.TrimSpace(`
 @ambiance rain audio/rain
+@music meditation audio/meditation
 alpha
   tone 100 binaural 1 amplitude 1
 00:00:00 alpha
@@ -49,6 +50,10 @@ alpha
 	if err := os.WriteFile(ambiancePath, nil, 0o600); err != nil {
 		t.Fatalf("write temp ambiance: %v", err)
 	}
+	musicPath := filepath.Join(dir, "audio", "meditation.mp3")
+	if err := os.WriteFile(musicPath, nil, 0o600); err != nil {
+		t.Fatalf("write temp music: %v", err)
+	}
 
 	loaded, err := NewAppContext().LoadFile(path)
 	if err != nil {
@@ -62,6 +67,10 @@ alpha
 	wantAmbiancePath := filepath.Join(dir, "audio", "rain.wav")
 	if loaded.Ambiance()["rain"] != wantAmbiancePath {
 		t.Fatalf("expected ambiance %q, got %q", wantAmbiancePath, loaded.Ambiance()["rain"])
+	}
+	wantMusicPath := filepath.Join(dir, "audio", "meditation.mp3")
+	if loaded.Music()["meditation"] != wantMusicPath {
+		t.Fatalf("expected music %q, got %q", wantMusicPath, loaded.Music()["meditation"])
 	}
 }
 

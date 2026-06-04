@@ -24,7 +24,7 @@ type ParsedTrackDeclaration struct {
 	AmplitudePercent       float64
 	NoiseSmooth            float64
 	Waveform               t.WaveformType
-	AmbianceName           string
+	SourceName             string
 	EffectType             t.EffectType
 	EffectValue            float64
 	EffectIntensityPercent float64
@@ -71,7 +71,7 @@ func (ctx *TextParser) ParseTrackDeclaration() (*ParsedTrackDeclaration, error) 
 			waveform = t.WaveformSawtooth
 		}
 
-		if _, err := ctx.Line.NextExpectOneOf(t.KeywordTone, t.KeywordAmbiance); err != nil {
+		if _, err := ctx.Line.NextExpectOneOf(t.KeywordTone, t.KeywordAmbiance, t.KeywordMusic); err != nil {
 			return nil, err
 		}
 
@@ -80,7 +80,7 @@ func (ctx *TextParser) ParseTrackDeclaration() (*ParsedTrackDeclaration, error) 
 
 	first, ok := ctx.Line.NextToken()
 	if !ok {
-		return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), t.KeywordTone, t.KeywordNoise, t.KeywordAmbiance)
+		return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), t.KeywordTone, t.KeywordNoise, t.KeywordAmbiance, t.KeywordMusic)
 	}
 
 	decl := &ParsedTrackDeclaration{
@@ -223,12 +223,17 @@ func (ctx *TextParser) ParseTrackDeclaration() (*ParsedTrackDeclaration, error) 
 				return nil, err
 			}
 		}
-	case t.KeywordAmbiance:
-		decl.Type = t.TrackAmbiance
+	case t.KeywordAmbiance, t.KeywordMusic:
+		trackKeyword := first
+		if first == t.KeywordAmbiance {
+			decl.Type = t.TrackAmbiance
+		} else {
+			decl.Type = t.TrackMusic
+		}
 
 		name, ok := ctx.Line.NextToken()
 		if !ok {
-			return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "ambiance name")
+			return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), trackKeyword+" name")
 		}
 
 		if err := nr.IsValid(name); err != nil {
@@ -238,7 +243,7 @@ func (ctx *TextParser) ParseTrackDeclaration() (*ParsedTrackDeclaration, error) 
 
 		if name == "" {
 			span, _ := ctx.Line.LastTokenSpan()
-			return nil, diag.Validation("ambiance name cannot be empty").WithSpan(span)
+			return nil, diag.Validation(trackKeyword + " name cannot be empty").WithSpan(span)
 		}
 
 		kind, err := ctx.Line.NextExpectOneOf(t.KeywordEffect, t.KeywordAmplitude)
@@ -280,10 +285,10 @@ func (ctx *TextParser) ParseTrackDeclaration() (*ParsedTrackDeclaration, error) 
 			}
 		}
 
-		decl.AmbianceName = name
+		decl.SourceName = name
 	default:
 		span, _ := ctx.Line.LastTokenSpan()
-		return nil, diag.UnexpectedToken(span, first, t.KeywordTone, t.KeywordNoise, t.KeywordAmbiance, t.KeywordTrack)
+		return nil, diag.UnexpectedToken(span, first, t.KeywordTone, t.KeywordNoise, t.KeywordAmbiance, t.KeywordMusic, t.KeywordTrack)
 	}
 
 	var err error

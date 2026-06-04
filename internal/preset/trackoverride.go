@@ -47,6 +47,7 @@ func ApplyTrackOverride(preset *t.Preset, spec *TrackOverrideSpec) error {
 	switch spec.Kind {
 	case t.KeywordTone:
 		if track.Type == t.TrackAmbiance ||
+			track.Type == t.TrackMusic ||
 			track.Type == t.TrackWhiteNoise ||
 			track.Type == t.TrackPinkNoise ||
 			track.Type == t.TrackBrownNoise {

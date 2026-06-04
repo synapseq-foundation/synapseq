@@ -277,6 +277,100 @@ alpha
 	}
 }
 
+func TestLoadTextSequence_MusicPrefersLocalMP3OverWAV(ts *testing.T) {
+	seq := `
+@music meditation audio/meditation
+
+alpha
+  music meditation amplitude 20
+
+00:00:00 alpha
+00:00:01 alpha
+`
+	path := writeSeqFile(ts, seq)
+	writeRelBytes(ts, filepath.Dir(path), "audio/meditation.mp3", nil)
+	writeRelBytes(ts, filepath.Dir(path), "audio/meditation.wav", nil)
+
+	result, err := loadTextSequenceFile(ts, path)
+	if err != nil {
+		ts.Fatalf("LoadTextSequence error: %v", err)
+	}
+
+	want := filepath.Join(filepath.Dir(path), "audio", "meditation.mp3")
+	if result.Options.Music["meditation"] != want {
+		ts.Fatalf("expected music path %q, got %q", want, result.Options.Music["meditation"])
+	}
+}
+
+func TestLoadTextSequence_MusicResolvesLocalWAVWhenMP3Missing(ts *testing.T) {
+	seq := `
+@music meditation audio/meditation
+
+alpha
+  music meditation amplitude 20
+
+00:00:00 alpha
+00:00:01 alpha
+`
+	path := writeSeqFile(ts, seq)
+	writeRelBytes(ts, filepath.Dir(path), "audio/meditation.wav", nil)
+
+	result, err := loadTextSequenceFile(ts, path)
+	if err != nil {
+		ts.Fatalf("LoadTextSequence error: %v", err)
+	}
+
+	want := filepath.Join(filepath.Dir(path), "audio", "meditation.wav")
+	if result.Options.Music["meditation"] != want {
+		ts.Fatalf("expected music path %q, got %q", want, result.Options.Music["meditation"])
+	}
+}
+
+func TestLoadTextSequence_MusicReportsMP3AndWAVWhenMissing(ts *testing.T) {
+	seq := `
+@music meditation audio/meditation
+
+alpha
+  music meditation amplitude 20
+
+00:00:00 alpha
+00:00:01 alpha
+`
+	path := writeSeqFile(ts, seq)
+
+	_, err := loadTextSequenceFile(ts, path)
+	if err == nil {
+		ts.Fatalf("expected missing music error")
+	}
+
+	if !strings.Contains(err.Error(), "audio/meditation.mp3") || !strings.Contains(err.Error(), "audio/meditation.wav") {
+		ts.Fatalf("expected error to mention both attempted files, got: %v", err)
+	}
+}
+
+func TestLoadTextSequence_MusicPreservesRemoteURL(ts *testing.T) {
+	seq := `
+@music meditation https://example.com/audio/meditation.mp3
+
+alpha
+  music meditation amplitude 20
+
+00:00:00 alpha
+00:00:01 alpha
+`
+	path := writeSeqFile(ts, seq)
+
+	result, err := loadTextSequenceFile(ts, path)
+	if err != nil {
+		ts.Fatalf("LoadTextSequence error: %v", err)
+	}
+
+	want := "https://example.com/audio/meditation.mp3"
+	if result.Options.Music["meditation"] != want {
+		ts.Fatalf("expected music URL %q, got %q", want, result.Options.Music["meditation"])
+	}
+}
+
 func TestLoadTextSequence_Success_TrackOverrideFromTemplate(ts *testing.T) {
 	seq := `
 base as template
@@ -439,6 +533,24 @@ alpha
 		ts.Fatalf("expected error for ambiance path with extension")
 	}
 	if !strings.Contains(err.Error(), "ambiance local path must not include file extension") {
+		ts.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestLoadTextSequence_Error_MusicPathWithExtension(ts *testing.T) {
+	seq := `
+@music meditation audio/meditation.mp3
+alpha
+  music meditation amplitude 10
+00:00:00 alpha
+00:01:00 alpha
+`
+	path := writeSeqFile(ts, seq)
+	_, err := loadTextSequenceFile(ts, path)
+	if err == nil {
+		ts.Fatalf("expected error for music path with extension")
+	}
+	if !strings.Contains(err.Error(), "music local path must not include file extension") {
 		ts.Fatalf("unexpected error: %v", err)
 	}
 }
