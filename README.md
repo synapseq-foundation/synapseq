@@ -19,13 +19,16 @@ Visit [synapseq.org](https://synapseq.org) for more information.
 A basic `.spsq` sequence is plain text: define options, declare presets with indented tracks, then place presets on a timeline.
 
 ```spsq
+# Options
 @samplerate 44100
 @volume 80
 
+# Presets
 focus
   tone 220 binaural 10 amplitude 25
   noise pink smooth 15 amplitude 12
 
+# Timeline
 00:00:00 silence
 00:00:15 focus
 00:04:30 focus 
@@ -77,22 +80,58 @@ If you want to integrate SynapSeq into a Go project, use the [core Go API](https
 
 To build `.spsq` content programmatically in Go, use the [spsq builder API](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4/spsq).
 
+Example:
 ```go
-ctx := synapseq.NewAppContext()
+package main
 
-builder := spsq.New().SampleRate(44100).Volume(80)
-focus := builder.NewPreset("focus")
-focus.Tone(220).Binaural(10).Amplitude(25)
+import (
+	"fmt"
+	"os"
+	"time"
 
-loaded, err := builder.
-	SilenceAt(0).
-	PresetAt(15*time.Second, focus).
-	PresetAt(4*time.Minute + 30*time.Second, focus).
-	SilenceAt(5 * time.Minute).
-	Load(ctx)
+	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
+	"github.com/synapseq-foundation/synapseq/v4/spsq"
+)
+
+func main() {
+	// Create a new app context with colorized verbose logging
+	ctx := synapseq.NewAppContext().WithVerbose(os.Stderr, true)
+	// Create a new spsq builder with a sample rate of 44100 Hz and volume of 80%
+	builder := spsq.New().SampleRate(44100).Volume(80)
+
+	// Create a new preset for focus mode
+	focus := builder.NewPreset("focus")
+	// Add tone with 220 Hz, binaural with 10 Hz, and amplitude of 25%
+	focus.Tone(220).Binaural(10).Amplitude(25)
+	// Add pink noise with 15% of smoothness and amplitude of 12%
+	focus.PinkNoise(15).Amplitude(12)
+
+	// Create the timeline
+	timeline := builder.
+		// Fade in 00:00:00
+		SilenceAt(0).
+		// Focus preset starts at 00:00:15
+		PresetAt(15*time.Second, focus).
+		// Focus preset ends at 00:04:30
+		PresetAt(4*time.Minute+30*time.Second, focus).
+		// Fade out at 00:05:00
+		SilenceAt(5 * time.Minute)
+
+	// Load the sequence into memory
+	loaded, err := timeline.Load(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	// Print the spsq sequence
+	fmt.Println(string(loaded.RawContent()))
+
+	// Save the sequence as a WAV file
+	if err := loaded.WAV("output.wav"); err != nil {
+		panic(err)
+	}
+}
 ```
-
-`Load(ctx)` validates the generated `.spsq` content through the normal SynapSeq loading pipeline.
 
 ## Contributing
 
