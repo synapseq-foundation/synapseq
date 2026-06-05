@@ -77,12 +77,7 @@ After installation on any platform, run `synapseq -manual` to get links to the c
 - [SYNTAX](docs/SYNTAX.md)
 - [HOW IT WORKS](docs/HOW_IT_WORKS.md)
 
-## Go API
-
-If you want to integrate SynapSeq into a Go project, use the [core Go API](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4/core) to load, inspect, preview, stream, and render sequences.
-
-To build `.spsq` content programmatically in Go, use the [spsq builder API](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4/spsq).
-
+## Programmatic API
 Example:
 ```go
 package main
@@ -135,6 +130,10 @@ func main() {
 	}
 }
 ```
+
+Docs:
+- [core](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4/core)
+- [spsq](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4/spsq)
 
 ## Contributing
 
