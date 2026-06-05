@@ -190,7 +190,6 @@ func TestShortDate(ts *testing.T) {
 func TestResolveSpecialCommandPrecedence(ts *testing.T) {
 	command := clistyle.ResolveSpecialCommand(&clistyle.CLIOptions{
 		ShowVersion: true,
-		ShowManual:  true,
 		RemoteSync:  true,
 		RemoteGet:   "focus",
 		New:         "sleep",
@@ -235,13 +234,6 @@ func TestResolveSpecialCommandRemoteDownloadPrecedesRemoteInfo(ts *testing.T) {
 	}
 	if command.OptionalArg != "downloads" {
 		ts.Fatalf("expected download target arg downloads, got %q", command.OptionalArg)
-	}
-}
-
-func TestResolveSpecialCommandIgnoresNoColorBeforeManual(ts *testing.T) {
-	command := clistyle.ResolveSpecialCommand(&clistyle.CLIOptions{NoColor: true, ShowManual: true}, nil)
-	if command.Kind != clistyle.SpecialCommandShowManual {
-		ts.Fatalf("expected show-manual command, got %q", command.Kind)
 	}
 }
 

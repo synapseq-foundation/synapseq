@@ -28,9 +28,6 @@ func dispatchSpecialCommand(opts *cli.CLIOptions, args []string) (bool, error) {
 	case cli.SpecialCommandShowVersion:
 		cli.ShowVersion()
 		return true, nil
-	case cli.SpecialCommandShowManual:
-		cli.ShowManual()
-		return true, nil
 	case cli.SpecialCommandRemoteSync:
 		return true, remoteRunSync(opts.Quiet)
 	case cli.SpecialCommandRemoteClean:

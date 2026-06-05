@@ -13,7 +13,6 @@ type SpecialCommandKind string
 const (
 	SpecialCommandNone                     SpecialCommandKind = ""
 	SpecialCommandShowVersion              SpecialCommandKind = "show-version"
-	SpecialCommandShowManual               SpecialCommandKind = "show-manual"
 	SpecialCommandRemoteSync               SpecialCommandKind = "remote-sync"
 	SpecialCommandRemoteClean              SpecialCommandKind = "remote-clean"
 	SpecialCommandRemoteGet                SpecialCommandKind = "remote-get"
@@ -46,8 +45,6 @@ type CLIOptions struct {
 	Test bool
 	// Show help message and exit
 	ShowHelp bool
-	// Show full manual and exit
-	ShowManual bool
 	// Disable ANSI colors in CLI output
 	NoColor bool
 	// Windows file association installation

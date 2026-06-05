@@ -50,8 +50,6 @@ func Help() {
 	if runtime.GOOS == "windows" {
 		writeOptionsSection(writer, "Windows-specific options:", windowsHelpOptions())
 	}
-
-	writeLinkSection(writer)
 }
 
 // ShowVersion prints the version information
@@ -159,14 +157,6 @@ func writeCommandListSection(writer io.Writer, title string, commands []string) 
 	fmt.Fprintln(writer)
 }
 
-func writeLinkSection(writer io.Writer) {
-	fmt.Fprintf(writer, "%s\n", Section("For more information:"))
-	for _, link := range moreInfoLinks() {
-		fmt.Fprintf(writer, "  %s\n", Command(link.Target))
-		fmt.Fprintf(writer, "    %s\n", Muted(link.Description))
-	}
-}
-
 func docsRef() string {
 	version := strings.TrimSpace(info.VERSION)
 	if version == "" || version == "development" || version == "unknown" {
@@ -201,7 +191,6 @@ func nextStepExamples() []helpExample {
 		{CommandText: "synapseq -preview starter.spsq", Description: "Generate starter.html with a visual timeline preview"},
 		{CommandText: "synapseq -play starter.spsq", Description: "Play the sequence directly with ffplay"},
 		{CommandText: "synapseq starter.spsq starter.mp3", Description: "Export to MP3 with ffmpeg"},
-		{CommandText: "synapseq -manual", Description: "Show links to syntax, how-it-works, architecture, and contribution docs"},
 	}
 }
 
@@ -214,7 +203,6 @@ func commonHelpOptions() []helpOption {
 		{FlagText: "-mp3", ColumnWidth: 18, Description: "Export to MP3 with ffmpeg"},
 		{FlagText: "-quiet", ColumnWidth: 18, Description: "Suppress non-error output"},
 		{FlagText: "-no-color", ColumnWidth: 18, Description: "Disable ANSI colors in CLI output"},
-		{FlagText: "-manual", ColumnWidth: 18, Description: "Show links to the canonical docs"},
 		{FlagText: "-version", ColumnWidth: 18, Description: "Show version information"},
 		{FlagText: "-doctor", ColumnWidth: 18, Description: "Run the doctor check for tool dependencies"},
 		{FlagText: "-completion-bash", ColumnWidth: 18, Description: "Generate bash completion script"},
