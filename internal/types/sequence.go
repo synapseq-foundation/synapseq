@@ -9,6 +9,7 @@ import "fmt"
 // Sequence represents a brainwave sequence
 type Sequence struct {
 	Periods    []Period
+	Presets    []Preset
 	Options    *SequenceOptions
 	Comments   []string
 	RawContent []byte

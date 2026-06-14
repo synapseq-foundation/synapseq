@@ -5,10 +5,14 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
 	clistyle "github.com/synapseq-foundation/synapseq/v4/internal/cli"
 	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
 	types "github.com/synapseq-foundation/synapseq/v4/internal/types"
@@ -113,6 +117,17 @@ func TestResolveOutputTargetUsesOptionDefaults(ts *testing.T) {
 	}
 }
 
+func TestResolveOutputTargetUsesDumpDefault(ts *testing.T) {
+	opts := &clistyle.CLIOptions{Dump: true}
+	outputFile, outputFormat := resolveOutputTarget("session", "", opts)
+	if outputFile != "session.json" {
+		ts.Fatalf("expected default dump output file, got %q", outputFile)
+	}
+	if outputFormat != ".json" {
+		ts.Fatalf("expected output format .json, got %q", outputFormat)
+	}
+}
+
 func TestBuildOutputOptions(ts *testing.T) {
 	opts := &clistyle.CLIOptions{Play: true, FFplayPath: "ffplay", FFmpegPath: "ffmpeg"}
 	outputOpts := buildOutputOptions("out.mp3", ".mp3", opts)
@@ -127,6 +142,36 @@ func TestBuildOutputOptions(ts *testing.T) {
 	}
 	if outputOpts.FFplayPath != "ffplay" || outputOpts.FFmpegPath != "ffmpeg" {
 		ts.Fatalf("unexpected ffmpeg/ffplay paths: %#v", outputOpts)
+	}
+}
+
+func TestProcessSequenceOutputDumpWritesJSON(ts *testing.T) {
+	loaded, err := synapseq.NewAppContext().LoadContent(`
+alpha
+  tone 100 binaural 1 amplitude 1
+00:00:00 alpha
+00:01:00 alpha
+`)
+	if err != nil {
+		ts.Fatalf("LoadContent error: %v", err)
+	}
+
+	outputFile := filepath.Join(ts.TempDir(), "dump.json")
+	if err := processSequenceOutput(loaded, &outputOptions{OutputFile: outputFile, Dump: true, Quiet: true}); err != nil {
+		ts.Fatalf("processSequenceOutput error: %v", err)
+	}
+
+	content, err := os.ReadFile(outputFile)
+	if err != nil {
+		ts.Fatalf("read dump: %v", err)
+	}
+
+	var got map[string]any
+	if err := json.Unmarshal(content, &got); err != nil {
+		ts.Fatalf("invalid JSON dump: %v\n%s", err, content)
+	}
+	if _, ok := got["timeline"].([]any); !ok {
+		ts.Fatalf("expected timeline array in dump: %#v", got["timeline"])
 	}
 }
 

@@ -54,6 +54,7 @@ func TransitionTypeString(t string) TransitionType {
 // Period represents a time period with track configurations
 type Period struct {
 	Time         int
+	PresetName   string
 	TrackStart   [NumberOfChannels]Track
 	TrackEnd     [NumberOfChannels]Track
 	CrossfadeIn  [NumberOfChannels]TrackCrossfade

@@ -39,6 +39,8 @@ type CLIOptions struct {
 	New string
 	// Preview mode, renders HTML timeline instead of audio
 	Preview bool
+	// Dump mode, renders JSON sequence data instead of audio
+	Dump bool
 	// Quiet mode, suppress non-error output
 	Quiet bool
 	// Test mode, validate syntax without generating output

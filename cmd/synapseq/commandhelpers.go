@@ -15,6 +15,9 @@ func defaultOutputExtension(opts *cli.CLIOptions) string {
 	if opts.Preview {
 		return ".html"
 	}
+	if opts.Dump {
+		return ".json"
+	}
 	if opts.Mp3 {
 		return ".mp3"
 	}
@@ -39,6 +42,7 @@ func buildOutputOptions(outputFile, outputFormat string, opts *cli.CLIOptions) *
 		OutputFile: outputFile,
 		Quiet:      opts.Quiet,
 		Preview:    opts.Preview,
+		Dump:       opts.Dump,
 		Play:       opts.Play,
 		Mp3:        outputFormat == ".mp3" || opts.Mp3,
 		FFplayPath: opts.FFplayPath,

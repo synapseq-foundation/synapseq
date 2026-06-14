@@ -48,6 +48,7 @@ func buildPeriodFromDeclaration(sourceFile string, lineNumber int, lineText stri
 
 	return &t.Period{
 		Time:       decl.Time,
+		PresetName: selectedPreset.String(),
 		TrackStart: selectedPreset.Track,
 		TrackEnd:   selectedPreset.Track,
 		Transition: decl.Transition,

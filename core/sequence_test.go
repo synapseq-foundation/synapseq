@@ -5,6 +5,7 @@
 package core
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -80,5 +81,31 @@ func TestAppContext_LoadContent(t *testing.T) {
 
 	if loaded.SampleRate() != 48000 {
 		t.Fatalf("expected sample rate 48000, got %d", loaded.SampleRate())
+	}
+}
+
+func TestLoadedContext_JSON(t *testing.T) {
+	loaded, err := NewAppContext().LoadContent(testSequenceContent)
+	if err != nil {
+		t.Fatalf("LoadContent error: %v", err)
+	}
+
+	content, err := loaded.JSON()
+	if err != nil {
+		t.Fatalf("JSON error: %v", err)
+	}
+
+	var got map[string]any
+	if err := json.Unmarshal(content, &got); err != nil {
+		t.Fatalf("invalid JSON: %v\n%s", err, content)
+	}
+
+	options := got["options"].(map[string]any)
+	if options["sampleRate"] != float64(48000) {
+		t.Fatalf("expected sampleRate 48000, got %#v", options["sampleRate"])
+	}
+
+	if _, ok := got["presets"].(map[string]any)["alpha"]; !ok {
+		t.Fatalf("expected alpha preset in JSON: %s", content)
 	}
 }

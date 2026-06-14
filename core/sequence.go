@@ -9,6 +9,7 @@ import (
 	"maps"
 	"path/filepath"
 
+	"github.com/synapseq-foundation/synapseq/v4/internal/dump"
 	preview "github.com/synapseq-foundation/synapseq/v4/internal/preview"
 	r "github.com/synapseq-foundation/synapseq/v4/internal/resource"
 	seq "github.com/synapseq-foundation/synapseq/v4/internal/sequence"
@@ -136,4 +137,13 @@ func (lc *LoadedContext) Preview() ([]byte, error) {
 	}
 
 	return preview.GetPreviewContent(lc.sequence.Periods)
+}
+
+// JSON returns an indented JSON representation of the loaded sequence.
+func (lc *LoadedContext) JSON() ([]byte, error) {
+	if lc.sequence == nil {
+		return nil, fmt.Errorf("sequence is nil")
+	}
+
+	return dump.JSON(lc.sequence)
 }

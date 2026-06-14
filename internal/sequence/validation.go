@@ -187,6 +187,7 @@ func finalizeSequence(rawContent []byte, presets []t.Preset, periods []t.Period,
 
 	return &t.Sequence{
 		Periods:    periods,
+		Presets:    presets,
 		Options:    options,
 		Comments:   comments,
 		RawContent: rawContent,
