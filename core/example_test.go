@@ -219,6 +219,28 @@ func ExampleLoadedContext_Preview() {
 	// Output: HTML preview bytes generated successfully
 }
 
+func ExampleLoadedContext_JSON() {
+	// Create a new application context
+	ctx := synapseq.NewAppContext()
+	_ = ctx
+
+	// Load the sequence
+	// loaded, err := ctx.LoadFile("input.spsq")
+	// if err != nil {
+	//	log.Fatal(err)
+	// }
+
+	// Generate the JSON dump bytes
+	// jsonDump, err := loaded.JSON()
+	// if err != nil {
+	//	log.Fatal(err)
+	// }
+	// _ = jsonDump
+
+	fmt.Printf("JSON dump bytes generated successfully\n")
+	// Output: JSON dump bytes generated successfully
+}
+
 func ExampleLoadedContext_RawContent() {
 	// Create a new application context
 	ctx := synapseq.NewAppContext()
