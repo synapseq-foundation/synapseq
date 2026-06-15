@@ -2,7 +2,7 @@
 
 This folder documents the shared SynapSeq color language used by the project's visual interfaces.
 
-Even though SynapSeq is primarily a CLI project, the repository includes browser-facing surfaces such as the HTML preview. This directory exists so those interfaces can reuse the same palette and maintain a consistent visual tone.
+Even though SynapSeq is primarily a CLI project, this directory documents the visual palette for any browser-facing surfaces that may be added later.
 
 ## Purpose
 
@@ -10,7 +10,7 @@ The material in this folder exists to:
 
 - define SynapSeq's shared color palette explicitly
 - align light and dark themes under the same warm visual identity
-- reduce drift between preview and future HTML interfaces
+- reduce drift between future HTML interfaces
 - document which tokens are shared with the Go package and which are CSS-only
 - keep color usage consistent with the intended product tone
 

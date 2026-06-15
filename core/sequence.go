@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 
 	"github.com/synapseq-foundation/synapseq/v4/internal/dump"
-	preview "github.com/synapseq-foundation/synapseq/v4/internal/preview"
 	r "github.com/synapseq-foundation/synapseq/v4/internal/resource"
 	seq "github.com/synapseq-foundation/synapseq/v4/internal/sequence"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
@@ -128,15 +127,6 @@ func (lc *LoadedContext) RawContent() []byte {
 	copy(raw, lc.sequence.RawContent)
 
 	return raw
-}
-
-// Preview renders the loaded sequence as an HTML preview.
-func (lc *LoadedContext) Preview() ([]byte, error) {
-	if lc.sequence == nil {
-		return nil, fmt.Errorf("sequence is nil")
-	}
-
-	return preview.GetPreviewContent(lc.sequence.Periods)
 }
 
 // JSON returns an indented JSON representation of the loaded sequence.

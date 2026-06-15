@@ -133,7 +133,6 @@ func flagNames(fs *flag.FlagSet) []string {
 func flagBindings() []flagBinding {
 	return []flagBinding{
 		{Name: "version", Usage: "Show version information", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.ShowVersion }, SpecialCommand: SpecialCommandShowVersion},
-		{Name: "preview", Usage: "Render HTML preview timeline", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.Preview }},
 		{Name: "dump", Usage: "Render JSON sequence data", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.Dump }},
 		{Name: "quiet", Usage: "Enable quiet mode", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.Quiet }},
 		{Name: "no-color", Usage: "Disable ANSI colors in CLI output", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.NoColor }},

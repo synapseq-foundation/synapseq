@@ -173,14 +173,6 @@ All original code in SynapSeq is licensed under the GNU GPL v3 or later, but the
   License: BSD 2-Clause  
   Used indirectly for error wrapping and stack trace utilities.
 
-- **[Lucide Icons](https://lucide.dev)**  
-  License: ISC  
-  Used for icons in the HTML sequence preview.
-
-- **[Chart.js](https://www.chartjs.org)**  
-  License: MIT  
-  Used for interactive charts in the HTML sequence preview.
-
 All third-party copyright notices and licenses are preserved in this repository in compliance with their original terms.
 
 ## Contact

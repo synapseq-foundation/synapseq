@@ -11,7 +11,7 @@ This document is broader than the Go package because it also documents CSS-only 
 
 Current implementation references:
 
-- `/internal/preview/index.html`
+- `/internal/palette`
 
 This file is not a full design system specification.
 It does not define layout, typography, spacing, components, or motion.
@@ -269,7 +269,7 @@ background:
 
 ## Implementation Notes
 
-- Tokens are currently defined in local `:root` blocks in the HTML implementations.
+- Tokens can be defined in local `:root` blocks for HTML implementations.
 - The palette is CSS-first and does not require a separate token build pipeline.
 - Reuse existing tokens before adding new ones.
 - If a new color is introduced, it must fit the warm SynapSeq palette and be defined for both light and dark themes when applicable.

@@ -17,14 +17,13 @@ SynapSeq is organized around a few practical goals:
 
 These invariants are important when changing the codebase:
 
-1. `core` is the public Go API. External consumers should be able to load sequences, inspect metadata, render WAV, stream PCM, and generate previews through `core` without importing internal packages.
+1. `core` is the public Go API. External consumers should be able to load sequences, inspect metadata, render WAV, stream PCM, and generate JSON dumps through `core` without importing internal packages.
 2. `cmd/synapseq` is the CLI shell. It parses flags, dispatches commands, and orchestrates output, but it should not absorb parser or renderer logic.
 3. `internal/types` must remain a dependency leaf. It defines the domain model and must not import other internal packages.
 4. `internal/sequence` owns sequence loading and construction. `internal/parser` parses the DSL, but `internal/sequence` is responsible for turning parsed content into a valid `types.Sequence`.
 5. `internal/audio` owns synthesis and rendering. `core` calls it, but does not reimplement audio concerns.
-6. `internal/preview` owns HTML preview generation and stays separate from audio rendering.
-7. `internal/remote` is an optional source of `.spsq` files. Once a Remote sequence is downloaded, it goes through the same main pipeline as any local sequence.
-8. `spsq` is the public programmatic builder API for generating `.spsq` text. It should remain a construction helper that hands generated content to `core.LoadContent` rather than owning parsing, validation, preview, or rendering.
+6. `internal/remote` is an optional source of `.spsq` files. Once a Remote sequence is downloaded, it goes through the same main pipeline as any local sequence.
+7. `spsq` is the public programmatic builder API for generating `.spsq` text. It should remain a construction helper that hands generated content to `core.LoadContent` rather than owning parsing, validation, dumping, or rendering.
 
 ## High-Level Runtime Flow
 
@@ -37,7 +36,6 @@ flowchart TD
 	Core --> Seq[internal/sequence\nload and build Sequence]
 	Seq --> Parser[internal/parser\nparse DSL tokens and structures]
 	Seq --> Types[internal/types\ndomain model]
-	Core --> Preview[internal/preview\nHTML preview generation]
 	Core --> Audio[internal/audio\nPCM and WAV rendering]
 	Audio --> External[external\nffplay and ffmpeg integration]
 	CLI --> Remote[internal/remote\nindex, cache, download]
@@ -49,7 +47,7 @@ There are two main paths:
 - a local sequence path, where the CLI loads a user-provided `.spsq` file;
 - a Remote path, where the CLI resolves a remote entry first, downloads it, and then reuses the same loading and rendering pipeline.
 
-Programmatic Go callers can also construct `.spsq` content with `spsq.Builder` and load it through `Builder.Load(ctx)`. From that point on, the content uses the same sequence loading, validation, preview, and audio rendering pipeline as hand-written text.
+Programmatic Go callers can also construct `.spsq` content with `spsq.Builder` and load it through `Builder.Load(ctx)`. From that point on, the content uses the same sequence loading, validation, dumping, and audio rendering pipeline as hand-written text.
 
 ## Package Map
 
@@ -60,7 +58,7 @@ This is the executable entry layer.
 - `main.go` handles process startup, flag parsing, and top-level command routing.
 - `dispatch.go` executes special commands such as `-version`, `-manual`, `-remote-*`, and `-new`.
 - `sequencehandlers.go` handles the standard local sequence flow.
-- `output.go` routes loaded sequences to preview, stream, WAV, playback, or MP3 conversion.
+- `output.go` routes loaded sequences to JSON dump, stream, WAV, playback, or MP3 conversion.
 - `remote.go` implements CLI-facing Remote commands.
 
 This package should remain a shell around the rest of the system rather than a new home for parser, sequence, or renderer logic.
@@ -72,7 +70,7 @@ The `-manual` command is intentionally kept as a discovery shortcut, but it now 
 This is the public API of SynapSeq.
 
 - `AppContext` carries execution settings such as verbose output.
-- `LoadedContext` wraps a loaded sequence and exposes the main operations: `WAV`, `Stream`, `Preview`, and metadata accessors.
+- `LoadedContext` wraps a loaded sequence and exposes the main operations: `WAV`, `Stream`, `JSON`, and metadata accessors.
 
 The purpose of `core` is to hide internal package wiring behind a small and stable surface.
 
@@ -145,12 +143,6 @@ Inside the root package, the engine is currently being decomposed into three exp
 
 This refactor is intentionally incremental. The parser and `.spsq` syntax remain unchanged while the audio engine boundary is being pushed away from `types.Period` and toward explicit compiled artifacts.
 
-### `internal/preview`
-
-This package renders loaded sequences into interactive HTML previews.
-
-It is organized around template/view-model generation, track analysis, time series, graph metrics, and asset embedding. Preview is intentionally separate from audio rendering.
-
 ### `internal/remote`
 
 This package manages SynapSeq Remote sequences:
@@ -176,7 +168,7 @@ It is internal because it serves the executable, but it is kept separate from `c
 ### Other supporting packages
 
 - `internal/diag` centralizes structured diagnostics and source-aware parse errors.
-- `internal/timeline` provides transition math used by rendering and preview.
+- `internal/timeline` provides transition math used by rendering.
 - `internal/preset` supports preset-related resolution and helpers.
 - `internal/resource` abstracts file access and local or remote loading.
 - `internal/nameref` centralizes name validation and reference handling.
@@ -196,7 +188,6 @@ flowchart LR
 	SPSQ --> TYPES
 
 	CORE --> SEQ[internal/sequence]
-	CORE --> PREVIEW[internal/preview]
 	CORE --> AUDIO[internal/audio]
 
 	SEQ --> PARSER[internal/parser]
@@ -206,7 +197,6 @@ flowchart LR
 
 	PARSER --> TYPES
 	PRESET --> TYPES
-	PREVIEW --> TYPES
 	AUDIO --> TYPES
 	REMOTE --> TYPES
 
@@ -248,7 +238,7 @@ The CLI pipeline begins in `cmd/synapseq`.
 1. `main()` calls `cli.ParseFlags()`.
 2. `run()` asks `dispatchSpecialCommand()` to handle special commands first.
 3. If no special command matches, `handleSequenceCommand()` handles the standard local sequence flow.
-4. `output.go` decides whether the loaded sequence becomes preview HTML, raw PCM, WAV, live playback, or MP3.
+4. `output.go` decides whether the loaded sequence becomes JSON, raw PCM, WAV, live playback, or MP3.
 
 This flow intentionally keeps command precedence explicit while centralizing the definition of special commands inside `internal/cli`.
 
@@ -351,16 +341,6 @@ Contributors working in `internal/audio` should prefer continuing this direction
 
 The renderer is intentionally concrete. It is not an interface-heavy pipeline; contributors should prefer focused collaborators over generalization.
 
-## Preview Flow
-
-Preview generation is a parallel path to audio rendering.
-
-1. `LoadedContext.Preview()` validates that a sequence is available.
-2. `internal/preview.GetPreviewContent()` builds a view model from sequence periods.
-3. The preview package uses embedded assets and Go templates to render a complete HTML document.
-
-The preview package was intentionally decomposed into focused modules such as formatting, track analysis, time series, graph metrics, presentation, assets, and view models. That separation should be preserved rather than collapsed back into a large monolithic file.
-
 ## Remote Flow
 
 Remote is an optional sequence source, not a separate execution engine.
@@ -372,7 +352,7 @@ flowchart TD
 	RemoteAPI --> Download[download sequence]
 	Download --> CachedSPSQ[cached .spsq file]
 	CachedSPSQ --> CoreLoadFile[core.AppContext.LoadFile]
-	CoreLoad --> MainPipeline[standard preview or audio pipeline]
+	CoreLoad --> MainPipeline[standard dump or audio pipeline]
 ```
 
 That means Remote integration should stay shallow:
@@ -404,7 +384,7 @@ The public Go API should continue to revolve around the following mental model:
    - inspect comments, sample rate, volume, ambiance, extends, and raw content;
    - render WAV;
    - stream raw PCM;
-   - render preview HTML.
+   - generate JSON dumps.
 
 Contributors should be cautious about expanding the public API. Internal refinements are much cheaper than public API changes.
 
@@ -417,7 +397,7 @@ When contributing changes, use these heuristics:
 3. Prefer concrete helpers over abstract interfaces unless there is a real second implementation.
 4. Keep `cmd/synapseq` as orchestration, not business logic.
 5. If a change affects sequence loading, inspect both `internal/parser` and `internal/sequence` before deciding where the logic belongs.
-6. If a change affects output, check whether it belongs to preview, audio, external tools, or only the CLI shell.
+6. If a change affects output, check whether it belongs to dumping, audio, external tools, or only the CLI shell.
 7. If a change touches Remote behavior, keep Remote as an input source and cache layer rather than a second execution pipeline.
 
 ## Suggested Reading Order
@@ -430,7 +410,6 @@ For new contributors, the fastest way to build context is:
 4. `internal/sequence/loadtext.go` and `internal/sequence/parsecontent.go`
 5. `internal/parser/*`
 6. `internal/audio/renderer.go` and `internal/audio/rendercycle.go`
-7. `internal/preview/preview.go`
-8. `internal/remote/*` if working on remote sequence workflows
+7. `internal/remote/*` if working on remote sequence workflows
 
 That path mirrors how the application itself flows at runtime.

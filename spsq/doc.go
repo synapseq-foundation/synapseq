@@ -12,9 +12,9 @@ uses a fluent Builder that records options and timeline entries, plus Preset
 builders that record tracks and effects, then renders them as .spsq text.
 
 Load validates the generated text through the core package and returns the
-loaded sequence context. The spsq package does not preview, stream, or render
-audio itself; those responsibilities remain in core and the internal sequence
-and audio packages.
+loaded sequence context. The spsq package does not dump, stream, or render audio
+itself; those responsibilities remain in core and the internal sequence and
+audio packages.
 
 # Example Usage
 
@@ -78,7 +78,7 @@ LoadedContext or parser and validation errors produced by core.
 
 # More Information
 
-For the loading, rendering, streaming, and preview API, see the core package:
+For the loading, rendering, streaming, and dump API, see the core package:
 https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4/core
 
 For complete project documentation and examples, see:

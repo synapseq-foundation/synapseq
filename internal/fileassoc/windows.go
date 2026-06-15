@@ -194,35 +194,6 @@ func InstallWindowsContextMenu() error {
 	testCmdKey.SetStringValue("", testCmd)
 
 	// ===============================
-	// Generate a Preview HTML
-	// ===============================
-	previewKey, _, err := registry.CreateKey(
-		registry.CURRENT_USER,
-		base+`\GeneratePreview`,
-		registry.SET_VALUE,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create GeneratePreview menu: %w", err)
-	}
-	defer previewKey.Close()
-
-	previewKey.SetStringValue("", "SynapSeq: Generate preview HTML")
-	previewKey.SetStringValue("Icon", exePath+",0")
-
-	previewCmdKey, _, err := registry.CreateKey(
-		registry.CURRENT_USER,
-		base+`\GeneratePreview\command`,
-		registry.SET_VALUE,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create GeneratePreview command: %w", err)
-	}
-	defer previewCmdKey.Close()
-
-	previewCmd := `cmd.exe /C synapseq -preview "%1" & echo. & pause`
-	previewCmdKey.SetStringValue("", previewCmd)
-
-	// ===============================
 	// Convert to WAV
 	// ===============================
 	wavKey, _, err := registry.CreateKey(

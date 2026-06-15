@@ -51,12 +51,6 @@ func TestParseFlags(ts *testing.T) {
 			expectedArgs: []string{},
 			expectError:  false,
 		},
-		{
-			args:         []string{"cmd", "-preview", "input.spsq"},
-			expected:     &CLIOptions{Preview: true},
-			expectedArgs: []string{"input.spsq"},
-			expectError:  false,
-		},
 		// Help flag
 		{
 			args:         []string{"cmd", "-help"},
@@ -242,9 +236,6 @@ func TestParseFlags(ts *testing.T) {
 		if opts.ShowHelp != test.expected.ShowHelp {
 			ts.Errorf("For args %v, ShowHelp: expected %v but got %v", test.args, test.expected.ShowHelp, opts.ShowHelp)
 		}
-		if opts.Preview != test.expected.Preview {
-			ts.Errorf("For args %v, Preview: expected %v but got %v", test.args, test.expected.Preview, opts.Preview)
-		}
 		if opts.Quiet != test.expected.Quiet {
 			ts.Errorf("For args %v, Quiet: expected %v but got %v", test.args, test.expected.Quiet, opts.Quiet)
 		}
@@ -421,10 +412,10 @@ func TestHelpIncludesQuickStart(ts *testing.T) {
 		"meditation, focus, sleep, relaxation, example",
 		"Next steps:",
 		"Validate syntax and semantics without generating audio",
-		"Generate starter.html with a visual timeline preview",
+		"Generate starter.json with resolved sequence data",
 		"defaults to <input>.wav",
 		"-new TYPE         Template type: meditation, focus, sleep, relaxation",
-		"-preview          Render an HTML preview timeline",
+		"-dump             Render JSON sequence data",
 		"Remote quick start:",
 		"Run -remote-sync first to initialize the local Remote index.",
 		"synapseq -remote-sync",

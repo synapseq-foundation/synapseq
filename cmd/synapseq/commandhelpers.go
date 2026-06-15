@@ -12,9 +12,6 @@ import (
 )
 
 func defaultOutputExtension(opts *cli.CLIOptions) string {
-	if opts.Preview {
-		return ".html"
-	}
 	if opts.Dump {
 		return ".json"
 	}
@@ -41,7 +38,6 @@ func buildOutputOptions(outputFile, outputFormat string, opts *cli.CLIOptions) *
 	return &outputOptions{
 		OutputFile: outputFile,
 		Quiet:      opts.Quiet,
-		Preview:    opts.Preview,
 		Dump:       opts.Dump,
 		Play:       opts.Play,
 		Mp3:        outputFormat == ".mp3" || opts.Mp3,

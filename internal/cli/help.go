@@ -130,7 +130,7 @@ func writeOutputSection(writer io.Writer) {
 	fmt.Fprintf(writer, "  WAV file          %s\n", Command("path/to/output.wav"))
 	fmt.Fprintf(writer, "  MP3 file          %s\n", Command("path/to/output.mp3"))
 	fmt.Fprintf(writer, "  JSON file         %s\n", Command("path/to/output.json"))
-	fmt.Fprintf(writer, "  standard output   %s\n\n", Muted("-   raw PCM, preview HTML, or JSON depending on mode"))
+	fmt.Fprintf(writer, "  standard output   %s\n\n", Muted("-   raw PCM or JSON depending on mode"))
 }
 
 func writeOptionsSection(writer io.Writer, title string, options []helpOption) {
@@ -189,7 +189,6 @@ func quickStartExamples() []helpExample {
 func nextStepExamples() []helpExample {
 	return []helpExample{
 		{CommandText: "synapseq -test starter.spsq", Description: "Validate syntax and semantics without generating audio"},
-		{CommandText: "synapseq -preview starter.spsq", Description: "Generate starter.html with a visual timeline preview"},
 		{CommandText: "synapseq -dump starter.spsq", Description: "Generate starter.json with resolved sequence data"},
 		{CommandText: "synapseq -play starter.spsq", Description: "Play the sequence directly with ffplay"},
 		{CommandText: "synapseq starter.spsq starter.mp3", Description: "Export to MP3 with ffmpeg"},
@@ -200,7 +199,6 @@ func commonHelpOptions() []helpOption {
 	return []helpOption{
 		{FlagText: "-new TYPE", ColumnWidth: 18, Description: "Template type: meditation, focus, sleep, relaxation, example"},
 		{FlagText: "-test", ColumnWidth: 18, Description: "Check syntax only"},
-		{FlagText: "-preview", ColumnWidth: 18, Description: "Render an HTML preview timeline"},
 		{FlagText: "-dump", ColumnWidth: 18, Description: "Render JSON sequence data"},
 		{FlagText: "-play", ColumnWidth: 18, Description: "Play audio using ffplay"},
 		{FlagText: "-mp3", ColumnWidth: 18, Description: "Export to MP3 with ffmpeg"},

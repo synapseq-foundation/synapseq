@@ -16,7 +16,6 @@ import (
 type outputOptions struct {
 	OutputFile       string
 	Quiet            bool
-	Preview          bool
 	Dump             bool
 	Play             bool
 	Mp3              bool
@@ -27,29 +26,6 @@ type outputOptions struct {
 
 // processSequenceOutput processes the output of a loaded sequence
 func processSequenceOutput(loadedCtx *synapseq.LoadedContext, opts *outputOptions) error {
-	if opts.Preview {
-		content, err := loadedCtx.Preview()
-		if err != nil {
-			return err
-		}
-
-		if opts.OutputFile == "-" {
-			fmt.Println(string(content))
-			return nil
-		}
-
-		if err := os.WriteFile(opts.OutputFile, content, 0644); err != nil {
-			return fmt.Errorf("failed to write preview HTML: %v", err)
-		}
-
-		if !opts.Quiet {
-			fmt.Printf("%s %s\n", cli.SuccessText("Preview generated:"), cli.Accent(fmt.Sprintf("%q", opts.OutputFile)))
-			fmt.Printf("%s\n", cli.Muted("Open the file in a web browser to view the sequence preview."))
-		}
-
-		return nil
-	}
-
 	if opts.Dump {
 		content, err := loadedCtx.JSON()
 		if err != nil {

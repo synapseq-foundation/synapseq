@@ -12,7 +12,6 @@ import (
 // of 50 characters or fewer with no ":" character.
 var completionFlags = map[string]string{
 	"version":                    "Show version information",
-	"preview":                    "Render HTML preview timeline",
 	"dump":                       "Dump sequence as JSON",
 	"quiet":                      "Enable quiet mode",
 	"no-color":                   "Disable ANSI colors in CLI output",

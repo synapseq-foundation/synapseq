@@ -106,17 +106,6 @@ func TestResolveOutputTargetUsesRequestedOutput(ts *testing.T) {
 	}
 }
 
-func TestResolveOutputTargetUsesOptionDefaults(ts *testing.T) {
-	opts := &clistyle.CLIOptions{Preview: true}
-	outputFile, outputFormat := resolveOutputTarget("session", "", opts)
-	if outputFile != "session.html" {
-		ts.Fatalf("expected default preview output file, got %q", outputFile)
-	}
-	if outputFormat != ".html" {
-		ts.Fatalf("expected output format .html, got %q", outputFormat)
-	}
-}
-
 func TestResolveOutputTargetUsesDumpDefault(ts *testing.T) {
 	opts := &clistyle.CLIOptions{Dump: true}
 	outputFile, outputFormat := resolveOutputTarget("session", "", opts)
@@ -326,14 +315,14 @@ func TestPrepareSequenceCommandUsesDefaultOutput(ts *testing.T) {
 }
 
 func TestPrepareSequenceCommandUsesExplicitOutput(ts *testing.T) {
-	command, err := prepareSequenceCommand([]string{"sessions/focus.spsq", "custom.html"}, &clistyle.CLIOptions{Preview: true})
+	command, err := prepareSequenceCommand([]string{"sessions/focus.spsq", "custom.json"}, &clistyle.CLIOptions{Dump: true})
 	if err != nil {
 		ts.Fatalf("unexpected error preparing command: %v", err)
 	}
-	if command.outputFile != "custom.html" {
-		ts.Fatalf("expected explicit output custom.html, got %q", command.outputFile)
+	if command.outputFile != "custom.json" {
+		ts.Fatalf("expected explicit output custom.json, got %q", command.outputFile)
 	}
-	if command.outputFormat != ".html" {
-		ts.Fatalf("expected output format .html, got %q", command.outputFormat)
+	if command.outputFormat != ".json" {
+		ts.Fatalf("expected output format .json, got %q", command.outputFormat)
 	}
 }

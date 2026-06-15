@@ -37,8 +37,6 @@ type CLIOptions struct {
 	ShowVersion bool
 	// New starter sequence template type
 	New string
-	// Preview mode, renders HTML timeline instead of audio
-	Preview bool
 	// Dump mode, renders JSON sequence data instead of audio
 	Dump bool
 	// Quiet mode, suppress non-error output

@@ -10,7 +10,7 @@ for the SynapSeq text-driven audio sequencer for brainwave entrainment.
 
 This package is the public Go API for loading .spsq sequences,
 inspecting their metadata, rendering WAV output, streaming raw PCM,
-generating HTML previews, and producing JSON dumps.
+and producing JSON dumps.
 
 # Supported Format
 
@@ -44,13 +44,6 @@ SynapSeq currently supports text input in .spsq format.
 	    if err := loaded.WAV("output.wav"); err != nil {
 	        log.Fatal(err)
 	    }
-
-	    // Or render an HTML preview
-	    previewHTML, err := loaded.Preview()
-	    if err != nil {
-	        log.Fatal(err)
-	    }
-	    _ = previewHTML
 
 	    // Or generate a JSON dump
 	    jsonDump, err := loaded.JSON()
@@ -89,7 +82,6 @@ in-memory source:
 Output methods:
   - loaded.WAV("output.wav") writes a WAV file
   - loaded.Stream(writer) writes raw PCM to an io.Writer
-  - loaded.Preview() returns HTML preview bytes
   - loaded.JSON() returns JSON dump bytes
 
 # Thread Safety

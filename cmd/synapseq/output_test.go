@@ -14,9 +14,9 @@ func TestOutputStylingHelpers(ts *testing.T) {
 	clistyle.SetColorEnabled(false)
 	defer clistyle.SetColorEnabled(true)
 
-	message := clistyle.SuccessText("Preview generated:") + " " + clistyle.Accent("\"out.html\"")
-	if message != "Preview generated: \"out.html\"" {
-		ts.Fatalf("unexpected preview message formatting: %q", message)
+	message := clistyle.SuccessText("Dump generated:") + " " + clistyle.Accent("\"out.json\"")
+	if message != "Dump generated: \"out.json\"" {
+		ts.Fatalf("unexpected dump message formatting: %q", message)
 	}
 
 	comment := clistyle.Label(">") + " " + clistyle.Muted("focus block")
