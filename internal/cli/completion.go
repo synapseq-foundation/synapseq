@@ -13,6 +13,7 @@ import (
 var completionFlags = map[string]string{
 	"version":                    "Show version information",
 	"preview":                    "Render HTML preview timeline",
+	"dump":                       "Dump sequence as JSON",
 	"quiet":                      "Enable quiet mode",
 	"no-color":                   "Disable ANSI colors in CLI output",
 	"test":                       "Validate syntax without generating output",
