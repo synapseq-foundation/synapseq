@@ -178,6 +178,25 @@ func ExampleLoadedContext_Ambiance() {
 	// Output: Ambiance retrieved successfully
 }
 
+func ExampleLoadedContext_Presets() {
+	// Create a new application context
+	ctx := synapseq.NewAppContext()
+	_ = ctx
+
+	// Load the sequence
+	// loaded, err := ctx.LoadFile("input.spsq")
+	// if err != nil {
+	//	log.Fatal(err)
+	// }
+
+	// Get the presets map from the loaded sequence
+	// presets := loaded.Presets()
+	// fmt.Printf("Presets entries: %d\n", len(presets))
+
+	fmt.Printf("Presets retrieved successfully\n")
+	// Output: Presets retrieved successfully
+}
+
 func ExampleLoadedContext_Extends() {
 	// Create a new application context
 	ctx := synapseq.NewAppContext()

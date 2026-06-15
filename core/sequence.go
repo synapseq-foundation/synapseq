@@ -117,6 +117,26 @@ func (lc *LoadedContext) Music() map[string]string {
 	return music
 }
 
+// Presets returns a defensive copy of presets map.
+func (lc *LoadedContext) Presets() map[string][]string {
+	if lc.sequence == nil || len(lc.sequence.Presets) == 0 {
+		return map[string][]string{}
+	}
+
+	presets := make(map[string][]string, len(lc.sequence.Presets))
+	for _, p := range lc.sequence.Presets {
+		for _, tr := range p.Track {
+			if tr.Type == t.TrackOff || tr.Type == t.TrackSilence {
+				continue
+			}
+			pName := p.String()
+			presets[pName] = append(presets[pName], tr.String())
+		}
+	}
+
+	return presets
+}
+
 // RawContent returns a defensive copy of raw content.
 func (lc *LoadedContext) RawContent() []byte {
 	if lc.sequence == nil || len(lc.sequence.RawContent) == 0 {
