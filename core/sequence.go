@@ -137,6 +137,21 @@ func (lc *LoadedContext) Presets() map[string][]string {
 	return presets
 }
 
+// Timeline returns a timeline of the sequence as a slice of strings.
+func (lc *LoadedContext) Timeline() []string {
+	if lc.sequence == nil || len(lc.sequence.Periods) == 0 {
+		return nil
+	}
+
+	timeline := make([]string, 0, len(lc.sequence.Periods))
+	for _, p := range lc.sequence.Periods {
+		ln := fmt.Sprintf("%s %s %s %d", p.TimeString(), p.PresetName, p.Transition.String(), p.Steps)
+		timeline = append(timeline, ln)
+	}
+
+	return timeline
+}
+
 // RawContent returns a defensive copy of raw content.
 func (lc *LoadedContext) RawContent() []byte {
 	if lc.sequence == nil || len(lc.sequence.RawContent) == 0 {
