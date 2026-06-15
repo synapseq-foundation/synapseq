@@ -129,6 +129,9 @@ func InstallWindowsFileAssociation() error {
 func InstallWindowsContextMenu() error {
 	base := `Software\Classes\SynapSeq.File\shell`
 
+	// Remove context menu actions from older SynapSeq versions.
+	_ = deleteRegistryTree(registry.CURRENT_USER, base+`\GeneratePreview`)
+
 	exe, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("failed to get exe path: %w", err)
@@ -192,6 +195,35 @@ func InstallWindowsContextMenu() error {
 
 	testCmd := `cmd.exe /C synapseq -test "%1" & echo. & pause`
 	testCmdKey.SetStringValue("", testCmd)
+
+	// ===============================
+	// Generate JSON Dump
+	// ===============================
+	dumpKey, _, err := registry.CreateKey(
+		registry.CURRENT_USER,
+		base+`\GenerateDump`,
+		registry.SET_VALUE,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create GenerateDump menu: %w", err)
+	}
+	defer dumpKey.Close()
+
+	dumpKey.SetStringValue("", "SynapSeq: Generate JSON dump")
+	dumpKey.SetStringValue("Icon", exePath+",0")
+
+	dumpCmdKey, _, err := registry.CreateKey(
+		registry.CURRENT_USER,
+		base+`\GenerateDump\command`,
+		registry.SET_VALUE,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create GenerateDump command: %w", err)
+	}
+	defer dumpCmdKey.Close()
+
+	dumpCmd := `cmd.exe /C synapseq -dump "%1" & echo. & pause`
+	dumpCmdKey.SetStringValue("", dumpCmd)
 
 	// ===============================
 	// Convert to WAV
