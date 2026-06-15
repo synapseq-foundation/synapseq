@@ -40,7 +40,6 @@ make clean
 | `internal/parser` | `.spsq` DSL parsing - lexical and syntactic interpretation |
 | `internal/sequence` | Sequence loading, extends/preset resolution, building validated Sequence |
 | `internal/audio` | Audio rendering - renderer, sources, effects, sync, wavetable, output |
-| `internal/preview` | HTML preview generation |
 | `internal/remote` | Remote sequence source - index, cache, download |
 | `internal/cli` | CLI infrastructure - flags, help, text styling |
 | `internal/diag` | Structured diagnostics and parse errors |
@@ -91,15 +90,6 @@ chore: clean up unused code in parser
 - Test files: `*_test.go`, use table-driven tests when appropriate
 - All tests must pass before submitting PR (`make test`)
 
-## OpenSpec Workflow
-
-This project uses a custom workflow for proposing and implementing changes:
-
-- **Explore**: Use `openspec-explore` skill to investigate problems and clarify requirements
-- **Propose**: Use `opsx-propose` command to create a new change proposal
-- **Apply**: Use `opsx-apply` command or `openspec-apply-change` skill to implement tasks
-- **Archive**: Use `opsx-archive` command or `openspec-archive-change` skill to finalize completed changes
-
 ## Suggested Reading Order
 
 For new contributors, the fastest way to understand the codebase:
@@ -110,7 +100,6 @@ For new contributors, the fastest way to understand the codebase:
 4. `internal/sequence/loadtext.go` and `internal/sequence/parsecontent.go`
 5. `internal/parser/*`
 6. `internal/audio/renderer.go` and `internal/audio/rendercycle.go`
-7. `internal/preview/preview.go`
-8. `internal/remote/*`
+7. `internal/remote/*`
 
 For detailed architecture, see `docs/ARCHITECTURE.md`. For DSL syntax, see `docs/SYNTAX.md`.
