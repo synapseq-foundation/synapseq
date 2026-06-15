@@ -137,16 +137,16 @@ func (lc *LoadedContext) Presets() map[string][]string {
 	return presets
 }
 
-// Timeline returns a timeline of the sequence as a slice of strings.
-func (lc *LoadedContext) Timeline() []string {
+// Timeline returns a timeline of the sequence as a map of preset name to timeline string.
+func (lc *LoadedContext) Timeline() map[string]string {
 	if lc.sequence == nil || len(lc.sequence.Periods) == 0 {
 		return nil
 	}
 
-	timeline := make([]string, 0, len(lc.sequence.Periods))
+	timeline := make(map[string]string, len(lc.sequence.Periods))
 	for _, p := range lc.sequence.Periods {
-		ln := fmt.Sprintf("%s %s %s %d", p.TimeString(), p.PresetName, p.Transition.String(), p.Steps)
-		timeline = append(timeline, ln)
+		ln := fmt.Sprintf("%s %s %d", p.PresetName, p.Transition.String(), p.Steps)
+		timeline[p.TimeString()] = ln
 	}
 
 	return timeline

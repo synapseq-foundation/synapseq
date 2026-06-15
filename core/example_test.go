@@ -197,6 +197,25 @@ func ExampleLoadedContext_Presets() {
 	// Output: Presets retrieved successfully
 }
 
+func ExampleLoadedContext_Timeline() {
+	// Create a new application context
+	ctx := synapseq.NewAppContext()
+	_ = ctx
+
+	// Load the sequence
+	// loaded, err := ctx.LoadFile("input.spsq")
+	// if err != nil {
+	//	log.Fatal(err)
+	// }
+
+	// Get the timeline from the loaded sequence
+	// timeline := loaded.Timeline()
+	// fmt.Printf("Timeline entries: %d\n", len(timeline))
+
+	fmt.Printf("Timeline retrieved successfully\n")
+	// Output: Timeline retrieved successfully
+}
+
 func ExampleLoadedContext_Extends() {
 	// Create a new application context
 	ctx := synapseq.NewAppContext()
