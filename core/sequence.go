@@ -117,23 +117,23 @@ func (lc *LoadedContext) Music() map[string]string {
 	return music
 }
 
-// Presets returns a defensive summary copy of sequence presets.
-func (lc *LoadedContext) Presets() []PresetSummary {
+// Presets returns a defensive copy of sequence presets.
+func (lc *LoadedContext) Presets() []Preset {
 	if lc.sequence == nil || len(lc.sequence.Presets) == 0 {
-		return []PresetSummary{}
+		return []Preset{}
 	}
 
-	presets := make([]PresetSummary, 0, len(lc.sequence.Presets))
+	presets := make([]Preset, 0, len(lc.sequence.Presets))
 
 	for _, p := range lc.sequence.Presets {
-		tracks := make([]TrackSummary, 0, len(p.Track))
+		tracks := make([]Track, 0, len(p.Track))
 
 		for i, tr := range p.Track {
 			if tr.Type == t.TrackOff || tr.Type == t.TrackSilence {
 				continue
 			}
 
-			tracks = append(tracks, TrackSummary{
+			tracks = append(tracks, Track{
 				Index:       i + 1,
 				Waveform:    tr.Waveform.String(),
 				Type:        tr.Type.String(),
@@ -142,7 +142,7 @@ func (lc *LoadedContext) Presets() []PresetSummary {
 				Amplitude:   tr.Amplitude.ToPercent(),
 				SourceName:  tr.SourceName,
 				NoiseSmooth: tr.NoiseSmooth,
-				Effect: EffectSummary{
+				Effect: Effect{
 					Type:      tr.Effect.Type.String(),
 					Value:     tr.Effect.Value,
 					Intensity: tr.Effect.Intensity.ToPercent(),
@@ -155,7 +155,7 @@ func (lc *LoadedContext) Presets() []PresetSummary {
 			continue
 		}
 
-		presets = append(presets, PresetSummary{
+		presets = append(presets, Preset{
 			Name:   p.String(),
 			Tracks: tracks,
 		})

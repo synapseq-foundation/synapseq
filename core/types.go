@@ -24,16 +24,16 @@ type LoadedContext struct {
 	sequence *t.Sequence
 }
 
-// PresetSummary holds a summary of a preset, including its name and tracks.
-type PresetSummary struct {
+// Preset holds a preset, including its name and tracks.
+type Preset struct {
 	Name   string
-	Tracks []TrackSummary
+	Tracks []Track
 }
 
-// TrackSummary holds a summary of a track, including its
+// Track holds a track, including its
 // index, type, line, amplitude, carrier, resonance, waveform,
 // source name, noise smooth, and effect.
-type TrackSummary struct {
+type Track struct {
 	Index       int
 	Waveform    string
 	Type        string
@@ -42,12 +42,12 @@ type TrackSummary struct {
 	Amplitude   float64
 	SourceName  string
 	NoiseSmooth float64
-	Effect      EffectSummary
+	Effect      Effect
 	Line        string
 }
 
-// EffectSummary holds a summary of an effect, including its type, value, and intensity.
-type EffectSummary struct {
+// Effect holds an effect, including its type, value, and intensity.
+type Effect struct {
 	Type      string
 	Value     float64
 	Intensity float64

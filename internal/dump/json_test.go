@@ -6,6 +6,7 @@ package dump
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
@@ -84,22 +85,56 @@ func TestJSONSerializesLoadedSequence(ts *testing.T) {
 	if options["sampleRate"] != float64(44100) {
 		ts.Fatalf("expected sampleRate 44100, got %#v", options["sampleRate"])
 	}
+	if got := options["ambiance"].(map[string]any)["rain"]; got != "sounds/rain" {
+		ts.Fatalf("expected ambiance rain source, got %#v", got)
+	}
+	if got := options["music"].(map[string]any)["meditation_song"]; got != "musics/med_-_45" {
+		ts.Fatalf("expected music meditation_song source, got %#v", got)
+	}
+	if _, ok := options["sources"]; ok {
+		ts.Fatalf("did not expect legacy sources object: %#v", options["sources"])
+	}
 
-	presets := got["presets"].(map[string]any)
-	alphaTracks := presets["alpha"].([]any)
+	presets := got["presets"].([]any)
+	if len(presets) != 1 {
+		ts.Fatalf("expected 1 preset, got %d", len(presets))
+	}
+
+	alphaJSON := presets[0].(map[string]any)
+	if alphaJSON["name"] != "alpha" {
+		ts.Fatalf("expected alpha preset, got %#v", alphaJSON["name"])
+	}
+
+	alphaTracks := alphaJSON["tracks"].([]any)
 	if len(alphaTracks) != 4 {
 		ts.Fatalf("expected 4 alpha tracks, got %d", len(alphaTracks))
 	}
 
 	musicTrack := alphaTracks[2].(map[string]any)
-	if musicTrack["family"] != "music" || musicTrack["loop"] != false {
+	if musicTrack["type"] != "music" || musicTrack["sourceName"] != "meditation_song" || musicTrack["amplitude"] != float64(50) {
 		ts.Fatalf("unexpected music track: %#v", musicTrack)
+	}
+
+	binauralTrack := alphaTracks[3].(map[string]any)
+	if binauralTrack["index"] != float64(4) || binauralTrack["type"] != "binaural" || binauralTrack["resonance"] != float64(10) {
+		ts.Fatalf("unexpected binaural track: %#v", binauralTrack)
+	}
+
+	effect := musicTrack["effect"].(map[string]any)
+	if effect["type"] != "modulation" || effect["value"] != float64(10) || effect["intensity"] != float64(15) {
+		ts.Fatalf("unexpected music effect: %#v", effect)
 	}
 
 	timeline := got["timeline"].([]any)
 	entry := timeline[0].(map[string]any)
-	if entry["preset"] != "alpha" || entry["startSeconds"] != float64(0) {
+	if entry["presetName"] != "alpha" || entry["timestamp"] != "00:00:00" {
 		ts.Fatalf("unexpected timeline entry: %#v", entry)
+	}
+
+	for _, legacy := range []string{`"family"`, `"kind"`, `"beat"`, `"smooth"`, `"source"`, `"loop"`, `"startSeconds"`} {
+		if strings.Contains(string(content), legacy) {
+			ts.Fatalf("did not expect legacy field %s in JSON:\n%s", legacy, content)
+		}
 	}
 }
 

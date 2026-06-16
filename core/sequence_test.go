@@ -105,7 +105,29 @@ func TestLoadedContext_JSON(t *testing.T) {
 		t.Fatalf("expected sampleRate 48000, got %#v", options["sampleRate"])
 	}
 
-	if _, ok := got["presets"].(map[string]any)["alpha"]; !ok {
+	presets := got["presets"].([]any)
+	if len(presets) == 0 {
+		t.Fatalf("expected presets in JSON: %s", content)
+	}
+
+	alpha := presets[0].(map[string]any)
+	if alpha["name"] != "alpha" {
 		t.Fatalf("expected alpha preset in JSON: %s", content)
+	}
+
+	tracks := alpha["tracks"].([]any)
+	if len(tracks) == 0 {
+		t.Fatalf("expected alpha tracks in JSON: %s", content)
+	}
+
+	track := tracks[0].(map[string]any)
+	if track["type"] != "binaural" || track["resonance"] != float64(1) {
+		t.Fatalf("expected core-style track in JSON: %#v", track)
+	}
+
+	timeline := got["timeline"].([]any)
+	entry := timeline[0].(map[string]any)
+	if entry["presetName"] != "alpha" || entry["timestamp"] != "00:00:00" {
+		t.Fatalf("expected core-style timeline in JSON: %#v", entry)
 	}
 }
