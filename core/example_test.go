@@ -6,6 +6,7 @@ package core_test
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
@@ -179,41 +180,74 @@ func ExampleLoadedContext_Ambiance() {
 }
 
 func ExampleLoadedContext_Presets() {
-	// Create a new application context
 	ctx := synapseq.NewAppContext()
-	_ = ctx
 
-	// Load the sequence
-	// loaded, err := ctx.LoadFile("input.spsq")
-	// if err != nil {
-	//	log.Fatal(err)
-	// }
+	loaded, err := ctx.LoadContent(`alpha
+  waveform sine tone 300 binaural 10 amplitude 20
+  noise pink smooth 5 amplitude 10
 
-	// Get the presets map from the loaded sequence
-	// presets := loaded.Presets()
-	// fmt.Printf("Presets entries: %d\n", len(presets))
+00:00:00 alpha
+00:01:00 alpha
+`)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	fmt.Printf("Presets retrieved successfully\n")
-	// Output: Presets retrieved successfully
+	presets := loaded.Presets()
+
+	fmt.Printf("Presets: %d\n", len(presets))
+	fmt.Printf("Preset: %s\n", presets[0].Name)
+	fmt.Printf("Tracks: %d\n", len(presets[0].Tracks))
+	fmt.Printf("Track 1: %s %.2f %.2f %.2f\n",
+		presets[0].Tracks[0].Type,
+		presets[0].Tracks[0].Carrier,
+		presets[0].Tracks[0].Resonance,
+		presets[0].Tracks[0].Amplitude,
+	)
+
+	// Output:
+	// Presets: 1
+	// Preset: alpha
+	// Tracks: 2
+	// Track 1: binaural 300.00 10.00 20.00
 }
 
 func ExampleLoadedContext_Timeline() {
-	// Create a new application context
 	ctx := synapseq.NewAppContext()
-	_ = ctx
 
-	// Load the sequence
-	// loaded, err := ctx.LoadFile("input.spsq")
-	// if err != nil {
-	//	log.Fatal(err)
-	// }
+	loaded, err := ctx.LoadContent(`alpha
+  waveform sine tone 300 binaural 10 amplitude 20
 
-	// Get the timeline from the loaded sequence
-	// timeline := loaded.Timeline()
-	// fmt.Printf("Timeline entries: %d\n", len(timeline))
+beta
+  waveform sine tone 200 monaural 8 amplitude 15
 
-	fmt.Printf("Timeline retrieved successfully\n")
-	// Output: Timeline retrieved successfully
+00:00:00 alpha steady 0
+00:01:00 beta smooth 2
+`)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	timeline := loaded.Timeline()
+
+	fmt.Printf("Timeline: %d\n", len(timeline))
+	fmt.Printf("Entry 1: %s %s %s %d\n",
+		timeline[0].Timestamp,
+		timeline[0].PresetName,
+		timeline[0].Transition,
+		timeline[0].Steps,
+	)
+	fmt.Printf("Entry 2: %s %s %s %d\n",
+		timeline[1].Timestamp,
+		timeline[1].PresetName,
+		timeline[1].Transition,
+		timeline[1].Steps,
+	)
+
+	// Output:
+	// Timeline: 2
+	// Entry 1: 00:00:00 alpha steady 0
+	// Entry 2: 00:01:00 beta smooth 2
 }
 
 func ExampleLoadedContext_Extends() {

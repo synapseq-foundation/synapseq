@@ -117,36 +117,77 @@ func (lc *LoadedContext) Music() map[string]string {
 	return music
 }
 
-// Presets returns a defensive copy of presets map.
-func (lc *LoadedContext) Presets() map[string][]string {
+// Presets returns a defensive summary copy of sequence presets.
+func (lc *LoadedContext) Presets() []PresetSummary {
 	if lc.sequence == nil || len(lc.sequence.Presets) == 0 {
-		return map[string][]string{}
+		return []PresetSummary{}
 	}
 
-	presets := make(map[string][]string, len(lc.sequence.Presets))
+	presets := make([]PresetSummary, 0, len(lc.sequence.Presets))
+
 	for _, p := range lc.sequence.Presets {
-		for _, tr := range p.Track {
+		tracks := make([]TrackSummary, 0, len(p.Track))
+
+		for i, tr := range p.Track {
 			if tr.Type == t.TrackOff || tr.Type == t.TrackSilence {
 				continue
 			}
-			pName := p.String()
-			presets[pName] = append(presets[pName], tr.String())
+
+			tracks = append(tracks, TrackSummary{
+				Index:       i + 1,
+				Waveform:    tr.Waveform.String(),
+				Type:        tr.Type.String(),
+				Carrier:     tr.Carrier,
+				Resonance:   tr.Resonance,
+				Amplitude:   tr.Amplitude.ToPercent(),
+				SourceName:  tr.SourceName,
+				NoiseSmooth: tr.NoiseSmooth,
+				Effect: EffectSummary{
+					Type:      tr.Effect.Type.String(),
+					Value:     tr.Effect.Value,
+					Intensity: tr.Effect.Intensity.ToPercent(),
+				},
+				Line: tr.String(),
+			})
 		}
+
+		if len(tracks) == 0 {
+			continue
+		}
+
+		presets = append(presets, PresetSummary{
+			Name:   p.String(),
+			Tracks: tracks,
+		})
 	}
 
 	return presets
 }
 
-// Timeline returns a timeline of the sequence as a map of preset name to timeline string.
-func (lc *LoadedContext) Timeline() map[string]string {
+// Timeline returns a defensive summary copy of sequence timeline entries.
+func (lc *LoadedContext) Timeline() []TimelineEntry {
 	if lc.sequence == nil || len(lc.sequence.Periods) == 0 {
-		return nil
+		return []TimelineEntry{}
 	}
 
-	timeline := make(map[string]string, len(lc.sequence.Periods))
+	timeline := make([]TimelineEntry, 0, len(lc.sequence.Periods))
+
 	for _, p := range lc.sequence.Periods {
-		ln := fmt.Sprintf("%s %s %d", p.PresetName, p.Transition.String(), p.Steps)
-		timeline[p.TimeString()] = ln
+		line := fmt.Sprintf(
+			"%s %s %s %d",
+			p.TimeString(),
+			p.PresetName,
+			p.Transition.String(),
+			p.Steps,
+		)
+
+		timeline = append(timeline, TimelineEntry{
+			Timestamp:  p.TimeString(),
+			PresetName: p.PresetName,
+			Transition: p.Transition.String(),
+			Steps:      p.Steps,
+			Line:       line,
+		})
 	}
 
 	return timeline

@@ -6,23 +6,7 @@ package core
 
 import (
 	"io"
-
-	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
-
-// AppContext holds the configuration for the application.
-// It provides a safe, immutable context for sequence processing.
-// Methods that modify the context return a new instance.
-type AppContext struct {
-	statusOutput io.Writer
-	statusColors bool
-}
-
-// LoadedContext holds a loaded sequence and execution settings.
-type LoadedContext struct {
-	appCtx   *AppContext
-	sequence *t.Sequence
-}
 
 // NewAppContext creates a new AppContext instance.
 func NewAppContext() *AppContext {
