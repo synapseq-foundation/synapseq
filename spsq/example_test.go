@@ -16,7 +16,7 @@ import (
 func ExampleNew() {
 	builder := spsq.New().SampleRate(44100).Volume(100)
 	alpha := builder.NewPreset("alpha")
-	alpha.PinkNoise(0).Amplitude(30)
+	alpha.Pink(0).Amplitude(30)
 	alpha.Tone(300).Binaural(10).Amplitude(15)
 
 	ctx := synapseq.NewAppContext()
@@ -38,7 +38,7 @@ func ExampleNew() {
 func ExampleBuilder_Load_verbose() {
 	builder := spsq.New()
 	alpha := builder.NewPreset("alpha")
-	alpha.PinkNoise(0).Amplitude(30)
+	alpha.Pink(0).Amplitude(30)
 
 	ctx := synapseq.NewAppContext().WithVerbose(io.Discard, false)
 	loaded, err := builder.

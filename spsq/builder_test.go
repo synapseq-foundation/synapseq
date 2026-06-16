@@ -30,11 +30,11 @@ func TestBuilderLoadPreservesOrder(t *testing.T) {
 		Music("meditation", "meditation")
 
 	alpha := builder.NewPreset("alpha")
-	alpha.PinkNoise(0).Amplitude(30)
+	alpha.Pink(0).Amplitude(30)
 	alpha.Music("meditation").Amplitude(20)
 
 	beta := builder.NewPreset("beta")
-	beta.PinkNoise(10).Amplitude(15)
+	beta.Pink(10).Amplitude(15)
 
 	ctx := synapseq.NewAppContext()
 	loaded, err := builder.

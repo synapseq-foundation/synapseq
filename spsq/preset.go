@@ -50,24 +50,24 @@ func (p *Preset) Music(name string) *Preset {
 	})
 }
 
-// WhiteNoise adds a white noise track.
-func (p *Preset) WhiteNoise(smooth float64) *Preset {
+// White adds a white noise track.
+func (p *Preset) White(smooth float64) *Preset {
 	return p.addTrack(t.Track{
 		Type:        t.TrackWhiteNoise,
 		NoiseSmooth: smooth,
 	})
 }
 
-// PinkNoise adds a pink noise track.
-func (p *Preset) PinkNoise(smooth float64) *Preset {
+// Pink adds a pink noise track.
+func (p *Preset) Pink(smooth float64) *Preset {
 	return p.addTrack(t.Track{
 		Type:        t.TrackPinkNoise,
 		NoiseSmooth: smooth,
 	})
 }
 
-// BrownNoise adds a brown noise track.
-func (p *Preset) BrownNoise(smooth float64) *Preset {
+// Brown adds a brown noise track.
+func (p *Preset) Brown(smooth float64) *Preset {
 	return p.addTrack(t.Track{
 		Type:        t.TrackBrownNoise,
 		NoiseSmooth: smooth,
