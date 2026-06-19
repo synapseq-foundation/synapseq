@@ -38,19 +38,6 @@ func TestParseFlags(ts *testing.T) {
 			expectedArgs: []string{},
 			expectError:  false,
 		},
-		// New template flag
-		{
-			args:         []string{"cmd", "-new", "meditation"},
-			expected:     &CLIOptions{New: "meditation"},
-			expectedArgs: []string{},
-			expectError:  false,
-		},
-		{
-			args:         []string{"cmd", "-new", "focus"},
-			expected:     &CLIOptions{New: "focus"},
-			expectedArgs: []string{},
-			expectError:  false,
-		},
 		// Help flag
 		{
 			args:         []string{"cmd", "-help"},
@@ -202,6 +189,13 @@ func TestParseFlags(ts *testing.T) {
 			expectedArgs: nil,
 			expectError:  true,
 		},
+		// Removed template flag
+		{
+			args:         []string{"cmd", "-new", "meditation"},
+			expected:     nil,
+			expectedArgs: nil,
+			expectError:  true,
+		},
 		// Unknown flag with valid flags
 		{
 			args:         []string{"cmd", "-quiet", "-unknown", "input.spsq"},
@@ -229,9 +223,6 @@ func TestParseFlags(ts *testing.T) {
 
 		if opts.ShowVersion != test.expected.ShowVersion {
 			ts.Errorf("For args %v, ShowVersion: expected %v but got %v", test.args, test.expected.ShowVersion, opts.ShowVersion)
-		}
-		if opts.New != test.expected.New {
-			ts.Errorf("For args %v, New: expected %q but got %q", test.args, test.expected.New, opts.New)
 		}
 		if opts.ShowHelp != test.expected.ShowHelp {
 			ts.Errorf("For args %v, ShowHelp: expected %v but got %v", test.args, test.expected.ShowHelp, opts.ShowHelp)
@@ -402,19 +393,13 @@ func TestHelpIncludesQuickStart(ts *testing.T) {
 	checks := []string{
 		"Usage:\n  synapseq [options] <input> [output]",
 		"Quick start:",
-		"1. Create a starter file",
-		"synapseq -new meditation starter.spsq",
-		"Create starter.spsq from the meditation template",
-		"2. Render audio",
-		"synapseq starter.spsq",
-		"Generate starter.wav in the current folder",
-		"Available templates",
-		"meditation, focus, sleep, relaxation, example",
+		"1. Render audio",
+		"synapseq session.spsq",
+		"Generate session.wav in the current folder",
 		"Next steps:",
 		"Validate syntax and semantics without generating audio",
-		"Generate starter.json with resolved sequence data",
+		"Generate session.json with resolved sequence data",
 		"defaults to <input>.wav",
-		"-new TYPE         Template type: meditation, focus, sleep, relaxation",
 		"-dump             Render JSON sequence data",
 		"Remote quick start:",
 		"Run -remote-sync first to initialize the local Remote index.",
@@ -427,6 +412,10 @@ func TestHelpIncludesQuickStart(ts *testing.T) {
 		if !strings.Contains(helpText, expected) {
 			ts.Errorf("help output missing %q\nfull output:\n%s", expected, helpText)
 		}
+	}
+
+	if strings.Contains(helpText, "-new") {
+		ts.Errorf("help output still contains removed -new flag\nfull output:\n%s", helpText)
 	}
 }
 

@@ -22,7 +22,6 @@ const (
 	SpecialCommandRemoteInfo               SpecialCommandKind = "remote-info"
 	SpecialCommandInstallFileAssociation   SpecialCommandKind = "install-file-association"
 	SpecialCommandUninstallFileAssociation SpecialCommandKind = "uninstall-file-association"
-	SpecialCommandGenerateTemplate         SpecialCommandKind = "generate-template"
 	SpecialCommandDoctor                   SpecialCommandKind = "doctor"
 )
 
@@ -35,8 +34,6 @@ type SpecialCommand struct {
 type CLIOptions struct {
 	// Show version information and exit
 	ShowVersion bool
-	// New starter sequence template type
-	New string
 	// Dump mode, renders JSON sequence data instead of audio
 	Dump bool
 	// Quiet mode, suppress non-error output

@@ -226,7 +226,6 @@ func TestResolveSpecialCommandPrecedence(ts *testing.T) {
 		ShowVersion: true,
 		RemoteSync:  true,
 		RemoteGet:   "focus",
-		New:         "sleep",
 	}, []string{"out.spsq"})
 
 	if command.Kind != clistyle.SpecialCommandShowVersion {
@@ -241,16 +240,6 @@ func TestResolveSpecialCommandRemoteGetUsesOptionalArg(ts *testing.T) {
 	}
 	if command.OptionalArg != "out.wav" {
 		ts.Fatalf("expected remote-get optional arg out.wav, got %q", command.OptionalArg)
-	}
-}
-
-func TestResolveSpecialCommandTemplateUsesOptionalArg(ts *testing.T) {
-	command := clistyle.ResolveSpecialCommand(&clistyle.CLIOptions{New: "meditation"}, []string{"custom.spsq"})
-	if command.Kind != clistyle.SpecialCommandGenerateTemplate {
-		ts.Fatalf("expected generate-template command, got %q", command.Kind)
-	}
-	if command.OptionalArg != "custom.spsq" {
-		ts.Fatalf("expected template optional arg custom.spsq, got %q", command.OptionalArg)
 	}
 }
 

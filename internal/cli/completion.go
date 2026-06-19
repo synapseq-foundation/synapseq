@@ -29,7 +29,6 @@ var completionFlags = map[string]string{
 	"mp3":                        "Export to MP3 with ffmpeg",
 	"install-file-association":   "Associate .spsq files (Windows only)",
 	"uninstall-file-association": "Remove .spsq association (Windows only)",
-	"new":                        "Generate template (meditation, focus, etc)",
 	"ffmpeg-path":                "Path to ffmpeg executable",
 	"ffplay-path":                "Path to ffplay executable",
 	"doctor":                     "Check environment for required tools",

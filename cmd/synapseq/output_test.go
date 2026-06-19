@@ -24,11 +24,6 @@ func TestOutputStylingHelpers(ts *testing.T) {
 		ts.Fatalf("unexpected comment formatting: %q", comment)
 	}
 
-	templateMessage := clistyle.SuccessText("Template generated:") + " " + clistyle.Accent("\"meditation\"") + " " + clistyle.Muted("as \"session.spsq\"")
-	if templateMessage != "Template generated: \"meditation\" as \"session.spsq\"" {
-		ts.Fatalf("unexpected template message formatting: %q", templateMessage)
-	}
-
 	runHint := clistyle.Label("Run:") + " " + clistyle.Command("synapseq session.spsq")
 	if runHint != "Run: synapseq session.spsq" {
 		ts.Fatalf("unexpected run hint formatting: %q", runHint)

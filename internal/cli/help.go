@@ -180,24 +180,21 @@ func howItWorksDocURL() string {
 
 func quickStartExamples() []helpExample {
 	return []helpExample{
-		{Label: "1. Create a starter file", CommandText: "synapseq -new meditation starter.spsq", Description: "Create starter.spsq from the meditation template"},
-		{Label: "2. Render audio", CommandText: "synapseq starter.spsq", Description: "Generate starter.wav in the current folder"},
-		{Label: "Available templates", Description: "meditation, focus, sleep, relaxation, example"},
+		{Label: "1. Render audio", CommandText: "synapseq session.spsq", Description: "Generate session.wav in the current folder"},
 	}
 }
 
 func nextStepExamples() []helpExample {
 	return []helpExample{
-		{CommandText: "synapseq -test starter.spsq", Description: "Validate syntax and semantics without generating audio"},
-		{CommandText: "synapseq -dump starter.spsq", Description: "Generate starter.json with resolved sequence data"},
-		{CommandText: "synapseq -play starter.spsq", Description: "Play the sequence directly with ffplay"},
-		{CommandText: "synapseq starter.spsq starter.mp3", Description: "Export to MP3 with ffmpeg"},
+		{CommandText: "synapseq -test session.spsq", Description: "Validate syntax and semantics without generating audio"},
+		{CommandText: "synapseq -dump session.spsq", Description: "Generate session.json with resolved sequence data"},
+		{CommandText: "synapseq -play session.spsq", Description: "Play the sequence directly with ffplay"},
+		{CommandText: "synapseq session.spsq session.mp3", Description: "Export to MP3 with ffmpeg"},
 	}
 }
 
 func commonHelpOptions() []helpOption {
 	return []helpOption{
-		{FlagText: "-new TYPE", ColumnWidth: 18, Description: "Template type: meditation, focus, sleep, relaxation, example"},
 		{FlagText: "-test", ColumnWidth: 18, Description: "Check syntax only"},
 		{FlagText: "-dump", ColumnWidth: 18, Description: "Render JSON sequence data"},
 		{FlagText: "-play", ColumnWidth: 18, Description: "Play audio using ffplay"},

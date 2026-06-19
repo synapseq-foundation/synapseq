@@ -46,12 +46,6 @@ func dispatchSpecialCommand(opts *cli.CLIOptions, args []string) (bool, error) {
 		return true, installWindowsFileAssociation(opts.Quiet)
 	case cli.SpecialCommandUninstallFileAssociation:
 		return true, uninstallWindowsFileAssociation(opts.Quiet)
-	case cli.SpecialCommandGenerateTemplate:
-		outputFile := opts.New + ".spsq"
-		if command.OptionalArg != "" {
-			outputFile = command.OptionalArg
-		}
-		return true, generateTemplate(opts.New, outputFile)
 	case cli.SpecialCommandDoctor:
 		return true, runDoctor()
 	default:

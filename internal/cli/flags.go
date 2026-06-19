@@ -149,7 +149,6 @@ func flagBindings() []flagBinding {
 		{Name: "mp3", Usage: "Export to MP3 with ffmpeg", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.Mp3 }},
 		{Name: "install-file-association", Usage: "Associate .spsq files with SynapSeq (Windows only)", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.InstallFileAssociation }, SpecialCommand: SpecialCommandInstallFileAssociation},
 		{Name: "uninstall-file-association", Usage: "Remove .spsq file association (Windows only)", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.UninstallFileAssociation }, SpecialCommand: SpecialCommandUninstallFileAssociation},
-		{Name: "new", Usage: "Template type: meditation, focus, sleep, relaxation, example", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.New }, SpecialCommand: SpecialCommandGenerateTemplate},
 		{Name: "ffmpeg-path", Usage: "Path to ffmpeg executable", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.FFmpegPath }},
 		{Name: "ffplay-path", Usage: "Path to ffplay executable", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.FFplayPath }},
 		{Name: "doctor", Usage: "Check environment for required tools", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.ShowDoctor }, SpecialCommand: SpecialCommandDoctor},
