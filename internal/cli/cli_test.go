@@ -59,13 +59,13 @@ func TestParseFlags(ts *testing.T) {
 			expectError:  false,
 		},
 		{
-			args:         []string{"cmd", "-quiet", "-remote-list"},
+			args:         []string{"cmd", "-quiet", "-list"},
 			expected:     &CLIOptions{Quiet: true, RemoteList: true},
 			expectedArgs: []string{},
 			expectError:  false,
 		},
 		{
-			args:         []string{"cmd", "-no-color", "-remote-get", "calm-state", "output.wav"},
+			args:         []string{"cmd", "-no-color", "-get", "calm-state", "output.wav"},
 			expected:     &CLIOptions{NoColor: true, RemoteGet: "calm-state"},
 			expectedArgs: []string{"output.wav"},
 			expectError:  false,
@@ -107,51 +107,51 @@ func TestParseFlags(ts *testing.T) {
 		},
 		// Remote boolean flags
 		{
-			args:         []string{"cmd", "-remote-sync"},
+			args:         []string{"cmd", "-sync"},
 			expected:     &CLIOptions{RemoteSync: true},
 			expectedArgs: []string{},
 			expectError:  false,
 		},
 		{
-			args:         []string{"cmd", "-remote-clean"},
+			args:         []string{"cmd", "-clean"},
 			expected:     &CLIOptions{RemoteClean: true},
 			expectedArgs: []string{},
 			expectError:  false,
 		},
 		{
-			args:         []string{"cmd", "-remote-list"},
+			args:         []string{"cmd", "-list"},
 			expected:     &CLIOptions{RemoteList: true},
 			expectedArgs: []string{},
 			expectError:  false,
 		},
 		// Remote string flags
 		{
-			args:         []string{"cmd", "-remote-search", "focus"},
+			args:         []string{"cmd", "-search", "focus"},
 			expected:     &CLIOptions{RemoteSearch: "focus"},
 			expectedArgs: []string{},
 			expectError:  false,
 		},
 		{
-			args:         []string{"cmd", "-remote-download", "baseline"},
+			args:         []string{"cmd", "-download", "baseline"},
 			expected:     &CLIOptions{RemoteDownload: "baseline"},
 			expectedArgs: []string{},
 			expectError:  false,
 		},
 		{
-			args:         []string{"cmd", "-remote-info", "deep-sleep"},
+			args:         []string{"cmd", "-info", "deep-sleep"},
 			expected:     &CLIOptions{RemoteInfo: "deep-sleep"},
 			expectedArgs: []string{},
 			expectError:  false,
 		},
 		{
-			args:         []string{"cmd", "-remote-get", "alpha-pack"},
+			args:         []string{"cmd", "-get", "alpha-pack"},
 			expected:     &CLIOptions{RemoteGet: "alpha-pack"},
 			expectedArgs: []string{},
 			expectError:  false,
 		},
 		// Combined remote options and positional args
 		{
-			args: []string{"cmd", "-remote-search", "relax", "-remote-download", "rain-pack", "input.spsq"},
+			args: []string{"cmd", "-search", "relax", "-download", "rain-pack", "input.spsq"},
 			expected: &CLIOptions{
 				RemoteSearch:   "relax",
 				RemoteDownload: "rain-pack",
@@ -396,16 +396,13 @@ func TestHelpIncludesQuickStart(ts *testing.T) {
 		"1. Render audio",
 		"synapseq session.spsq",
 		"Generate session.wav in the current folder",
-		"Next steps:",
-		"Validate syntax and semantics without generating audio",
-		"Generate session.json with resolved sequence data",
-		"defaults to <input>.wav",
+		"Most common options:",
 		"-dump             Render JSON sequence data",
-		"Remote quick start:",
-		"Run -remote-sync first to initialize the local Remote index.",
-		"synapseq -remote-sync",
-		"synapseq -remote-list",
-		"synapseq -remote-get calm-state calm-state.wav",
+		"Remote:",
+		"Run -sync first to initialize the local Remote index.",
+		"-sync",
+		"-list",
+		"-get NAME [OUTPUT]",
 	}
 
 	for _, expected := range checks {

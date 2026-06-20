@@ -235,11 +235,11 @@ func TestResolveSpecialCommandPrecedence(ts *testing.T) {
 
 func TestResolveSpecialCommandRemoteGetUsesOptionalArg(ts *testing.T) {
 	command := clistyle.ResolveSpecialCommand(&clistyle.CLIOptions{RemoteGet: "focus"}, []string{"out.wav"})
-	if command.Kind != clistyle.SpecialCommandRemoteGet {
-		ts.Fatalf("expected remote-get command, got %q", command.Kind)
+	if command.Kind != clistyle.SpecialCommandGet {
+		ts.Fatalf("expected get command, got %q", command.Kind)
 	}
 	if command.OptionalArg != "out.wav" {
-		ts.Fatalf("expected remote-get optional arg out.wav, got %q", command.OptionalArg)
+		ts.Fatalf("expected get optional arg out.wav, got %q", command.OptionalArg)
 	}
 }
 
@@ -252,8 +252,8 @@ func TestResolveSpecialCommandNoMatch(ts *testing.T) {
 
 func TestResolveSpecialCommandRemoteDownloadPrecedesRemoteInfo(ts *testing.T) {
 	command := clistyle.ResolveSpecialCommand(&clistyle.CLIOptions{RemoteDownload: "focus", RemoteInfo: "sleep"}, []string{"downloads"})
-	if command.Kind != clistyle.SpecialCommandRemoteDownload {
-		ts.Fatalf("expected remote-download to win precedence over remote-info, got %q", command.Kind)
+	if command.Kind != clistyle.SpecialCommandDownload {
+		ts.Fatalf("expected download to win precedence over info, got %q", command.Kind)
 	}
 	if command.OptionalArg != "downloads" {
 		ts.Fatalf("expected download target arg downloads, got %q", command.OptionalArg)
@@ -262,18 +262,18 @@ func TestResolveSpecialCommandRemoteDownloadPrecedesRemoteInfo(ts *testing.T) {
 
 func TestResolveSpecialCommandIgnoresQuietBeforeRemoteList(ts *testing.T) {
 	command := clistyle.ResolveSpecialCommand(&clistyle.CLIOptions{Quiet: true, RemoteList: true}, nil)
-	if command.Kind != clistyle.SpecialCommandRemoteList {
-		ts.Fatalf("expected remote-list command, got %q", command.Kind)
+	if command.Kind != clistyle.SpecialCommandList {
+		ts.Fatalf("expected list command, got %q", command.Kind)
 	}
 }
 
 func TestResolveSpecialCommandIgnoresNoColorBeforeRemoteGet(ts *testing.T) {
 	command := clistyle.ResolveSpecialCommand(&clistyle.CLIOptions{NoColor: true, RemoteGet: "calm-state"}, []string{"out.wav"})
-	if command.Kind != clistyle.SpecialCommandRemoteGet {
-		ts.Fatalf("expected remote-get command, got %q", command.Kind)
+	if command.Kind != clistyle.SpecialCommandGet {
+		ts.Fatalf("expected get command, got %q", command.Kind)
 	}
 	if command.OptionalArg != "out.wav" {
-		ts.Fatalf("expected remote-get optional arg out.wav, got %q", command.OptionalArg)
+		ts.Fatalf("expected get optional arg out.wav, got %q", command.OptionalArg)
 	}
 }
 

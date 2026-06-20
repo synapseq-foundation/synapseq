@@ -56,7 +56,7 @@ Programmatic Go callers can also construct `.spsq` content with `spsq.Builder` a
 This is the executable entry layer.
 
 - `main.go` handles process startup, flag parsing, and top-level command routing.
-- `dispatch.go` executes special commands such as `-version`, `-manual`, and `-remote-*`.
+- `dispatch.go` executes special commands such as `-version`, `-manual`, and `-sync`, `-list`, `-search`, `-info`, `-download`, `-get`, `-clean`.
 - `sequencehandlers.go` handles the standard local sequence flow.
 - `output.go` routes loaded sequences to JSON dump, stream, WAV, playback, or MP3 conversion.
 - `remote.go` implements CLI-facing Remote commands.

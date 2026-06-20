@@ -18,7 +18,7 @@ import (
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
-const remoteIndexMissingError = "remote index not found. Please run 'synapseq -remote-sync' to fetch the latest Remote index"
+const remoteIndexMissingError = "remote index not found. Please run 'synapseq -sync' to fetch the latest Remote index"
 
 // remoteRunSync updates the local Remote index.
 func remoteRunSync(quiet bool) error {
