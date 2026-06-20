@@ -31,7 +31,7 @@ audio packages.
 	func main() {
 	    builder := spsq.New().SampleRate(44100).Volume(100)
 	    alpha := builder.NewPreset("alpha")
-	    alpha.PinkNoise(0).Amplitude(30)
+	    alpha.Pink(0).Amplitude(30)
 	    alpha.Tone(300).Binaural(10).Amplitude(15)
 
 	    ctx := synapseq.NewAppContext()
@@ -70,6 +70,14 @@ Typical builder usage follows the .spsq document shape:
   - create presets and add tracks with track modifiers;
   - add timeline entries that select presets or silence at specific times;
   - call Load with a core AppContext to validate and load the generated .spsq content.
+
+Noise tracks are added with White, Pink, or Brown. Each method receives the
+noise smoothness percentage and returns the preset so modifiers such as
+Amplitude can be chained:
+
+	preset.White(0).Amplitude(20)
+	preset.Pink(10).Amplitude(20)
+	preset.Brown(15).Amplitude(20)
 
 Builder methods return the same Builder so calls can be chained. Methods that
 modify the last track or timeline entry are no-ops when there is no matching
