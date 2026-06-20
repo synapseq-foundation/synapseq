@@ -6,7 +6,7 @@ PublisherUrl: https://ruan.sh
 PublisherSupportUrl: https://github.com/synapseq-foundation/synapseq/issues
 Author: Ruan Felisbino
 PackageName: SynapSeq
-License: GPL v2
+License: GPL v3
 LicenseUrl: https://raw.githubusercontent.com/synapseq-foundation/synapseq/refs/tags/v__VERSION__/COPYING.txt
 ShortDescription: Generate brainwave entrainment audio from simple .spsq text scripts.
 Description: |
