@@ -15,8 +15,6 @@
 
 **SynapSeq** is a text-driven audio sequencer for building clear, repeatable brainwave and ambient sessions using a simple domain-specific language, written as SynapSeq sequences (.spsq).
 
-Visit [synapseq.org](https://synapseq.org) for more information.
-
 ## What It Looks Like
 
 A basic `.spsq` sequence is plain text: define options, declare presets with indented tracks, then place presets on a timeline.
