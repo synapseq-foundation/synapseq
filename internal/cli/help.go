@@ -37,14 +37,12 @@ func Help() {
 	writeHelpHeader(writer)
 	writeUsageSection(writer)
 	writeExamplesSection(writer, "Quick start:", quickStartExamples())
-	writeExamplesSection(writer, "Next steps:", nextStepExamples())
 	writeInputSection(writer)
 	writeOutputSection(writer)
 	writeOptionsSection(writer, "Most common options:", commonHelpOptions())
 	writeMutedLeadSection(writer, "Remote:", "Run -remote-sync first to initialize the local Remote index.")
 	writeOptionsList(writer, remoteHelpOptions())
 	fmt.Fprintln(writer)
-	writeCommandListSection(writer, "Remote quick start:", remoteQuickStartCommands())
 	writeOptionsSection(writer, "Advanced:", advancedHelpOptions())
 
 	if runtime.GOOS == "windows" {
@@ -181,15 +179,8 @@ func howItWorksDocURL() string {
 func quickStartExamples() []helpExample {
 	return []helpExample{
 		{Label: "1. Render audio", CommandText: "synapseq session.spsq", Description: "Generate session.wav in the current folder"},
-	}
-}
-
-func nextStepExamples() []helpExample {
-	return []helpExample{
-		{CommandText: "synapseq -test session.spsq", Description: "Validate syntax and semantics without generating audio"},
-		{CommandText: "synapseq -dump session.spsq", Description: "Generate session.json with resolved sequence data"},
-		{CommandText: "synapseq -play session.spsq", Description: "Play the sequence directly with ffplay"},
-		{CommandText: "synapseq session.spsq session.mp3", Description: "Export to MP3 with ffmpeg"},
+		{Label: "2. Play audio", CommandText: "synapseq -play session.spsq", Description: "Play the sequence directly with ffplay"},
+		{Label: "3. Export to MP3", CommandText: "synapseq session.spsq session.mp3", Description: "Export to MP3 with ffmpeg"},
 	}
 }
 
@@ -232,16 +223,6 @@ func windowsHelpOptions() []helpOption {
 	return []helpOption{
 		{FlagText: "-install-file-association", ColumnWidth: 30, Description: "Associate .spsq files with SynapSeq"},
 		{FlagText: "-uninstall-file-association", ColumnWidth: 30, Description: "Remove .spsq file association"},
-	}
-}
-
-func remoteQuickStartCommands() []string {
-	return []string{
-		"synapseq -remote-sync",
-		"synapseq -remote-list",
-		"synapseq -remote-search calm-state",
-		"synapseq -remote-get calm-state calm-state.wav",
-		"synapseq -remote-get calm-state calm-state.mp3",
 	}
 }
 
