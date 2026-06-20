@@ -1,13 +1,6 @@
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package audio
 
@@ -142,13 +135,13 @@ func (rp renderPlan) interpolationProgress(window renderWindow, currentTimeMs in
 
 func interpolateTrack(start, end t.Track, alpha float64) t.Track {
 	return t.Track{
-		Type:         start.Type,
-		Amplitude:    t.AmplitudeType(lerpFloat64(float64(start.Amplitude), float64(end.Amplitude), alpha)),
-		Carrier:      lerpFloat64(start.Carrier, end.Carrier, alpha),
-		Resonance:    lerpFloat64(start.Resonance, end.Resonance, alpha),
-		NoiseSmooth:  lerpFloat64(start.NoiseSmooth, end.NoiseSmooth, alpha),
-		Waveform:     start.Waveform,
-		AmbianceName: start.AmbianceName,
+		Type:        start.Type,
+		Amplitude:   t.AmplitudeType(lerpFloat64(float64(start.Amplitude), float64(end.Amplitude), alpha)),
+		Carrier:     lerpFloat64(start.Carrier, end.Carrier, alpha),
+		Resonance:   lerpFloat64(start.Resonance, end.Resonance, alpha),
+		NoiseSmooth: lerpFloat64(start.NoiseSmooth, end.NoiseSmooth, alpha),
+		Waveform:    start.Waveform,
+		SourceName:  start.SourceName,
 		Effect: t.Effect{
 			Type:      start.Effect.Type,
 			Value:     lerpFloat64(start.Effect.Value, end.Effect.Value, alpha),
@@ -212,7 +205,7 @@ func compileSignalState(state planTrackState) compiledSignalState {
 		compiled.Amplitude[0] = amplitude
 		compiled.Increment[0] = frequencyToIncrement(state.sampleRate, state.track.Carrier)
 		compiled.Increment[1] = frequencyToIncrement(state.sampleRate, state.track.Resonance)
-	case t.TrackWhiteNoise, t.TrackPinkNoise, t.TrackBrownNoise, t.TrackAmbiance:
+	case t.TrackWhiteNoise, t.TrackPinkNoise, t.TrackBrownNoise, t.TrackAmbiance, t.TrackMusic:
 		compiled.Amplitude[0] = amplitude
 	}
 

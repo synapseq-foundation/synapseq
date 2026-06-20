@@ -12,11 +12,11 @@ DATE    	    := $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 # Windows configuration
 MAJOR_VERSION 			 := $(shell echo $(VERSION) | cut -d. -f1)
 MINOR_VERSION 			 := $(shell echo $(VERSION) | cut -d. -f2)
-PATCH_VERSION 			 := $(shell echo $(VERSION) | cut -d. -f3)
+PATCH_VERSION 			 := $(shell echo $(VERSION) | cut -d. -f3 | sed -E 's/[^0-9].*//')
 GO_VERSION_INFO_CMD 	 := github.com/josephspurrier/goversioninfo/cmd/goversioninfo@v1.5.0
 GO_VERSION_INFO_CMD_ARGS := -company="SynapSeq Foundation <synapseq.org>" \
 							-description="Text-Driven Audio Sequencer for Brainwave Entrainment" \
-					  		-copyright="GPL v2" \
+					  		-copyright="GPL v3 or later" \
 					  		-original-name="$(BIN_NAME).exe" \
 							-product-name="SynapSeq" \
 							-product-version="$(VERSION).0" \
@@ -73,12 +73,6 @@ build-linux-arm64: prepare
 build-macos: prepare
 	GOOS=darwin GOARCH=arm64 go build $(GO_BUILD_FLAGS) -o $(BIN_DIR)/$(BIN_NAME)-macos-arm64 $(MAIN)
 
-# WASM build
-build-wasm:
-	@echo "WARNING: SynapSeq WASM support is deprecated and is no longer published in release artifacts."
-	GOOS=js GOARCH=wasm go build -tags=wasm $(GO_BUILD_FLAGS) -o wasm/$(BIN_NAME).wasm ./cmd/wasm
-	cp $(shell go env GOROOT)/lib/wasm/wasm_exec.js wasm/wasm_exec.js
-
 # POSIX installation
 install:
 	cp $(BIN_DIR)/$(BIN_NAME) /usr/local/bin/$(BIN_NAME)
@@ -87,4 +81,3 @@ install:
 clean:
 	rm -rf $(BIN_DIR)
 	rm -rf cmd/synapseq/*.syso
-	rm -rf wasm/*.wasm wasm/wasm_exec.js

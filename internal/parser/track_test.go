@@ -1,13 +1,6 @@
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package parser
 
@@ -34,9 +27,15 @@ func TestHasTrack(ts *testing.T) {
 	}).String()
 
 	trLnAmbiance := (&t.Track{
-		Type:         t.TrackAmbiance,
-		AmbianceName: "rain",
-		Amplitude:    t.AmplitudePercentToRaw(50),
+		Type:       t.TrackAmbiance,
+		SourceName: "rain",
+		Amplitude:  t.AmplitudePercentToRaw(50),
+	}).String()
+
+	trLnMusic := (&t.Track{
+		Type:       t.TrackMusic,
+		SourceName: "meditation",
+		Amplitude:  t.AmplitudePercentToRaw(50),
 	}).String()
 
 	tests := []struct {
@@ -46,6 +45,7 @@ func TestHasTrack(ts *testing.T) {
 		{fmt.Sprintf("  %s", trLnTone), true},
 		{fmt.Sprintf("  %s", trLnNoise), true},
 		{fmt.Sprintf("  %s", trLnAmbiance), true},
+		{fmt.Sprintf("  %s", trLnMusic), true},
 		{fmt.Sprintf(" %s", trLnTone), false},
 		{fmt.Sprintf("   %s", trLnTone), false},
 		{trLnTone, false},
@@ -150,7 +150,7 @@ func TestParseTrack_Ambiance(ts *testing.T) {
 			line: "ambiance rain amplitude 50",
 			wantTrack: ParsedTrackDeclaration{
 				Type:             t.TrackAmbiance,
-				AmbianceName:     "rain",
+				SourceName:       "rain",
 				AmplitudePercent: 50,
 				Waveform:         t.WaveformSine,
 			},
@@ -159,7 +159,7 @@ func TestParseTrack_Ambiance(ts *testing.T) {
 			line: "ambiance beach effect pan 10 intensity 75 amplitude 50",
 			wantTrack: ParsedTrackDeclaration{
 				Type:                   t.TrackAmbiance,
-				AmbianceName:           "beach",
+				SourceName:             "beach",
 				EffectType:             t.EffectPan,
 				EffectValue:            10,
 				EffectIntensityPercent: 75,
@@ -171,7 +171,7 @@ func TestParseTrack_Ambiance(ts *testing.T) {
 			line: "ambiance music effect modulation 2.5 intensity 60 amplitude 40",
 			wantTrack: ParsedTrackDeclaration{
 				Type:                   t.TrackAmbiance,
-				AmbianceName:           "music",
+				SourceName:             "music",
 				EffectType:             t.EffectModulation,
 				EffectValue:            2.5,
 				EffectIntensityPercent: 60,
@@ -183,7 +183,7 @@ func TestParseTrack_Ambiance(ts *testing.T) {
 			line: "waveform square ambiance river effect modulation 2.5 intensity 60 amplitude 40",
 			wantTrack: ParsedTrackDeclaration{
 				Type:                   t.TrackAmbiance,
-				AmbianceName:           "river",
+				SourceName:             "river",
 				EffectType:             t.EffectModulation,
 				EffectValue:            2.5,
 				EffectIntensityPercent: 60,
@@ -195,9 +195,74 @@ func TestParseTrack_Ambiance(ts *testing.T) {
 			line: "ambiance stream_01 amplitude 33",
 			wantTrack: ParsedTrackDeclaration{
 				Type:             t.TrackAmbiance,
-				AmbianceName:     "stream_01",
+				SourceName:       "stream_01",
 				AmplitudePercent: 33,
 				Waveform:         t.WaveformSine,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		ctx := NewTextParser(tt.line)
+		tr, err := ctx.ParseTrackDeclaration()
+		if err != nil {
+			ts.Errorf("For line '%s', unexpected error: %v", tt.line, err)
+			continue
+		}
+		if *tr != tt.wantTrack {
+			ts.Errorf("For line '%s', expected track %+v but got %+v", tt.line, tt.wantTrack, *tr)
+		}
+	}
+}
+
+func TestParseTrack_Music(ts *testing.T) {
+	tests := []struct {
+		line      string
+		wantTrack ParsedTrackDeclaration
+	}{
+		{
+			line: "music meditation amplitude 50",
+			wantTrack: ParsedTrackDeclaration{
+				Type:             t.TrackMusic,
+				SourceName:       "meditation",
+				AmplitudePercent: 50,
+				Waveform:         t.WaveformSine,
+			},
+		},
+		{
+			line: "music bells effect pan 10 intensity 75 amplitude 50",
+			wantTrack: ParsedTrackDeclaration{
+				Type:                   t.TrackMusic,
+				SourceName:             "bells",
+				EffectType:             t.EffectPan,
+				EffectValue:            10,
+				EffectIntensityPercent: 75,
+				AmplitudePercent:       50,
+				Waveform:               t.WaveformSine,
+			},
+		},
+		{
+			line: "music drones effect modulation 2.5 intensity 60 amplitude 40",
+			wantTrack: ParsedTrackDeclaration{
+				Type:                   t.TrackMusic,
+				SourceName:             "drones",
+				EffectType:             t.EffectModulation,
+				EffectValue:            2.5,
+				EffectIntensityPercent: 60,
+				AmplitudePercent:       40,
+				Waveform:               t.WaveformSine,
+			},
+		},
+		{
+			line: "waveform square music bells effect modulation 2.5 intensity 60 amplitude 40",
+			wantTrack: ParsedTrackDeclaration{
+				Type:                   t.TrackMusic,
+				SourceName:             "bells",
+				EffectType:             t.EffectModulation,
+				EffectValue:            2.5,
+				EffectIntensityPercent: 60,
+				AmplitudePercent:       40,
+				Waveform:               t.WaveformSquare,
 			},
 		},
 	}

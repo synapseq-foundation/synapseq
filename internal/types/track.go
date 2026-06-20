@@ -1,13 +1,6 @@
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package types
 
@@ -37,6 +30,8 @@ const (
 	TrackBrownNoise
 	// Track is a ambiance
 	TrackAmbiance
+	// Track is music
+	TrackMusic
 )
 
 // String returns the string representation of the TrackType
@@ -62,6 +57,8 @@ func (tr TrackType) String() string {
 		return KeywordBrown
 	case TrackAmbiance:
 		return KeywordAmbiance
+	case TrackMusic:
+		return KeywordMusic
 	default:
 		return "unknown"
 	}
@@ -79,8 +76,8 @@ type Track struct {
 	Resonance float64
 	// Waveform shape
 	Waveform WaveformType
-	// Ambiance name
-	AmbianceName string
+	// Named audio source
+	SourceName string
 	// Noise smooth (0-100, for 0-100%)
 	NoiseSmooth float64
 	// Effect configuration
@@ -149,12 +146,18 @@ func (tr *Track) String() string {
 		} else {
 			return fmt.Sprintf("%s %s %s %.2f %s %s %.2f %s %.2f %s %.2f", KeywordNoise, tr.Type.String(), KeywordSmooth, tr.NoiseSmooth, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
 		}
-	case TrackAmbiance:
+	case TrackAmbiance, TrackMusic:
+		keyword := tr.Type.String()
 		if tr.Effect.Type == EffectOff {
-			return fmt.Sprintf("%s %s %s %s %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordAmbiance, tr.AmbianceName, KeywordAmplitude, tr.Amplitude.ToPercent())
-		} else {
-			return fmt.Sprintf("%s %s %s %s %s %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordAmbiance, tr.AmbianceName, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+			if tr.Waveform == WaveformSine {
+				return fmt.Sprintf("%s %s %s %.2f", keyword, tr.SourceName, KeywordAmplitude, tr.Amplitude.ToPercent())
+			}
+			return fmt.Sprintf("%s %s %s %s %s %.2f", KeywordWaveform, tr.Waveform.String(), keyword, tr.SourceName, KeywordAmplitude, tr.Amplitude.ToPercent())
 		}
+		if tr.Waveform == WaveformSine {
+			return fmt.Sprintf("%s %s %s %s %.2f %s %.2f %s %.2f", keyword, tr.SourceName, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+		}
+		return fmt.Sprintf("%s %s %s %s %s %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), keyword, tr.SourceName, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
 	default:
 		return " ???"
 	}
@@ -183,11 +186,11 @@ func (tr *Track) ShortString() string {
 		} else {
 			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f %s:%.2f)", tr.Type.String(), tr.Amplitude.ToPercent(), KeywordSmooth, tr.NoiseSmooth, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent())
 		}
-	case TrackAmbiance:
+	case TrackAmbiance, TrackMusic:
 		if tr.Effect.Type == EffectOff {
-			return fmt.Sprintf(" (%s:%.2f)", tr.AmbianceName, tr.Amplitude.ToPercent())
+			return fmt.Sprintf(" (%s:%.2f)", tr.SourceName, tr.Amplitude.ToPercent())
 		} else {
-			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f)", tr.AmbianceName, tr.Amplitude.ToPercent(), tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent())
+			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f)", tr.SourceName, tr.Amplitude.ToPercent(), tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent())
 		}
 	default:
 		return " ???"

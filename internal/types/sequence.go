@@ -1,13 +1,6 @@
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package types
 
@@ -16,6 +9,7 @@ import "fmt"
 // Sequence represents a brainwave sequence
 type Sequence struct {
 	Periods    []Period
+	Presets    []Preset
 	Options    *SequenceOptions
 	Comments   []string
 	RawContent []byte
@@ -29,6 +23,8 @@ type SequenceOptions struct {
 	Volume int
 	// List of ambiance audio files
 	Ambiance map[string]string
+	// List of music audio files
+	Music map[string]string
 	// List of configuration for options and presets to extend from
 	Extends []string
 }

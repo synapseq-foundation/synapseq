@@ -1,20 +1,13 @@
-//go:build !wasm
-
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package sequence
 
 import (
+	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -27,11 +20,19 @@ var windowsDrivePathPattern = regexp.MustCompile(`^[a-zA-Z]:`)
 
 func resolveParsedOptions(baseRef string, parsedOptions *t.ParseOptions) error {
 	for name, path := range parsedOptions.Ambiance {
-		resolved, err := resolveOptionFile(baseRef, path, ".wav", "ambiance")
+		resolved, err := resolveAmbianceOptionFile(baseRef, path)
 		if err != nil {
 			return err
 		}
 		parsedOptions.Ambiance[name] = resolved
+	}
+
+	for name, path := range parsedOptions.Music {
+		resolved, err := resolveMusicOptionFile(baseRef, path)
+		if err != nil {
+			return err
+		}
+		parsedOptions.Music[name] = resolved
 	}
 
 	for i := range parsedOptions.Extends {
@@ -45,10 +46,75 @@ func resolveParsedOptions(baseRef string, parsedOptions *t.ParseOptions) error {
 	return nil
 }
 
+func resolveAmbianceOptionFile(baseRef, content string) (string, error) {
+	if r.IsRemoteFile(content) {
+		return content, nil
+	}
+
+	basePath, err := resolveOptionFileBase(baseRef, content, "ambiance")
+	if err != nil {
+		return "", err
+	}
+
+	wavPath := basePath + ".wav"
+	mp3Path := basePath + ".mp3"
+
+	if exists, err := fileExists(wavPath); err != nil {
+		return "", err
+	} else if exists {
+		return wavPath, nil
+	}
+
+	if exists, err := fileExists(mp3Path); err != nil {
+		return "", err
+	} else if exists {
+		return mp3Path, nil
+	}
+
+	return "", fmt.Errorf("ambiance file not found; tried %q and %q", wavPath, mp3Path)
+}
+
+func resolveMusicOptionFile(baseRef, content string) (string, error) {
+	if r.IsRemoteFile(content) {
+		return content, nil
+	}
+
+	basePath, err := resolveOptionFileBase(baseRef, content, "music")
+	if err != nil {
+		return "", err
+	}
+
+	mp3Path := basePath + ".mp3"
+	wavPath := basePath + ".wav"
+
+	if exists, err := fileExists(mp3Path); err != nil {
+		return "", err
+	} else if exists {
+		return mp3Path, nil
+	}
+
+	if exists, err := fileExists(wavPath); err != nil {
+		return "", err
+	} else if exists {
+		return wavPath, nil
+	}
+
+	return "", fmt.Errorf("music file not found; tried %q and %q", mp3Path, wavPath)
+}
+
 func resolveOptionFile(baseRef, content, ext, optionName string) (string, error) {
 	if r.IsRemoteFile(content) {
 		return content, nil
 	}
+	basePath, err := resolveOptionFileBase(baseRef, content, optionName)
+	if err != nil {
+		return "", err
+	}
+
+	return basePath + ext, nil
+}
+
+func resolveOptionFileBase(baseRef, content, optionName string) (string, error) {
 	if content == "" {
 		return "", fmt.Errorf("expected path for %s option", optionName)
 	}
@@ -73,5 +139,16 @@ func resolveOptionFile(baseRef, content, ext, optionName string) (string, error)
 		return "", fmt.Errorf("%s local path must not include file extension", optionName)
 	}
 
-	return filepath.Join(baseRef, cleanPath) + ext, nil
+	return filepath.Join(baseRef, cleanPath), nil
+}
+
+func fileExists(path string) (bool, error) {
+	info, err := os.Stat(path)
+	if err == nil {
+		return !info.IsDir(), nil
+	}
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+	return false, fmt.Errorf("failed to inspect audio file %q: %w", path, err)
 }

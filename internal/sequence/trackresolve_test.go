@@ -1,13 +1,6 @@
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package sequence
 
@@ -35,7 +28,8 @@ func TestBuildTrackFromDeclaration_Success(ts *testing.T) {
 		{line: "tone 300 binaural 10 amplitude 15", want: t.Track{Type: t.TrackBinauralBeat, Carrier: 300, Resonance: 10, Amplitude: t.AmplitudePercentToRaw(15), Waveform: t.WaveformSine}},
 		{line: "waveform square tone 350 amplitude 10", want: t.Track{Type: t.TrackPureTone, Carrier: 350, Amplitude: t.AmplitudePercentToRaw(10), Waveform: t.WaveformSquare}},
 		{line: "noise pink amplitude 40", want: t.Track{Type: t.TrackPinkNoise, Amplitude: t.AmplitudePercentToRaw(40), Waveform: t.WaveformSine}},
-		{line: "ambiance beach effect pan 10 intensity 75 amplitude 50", want: t.Track{Type: t.TrackAmbiance, AmbianceName: "beach", Amplitude: t.AmplitudePercentToRaw(50), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectPan, Value: 10, Intensity: t.IntensityPercentToRaw(75)}}},
+		{line: "ambiance beach effect pan 10 intensity 75 amplitude 50", want: t.Track{Type: t.TrackAmbiance, SourceName: "beach", Amplitude: t.AmplitudePercentToRaw(50), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectPan, Value: 10, Intensity: t.IntensityPercentToRaw(75)}}},
+		{line: "music meditation effect modulation 2.5 intensity 60 amplitude 40", want: t.Track{Type: t.TrackMusic, SourceName: "meditation", Amplitude: t.AmplitudePercentToRaw(40), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectModulation, Value: 2.5, Intensity: t.IntensityPercentToRaw(60)}}},
 	}
 
 	for _, tt := range tests {

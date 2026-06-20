@@ -1,13 +1,6 @@
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package types
 
@@ -61,6 +54,7 @@ func TransitionTypeString(t string) TransitionType {
 // Period represents a time period with track configurations
 type Period struct {
 	Time         int
+	PresetName   string
 	TrackStart   [NumberOfChannels]Track
 	TrackEnd     [NumberOfChannels]Track
 	CrossfadeIn  [NumberOfChannels]TrackCrossfade

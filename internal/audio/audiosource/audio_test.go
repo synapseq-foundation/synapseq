@@ -1,0 +1,738 @@
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+package audiosource
+
+import (
+	"bytes"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/gopxl/beep/v2"
+	bmp3 "github.com/gopxl/beep/v2/mp3"
+	bwav "github.com/gopxl/beep/v2/wav"
+	p "github.com/synapseq-foundation/synapseq/v4/internal/audio/pcm"
+	r "github.com/synapseq-foundation/synapseq/v4/internal/resource"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
+)
+
+const testBitDepth = 16
+
+func newLoopAudio(filePaths []string, expectedSampleRate int) (*Audio, error) {
+	return New(filePaths, expectedSampleRate, Options{
+		PlaybackMode: PlaybackLoop,
+		LoadFile:     r.GetAmbianceFile,
+		SourceKind:   "ambiance",
+	})
+}
+
+func newFiniteAudio(filePaths []string, expectedSampleRate int) (*Audio, error) {
+	return New(filePaths, expectedSampleRate, Options{
+		PlaybackMode: PlaybackFinite,
+		LoadFile:     r.GetMusicFile,
+		SourceKind:   "music",
+	})
+}
+
+type constStreamer struct {
+	framesLeft int
+	val        float64
+}
+
+func (cs *constStreamer) Stream(samples [][2]float64) (n int, ok bool) {
+	n = len(samples)
+	if n > cs.framesLeft {
+		n = cs.framesLeft
+	}
+	for i := 0; i < n; i++ {
+		samples[i][0] = cs.val
+		samples[i][1] = cs.val
+	}
+	cs.framesLeft -= n
+	ok = cs.framesLeft > 0
+	return
+}
+
+func (cs *constStreamer) Err() error { return nil }
+
+func writeConstWav(t *testing.T, path string, sampleRate int) {
+	t.Helper()
+
+	f, err := os.Create(path)
+	if err != nil {
+		t.Fatalf("create wav: %v", err)
+	}
+	defer f.Close()
+
+	format := beep.Format{
+		SampleRate:  beep.SampleRate(sampleRate),
+		NumChannels: stereoChannels,
+		Precision:   testBitDepth / 8,
+	}
+	cs := &constStreamer{framesLeft: sampleRate, val: float64(1000) / 32768.0}
+	if err := bwav.Encode(f, cs, format); err != nil {
+		t.Fatalf("encode wav: %v", err)
+	}
+}
+
+func mustReadWavAll(t *testing.T, path string) ([]int, uint32, int, int) {
+	t.Helper()
+	f, err := os.Open(path)
+	if err != nil {
+		t.Fatalf("open wav: %v", err)
+	}
+	defer f.Close()
+
+	s, fmt, err := bwav.Decode(f)
+	if err != nil {
+		t.Fatalf("decode wav: %v", err)
+	}
+	defer s.Close()
+
+	var data []int
+	buf := make([][2]float64, 4096)
+	for {
+		n, ok := s.Stream(buf)
+		for i := 0; i < n; i++ {
+			l := p.FloatToSample16(buf[i][0])
+			r := p.FloatToSample16(buf[i][1])
+			data = append(data, l, r)
+		}
+		if !ok {
+			break
+		}
+	}
+	if err := s.Err(); err != nil {
+		t.Fatalf("stream error: %v", err)
+	}
+
+	return data, uint32(fmt.SampleRate), fmt.NumChannels, fmt.Precision * 8
+}
+
+func mustReadMP3All(t *testing.T, path string) ([]int, uint32, int, int) {
+	t.Helper()
+	f, err := os.Open(path)
+	if err != nil {
+		t.Fatalf("open mp3: %v", err)
+	}
+	defer f.Close()
+
+	s, fmt, err := bmp3.Decode(f)
+	if err != nil {
+		t.Fatalf("decode mp3: %v", err)
+	}
+	defer s.Close()
+
+	var data []int
+	buf := make([][2]float64, 4096)
+	for {
+		n, ok := s.Stream(buf)
+		for i := 0; i < n; i++ {
+			l := p.FloatToSample16(buf[i][0])
+			r := p.FloatToSample16(buf[i][1])
+			data = append(data, l, r)
+		}
+		if !ok {
+			break
+		}
+	}
+	if err := s.Err(); err != nil {
+		t.Fatalf("stream error: %v", err)
+	}
+
+	return data, uint32(fmt.SampleRate), fmt.NumChannels, fmt.Precision * 8
+}
+
+func TestAudio_LoadReadAndLoop(t *testing.T) {
+	path := filepath.Join("..", "testdata", "noise.wav")
+	data, sr, chans, depth := mustReadWavAll(t, path)
+
+	aa, err := newLoopAudio([]string{path}, int(sr))
+	if err != nil {
+		t.Fatalf("NewAudio: %v", err)
+	}
+	defer aa.Close()
+
+	if aa.SampleRate() != int(sr) || aa.Channels() != chans || aa.BitDepth() != depth {
+		t.Fatalf("mismatched ambiance props sr=%d ch=%d bd=%d vs file sr=%d ch=%d bd=%d", aa.SampleRate(), aa.Channels(), aa.BitDepth(), sr, chans, depth)
+	}
+
+	target := len(data) + 123
+	var buf []int
+	chunk := aa.BufferSize()
+	if chunk <= 0 {
+		t.Fatalf("invalid buffer size: %d", chunk)
+	}
+	tmp := make([]int, chunk)
+	total := 0
+	for total < target {
+		need := target - total
+		if need > chunk {
+			need = chunk
+		}
+		n, err := aa.ReadSamplesAt(0, tmp[:need], need)
+		if err != nil {
+			t.Fatalf("ReadSamplesAt error: %v", err)
+		}
+		if n != need {
+			t.Fatalf("ReadSamplesAt short read: got %d want %d", n, need)
+		}
+		buf = append(buf, tmp[:need]...)
+		total += n
+	}
+
+	for i := 0; i < len(data) && i < len(buf); i++ {
+		if buf[i] != data[i] {
+			t.Fatalf("prefix mismatch at %d: got %d want %d", i, buf[i], data[i])
+		}
+	}
+
+	if total > len(data) && buf[len(data)] != data[0] {
+		t.Fatalf("loop restart mismatch: got %d want %d", buf[len(data)], data[0])
+	}
+}
+
+func TestAudio_LoadReadAndLoopMP3(t *testing.T) {
+	path := filepath.Join("..", "testdata", "noise.mp3")
+	data, sr, chans, depth := mustReadMP3All(t, path)
+
+	aa, err := newLoopAudio([]string{path}, int(sr))
+	if err != nil {
+		t.Fatalf("NewAudio mp3: %v", err)
+	}
+	defer aa.Close()
+
+	if aa.SampleRate() != int(sr) || aa.Channels() != chans || aa.BitDepth() != depth {
+		t.Fatalf("mismatched ambiance props sr=%d ch=%d bd=%d vs file sr=%d ch=%d bd=%d", aa.SampleRate(), aa.Channels(), aa.BitDepth(), sr, chans, depth)
+	}
+
+	target := len(data) + 123
+	var buf []int
+	chunk := aa.BufferSize()
+	tmp := make([]int, chunk)
+	total := 0
+	for total < target {
+		need := target - total
+		if need > chunk {
+			need = chunk
+		}
+		n, err := aa.ReadSamplesAt(0, tmp[:need], need)
+		if err != nil {
+			t.Fatalf("ReadSamplesAt mp3 error: %v", err)
+		}
+		if n != need {
+			t.Fatalf("ReadSamplesAt mp3 short read: got %d want %d", n, need)
+		}
+		buf = append(buf, tmp[:need]...)
+		total += n
+	}
+
+	for i := 0; i < len(data) && i < len(buf); i++ {
+		if buf[i] != data[i] {
+			t.Fatalf("mp3 prefix mismatch at %d: got %d want %d", i, buf[i], data[i])
+		}
+	}
+
+	if total > len(data) && buf[len(data)] != data[0] {
+		t.Fatalf("mp3 loop restart mismatch: got %d want %d", buf[len(data)], data[0])
+	}
+}
+
+func TestAudio_MP3LoopsWithinSingleRead(t *testing.T) {
+	path := filepath.Join("..", "testdata", "short.mp3")
+	data, sr, _, _ := mustReadMP3All(t, path)
+
+	aa, err := newLoopAudio([]string{path}, int(sr))
+	if err != nil {
+		t.Fatalf("NewAudio short mp3: %v", err)
+	}
+	defer aa.Close()
+
+	buf := make([]int, len(data)+128)
+
+	n, err := aa.ReadSamplesAt(0, buf, len(buf))
+	if err != nil {
+		t.Fatalf("ReadSamplesAt short mp3 error: %v", err)
+	}
+	if n != len(buf) {
+		t.Fatalf("ReadSamplesAt short mp3 count: got %d want %d", n, len(buf))
+	}
+	if buf[len(data)] != data[0] {
+		t.Fatalf("expected short mp3 to loop within one read: got %d want %d", buf[len(data)], data[0])
+	}
+}
+
+func TestFiniteAudio_MP3ReturnsSilenceAfterEOF(t *testing.T) {
+	path := filepath.Join("..", "testdata", "short.mp3")
+	data, sr, _, _ := mustReadMP3All(t, path)
+
+	aa, err := newFiniteAudio([]string{path}, int(sr))
+	if err != nil {
+		t.Fatalf("newFiniteAudio short mp3: %v", err)
+	}
+	defer aa.Close()
+
+	buf := make([]int, len(data)+128)
+
+	n, err := aa.ReadSamplesAt(0, buf, len(buf))
+	if err != nil {
+		t.Fatalf("ReadSamplesAt short music mp3 error: %v", err)
+	}
+	if n != len(buf) {
+		t.Fatalf("ReadSamplesAt short music mp3 count: got %d want %d", n, len(buf))
+	}
+	for i := 0; i < len(data) && i < len(buf); i++ {
+		if buf[i] != data[i] {
+			t.Fatalf("music mp3 prefix mismatch at %d: got %d want %d", i, buf[i], data[i])
+		}
+	}
+	for i := len(data); i < len(buf); i++ {
+		if buf[i] != 0 {
+			t.Fatalf("expected silence after music EOF at %d, got %d", i, buf[i])
+		}
+	}
+}
+
+func TestFiniteAudio_WAVReturnsSilenceAfterEOF(t *testing.T) {
+	tempDir := t.TempDir()
+	path := filepath.Join(tempDir, "short.wav")
+	writeConstWav(t, path, 44100)
+	data, sr, _, _ := mustReadWavAll(t, path)
+
+	aa, err := newFiniteAudio([]string{path}, int(sr))
+	if err != nil {
+		t.Fatalf("newFiniteAudio short wav: %v", err)
+	}
+	defer aa.Close()
+
+	buf := make([]int, len(data)+128)
+
+	n, err := aa.ReadSamplesAt(0, buf, len(buf))
+	if err != nil {
+		t.Fatalf("ReadSamplesAt short music wav error: %v", err)
+	}
+	if n != len(buf) {
+		t.Fatalf("ReadSamplesAt short music wav count: got %d want %d", n, len(buf))
+	}
+	for i := len(data); i < len(buf); i++ {
+		if buf[i] != 0 {
+			t.Fatalf("expected silence after music EOF at %d, got %d", i, buf[i])
+		}
+	}
+}
+
+func TestAudio_MultipleIndicesHaveIndependentReadPosition(t *testing.T) {
+	path := filepath.Join("..", "testdata", "noise.wav")
+	data, sr, _, _ := mustReadWavAll(t, path)
+
+	aa, err := newLoopAudio([]string{path, path}, int(sr))
+	if err != nil {
+		t.Fatalf("NewAudio: %v", err)
+	}
+	defer aa.Close()
+
+	const chunk = 1024
+	first0 := make([]int, chunk)
+	second0 := make([]int, chunk)
+	first1 := make([]int, chunk)
+
+	n, err := aa.ReadSamplesAt(0, first0, len(first0))
+	if err != nil {
+		t.Fatalf("ReadSamplesAt(0) first error: %v", err)
+	}
+	if n != len(first0) {
+		t.Fatalf("ReadSamplesAt(0) first short read: got %d want %d", n, len(first0))
+	}
+
+	n, err = aa.ReadSamplesAt(0, second0, len(second0))
+	if err != nil {
+		t.Fatalf("ReadSamplesAt(0) second error: %v", err)
+	}
+	if n != len(second0) {
+		t.Fatalf("ReadSamplesAt(0) second short read: got %d want %d", n, len(second0))
+	}
+
+	n, err = aa.ReadSamplesAt(1, first1, len(first1))
+	if err != nil {
+		t.Fatalf("ReadSamplesAt(1) first error: %v", err)
+	}
+	if n != len(first1) {
+		t.Fatalf("ReadSamplesAt(1) first short read: got %d want %d", n, len(first1))
+	}
+
+	for i := 0; i < len(first1) && i < len(data); i++ {
+		if first1[i] != data[i] {
+			t.Fatalf("index 1 prefix mismatch at %d: got %d want %d", i, first1[i], data[i])
+		}
+	}
+
+	for i := 0; i < len(second0); i++ {
+		want := data[chunk+i]
+		if second0[i] != want {
+			t.Fatalf("index 0 continuation mismatch at %d: got %d want %d", i, second0[i], want)
+		}
+	}
+}
+
+func TestAudio_ReadSamplesAt_InvalidIndex(t *testing.T) {
+	path := filepath.Join("..", "testdata", "noise.wav")
+	_, sr, _, _ := mustReadWavAll(t, path)
+
+	aa, err := newLoopAudio([]string{path, path}, int(sr))
+	if err != nil {
+		t.Fatalf("NewAudio: %v", err)
+	}
+	defer aa.Close()
+
+	buf := make([]int, 128)
+
+	if _, err := aa.ReadSamplesAt(-1, buf, len(buf)); err == nil {
+		t.Fatalf("expected error for negative ambiance index")
+	}
+
+	if _, err := aa.ReadSamplesAt(2, buf, len(buf)); err == nil {
+		t.Fatalf("expected error for out-of-range ambiance index")
+	}
+}
+
+func TestAudio_DisabledAndClose(t *testing.T) {
+	aa, err := newLoopAudio(nil, 44100)
+	if err != nil {
+		t.Fatalf("NewAudio empty: %v", err)
+	}
+	buf := make([]int, 256)
+	n, err := aa.ReadSamplesAt(0, buf, len(buf))
+	if err != nil {
+		t.Fatalf("ReadSamplesAt disabled error: %v", err)
+	}
+	if n != len(buf) {
+		t.Fatalf("ReadSamplesAt disabled count: got %d want %d", n, len(buf))
+	}
+	for i, v := range buf {
+		if v != 0 {
+			t.Fatalf("disabled should fill zeros at %d: %d", i, v)
+		}
+	}
+
+	if err := aa.Close(); err != nil {
+		t.Fatalf("Close disabled: %v", err)
+	}
+	_, err = aa.ReadSamplesAt(0, buf, len(buf))
+	if err != nil {
+		t.Fatalf("ReadSamplesAt after close error: %v", err)
+	}
+	for i, v := range buf {
+		if v != 0 {
+			t.Fatalf("after close should fill zeros at %d: %d", i, v)
+		}
+	}
+}
+
+func TestAudio_RemoteWAV(t *testing.T) {
+	path := filepath.Join("..", "testdata", "noise.wav")
+	_, sr, _, _ := mustReadWavAll(t, path)
+	wavData, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read test WAV: %v", err)
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "audio/wav")
+		_, _ = w.Write(wavData)
+	}))
+	defer server.Close()
+
+	aa, err := newLoopAudio([]string{server.URL}, int(sr))
+	if err != nil {
+		t.Fatalf("NewAudio remote: %v", err)
+	}
+	defer aa.Close()
+
+	if aa.CachedData() == nil {
+		t.Fatalf("expected cachedData to be populated")
+	}
+	if len(aa.CachedData()) != 1 {
+		t.Fatalf("cached tracks mismatch: got %d want 1", len(aa.CachedData()))
+	}
+	if len(aa.CachedData()[0]) != len(wavData) {
+		t.Fatalf("cached data size mismatch: got %d want %d", len(aa.CachedData()[0]), len(wavData))
+	}
+
+	buf := make([]int, 1024)
+	n, err := aa.ReadSamplesAt(0, buf, len(buf))
+	if err != nil {
+		t.Fatalf("ReadSamplesAt remote error: %v", err)
+	}
+	if n != len(buf) {
+		t.Fatalf("ReadSamplesAt remote count: got %d want %d", n, len(buf))
+	}
+
+	hasNonZero := false
+	for _, v := range buf {
+		if v != 0 {
+			hasNonZero = true
+			break
+		}
+	}
+	if !hasNonZero {
+		t.Fatalf("expected non-zero samples from remote WAV")
+	}
+}
+
+func TestAudio_Remote10MBLimit(ts *testing.T) {
+	const size = t.MaxAmbianceFileSize + 2*1024*1024
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "audio/wav")
+		header := make([]byte, 44)
+		copy(header[0:4], "RIFF")
+		copy(header[8:12], "WAVE")
+		copy(header[12:16], "fmt ")
+		header[16] = 16
+		header[20] = 1
+		header[22] = 2
+		header[24] = 0x44
+		header[25] = 0xac
+		header[28] = 0x10
+		header[29] = 0xb1
+		header[30] = 0x02
+		header[32] = 4
+		header[34] = 16
+		copy(header[36:40], "data")
+		dataSize := size - 44
+		header[40] = byte(dataSize)
+		header[41] = byte(dataSize >> 8)
+		header[42] = byte(dataSize >> 16)
+		header[43] = byte(dataSize >> 24)
+
+		_, _ = w.Write(header)
+		chunk := make([]byte, 1024*1024)
+		for i := 0; i < size-44; i += len(chunk) {
+			remaining := size - 44 - i
+			if remaining < len(chunk) {
+				_, _ = w.Write(chunk[:remaining])
+			} else {
+				_, _ = w.Write(chunk)
+			}
+		}
+	}))
+	defer server.Close()
+
+	aa, err := newLoopAudio([]string{server.URL}, 44100)
+	if err != nil {
+		ts.Fatalf("NewAudio 10MB limit: %v", err)
+	}
+	defer aa.Close()
+
+	if len(aa.CachedData()) != 1 {
+		ts.Fatalf("expected one cached track, got %d", len(aa.CachedData()))
+	}
+	if len(aa.CachedData()[0]) != t.MaxAmbianceFileSize {
+		ts.Fatalf("expected cached data to be limited to %d bytes, got %d", t.MaxAmbianceFileSize, len(aa.CachedData()[0]))
+	}
+}
+
+func TestAudio_Local10MBLimit(ts *testing.T) {
+	tmpDir := ts.TempDir()
+	path := filepath.Join(tmpDir, "large.wav")
+
+	f, err := os.Create(path)
+	if err != nil {
+		ts.Fatalf("failed to create temp file: %v", err)
+	}
+
+	const size = t.MaxAmbianceFileSize + 2*1024*1024
+	header := make([]byte, 44)
+	copy(header[0:4], "RIFF")
+	copy(header[8:12], "WAVE")
+	copy(header[12:16], "fmt ")
+	header[16] = 16
+	header[20] = 1
+	header[22] = 2
+	header[24] = 0x44
+	header[25] = 0xac
+	header[28] = 0x10
+	header[29] = 0xb1
+	header[30] = 0x02
+	header[32] = 4
+	header[34] = 16
+	copy(header[36:40], "data")
+	dataSize := size - 44
+	header[40] = byte(dataSize)
+	header[41] = byte(dataSize >> 8)
+	header[42] = byte(dataSize >> 16)
+	header[43] = byte(dataSize >> 24)
+
+	if _, err := f.Write(header); err != nil {
+		ts.Fatalf("failed to write header: %v", err)
+	}
+
+	chunk := make([]byte, 1024*1024)
+	for i := 0; i < size-44; i += len(chunk) {
+		remaining := size - 44 - i
+		if remaining < len(chunk) {
+			if _, err := f.Write(chunk[:remaining]); err != nil {
+				ts.Fatalf("failed to write data: %v", err)
+			}
+		} else {
+			if _, err := f.Write(chunk); err != nil {
+				ts.Fatalf("failed to write data: %v", err)
+			}
+		}
+	}
+	_ = f.Close()
+
+	aa, err := newLoopAudio([]string{path}, 44100)
+	if err != nil {
+		ts.Fatalf("NewAudio local 10MB limit: %v", err)
+	}
+	defer aa.Close()
+
+	if len(aa.CachedData()) != 1 {
+		ts.Fatalf("expected one cached track, got %d", len(aa.CachedData()))
+	}
+	if len(aa.CachedData()[0]) != t.MaxAmbianceFileSize {
+		ts.Fatalf("expected cached data to be limited to %d bytes, got %d", t.MaxAmbianceFileSize, len(aa.CachedData()[0]))
+	}
+}
+
+func TestAudio_InvalidPath(t *testing.T) {
+	if _, err := newLoopAudio([]string{filepath.Join("..", "testdata", "missing.wav")}, 44100); err == nil {
+		t.Fatalf("expected error for missing ambiance file")
+	}
+}
+
+func TestAudio_ResamplesMismatchedSampleRate(t *testing.T) {
+	tempDir := t.TempDir()
+	path := filepath.Join(tempDir, "mismatch.wav")
+	writeConstWav(t, path, 48000)
+
+	aa, err := newLoopAudio([]string{path}, 44100)
+	if err != nil {
+		t.Fatalf("NewAudio resample: %v", err)
+	}
+	defer aa.Close()
+
+	if aa.SampleRate() != 44100 {
+		t.Fatalf("expected resampled sample rate 44100, got %d", aa.SampleRate())
+	}
+	if aa.Channels() != stereoChannels {
+		t.Fatalf("expected %d channels, got %d", stereoChannels, aa.Channels())
+	}
+
+	buf := make([]int, 1024)
+	n, err := aa.ReadSamplesAt(0, buf, len(buf))
+	if err != nil {
+		t.Fatalf("ReadSamplesAt resampled wav: %v", err)
+	}
+	if n != len(buf) {
+		t.Fatalf("ReadSamplesAt short read after resample: got %d want %d", n, len(buf))
+	}
+
+	hasNonZero := false
+	for _, sample := range buf {
+		if sample != 0 {
+			hasNonZero = true
+			break
+		}
+	}
+	if !hasNonZero {
+		t.Fatalf("expected non-zero samples from resampled wav")
+	}
+
+	reader := bytes.NewReader(aa.CachedData()[0])
+	stream, format, err := bwav.Decode(reader)
+	if err != nil {
+		t.Fatalf("decode resampled cache: %v", err)
+	}
+	defer stream.Close()
+
+	if int(format.SampleRate) != 44100 {
+		t.Fatalf("expected cached wav sample rate 44100, got %d", format.SampleRate)
+	}
+}
+
+func TestAudio_ResamplesMismatchedSampleRateMP3(t *testing.T) {
+	path := filepath.Join("..", "testdata", "mismatch.mp3")
+	_, sr, _, _ := mustReadMP3All(t, path)
+	if sr == 44100 {
+		t.Fatalf("mp3 fixture must have mismatched sample rate")
+	}
+
+	aa, err := newLoopAudio([]string{path}, 44100)
+	if err != nil {
+		t.Fatalf("NewAudio mp3 resample: %v", err)
+	}
+	defer aa.Close()
+
+	if aa.SampleRate() != 44100 {
+		t.Fatalf("expected resampled sample rate 44100, got %d", aa.SampleRate())
+	}
+	if aa.Channels() != stereoChannels {
+		t.Fatalf("expected %d channels, got %d", stereoChannels, aa.Channels())
+	}
+
+	hasNonZero := false
+	buf := make([]int, 1024)
+	for range 10 {
+		n, err := aa.ReadSamplesAt(0, buf, len(buf))
+		if err != nil {
+			t.Fatalf("ReadSamplesAt resampled mp3: %v", err)
+		}
+		if n != len(buf) {
+			t.Fatalf("ReadSamplesAt short read after mp3 resample: got %d want %d", n, len(buf))
+		}
+		for _, sample := range buf {
+			if sample != 0 {
+				hasNonZero = true
+				break
+			}
+		}
+		if hasNonZero {
+			break
+		}
+	}
+	if !hasNonZero {
+		t.Fatalf("expected non-zero samples from resampled mp3")
+	}
+
+	reader := bytes.NewReader(aa.CachedData()[0])
+	stream, format, err := bwav.Decode(reader)
+	if err != nil {
+		t.Fatalf("decode resampled mp3 cache as wav: %v", err)
+	}
+	defer stream.Close()
+
+	if int(format.SampleRate) != 44100 {
+		t.Fatalf("expected cached resampled mp3 sample rate 44100, got %d", format.SampleRate)
+	}
+}
+
+func TestAudio_InvalidExistingWAVDoesNotFallbackToMP3(t *testing.T) {
+	tempDir := t.TempDir()
+	wavPath := filepath.Join(tempDir, "rain.wav")
+	mp3Path := filepath.Join(tempDir, "rain.mp3")
+
+	if err := os.WriteFile(wavPath, []byte("not a wav"), 0o600); err != nil {
+		t.Fatalf("write invalid wav: %v", err)
+	}
+	mp3Data, err := os.ReadFile(filepath.Join("..", "testdata", "noise.mp3"))
+	if err != nil {
+		t.Fatalf("read mp3 fixture: %v", err)
+	}
+	if err := os.WriteFile(mp3Path, mp3Data, 0o600); err != nil {
+		t.Fatalf("write mp3 fallback fixture: %v", err)
+	}
+
+	_, err = newLoopAudio([]string{wavPath}, 44100)
+	if err == nil {
+		t.Fatalf("expected invalid wav error")
+	}
+	if !strings.Contains(err.Error(), "failed to decode ambiance file") || !strings.Contains(err.Error(), "wav") {
+		t.Fatalf("expected wav decode error, got: %v", err)
+	}
+}

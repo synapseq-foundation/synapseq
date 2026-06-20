@@ -1,13 +1,6 @@
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package spsq
 
@@ -42,29 +35,39 @@ func (p *Preset) Tone(carrier float64) *Preset {
 // Ambiance adds an ambiance track.
 func (p *Preset) Ambiance(name string) *Preset {
 	return p.addTrack(t.Track{
-		Type:         t.TrackAmbiance,
-		AmbianceName: name,
+		Type:       t.TrackAmbiance,
+		SourceName: name,
+		Waveform:   t.WaveformSine,
 	})
 }
 
-// WhiteNoise adds a white noise track.
-func (p *Preset) WhiteNoise(smooth float64) *Preset {
+// Music adds a music track.
+func (p *Preset) Music(name string) *Preset {
+	return p.addTrack(t.Track{
+		Type:       t.TrackMusic,
+		SourceName: name,
+		Waveform:   t.WaveformSine,
+	})
+}
+
+// White adds a white noise track.
+func (p *Preset) White(smooth float64) *Preset {
 	return p.addTrack(t.Track{
 		Type:        t.TrackWhiteNoise,
 		NoiseSmooth: smooth,
 	})
 }
 
-// PinkNoise adds a pink noise track.
-func (p *Preset) PinkNoise(smooth float64) *Preset {
+// Pink adds a pink noise track.
+func (p *Preset) Pink(smooth float64) *Preset {
 	return p.addTrack(t.Track{
 		Type:        t.TrackPinkNoise,
 		NoiseSmooth: smooth,
 	})
 }
 
-// BrownNoise adds a brown noise track.
-func (p *Preset) BrownNoise(smooth float64) *Preset {
+// Brown adds a brown noise track.
+func (p *Preset) Brown(smooth float64) *Preset {
 	return p.addTrack(t.Track{
 		Type:        t.TrackBrownNoise,
 		NoiseSmooth: smooth,

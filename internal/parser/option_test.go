@@ -1,15 +1,6 @@
-//go:build !wasm
-
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package parser
 
@@ -50,19 +41,23 @@ func TestParseOption(ts *testing.T) {
 	}{
 		{
 			fmt.Sprintf("%svolume 50", t.KeywordOption),
-			&t.ParseOptions{Values: map[string]string{t.KeywordOptionVolume: "50"}, Ambiance: map[string]string{}, Extends: []string{}},
+			&t.ParseOptions{Values: map[string]string{t.KeywordOptionVolume: "50"}, Ambiance: map[string]string{}, Music: map[string]string{}, Extends: []string{}},
 		},
 		{
 			fmt.Sprintf("%ssamplerate 48000", t.KeywordOption),
-			&t.ParseOptions{Values: map[string]string{t.KeywordOptionSampleRate: "48000"}, Ambiance: map[string]string{}, Extends: []string{}},
+			&t.ParseOptions{Values: map[string]string{t.KeywordOptionSampleRate: "48000"}, Ambiance: map[string]string{}, Music: map[string]string{}, Extends: []string{}},
 		},
 		{
 			fmt.Sprintf("%s%s rain testdata/noise", t.KeywordOption, t.KeywordOptionAmbiance),
-			&t.ParseOptions{Values: map[string]string{}, Ambiance: map[string]string{"rain": "testdata/noise"}, Extends: []string{}},
+			&t.ParseOptions{Values: map[string]string{}, Ambiance: map[string]string{"rain": "testdata/noise"}, Music: map[string]string{}, Extends: []string{}},
+		},
+		{
+			fmt.Sprintf("%s%s meditation audio/meditation", t.KeywordOption, t.KeywordOptionMusic),
+			&t.ParseOptions{Values: map[string]string{}, Ambiance: map[string]string{}, Music: map[string]string{"meditation": "audio/meditation"}, Extends: []string{}},
 		},
 		{
 			fmt.Sprintf("%s%s shared/base", t.KeywordOption, t.KeywordOptionExtends),
-			&t.ParseOptions{Values: map[string]string{}, Ambiance: map[string]string{}, Extends: []string{"shared/base"}},
+			&t.ParseOptions{Values: map[string]string{}, Ambiance: map[string]string{}, Music: map[string]string{}, Extends: []string{"shared/base"}},
 		},
 	}
 
@@ -99,7 +94,7 @@ func TestParseOptionErrors(ts *testing.T) {
 		ts.Run(test.name, func(ts *testing.T) {
 			ctx := NewTextParser(test.line)
 
-				_, err := ctx.ParseOption("")
+			_, err := ctx.ParseOption("")
 			if err == nil {
 				ts.Fatalf("expected error, got nil")
 			}

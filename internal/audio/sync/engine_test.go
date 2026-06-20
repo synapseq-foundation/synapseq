@@ -1,13 +1,6 @@
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package sync
 
@@ -275,13 +268,13 @@ func clampUnitForTest(value float64) float64 {
 
 func interpolateTrackForTest(start, end t.Track, alpha float64) t.Track {
 	return t.Track{
-		Type:         start.Type,
-		Amplitude:    t.AmplitudeType(start.Amplitude + t.AmplitudeType((float64(end.Amplitude)-float64(start.Amplitude))*alpha)),
-		Carrier:      start.Carrier + (end.Carrier-start.Carrier)*alpha,
-		Resonance:    start.Resonance + (end.Resonance-start.Resonance)*alpha,
-		NoiseSmooth:  start.NoiseSmooth + (end.NoiseSmooth-start.NoiseSmooth)*alpha,
-		Waveform:     start.Waveform,
-		AmbianceName: start.AmbianceName,
+		Type:        start.Type,
+		Amplitude:   t.AmplitudeType(start.Amplitude + t.AmplitudeType((float64(end.Amplitude)-float64(start.Amplitude))*alpha)),
+		Carrier:     start.Carrier + (end.Carrier-start.Carrier)*alpha,
+		Resonance:   start.Resonance + (end.Resonance-start.Resonance)*alpha,
+		NoiseSmooth: start.NoiseSmooth + (end.NoiseSmooth-start.NoiseSmooth)*alpha,
+		Waveform:    start.Waveform,
+		SourceName:  start.SourceName,
 		Effect: t.Effect{
 			Type:      start.Effect.Type,
 			Value:     start.Effect.Value + (end.Effect.Value-start.Effect.Value)*alpha,
@@ -353,7 +346,7 @@ func compileSignalStateForTest(track t.Track) ([2]int, [2]int, int) {
 		amplitude[0] = rawAmplitude
 		increment[0] = FrequencyToIncrement(testSampleRate, track.Carrier)
 		increment[1] = FrequencyToIncrement(testSampleRate, track.Resonance)
-	case t.TrackWhiteNoise, t.TrackPinkNoise, t.TrackBrownNoise, t.TrackAmbiance:
+	case t.TrackWhiteNoise, t.TrackPinkNoise, t.TrackBrownNoise, t.TrackAmbiance, t.TrackMusic:
 		amplitude[0] = rawAmplitude
 	}
 

@@ -1,23 +1,18 @@
-//go:build !js && !wasm
-
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package main
 
 import (
+	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
 	clistyle "github.com/synapseq-foundation/synapseq/v4/internal/cli"
 	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
 	types "github.com/synapseq-foundation/synapseq/v4/internal/types"
@@ -111,14 +106,14 @@ func TestResolveOutputTargetUsesRequestedOutput(ts *testing.T) {
 	}
 }
 
-func TestResolveOutputTargetUsesOptionDefaults(ts *testing.T) {
-	opts := &clistyle.CLIOptions{Preview: true}
+func TestResolveOutputTargetUsesDumpDefault(ts *testing.T) {
+	opts := &clistyle.CLIOptions{Dump: true}
 	outputFile, outputFormat := resolveOutputTarget("session", "", opts)
-	if outputFile != "session.html" {
-		ts.Fatalf("expected default preview output file, got %q", outputFile)
+	if outputFile != "session.json" {
+		ts.Fatalf("expected default dump output file, got %q", outputFile)
 	}
-	if outputFormat != ".html" {
-		ts.Fatalf("expected output format .html, got %q", outputFormat)
+	if outputFormat != ".json" {
+		ts.Fatalf("expected output format .json, got %q", outputFormat)
 	}
 }
 
@@ -136,6 +131,36 @@ func TestBuildOutputOptions(ts *testing.T) {
 	}
 	if outputOpts.FFplayPath != "ffplay" || outputOpts.FFmpegPath != "ffmpeg" {
 		ts.Fatalf("unexpected ffmpeg/ffplay paths: %#v", outputOpts)
+	}
+}
+
+func TestProcessSequenceOutputDumpWritesJSON(ts *testing.T) {
+	loaded, err := synapseq.NewAppContext().LoadContent(`
+alpha
+  tone 100 binaural 1 amplitude 1
+00:00:00 alpha
+00:01:00 alpha
+`)
+	if err != nil {
+		ts.Fatalf("LoadContent error: %v", err)
+	}
+
+	outputFile := filepath.Join(ts.TempDir(), "dump.json")
+	if err := processSequenceOutput(loaded, &outputOptions{OutputFile: outputFile, Dump: true, Quiet: true}); err != nil {
+		ts.Fatalf("processSequenceOutput error: %v", err)
+	}
+
+	content, err := os.ReadFile(outputFile)
+	if err != nil {
+		ts.Fatalf("read dump: %v", err)
+	}
+
+	var got map[string]any
+	if err := json.Unmarshal(content, &got); err != nil {
+		ts.Fatalf("invalid JSON dump: %v\n%s", err, content)
+	}
+	if _, ok := got["timeline"].([]any); !ok {
+		ts.Fatalf("expected timeline array in dump: %#v", got["timeline"])
 	}
 }
 
@@ -199,10 +224,8 @@ func TestShortDate(ts *testing.T) {
 func TestResolveSpecialCommandPrecedence(ts *testing.T) {
 	command := clistyle.ResolveSpecialCommand(&clistyle.CLIOptions{
 		ShowVersion: true,
-		ShowManual:  true,
 		RemoteSync:  true,
 		RemoteGet:   "focus",
-		New:         "sleep",
 	}, []string{"out.spsq"})
 
 	if command.Kind != clistyle.SpecialCommandShowVersion {
@@ -212,21 +235,11 @@ func TestResolveSpecialCommandPrecedence(ts *testing.T) {
 
 func TestResolveSpecialCommandRemoteGetUsesOptionalArg(ts *testing.T) {
 	command := clistyle.ResolveSpecialCommand(&clistyle.CLIOptions{RemoteGet: "focus"}, []string{"out.wav"})
-	if command.Kind != clistyle.SpecialCommandRemoteGet {
-		ts.Fatalf("expected remote-get command, got %q", command.Kind)
+	if command.Kind != clistyle.SpecialCommandGet {
+		ts.Fatalf("expected get command, got %q", command.Kind)
 	}
 	if command.OptionalArg != "out.wav" {
-		ts.Fatalf("expected remote-get optional arg out.wav, got %q", command.OptionalArg)
-	}
-}
-
-func TestResolveSpecialCommandTemplateUsesOptionalArg(ts *testing.T) {
-	command := clistyle.ResolveSpecialCommand(&clistyle.CLIOptions{New: "meditation"}, []string{"custom.spsq"})
-	if command.Kind != clistyle.SpecialCommandGenerateTemplate {
-		ts.Fatalf("expected generate-template command, got %q", command.Kind)
-	}
-	if command.OptionalArg != "custom.spsq" {
-		ts.Fatalf("expected template optional arg custom.spsq, got %q", command.OptionalArg)
+		ts.Fatalf("expected get optional arg out.wav, got %q", command.OptionalArg)
 	}
 }
 
@@ -239,35 +252,28 @@ func TestResolveSpecialCommandNoMatch(ts *testing.T) {
 
 func TestResolveSpecialCommandRemoteDownloadPrecedesRemoteInfo(ts *testing.T) {
 	command := clistyle.ResolveSpecialCommand(&clistyle.CLIOptions{RemoteDownload: "focus", RemoteInfo: "sleep"}, []string{"downloads"})
-	if command.Kind != clistyle.SpecialCommandRemoteDownload {
-		ts.Fatalf("expected remote-download to win precedence over remote-info, got %q", command.Kind)
+	if command.Kind != clistyle.SpecialCommandDownload {
+		ts.Fatalf("expected download to win precedence over info, got %q", command.Kind)
 	}
 	if command.OptionalArg != "downloads" {
 		ts.Fatalf("expected download target arg downloads, got %q", command.OptionalArg)
 	}
 }
 
-func TestResolveSpecialCommandIgnoresNoColorBeforeManual(ts *testing.T) {
-	command := clistyle.ResolveSpecialCommand(&clistyle.CLIOptions{NoColor: true, ShowManual: true}, nil)
-	if command.Kind != clistyle.SpecialCommandShowManual {
-		ts.Fatalf("expected show-manual command, got %q", command.Kind)
-	}
-}
-
 func TestResolveSpecialCommandIgnoresQuietBeforeRemoteList(ts *testing.T) {
 	command := clistyle.ResolveSpecialCommand(&clistyle.CLIOptions{Quiet: true, RemoteList: true}, nil)
-	if command.Kind != clistyle.SpecialCommandRemoteList {
-		ts.Fatalf("expected remote-list command, got %q", command.Kind)
+	if command.Kind != clistyle.SpecialCommandList {
+		ts.Fatalf("expected list command, got %q", command.Kind)
 	}
 }
 
 func TestResolveSpecialCommandIgnoresNoColorBeforeRemoteGet(ts *testing.T) {
 	command := clistyle.ResolveSpecialCommand(&clistyle.CLIOptions{NoColor: true, RemoteGet: "calm-state"}, []string{"out.wav"})
-	if command.Kind != clistyle.SpecialCommandRemoteGet {
-		ts.Fatalf("expected remote-get command, got %q", command.Kind)
+	if command.Kind != clistyle.SpecialCommandGet {
+		ts.Fatalf("expected get command, got %q", command.Kind)
 	}
 	if command.OptionalArg != "out.wav" {
-		ts.Fatalf("expected remote-get optional arg out.wav, got %q", command.OptionalArg)
+		ts.Fatalf("expected get optional arg out.wav, got %q", command.OptionalArg)
 	}
 }
 
@@ -298,14 +304,14 @@ func TestPrepareSequenceCommandUsesDefaultOutput(ts *testing.T) {
 }
 
 func TestPrepareSequenceCommandUsesExplicitOutput(ts *testing.T) {
-	command, err := prepareSequenceCommand([]string{"sessions/focus.spsq", "custom.html"}, &clistyle.CLIOptions{Preview: true})
+	command, err := prepareSequenceCommand([]string{"sessions/focus.spsq", "custom.json"}, &clistyle.CLIOptions{Dump: true})
 	if err != nil {
 		ts.Fatalf("unexpected error preparing command: %v", err)
 	}
-	if command.outputFile != "custom.html" {
-		ts.Fatalf("expected explicit output custom.html, got %q", command.outputFile)
+	if command.outputFile != "custom.json" {
+		ts.Fatalf("expected explicit output custom.json, got %q", command.outputFile)
 	}
-	if command.outputFormat != ".html" {
-		ts.Fatalf("expected output format .html, got %q", command.outputFormat)
+	if command.outputFormat != ".json" {
+		ts.Fatalf("expected output format .json, got %q", command.outputFormat)
 	}
 }

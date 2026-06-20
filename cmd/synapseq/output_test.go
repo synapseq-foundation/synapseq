@@ -1,15 +1,6 @@
-//go:build !js && !wasm
-
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package main
 
@@ -23,19 +14,14 @@ func TestOutputStylingHelpers(ts *testing.T) {
 	clistyle.SetColorEnabled(false)
 	defer clistyle.SetColorEnabled(true)
 
-	message := clistyle.SuccessText("Preview generated:") + " " + clistyle.Accent("\"out.html\"")
-	if message != "Preview generated: \"out.html\"" {
-		ts.Fatalf("unexpected preview message formatting: %q", message)
+	message := clistyle.SuccessText("Dump generated:") + " " + clistyle.Accent("\"out.json\"")
+	if message != "Dump generated: \"out.json\"" {
+		ts.Fatalf("unexpected dump message formatting: %q", message)
 	}
 
 	comment := clistyle.Label(">") + " " + clistyle.Muted("focus block")
 	if comment != "> focus block" {
 		ts.Fatalf("unexpected comment formatting: %q", comment)
-	}
-
-	templateMessage := clistyle.SuccessText("Template generated:") + " " + clistyle.Accent("\"meditation\"") + " " + clistyle.Muted("as \"session.spsq\"")
-	if templateMessage != "Template generated: \"meditation\" as \"session.spsq\"" {
-		ts.Fatalf("unexpected template message formatting: %q", templateMessage)
 	}
 
 	runHint := clistyle.Label("Run:") + " " + clistyle.Command("synapseq session.spsq")

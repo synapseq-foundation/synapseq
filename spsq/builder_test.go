@@ -1,19 +1,11 @@
-//go:build !wasm
-
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package spsq
 
 import (
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -22,17 +14,27 @@ import (
 )
 
 func TestBuilderLoadPreservesOrder(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	for _, name := range []string{"rain.wav", "wind.wav", "meditation.mp3"} {
+		if err := os.WriteFile(name, nil, 0o600); err != nil {
+			t.Fatalf("write temp audio %s: %v", name, err)
+		}
+	}
+
 	builder := New().
 		SampleRate(48000).
 		Volume(80).
 		Ambiance("rain", "rain").
-		Ambiance("wind", "wind")
+		Ambiance("wind", "wind").
+		Music("meditation", "meditation")
 
 	alpha := builder.NewPreset("alpha")
-	alpha.PinkNoise(0).Amplitude(30)
+	alpha.Pink(0).Amplitude(30)
+	alpha.Music("meditation").Amplitude(20)
 
 	beta := builder.NewPreset("beta")
-	beta.PinkNoise(10).Amplitude(15)
+	beta.Pink(10).Amplitude(15)
 
 	ctx := synapseq.NewAppContext()
 	loaded, err := builder.
@@ -53,10 +55,12 @@ func TestBuilderLoadPreservesOrder(t *testing.T) {
 		"@volume 80",
 		"@ambiance rain rain",
 		"@ambiance wind wind",
+		"@music meditation meditation",
 		"",
 		"# Presets",
 		"alpha",
 		"  noise pink smooth 0.00 amplitude 30.00",
+		"  music meditation amplitude 20.00",
 		"beta",
 		"  noise pink smooth 10.00 amplitude 15.00",
 		"",

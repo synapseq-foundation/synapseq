@@ -1,13 +1,6 @@
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package audio
 
@@ -232,14 +225,14 @@ func TestRenderPlanCueClampsBoundaryCrossfadeToShortPeriod(ts *testing.T) {
 	assertAlmostEqual(ts, float64(inCue.Track.Amplitude), float64(inTrack.Amplitude)*0.5, 0.0001)
 }
 
-func TestRenderPlanCueCrossfadesDifferentAmbianceNames(ts *testing.T) {
+func TestRenderPlanCueCrossfadesDifferentSourceNames(ts *testing.T) {
 	var p0, p1, p2 t.Period
 	p0.Time = 0
 	p1.Time = 60_000
 	p2.Time = 120_000
 
-	rain := t.Track{Type: t.TrackAmbiance, AmbianceName: "rain", Amplitude: t.AmplitudePercentToRaw(40), Waveform: t.WaveformSine}
-	river := t.Track{Type: t.TrackAmbiance, AmbianceName: "river", Amplitude: t.AmplitudePercentToRaw(30), Waveform: t.WaveformSine}
+	rain := t.Track{Type: t.TrackAmbiance, SourceName: "rain", Amplitude: t.AmplitudePercentToRaw(40), Waveform: t.WaveformSine}
+	river := t.Track{Type: t.TrackAmbiance, SourceName: "river", Amplitude: t.AmplitudePercentToRaw(30), Waveform: t.WaveformSine}
 	p0.TrackStart[0] = rain
 	p0.TrackEnd[0] = rain
 	p0.CrossfadeOut[0] = t.TrackCrossfade{Active: true, Track: rain}
@@ -250,14 +243,14 @@ func TestRenderPlanCueCrossfadesDifferentAmbianceNames(ts *testing.T) {
 	plan := compileRenderPlan([]t.Period{p0, p1, p2}, 44100)
 
 	outCue := plan.cue(0, 45_000).Channels[0]
-	if outCue.Track.AmbianceName != "rain" {
-		ts.Fatalf("expected outgoing ambiance rain, got %q", outCue.Track.AmbianceName)
+	if outCue.Track.SourceName != "rain" {
+		ts.Fatalf("expected outgoing ambiance rain, got %q", outCue.Track.SourceName)
 	}
 	assertAlmostEqual(ts, float64(outCue.Track.Amplitude), float64(rain.Amplitude)*0.5, 0.0001)
 
 	inCue := plan.cue(1, 75_000).Channels[0]
-	if inCue.Track.AmbianceName != "river" {
-		ts.Fatalf("expected incoming ambiance river, got %q", inCue.Track.AmbianceName)
+	if inCue.Track.SourceName != "river" {
+		ts.Fatalf("expected incoming ambiance river, got %q", inCue.Track.SourceName)
 	}
 	assertAlmostEqual(ts, float64(inCue.Track.Amplitude), float64(river.Amplitude)*0.5, 0.0001)
 }

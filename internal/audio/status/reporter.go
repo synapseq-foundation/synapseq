@@ -1,13 +1,6 @@
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package status
 
@@ -161,6 +154,7 @@ func CountPeriodDisplayChannels(view View, period t.Period) int {
 func IsTrackEqual(trackA, trackB *t.Track) bool {
 	return trackA.Type == trackB.Type &&
 		trackA.Amplitude == trackB.Amplitude &&
+		trackA.SourceName == trackB.SourceName &&
 		trackA.Carrier == trackB.Carrier &&
 		trackA.Resonance == trackB.Resonance &&
 		trackA.Waveform == trackB.Waveform &&

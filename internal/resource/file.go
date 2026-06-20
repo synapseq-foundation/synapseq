@@ -1,20 +1,15 @@
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package resource
 
 import (
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -33,8 +28,8 @@ func GetFile(filePath string, typ t.FileFormat) ([]byte, error) {
 	switch typ {
 	case t.FormatText:
 		maxSize = t.MaxTextFileSize
-	case t.FormatWAV:
-		maxSize = t.MaxWavFileSize
+	case t.FormatAmbiance:
+		maxSize = t.MaxAmbianceFileSize
 	}
 
 	if maxSize == 0 {
@@ -62,6 +57,72 @@ func GetFile(filePath string, typ t.FileFormat) ([]byte, error) {
 			return nil, fmt.Errorf("error reading file: %v", err)
 		}
 		return data, nil
+	}
+}
+
+// GetAmbianceFile retrieves a WAV or MP3 ambiance file from a local path or URL.
+func GetAmbianceFile(filePath string) ([]byte, t.AmbianceAudioFormat, error) {
+	return getAudioFile(filePath, t.MaxAmbianceFileSize, "ambiance")
+}
+
+// GetMusicFile retrieves a WAV or MP3 music file from a local path or URL.
+func GetMusicFile(filePath string) ([]byte, t.AmbianceAudioFormat, error) {
+	return getAudioFile(filePath, t.MaxMusicFileSize, "music")
+}
+
+func getAudioFile(filePath string, maxSize int64, sourceKind string) ([]byte, t.AmbianceAudioFormat, error) {
+	if filePath == "-" {
+		return nil, t.AmbianceAudioUnknown, fmt.Errorf("stdin (-) is not supported for %s audio", sourceKind)
+	}
+
+	if IsRemoteFile(filePath) {
+		return getRemoteAudioFile(filePath, maxSize, sourceKind)
+	}
+
+	format, err := audioFormatFromPath(filePath, sourceKind)
+	if err != nil {
+		return nil, t.AmbianceAudioUnknown, err
+	}
+
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, t.AmbianceAudioUnknown, fmt.Errorf("error opening file: %v", err)
+	}
+	defer file.Close()
+
+	data, err := readFile(file, maxSize)
+	if err != nil {
+		return nil, t.AmbianceAudioUnknown, fmt.Errorf("error reading file: %v", err)
+	}
+	return data, format, nil
+}
+
+func audioFormatFromPath(filePath string, sourceKind string) (t.AmbianceAudioFormat, error) {
+	ext := strings.ToLower(filepath.Ext(filePath))
+	switch ext {
+	case ".wav":
+		return t.AmbianceAudioWAV, nil
+	case ".mp3":
+		return t.AmbianceAudioMP3, nil
+	case "":
+		return t.AmbianceAudioUnknown, nil
+	default:
+		return t.AmbianceAudioUnknown, fmt.Errorf("unsupported %s audio format %q", sourceKind, ext)
+	}
+}
+
+func audioFormatFromMIME(contentType string, sourceKind string) (t.AmbianceAudioFormat, error) {
+	mediaType, _, err := mime.ParseMediaType(contentType)
+	if err != nil {
+		mediaType = strings.TrimSpace(strings.Split(contentType, ";")[0])
+	}
+	switch strings.ToLower(mediaType) {
+	case "audio/wav", "audio/wave", "audio/x-wav", "audio/vnd.wave":
+		return t.AmbianceAudioWAV, nil
+	case "audio/mpeg", "audio/mp3", "audio/x-mpeg":
+		return t.AmbianceAudioMP3, nil
+	default:
+		return t.AmbianceAudioUnknown, fmt.Errorf("unsupported %s audio MIME type %q", sourceKind, contentType)
 	}
 }
 
@@ -132,4 +193,36 @@ func getRemoteFile(url string, maxSize int64) ([]byte, error) {
 	}
 
 	return data, nil
+}
+
+func getRemoteAudioFile(rawURL string, maxSize int64, sourceKind string) ([]byte, t.AmbianceAudioFormat, error) {
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return nil, t.AmbianceAudioUnknown, fmt.Errorf("invalid remote %s URL: %v", sourceKind, err)
+	}
+
+	format, err := audioFormatFromPath(parsed.Path, sourceKind)
+	if err != nil {
+		return nil, t.AmbianceAudioUnknown, err
+	}
+
+	resp, err := http.Get(rawURL)
+	if err != nil {
+		return nil, t.AmbianceAudioUnknown, fmt.Errorf("error fetching remote file: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if format == t.AmbianceAudioUnknown {
+		format, err = audioFormatFromMIME(resp.Header.Get("Content-Type"), sourceKind)
+		if err != nil {
+			return nil, t.AmbianceAudioUnknown, err
+		}
+	}
+
+	data, err := readFile(resp.Body, maxSize)
+	if err != nil {
+		return nil, t.AmbianceAudioUnknown, fmt.Errorf("error reading remote file: %v", err)
+	}
+
+	return data, format, nil
 }

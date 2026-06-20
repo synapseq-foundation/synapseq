@@ -1,15 +1,6 @@
-//go:build !wasm
-
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package audio
 
@@ -18,6 +9,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/gopxl/beep/v2"
@@ -159,6 +151,21 @@ func TestAudioRenderer_RenderWav_Integration(ts *testing.T) {
 	}
 }
 
+func TestAudioRenderer_UsesDedicatedMusicPackage(ts *testing.T) {
+	source, err := os.ReadFile("renderer.go")
+	if err != nil {
+		ts.Fatalf("read renderer source: %v", err)
+	}
+
+	text := string(source)
+	if strings.Contains(text, "amb.NewMusic") {
+		ts.Fatalf("renderer must not construct music through the ambiance package")
+	}
+	if !strings.Contains(text, "internal/audio/music") {
+		ts.Fatalf("renderer should import the dedicated music package")
+	}
+}
+
 func TestAudioRenderer_RenderWav_WithAmbiance(ts *testing.T) {
 	// Create a simple test WAV file as ambiance
 	tempDir := ts.TempDir()
@@ -185,10 +192,10 @@ func TestAudioRenderer_RenderWav_WithAmbiance(ts *testing.T) {
 	var p0, pEnd t.Period
 	p0.Time = 0
 	p0.TrackStart[0] = t.Track{
-		Type:         t.TrackAmbiance,
-		AmbianceName: "bg",
-		Amplitude:    t.AmplitudePercentToRaw(30),
-		Waveform:     t.WaveformSine,
+		Type:       t.TrackAmbiance,
+		SourceName: "bg",
+		Amplitude:  t.AmplitudePercentToRaw(30),
+		Waveform:   t.WaveformSine,
 	}
 	p0.TrackEnd[0] = p0.TrackStart[0]
 
@@ -216,6 +223,85 @@ func TestAudioRenderer_RenderWav_WithAmbiance(ts *testing.T) {
 	// Basic validation
 	if _, err := os.Stat(outPath); err != nil {
 		ts.Fatalf("Output file not created: %v", err)
+	}
+}
+
+func TestAudioRenderer_RenderWav_WithMusicContinuesAfterEOF(ts *testing.T) {
+	tempDir := ts.TempDir()
+	musicPath := filepath.Join(tempDir, "music.wav")
+
+	musicFile, err := os.Create(musicPath)
+	if err != nil {
+		ts.Fatalf("Failed to create music file: %v", err)
+	}
+
+	const sr = 44100
+	format := beep.Format{SampleRate: beep.SampleRate(sr), NumChannels: audioChannels, Precision: audioBitDepth / 8}
+	cs := &constStreamer{framesLeft: sr / 10, val: float64(1000) / 32768.0}
+	if err := bwav.Encode(musicFile, cs, format); err != nil {
+		ts.Fatalf("Failed to write music: %v", err)
+	}
+	if err := musicFile.Close(); err != nil {
+		ts.Fatalf("Failed to close music file: %v", err)
+	}
+
+	var p0, pEnd t.Period
+	p0.Time = 0
+	p0.TrackStart[0] = t.Track{
+		Type:       t.TrackMusic,
+		SourceName: "meditation",
+		Amplitude:  t.AmplitudePercentToRaw(30),
+		Waveform:   t.WaveformSine,
+	}
+	p0.TrackEnd[0] = p0.TrackStart[0]
+	pEnd.Time = 1000
+
+	renderer, err := NewAudioRenderer([]t.Period{p0, pEnd}, &AudioRendererOptions{
+		SampleRate: sr,
+		Volume:     100,
+		Music: map[string]string{
+			"meditation": musicPath,
+		},
+	})
+	if err != nil {
+		ts.Fatalf("NewAudioRenderer with music failed: %v", err)
+	}
+
+	outPath := filepath.Join(tempDir, "test_with_music.wav")
+	if err := renderer.RenderWav(outPath); err != nil {
+		ts.Fatalf("RenderWav with music failed: %v", err)
+	}
+
+	file, err := os.Open(outPath)
+	if err != nil {
+		ts.Fatalf("Failed to open generated WAV: %v", err)
+	}
+	defer file.Close()
+
+	stream, decodedFormat, err := bwav.Decode(file)
+	if err != nil {
+		ts.Fatalf("Decode failed: %v", err)
+	}
+	defer stream.Close()
+
+	if int(decodedFormat.SampleRate) != sr {
+		ts.Fatalf("Sample rate mismatch: got %d want %d", decodedFormat.SampleRate, sr)
+	}
+
+	frames := 0
+	buf := make([][2]float64, 4096)
+	for {
+		n, ok := stream.Stream(buf)
+		frames += n
+		if !ok {
+			break
+		}
+	}
+	if err := stream.Err(); err != nil {
+		ts.Fatalf("Stream error: %v", err)
+	}
+	if frames != sr {
+		ts.Fatalf("expected renderer to continue for %d frames, got %d", sr, frames)
 	}
 }
 

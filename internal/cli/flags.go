@@ -1,13 +1,6 @@
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package cli
 
@@ -140,24 +133,22 @@ func flagNames(fs *flag.FlagSet) []string {
 func flagBindings() []flagBinding {
 	return []flagBinding{
 		{Name: "version", Usage: "Show version information", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.ShowVersion }, SpecialCommand: SpecialCommandShowVersion},
-		{Name: "preview", Usage: "Render HTML preview timeline", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.Preview }},
+		{Name: "dump", Usage: "Render JSON sequence data", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.Dump }},
 		{Name: "quiet", Usage: "Enable quiet mode", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.Quiet }},
 		{Name: "no-color", Usage: "Disable ANSI colors in CLI output", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.NoColor }},
 		{Name: "test", Usage: "Validate syntax without generating output", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.Test }},
 		{Name: "help", Usage: "Show help", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.ShowHelp }},
-		{Name: "manual", Usage: "Show links to the canonical documentation", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.ShowManual }, SpecialCommand: SpecialCommandShowManual},
-		{Name: "remote-sync", Usage: "Sync index of available sequences", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.RemoteSync }, SpecialCommand: SpecialCommandRemoteSync},
-		{Name: "remote-clean", Usage: "Clean up local cache", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.RemoteClean }, SpecialCommand: SpecialCommandRemoteClean},
-		{Name: "remote-get", Usage: "Get remote sequence", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.RemoteGet }, SpecialCommand: SpecialCommandRemoteGet},
-		{Name: "remote-list", Usage: "List remote sequences", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.RemoteList }, SpecialCommand: SpecialCommandRemoteList},
-		{Name: "remote-search", Usage: "Search remote sequences", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.RemoteSearch }, SpecialCommand: SpecialCommandRemoteSearch},
-		{Name: "remote-download", Usage: "Download remote sequence", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.RemoteDownload }, SpecialCommand: SpecialCommandRemoteDownload},
-		{Name: "remote-info", Usage: "Show information about a remote sequence", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.RemoteInfo }, SpecialCommand: SpecialCommandRemoteInfo},
+		{Name: "sync", Usage: "Sync index of available sequences", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.RemoteSync }, SpecialCommand: SpecialCommandSync},
+		{Name: "clean", Usage: "Clean up local cache", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.RemoteClean }, SpecialCommand: SpecialCommandClean},
+		{Name: "get", Usage: "Get remote sequence", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.RemoteGet }, SpecialCommand: SpecialCommandGet},
+		{Name: "list", Usage: "List remote sequences", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.RemoteList }, SpecialCommand: SpecialCommandList},
+		{Name: "search", Usage: "Search remote sequences", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.RemoteSearch }, SpecialCommand: SpecialCommandSearch},
+		{Name: "download", Usage: "Download remote sequence", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.RemoteDownload }, SpecialCommand: SpecialCommandDownload},
+		{Name: "info", Usage: "Show information about a remote sequence", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.RemoteInfo }, SpecialCommand: SpecialCommandInfo},
 		{Name: "play", Usage: "Play audio using ffplay", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.Play }},
 		{Name: "mp3", Usage: "Export to MP3 with ffmpeg", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.Mp3 }},
 		{Name: "install-file-association", Usage: "Associate .spsq files with SynapSeq (Windows only)", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.InstallFileAssociation }, SpecialCommand: SpecialCommandInstallFileAssociation},
 		{Name: "uninstall-file-association", Usage: "Remove .spsq file association (Windows only)", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.UninstallFileAssociation }, SpecialCommand: SpecialCommandUninstallFileAssociation},
-		{Name: "new", Usage: "Template type: meditation, focus, sleep, relaxation, example", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.New }, SpecialCommand: SpecialCommandGenerateTemplate},
 		{Name: "ffmpeg-path", Usage: "Path to ffmpeg executable", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.FFmpegPath }},
 		{Name: "ffplay-path", Usage: "Path to ffplay executable", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.FFplayPath }},
 		{Name: "doctor", Usage: "Check environment for required tools", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.ShowDoctor }, SpecialCommand: SpecialCommandDoctor},

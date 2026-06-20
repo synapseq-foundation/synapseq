@@ -1,13 +1,6 @@
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package parser
 
@@ -182,8 +175,9 @@ func TestNextExpectOneOf(ts *testing.T) {
 	}).String()
 
 	trLnAmbiance := (&t.Track{
-		Type:      t.TrackAmbiance,
-		Amplitude: t.AmplitudePercentToRaw(50),
+		Type:       t.TrackAmbiance,
+		SourceName: "rain",
+		Amplitude:  t.AmplitudePercentToRaw(50),
 	}).String()
 
 	tests := []struct {
@@ -195,7 +189,7 @@ func TestNextExpectOneOf(ts *testing.T) {
 		{trLnTone, []string{t.KeywordWaveform, t.KeywordNoise}, t.KeywordWaveform, false},
 		{trLnNoisePink, []string{t.KeywordAmbiance, t.KeywordNoise}, t.KeywordNoise, false},
 		{trLnNoiseWhite, []string{t.KeywordTriangle, t.KeywordAmbiance}, "", true},
-		{trLnAmbiance, []string{t.KeywordNoise, t.KeywordWaveform}, t.KeywordWaveform, false},
+		{trLnAmbiance, []string{t.KeywordNoise, t.KeywordAmbiance}, t.KeywordAmbiance, false},
 	}
 
 	for _, test := range tests {

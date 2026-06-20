@@ -1,15 +1,6 @@
-//go:build !wasm
-
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package core
 
@@ -18,7 +9,7 @@ import (
 	"maps"
 	"path/filepath"
 
-	preview "github.com/synapseq-foundation/synapseq/v4/internal/preview"
+	"github.com/synapseq-foundation/synapseq/v4/internal/dump"
 	r "github.com/synapseq-foundation/synapseq/v4/internal/resource"
 	seq "github.com/synapseq-foundation/synapseq/v4/internal/sequence"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
@@ -114,6 +105,94 @@ func (lc *LoadedContext) Ambiance() map[string]string {
 	return ambiance
 }
 
+// Music returns a defensive copy of music map.
+func (lc *LoadedContext) Music() map[string]string {
+	if lc.sequence == nil || lc.sequence.Options == nil || len(lc.sequence.Options.Music) == 0 {
+		return map[string]string{}
+	}
+
+	music := make(map[string]string, len(lc.sequence.Options.Music))
+	maps.Copy(music, lc.sequence.Options.Music)
+
+	return music
+}
+
+// Presets returns a defensive copy of sequence presets.
+func (lc *LoadedContext) Presets() []Preset {
+	if lc.sequence == nil || len(lc.sequence.Presets) == 0 {
+		return []Preset{}
+	}
+
+	presets := make([]Preset, 0, len(lc.sequence.Presets))
+
+	for _, p := range lc.sequence.Presets {
+		tracks := make([]Track, 0, len(p.Track))
+
+		for i, tr := range p.Track {
+			if tr.Type == t.TrackOff || tr.Type == t.TrackSilence {
+				continue
+			}
+
+			tracks = append(tracks, Track{
+				Index:       i + 1,
+				Waveform:    tr.Waveform.String(),
+				Type:        tr.Type.String(),
+				Carrier:     tr.Carrier,
+				Resonance:   tr.Resonance,
+				Amplitude:   tr.Amplitude.ToPercent(),
+				SourceName:  tr.SourceName,
+				NoiseSmooth: tr.NoiseSmooth,
+				Effect: Effect{
+					Type:      tr.Effect.Type.String(),
+					Value:     tr.Effect.Value,
+					Intensity: tr.Effect.Intensity.ToPercent(),
+				},
+				Line: tr.String(),
+			})
+		}
+
+		if len(tracks) == 0 {
+			continue
+		}
+
+		presets = append(presets, Preset{
+			Name:   p.String(),
+			Tracks: tracks,
+		})
+	}
+
+	return presets
+}
+
+// Timeline returns a defensive summary copy of sequence timeline entries.
+func (lc *LoadedContext) Timeline() []TimelineEntry {
+	if lc.sequence == nil || len(lc.sequence.Periods) == 0 {
+		return []TimelineEntry{}
+	}
+
+	timeline := make([]TimelineEntry, 0, len(lc.sequence.Periods))
+
+	for _, p := range lc.sequence.Periods {
+		line := fmt.Sprintf(
+			"%s %s %s %d",
+			p.TimeString(),
+			p.PresetName,
+			p.Transition.String(),
+			p.Steps,
+		)
+
+		timeline = append(timeline, TimelineEntry{
+			Timestamp:  p.TimeString(),
+			PresetName: p.PresetName,
+			Transition: p.Transition.String(),
+			Steps:      p.Steps,
+			Line:       line,
+		})
+	}
+
+	return timeline
+}
+
 // RawContent returns a defensive copy of raw content.
 func (lc *LoadedContext) RawContent() []byte {
 	if lc.sequence == nil || len(lc.sequence.RawContent) == 0 {
@@ -126,11 +205,11 @@ func (lc *LoadedContext) RawContent() []byte {
 	return raw
 }
 
-// Preview renders the loaded sequence as an HTML preview.
-func (lc *LoadedContext) Preview() ([]byte, error) {
+// JSON returns an indented JSON representation of the loaded sequence.
+func (lc *LoadedContext) JSON() ([]byte, error) {
 	if lc.sequence == nil {
 		return nil, fmt.Errorf("sequence is nil")
 	}
 
-	return preview.GetPreviewContent(lc.sequence.Periods)
+	return dump.JSON(lc.sequence)
 }

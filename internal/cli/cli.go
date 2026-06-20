@@ -1,13 +1,6 @@
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package cli
 
@@ -20,17 +13,15 @@ type SpecialCommandKind string
 const (
 	SpecialCommandNone                     SpecialCommandKind = ""
 	SpecialCommandShowVersion              SpecialCommandKind = "show-version"
-	SpecialCommandShowManual               SpecialCommandKind = "show-manual"
-	SpecialCommandRemoteSync               SpecialCommandKind = "remote-sync"
-	SpecialCommandRemoteClean              SpecialCommandKind = "remote-clean"
-	SpecialCommandRemoteGet                SpecialCommandKind = "remote-get"
-	SpecialCommandRemoteList               SpecialCommandKind = "remote-list"
-	SpecialCommandRemoteSearch             SpecialCommandKind = "remote-search"
-	SpecialCommandRemoteDownload           SpecialCommandKind = "remote-download"
-	SpecialCommandRemoteInfo               SpecialCommandKind = "remote-info"
+	SpecialCommandSync                     SpecialCommandKind = "sync"
+	SpecialCommandClean                    SpecialCommandKind = "clean"
+	SpecialCommandGet                      SpecialCommandKind = "get"
+	SpecialCommandList                     SpecialCommandKind = "list"
+	SpecialCommandSearch                   SpecialCommandKind = "search"
+	SpecialCommandDownload                 SpecialCommandKind = "download"
+	SpecialCommandInfo                     SpecialCommandKind = "info"
 	SpecialCommandInstallFileAssociation   SpecialCommandKind = "install-file-association"
 	SpecialCommandUninstallFileAssociation SpecialCommandKind = "uninstall-file-association"
-	SpecialCommandGenerateTemplate         SpecialCommandKind = "generate-template"
 	SpecialCommandDoctor                   SpecialCommandKind = "doctor"
 )
 
@@ -43,18 +34,14 @@ type SpecialCommand struct {
 type CLIOptions struct {
 	// Show version information and exit
 	ShowVersion bool
-	// New starter sequence template type
-	New string
-	// Preview mode, renders HTML timeline instead of audio
-	Preview bool
+	// Dump mode, renders JSON sequence data instead of audio
+	Dump bool
 	// Quiet mode, suppress non-error output
 	Quiet bool
 	// Test mode, validate syntax without generating output
 	Test bool
 	// Show help message and exit
 	ShowHelp bool
-	// Show full manual and exit
-	ShowManual bool
 	// Disable ANSI colors in CLI output
 	NoColor bool
 	// Windows file association installation

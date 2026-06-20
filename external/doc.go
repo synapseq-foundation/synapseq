@@ -1,3 +1,7 @@
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 /*
 Package external provides integrations with external audio utilities
 such as ffplay and ffmpeg to extend SynapSeq output and playback workflows.

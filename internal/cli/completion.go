@@ -1,13 +1,6 @@
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package cli
 
@@ -19,24 +12,23 @@ import (
 // of 50 characters or fewer with no ":" character.
 var completionFlags = map[string]string{
 	"version":                    "Show version information",
-	"preview":                    "Render HTML preview timeline",
+	"dump":                       "Dump sequence as JSON",
 	"quiet":                      "Enable quiet mode",
 	"no-color":                   "Disable ANSI colors in CLI output",
 	"test":                       "Validate syntax without generating output",
 	"help":                       "Show help",
 	"manual":                     "Show links to the canonical documentation",
-	"remote-sync":                "Sync index of available sequences",
-	"remote-clean":               "Clean up local cache",
-	"remote-get":                 "Get remote sequence",
-	"remote-list":                "List remote sequences",
-	"remote-search":              "Search remote sequences",
-	"remote-download":            "Download remote sequence",
-	"remote-info":                "Show remote sequence information",
+	"sync":                       "Sync index of available sequences",
+	"clean":                      "Clean up local cache",
+	"get":                        "Get remote sequence",
+	"list":                       "List remote sequences",
+	"search":                     "Search remote sequences",
+	"download":                   "Download remote sequence",
+	"info":                       "Show remote sequence information",
 	"play":                       "Play audio using ffplay",
 	"mp3":                        "Export to MP3 with ffmpeg",
 	"install-file-association":   "Associate .spsq files (Windows only)",
 	"uninstall-file-association": "Remove .spsq association (Windows only)",
-	"new":                        "Generate template (meditation, focus, etc)",
 	"ffmpeg-path":                "Path to ffmpeg executable",
 	"ffplay-path":                "Path to ffplay executable",
 	"doctor":                     "Check environment for required tools",

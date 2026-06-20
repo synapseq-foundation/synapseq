@@ -1,15 +1,6 @@
-//go:build !js && !wasm
-
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package main
 
@@ -25,7 +16,7 @@ import (
 type outputOptions struct {
 	OutputFile       string
 	Quiet            bool
-	Preview          bool
+	Dump             bool
 	Play             bool
 	Mp3              bool
 	UnsafeNoMetadata bool
@@ -35,8 +26,8 @@ type outputOptions struct {
 
 // processSequenceOutput processes the output of a loaded sequence
 func processSequenceOutput(loadedCtx *synapseq.LoadedContext, opts *outputOptions) error {
-	if opts.Preview {
-		content, err := loadedCtx.Preview()
+	if opts.Dump {
+		content, err := loadedCtx.JSON()
 		if err != nil {
 			return err
 		}
@@ -47,12 +38,11 @@ func processSequenceOutput(loadedCtx *synapseq.LoadedContext, opts *outputOption
 		}
 
 		if err := os.WriteFile(opts.OutputFile, content, 0644); err != nil {
-			return fmt.Errorf("failed to write preview HTML: %v", err)
+			return fmt.Errorf("failed to write JSON dump: %v", err)
 		}
 
 		if !opts.Quiet {
-			fmt.Printf("%s %s\n", cli.SuccessText("Preview generated:"), cli.Accent(fmt.Sprintf("%q", opts.OutputFile)))
-			fmt.Printf("%s\n", cli.Muted("Open the file in a web browser to view the sequence preview."))
+			fmt.Printf("%s %s\n", cli.SuccessText("Dump generated:"), cli.Accent(fmt.Sprintf("%q", opts.OutputFile)))
 		}
 
 		return nil

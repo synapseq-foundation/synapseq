@@ -1,13 +1,6 @@
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package audio
 
@@ -67,6 +60,16 @@ func (r *AudioRenderer) mixNoise(channel *t.Channel, signal channelSignalState) 
 func (r *AudioRenderer) mixAmbiance(channel *t.Channel, signal channelSignalState, ch, frame int) stereoSample {
 	source := src.NewAmbiance(signal.sourceSignal())
 	left, right, ok := source.Sample(r.ambianceState, ch, frame)
+	if !ok {
+		return stereoSample{}
+	}
+
+	return r.applyEffectToStereo(channel, signal, left, right)
+}
+
+func (r *AudioRenderer) mixMusic(channel *t.Channel, signal channelSignalState, ch, frame int) stereoSample {
+	source := src.NewAmbiance(signal.sourceSignal())
+	left, right, ok := source.Sample(r.musicState, ch, frame)
 	if !ok {
 		return stereoSample{}
 	}

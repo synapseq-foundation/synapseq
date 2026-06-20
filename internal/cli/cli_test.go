@@ -1,13 +1,6 @@
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package cli
 
@@ -45,41 +38,10 @@ func TestParseFlags(ts *testing.T) {
 			expectedArgs: []string{},
 			expectError:  false,
 		},
-		// New template flag
-		{
-			args:         []string{"cmd", "-new", "meditation"},
-			expected:     &CLIOptions{New: "meditation"},
-			expectedArgs: []string{},
-			expectError:  false,
-		},
-		{
-			args:         []string{"cmd", "-new", "focus"},
-			expected:     &CLIOptions{New: "focus"},
-			expectedArgs: []string{},
-			expectError:  false,
-		},
-		{
-			args:         []string{"cmd", "-preview", "input.spsq"},
-			expected:     &CLIOptions{Preview: true},
-			expectedArgs: []string{"input.spsq"},
-			expectError:  false,
-		},
 		// Help flag
 		{
 			args:         []string{"cmd", "-help"},
 			expected:     &CLIOptions{ShowHelp: true},
-			expectedArgs: []string{},
-			expectError:  false,
-		},
-		{
-			args:         []string{"cmd", "-manual"},
-			expected:     &CLIOptions{ShowManual: true},
-			expectedArgs: []string{},
-			expectError:  false,
-		},
-		{
-			args:         []string{"cmd", "-no-color", "-manual"},
-			expected:     &CLIOptions{NoColor: true, ShowManual: true},
 			expectedArgs: []string{},
 			expectError:  false,
 		},
@@ -97,13 +59,13 @@ func TestParseFlags(ts *testing.T) {
 			expectError:  false,
 		},
 		{
-			args:         []string{"cmd", "-quiet", "-remote-list"},
+			args:         []string{"cmd", "-quiet", "-list"},
 			expected:     &CLIOptions{Quiet: true, RemoteList: true},
 			expectedArgs: []string{},
 			expectError:  false,
 		},
 		{
-			args:         []string{"cmd", "-no-color", "-remote-get", "calm-state", "output.wav"},
+			args:         []string{"cmd", "-no-color", "-get", "calm-state", "output.wav"},
 			expected:     &CLIOptions{NoColor: true, RemoteGet: "calm-state"},
 			expectedArgs: []string{"output.wav"},
 			expectError:  false,
@@ -145,51 +107,51 @@ func TestParseFlags(ts *testing.T) {
 		},
 		// Remote boolean flags
 		{
-			args:         []string{"cmd", "-remote-sync"},
+			args:         []string{"cmd", "-sync"},
 			expected:     &CLIOptions{RemoteSync: true},
 			expectedArgs: []string{},
 			expectError:  false,
 		},
 		{
-			args:         []string{"cmd", "-remote-clean"},
+			args:         []string{"cmd", "-clean"},
 			expected:     &CLIOptions{RemoteClean: true},
 			expectedArgs: []string{},
 			expectError:  false,
 		},
 		{
-			args:         []string{"cmd", "-remote-list"},
+			args:         []string{"cmd", "-list"},
 			expected:     &CLIOptions{RemoteList: true},
 			expectedArgs: []string{},
 			expectError:  false,
 		},
 		// Remote string flags
 		{
-			args:         []string{"cmd", "-remote-search", "focus"},
+			args:         []string{"cmd", "-search", "focus"},
 			expected:     &CLIOptions{RemoteSearch: "focus"},
 			expectedArgs: []string{},
 			expectError:  false,
 		},
 		{
-			args:         []string{"cmd", "-remote-download", "baseline"},
+			args:         []string{"cmd", "-download", "baseline"},
 			expected:     &CLIOptions{RemoteDownload: "baseline"},
 			expectedArgs: []string{},
 			expectError:  false,
 		},
 		{
-			args:         []string{"cmd", "-remote-info", "deep-sleep"},
+			args:         []string{"cmd", "-info", "deep-sleep"},
 			expected:     &CLIOptions{RemoteInfo: "deep-sleep"},
 			expectedArgs: []string{},
 			expectError:  false,
 		},
 		{
-			args:         []string{"cmd", "-remote-get", "alpha-pack"},
+			args:         []string{"cmd", "-get", "alpha-pack"},
 			expected:     &CLIOptions{RemoteGet: "alpha-pack"},
 			expectedArgs: []string{},
 			expectError:  false,
 		},
 		// Combined remote options and positional args
 		{
-			args: []string{"cmd", "-remote-search", "relax", "-remote-download", "rain-pack", "input.spsq"},
+			args: []string{"cmd", "-search", "relax", "-download", "rain-pack", "input.spsq"},
 			expected: &CLIOptions{
 				RemoteSearch:   "relax",
 				RemoteDownload: "rain-pack",
@@ -227,6 +189,13 @@ func TestParseFlags(ts *testing.T) {
 			expectedArgs: nil,
 			expectError:  true,
 		},
+		// Removed template flag
+		{
+			args:         []string{"cmd", "-new", "meditation"},
+			expected:     nil,
+			expectedArgs: nil,
+			expectError:  true,
+		},
 		// Unknown flag with valid flags
 		{
 			args:         []string{"cmd", "-quiet", "-unknown", "input.spsq"},
@@ -255,17 +224,8 @@ func TestParseFlags(ts *testing.T) {
 		if opts.ShowVersion != test.expected.ShowVersion {
 			ts.Errorf("For args %v, ShowVersion: expected %v but got %v", test.args, test.expected.ShowVersion, opts.ShowVersion)
 		}
-		if opts.New != test.expected.New {
-			ts.Errorf("For args %v, New: expected %q but got %q", test.args, test.expected.New, opts.New)
-		}
 		if opts.ShowHelp != test.expected.ShowHelp {
 			ts.Errorf("For args %v, ShowHelp: expected %v but got %v", test.args, test.expected.ShowHelp, opts.ShowHelp)
-		}
-		if opts.ShowManual != test.expected.ShowManual {
-			ts.Errorf("For args %v, ShowManual: expected %v but got %v", test.args, test.expected.ShowManual, opts.ShowManual)
-		}
-		if opts.Preview != test.expected.Preview {
-			ts.Errorf("For args %v, Preview: expected %v but got %v", test.args, test.expected.Preview, opts.Preview)
 		}
 		if opts.Quiet != test.expected.Quiet {
 			ts.Errorf("For args %v, Quiet: expected %v but got %v", test.args, test.expected.Quiet, opts.Quiet)
@@ -433,32 +393,26 @@ func TestHelpIncludesQuickStart(ts *testing.T) {
 	checks := []string{
 		"Usage:\n  synapseq [options] <input> [output]",
 		"Quick start:",
-		"1. Create a starter file",
-		"synapseq -new meditation starter.spsq",
-		"Create starter.spsq from the meditation template",
-		"2. Render audio",
-		"synapseq starter.spsq",
-		"Generate starter.wav in the current folder",
-		"Available templates",
-		"meditation, focus, sleep, relaxation, example",
-		"Next steps:",
-		"Validate syntax and semantics without generating audio",
-		"Generate starter.html with a visual timeline preview",
-		"defaults to <input>.wav",
-		"-new TYPE         Template type: meditation, focus, sleep, relaxation",
-		"-manual           Show links to the canonical docs",
-		"-preview          Render an HTML preview timeline",
-		"Remote quick start:",
-		"Run -remote-sync first to initialize the local Remote index.",
-		"synapseq -remote-sync",
-		"synapseq -remote-list",
-		"synapseq -remote-get calm-state calm-state.wav",
+		"1. Render audio",
+		"synapseq session.spsq",
+		"Generate session.wav in the current folder",
+		"Most common options:",
+		"-dump             Render JSON sequence data",
+		"Remote:",
+		"Run -sync first to initialize the local Remote index.",
+		"-sync",
+		"-list",
+		"-get NAME [OUTPUT]",
 	}
 
 	for _, expected := range checks {
 		if !strings.Contains(helpText, expected) {
 			ts.Errorf("help output missing %q\nfull output:\n%s", expected, helpText)
 		}
+	}
+
+	if strings.Contains(helpText, "-new") {
+		ts.Errorf("help output still contains removed -new flag\nfull output:\n%s", helpText)
 	}
 }
 

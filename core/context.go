@@ -1,35 +1,12 @@
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package core
 
 import (
 	"io"
-
-	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
-
-// AppContext holds the configuration for the application.
-// It provides a safe, immutable context for sequence processing.
-// Methods that modify the context return a new instance.
-type AppContext struct {
-	statusOutput io.Writer
-	statusColors bool
-}
-
-// LoadedContext holds a loaded sequence and execution settings.
-type LoadedContext struct {
-	appCtx   *AppContext
-	sequence *t.Sequence
-}
 
 // NewAppContext creates a new AppContext instance.
 func NewAppContext() *AppContext {

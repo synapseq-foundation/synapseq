@@ -1,20 +1,12 @@
-//go:build !wasm
-
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package core_test
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
@@ -187,6 +179,77 @@ func ExampleLoadedContext_Ambiance() {
 	// Output: Ambiance retrieved successfully
 }
 
+func ExampleLoadedContext_Presets() {
+	ctx := synapseq.NewAppContext()
+
+	loaded, err := ctx.LoadContent(`alpha
+  waveform sine tone 300 binaural 10 amplitude 20
+  noise pink smooth 5 amplitude 10
+
+00:00:00 alpha
+00:01:00 alpha
+`)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	presets := loaded.Presets()
+
+	fmt.Printf("Presets: %d\n", len(presets))
+	fmt.Printf("Preset: %s\n", presets[0].Name)
+	fmt.Printf("Tracks: %d\n", len(presets[0].Tracks))
+	fmt.Printf("Track 1: %s %.2f %.2f %.2f\n",
+		presets[0].Tracks[0].Type,
+		presets[0].Tracks[0].Carrier,
+		presets[0].Tracks[0].Resonance,
+		presets[0].Tracks[0].Amplitude,
+	)
+
+	// Output:
+	// Presets: 1
+	// Preset: alpha
+	// Tracks: 2
+	// Track 1: binaural 300.00 10.00 20.00
+}
+
+func ExampleLoadedContext_Timeline() {
+	ctx := synapseq.NewAppContext()
+
+	loaded, err := ctx.LoadContent(`alpha
+  waveform sine tone 300 binaural 10 amplitude 20
+
+beta
+  waveform sine tone 200 monaural 8 amplitude 15
+
+00:00:00 alpha steady 0
+00:01:00 beta smooth 2
+`)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	timeline := loaded.Timeline()
+
+	fmt.Printf("Timeline: %d\n", len(timeline))
+	fmt.Printf("Entry 1: %s %s %s %d\n",
+		timeline[0].Timestamp,
+		timeline[0].PresetName,
+		timeline[0].Transition,
+		timeline[0].Steps,
+	)
+	fmt.Printf("Entry 2: %s %s %s %d\n",
+		timeline[1].Timestamp,
+		timeline[1].PresetName,
+		timeline[1].Transition,
+		timeline[1].Steps,
+	)
+
+	// Output:
+	// Timeline: 2
+	// Entry 1: 00:00:00 alpha steady 0
+	// Entry 2: 00:01:00 beta smooth 2
+}
+
 func ExampleLoadedContext_Extends() {
 	// Create a new application context
 	ctx := synapseq.NewAppContext()
@@ -206,7 +269,7 @@ func ExampleLoadedContext_Extends() {
 	// Output: Extends list retrieved successfully
 }
 
-func ExampleLoadedContext_Preview() {
+func ExampleLoadedContext_JSON() {
 	// Create a new application context
 	ctx := synapseq.NewAppContext()
 	_ = ctx
@@ -217,15 +280,15 @@ func ExampleLoadedContext_Preview() {
 	//	log.Fatal(err)
 	// }
 
-	// Generate the HTML preview bytes
-	// previewHTML, err := loaded.Preview()
+	// Generate the JSON dump bytes
+	// jsonDump, err := loaded.JSON()
 	// if err != nil {
 	//	log.Fatal(err)
 	// }
-	// _ = previewHTML
+	// _ = jsonDump
 
-	fmt.Printf("HTML preview bytes generated successfully\n")
-	// Output: HTML preview bytes generated successfully
+	fmt.Printf("JSON dump bytes generated successfully\n")
+	// Output: JSON dump bytes generated successfully
 }
 
 func ExampleLoadedContext_RawContent() {

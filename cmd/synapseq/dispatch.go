@@ -1,15 +1,6 @@
-//go:build !js && !wasm
-
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package main
 
@@ -37,33 +28,24 @@ func dispatchSpecialCommand(opts *cli.CLIOptions, args []string) (bool, error) {
 	case cli.SpecialCommandShowVersion:
 		cli.ShowVersion()
 		return true, nil
-	case cli.SpecialCommandShowManual:
-		cli.ShowManual()
-		return true, nil
-	case cli.SpecialCommandRemoteSync:
+	case cli.SpecialCommandSync:
 		return true, remoteRunSync(opts.Quiet)
-	case cli.SpecialCommandRemoteClean:
+	case cli.SpecialCommandClean:
 		return true, remoteRunClean(opts.Quiet)
-	case cli.SpecialCommandRemoteGet:
+	case cli.SpecialCommandGet:
 		return true, remoteRunGet(opts.RemoteGet, command.OptionalArg, opts)
-	case cli.SpecialCommandRemoteList:
+	case cli.SpecialCommandList:
 		return true, remoteRunList()
-	case cli.SpecialCommandRemoteSearch:
+	case cli.SpecialCommandSearch:
 		return true, remoteRunSearch(opts.RemoteSearch)
-	case cli.SpecialCommandRemoteDownload:
+	case cli.SpecialCommandDownload:
 		return true, remoteRunDownload(opts.RemoteDownload, command.OptionalArg, opts.Quiet)
-	case cli.SpecialCommandRemoteInfo:
+	case cli.SpecialCommandInfo:
 		return true, remoteRunInfo(opts.RemoteInfo)
 	case cli.SpecialCommandInstallFileAssociation:
 		return true, installWindowsFileAssociation(opts.Quiet)
 	case cli.SpecialCommandUninstallFileAssociation:
 		return true, uninstallWindowsFileAssociation(opts.Quiet)
-	case cli.SpecialCommandGenerateTemplate:
-		outputFile := opts.New + ".spsq"
-		if command.OptionalArg != "" {
-			outputFile = command.OptionalArg
-		}
-		return true, generateTemplate(opts.New, outputFile)
 	case cli.SpecialCommandDoctor:
 		return true, runDoctor()
 	default:

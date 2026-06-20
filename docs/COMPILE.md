@@ -1,6 +1,6 @@
 # Compilation
 
-This guide covers how to compile SynapSeq from source on macOS, Linux, Windows, and for WebAssembly.
+This guide covers how to compile SynapSeq from source on macOS, Linux, and Windows.
 
 You need Go v1.26 or later and `make` installed before building.
 
@@ -137,19 +137,6 @@ make build-linux-arm64      # Linux 64-bit (ARM)
 # macOS
 make build-macos            # macOS ARM64 (Apple Silicon)
 ```
-
-### Build for WebAssembly
-
-To compile SynapSeq for use in web browsers:
-
-```bash
-make build-wasm
-```
-
-This generates the following files in the `wasm/` directory:
-
-- `synapseq.wasm` - The WebAssembly binary
-- `wasm_exec.js` - The Go WASM runtime copied from the local Go installation
 
 ## Installing the Binary
 

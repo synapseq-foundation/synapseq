@@ -1,15 +1,6 @@
-//go:build !wasm
-
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package spsq_test
 
@@ -25,7 +16,7 @@ import (
 func ExampleNew() {
 	builder := spsq.New().SampleRate(44100).Volume(100)
 	alpha := builder.NewPreset("alpha")
-	alpha.PinkNoise(0).Amplitude(30)
+	alpha.Pink(0).Amplitude(30)
 	alpha.Tone(300).Binaural(10).Amplitude(15)
 
 	ctx := synapseq.NewAppContext()
@@ -47,7 +38,7 @@ func ExampleNew() {
 func ExampleBuilder_Load_verbose() {
 	builder := spsq.New()
 	alpha := builder.NewPreset("alpha")
-	alpha.PinkNoise(0).Amplitude(30)
+	alpha.Pink(0).Amplitude(30)
 
 	ctx := synapseq.NewAppContext().WithVerbose(io.Discard, false)
 	loaded, err := builder.

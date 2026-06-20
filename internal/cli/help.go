@@ -1,13 +1,6 @@
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package cli
 
@@ -15,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"runtime"
-	"strings"
 
 	"github.com/fatih/color"
 	"github.com/synapseq-foundation/synapseq/v4/internal/info"
@@ -33,32 +25,23 @@ type helpOption struct {
 	Description string
 }
 
-type helpLink struct {
-	Target      string
-	Description string
-}
-
 // Help prints the help message
 func Help() {
 	writer := color.Output
 	writeHelpHeader(writer)
 	writeUsageSection(writer)
 	writeExamplesSection(writer, "Quick start:", quickStartExamples())
-	writeExamplesSection(writer, "Next steps:", nextStepExamples())
 	writeInputSection(writer)
 	writeOutputSection(writer)
 	writeOptionsSection(writer, "Most common options:", commonHelpOptions())
-	writeMutedLeadSection(writer, "Remote:", "Run -remote-sync first to initialize the local Remote index.")
+	writeMutedLeadSection(writer, "Remote:", "Run -sync first to initialize the local Remote index.")
 	writeOptionsList(writer, remoteHelpOptions())
 	fmt.Fprintln(writer)
-	writeCommandListSection(writer, "Remote quick start:", remoteQuickStartCommands())
 	writeOptionsSection(writer, "Advanced:", advancedHelpOptions())
 
 	if runtime.GOOS == "windows" {
 		writeOptionsSection(writer, "Windows-specific options:", windowsHelpOptions())
 	}
-
-	writeLinkSection(writer)
 }
 
 // ShowVersion prints the version information
@@ -74,33 +57,8 @@ func ShowVersion() {
 	)
 }
 
-// ShowManual prints documentation links for users who discover the project from the CLI.
-func ShowManual() {
-	writer := color.Output
-
-	fmt.Fprintf(writer, "%s\n\n", Title("SynapSeq Documentation"))
-	fmt.Fprintf(writer, "  %s\n\n", Muted("Important links for getting started and understanding SynapSeq"))
-
-	lines := []struct {
-		label string
-		url   string
-		desc  string
-	}{
-		{label: "Syntax reference", url: syntaxDocURL(), desc: "Full .spsq and .spsc language reference, examples, and semantic rules"},
-		{label: "How it works", url: howItWorksDocURL(), desc: "Conceptual guide to beats, transitions, steps, noise, and effects"},
-	}
-
-	for _, line := range lines {
-		fmt.Fprintf(writer, "  %s\n", Label(line.label))
-		fmt.Fprintf(writer, "    %s\n", Command(line.url))
-		fmt.Fprintf(writer, "      %s\n", Muted(line.desc))
-	}
-
-	fmt.Fprintln(writer)
-}
-
 func writeHelpHeader(writer io.Writer) {
-	fmt.Fprintf(writer, "%s\n\n", Title(fmt.Sprintf("SynapSeq %s - Text-Driven Audio Sequencer for Brainwave Entrainment", info.VERSION)))
+	fmt.Fprintf(writer, "%s\n\n", Title("SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment"))
 }
 
 func writeUsageSection(writer io.Writer) {
@@ -138,7 +96,8 @@ func writeOutputSection(writer io.Writer) {
 	fmt.Fprintf(writer, "  omitted           %s\n", Muted("defaults to <input>.wav"))
 	fmt.Fprintf(writer, "  WAV file          %s\n", Command("path/to/output.wav"))
 	fmt.Fprintf(writer, "  MP3 file          %s\n", Command("path/to/output.mp3"))
-	fmt.Fprintf(writer, "  standard output   %s\n\n", Muted("-   raw PCM (16-bit stereo)"))
+	fmt.Fprintf(writer, "  JSON file         %s\n", Command("path/to/output.json"))
+	fmt.Fprintf(writer, "  standard output   %s\n\n", Muted("-   raw PCM or JSON depending on mode"))
 }
 
 func writeOptionsSection(writer io.Writer, title string, options []helpOption) {
@@ -158,70 +117,22 @@ func writeOptionsList(writer io.Writer, options []helpOption) {
 	}
 }
 
-func writeCommandListSection(writer io.Writer, title string, commands []string) {
-	fmt.Fprintf(writer, "%s\n", Section(title))
-	for _, commandText := range commands {
-		fmt.Fprintf(writer, "  %s\n", Command(commandText))
-	}
-	fmt.Fprintln(writer)
-}
-
-func writeLinkSection(writer io.Writer) {
-	fmt.Fprintf(writer, "%s\n", Section("For more information:"))
-	for _, link := range moreInfoLinks() {
-		fmt.Fprintf(writer, "  %s\n", Command(link.Target))
-		fmt.Fprintf(writer, "    %s\n", Muted(link.Description))
-	}
-}
-
-func docsRef() string {
-	version := strings.TrimSpace(info.VERSION)
-	if version == "" || version == "development" || version == "unknown" {
-		return "main"
-	}
-	if strings.HasPrefix(version, "v") {
-		return version
-	}
-
-	return "v" + version
-}
-
-func syntaxDocURL() string {
-	return info.REPOSITORY + "/blob/" + docsRef() + "/docs/SYNTAX.md"
-}
-
-func howItWorksDocURL() string {
-	return info.REPOSITORY + "/blob/" + docsRef() + "/docs/HOW_IT_WORKS.md"
-}
-
 func quickStartExamples() []helpExample {
 	return []helpExample{
-		{Label: "1. Create a starter file", CommandText: "synapseq -new meditation starter.spsq", Description: "Create starter.spsq from the meditation template"},
-		{Label: "2. Render audio", CommandText: "synapseq starter.spsq", Description: "Generate starter.wav in the current folder"},
-		{Label: "Available templates", Description: "meditation, focus, sleep, relaxation, example"},
-	}
-}
-
-func nextStepExamples() []helpExample {
-	return []helpExample{
-		{CommandText: "synapseq -test starter.spsq", Description: "Validate syntax and semantics without generating audio"},
-		{CommandText: "synapseq -preview starter.spsq", Description: "Generate starter.html with a visual timeline preview"},
-		{CommandText: "synapseq -play starter.spsq", Description: "Play the sequence directly with ffplay"},
-		{CommandText: "synapseq starter.spsq starter.mp3", Description: "Export to MP3 with ffmpeg"},
-		{CommandText: "synapseq -manual", Description: "Show links to syntax, how-it-works, architecture, and contribution docs"},
+		{Label: "1. Render audio", CommandText: "synapseq session.spsq", Description: "Generate session.wav in the current folder"},
+		{Label: "2. Play audio", CommandText: "synapseq -play session.spsq", Description: "Play the sequence directly with ffplay"},
+		{Label: "3. Export to MP3", CommandText: "synapseq session.spsq session.mp3", Description: "Export to MP3 with ffmpeg"},
 	}
 }
 
 func commonHelpOptions() []helpOption {
 	return []helpOption{
-		{FlagText: "-new TYPE", ColumnWidth: 18, Description: "Template type: meditation, focus, sleep, relaxation, example"},
 		{FlagText: "-test", ColumnWidth: 18, Description: "Check syntax only"},
-		{FlagText: "-preview", ColumnWidth: 18, Description: "Render an HTML preview timeline"},
+		{FlagText: "-dump", ColumnWidth: 18, Description: "Render JSON sequence data"},
 		{FlagText: "-play", ColumnWidth: 18, Description: "Play audio using ffplay"},
 		{FlagText: "-mp3", ColumnWidth: 18, Description: "Export to MP3 with ffmpeg"},
 		{FlagText: "-quiet", ColumnWidth: 18, Description: "Suppress non-error output"},
 		{FlagText: "-no-color", ColumnWidth: 18, Description: "Disable ANSI colors in CLI output"},
-		{FlagText: "-manual", ColumnWidth: 18, Description: "Show links to the canonical docs"},
 		{FlagText: "-version", ColumnWidth: 18, Description: "Show version information"},
 		{FlagText: "-doctor", ColumnWidth: 18, Description: "Run the doctor check for tool dependencies"},
 		{FlagText: "-completion-bash", ColumnWidth: 18, Description: "Generate bash completion script"},
@@ -232,13 +143,13 @@ func commonHelpOptions() []helpOption {
 
 func remoteHelpOptions() []helpOption {
 	return []helpOption{
-		{FlagText: "-remote-sync", ColumnWidth: 28, Description: "Sync the local Remote index"},
-		{FlagText: "-remote-list", ColumnWidth: 28, Description: "List available remote sequences"},
-		{FlagText: "-remote-search WORD", ColumnWidth: 28, Description: "Search remote sequences"},
-		{FlagText: "-remote-info NAME", ColumnWidth: 28, Description: "Show information about a remote sequence"},
-		{FlagText: "-remote-download NAME [DIR]", ColumnWidth: 28, Description: "Download a remote sequence"},
-		{FlagText: "-remote-get NAME [OUTPUT]", ColumnWidth: 28, Description: "Download and generate in one step"},
-		{FlagText: "-remote-clean", ColumnWidth: 28, Description: "Clean up local Remote cache"},
+		{FlagText: "-sync", ColumnWidth: 28, Description: "Sync the local Remote index"},
+		{FlagText: "-list", ColumnWidth: 28, Description: "List available remote sequences"},
+		{FlagText: "-search WORD", ColumnWidth: 28, Description: "Search remote sequences"},
+		{FlagText: "-info NAME", ColumnWidth: 28, Description: "Show information about a remote sequence"},
+		{FlagText: "-download NAME [DIR]", ColumnWidth: 28, Description: "Download a remote sequence"},
+		{FlagText: "-get NAME [OUTPUT]", ColumnWidth: 28, Description: "Download and generate in one step"},
+		{FlagText: "-clean", ColumnWidth: 28, Description: "Clean up local Remote cache"},
 	}
 }
 
@@ -253,21 +164,5 @@ func windowsHelpOptions() []helpOption {
 	return []helpOption{
 		{FlagText: "-install-file-association", ColumnWidth: 30, Description: "Associate .spsq files with SynapSeq"},
 		{FlagText: "-uninstall-file-association", ColumnWidth: 30, Description: "Remove .spsq file association"},
-	}
-}
-
-func remoteQuickStartCommands() []string {
-	return []string{
-		"synapseq -remote-sync",
-		"synapseq -remote-list",
-		"synapseq -remote-search calm-state",
-		"synapseq -remote-get calm-state calm-state.wav",
-		"synapseq -remote-get calm-state calm-state.mp3",
-	}
-}
-
-func moreInfoLinks() []helpLink {
-	return []helpLink{
-		{Target: "https://synapseq.org", Description: "Visit the website for documentation, examples, and the latest updates"},
 	}
 }

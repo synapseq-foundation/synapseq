@@ -1,13 +1,6 @@
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package sequence
 
@@ -164,6 +157,7 @@ func unexpectedSequenceLine(sourceFile string, lineNumber int, lineText string, 
 		firstToken == t.KeywordTone ||
 		firstToken == t.KeywordNoise ||
 		firstToken == t.KeywordAmbiance ||
+		firstToken == t.KeywordMusic ||
 		firstToken == t.KeywordTrack {
 		return lineDiagnostic(sourceFile, lineNumber, lineText, "expected two-space indentation for elements under preset definition")
 	}
@@ -193,6 +187,7 @@ func finalizeSequence(rawContent []byte, presets []t.Preset, periods []t.Period,
 
 	return &t.Sequence{
 		Periods:    periods,
+		Presets:    presets,
 		Options:    options,
 		Comments:   comments,
 		RawContent: rawContent,

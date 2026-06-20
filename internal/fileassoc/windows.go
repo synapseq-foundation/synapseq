@@ -1,15 +1,8 @@
 //go:build windows
 
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package fileassoc
 
@@ -136,6 +129,9 @@ func InstallWindowsFileAssociation() error {
 func InstallWindowsContextMenu() error {
 	base := `Software\Classes\SynapSeq.File\shell`
 
+	// Remove context menu actions from older SynapSeq versions.
+	_ = deleteRegistryTree(registry.CURRENT_USER, base+`\GeneratePreview`)
+
 	exe, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("failed to get exe path: %w", err)
@@ -201,33 +197,33 @@ func InstallWindowsContextMenu() error {
 	testCmdKey.SetStringValue("", testCmd)
 
 	// ===============================
-	// Generate a Preview HTML
+	// Generate JSON Dump
 	// ===============================
-	previewKey, _, err := registry.CreateKey(
+	dumpKey, _, err := registry.CreateKey(
 		registry.CURRENT_USER,
-		base+`\GeneratePreview`,
+		base+`\GenerateDump`,
 		registry.SET_VALUE,
 	)
 	if err != nil {
-		return fmt.Errorf("failed to create GeneratePreview menu: %w", err)
+		return fmt.Errorf("failed to create GenerateDump menu: %w", err)
 	}
-	defer previewKey.Close()
+	defer dumpKey.Close()
 
-	previewKey.SetStringValue("", "SynapSeq: Generate preview HTML")
-	previewKey.SetStringValue("Icon", exePath+",0")
+	dumpKey.SetStringValue("", "SynapSeq: Generate JSON dump")
+	dumpKey.SetStringValue("Icon", exePath+",0")
 
-	previewCmdKey, _, err := registry.CreateKey(
+	dumpCmdKey, _, err := registry.CreateKey(
 		registry.CURRENT_USER,
-		base+`\GeneratePreview\command`,
+		base+`\GenerateDump\command`,
 		registry.SET_VALUE,
 	)
 	if err != nil {
-		return fmt.Errorf("failed to create GeneratePreview command: %w", err)
+		return fmt.Errorf("failed to create GenerateDump command: %w", err)
 	}
-	defer previewCmdKey.Close()
+	defer dumpCmdKey.Close()
 
-	previewCmd := `cmd.exe /C synapseq -preview "%1" & echo. & pause`
-	previewCmdKey.SetStringValue("", previewCmd)
+	dumpCmd := `cmd.exe /C synapseq -dump "%1" & echo. & pause`
+	dumpCmdKey.SetStringValue("", dumpCmd)
 
 	// ===============================
 	// Convert to WAV

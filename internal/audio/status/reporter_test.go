@@ -1,13 +1,6 @@
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package status
 
@@ -390,6 +383,7 @@ func TestIsTrackEqual(ts *testing.T) {
 		{"different waveform", base, &t.Track{Type: t.TrackBinauralBeat, Carrier: 300, Resonance: 10, Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformTriangle, Effect: t.Effect{Type: t.EffectOff, Intensity: t.IntensityPercentToRaw(25)}}, false},
 		{"different intensity", base, &t.Track{Type: t.TrackBinauralBeat, Carrier: 300, Resonance: 10, Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectOff, Intensity: t.IntensityPercentToRaw(50)}}, false},
 		{"different type", base, &t.Track{Type: t.TrackMonauralBeat, Carrier: 300, Resonance: 10, Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectOff, Intensity: t.IntensityPercentToRaw(25)}}, false},
+		{"different source name", &t.Track{Type: t.TrackMusic, SourceName: "meditation", Amplitude: t.AmplitudePercentToRaw(40), Waveform: t.WaveformSine}, &t.Track{Type: t.TrackMusic, SourceName: "bells", Amplitude: t.AmplitudePercentToRaw(40), Waveform: t.WaveformSine}, false},
 		{"ambiance effect type ignored", &t.Track{Type: t.TrackAmbiance, Carrier: 200, Resonance: 5, Amplitude: t.AmplitudePercentToRaw(40), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectPan, Intensity: t.IntensityPercentToRaw(60)}}, &t.Track{Type: t.TrackAmbiance, Carrier: 200, Resonance: 5, Amplitude: t.AmplitudePercentToRaw(40), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectModulation, Intensity: t.IntensityPercentToRaw(60)}}, true},
 	}
 

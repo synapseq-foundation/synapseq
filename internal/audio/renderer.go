@@ -1,13 +1,6 @@
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package audio
 
@@ -17,6 +10,7 @@ import (
 
 	amb "github.com/synapseq-foundation/synapseq/v4/internal/audio/ambiance"
 	efx "github.com/synapseq-foundation/synapseq/v4/internal/audio/effects"
+	mus "github.com/synapseq-foundation/synapseq/v4/internal/audio/music"
 	audiosync "github.com/synapseq-foundation/synapseq/v4/internal/audio/sync"
 	wt "github.com/synapseq-foundation/synapseq/v4/internal/audio/wavetable"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
@@ -41,6 +35,7 @@ type AudioRenderer struct {
 	syncEngine      *audiosync.Engine
 	effectProcessor *efx.Processor
 	ambianceState   *amb.Runtime
+	musicState      *mus.Runtime
 
 	// Embedding options
 	*AudioRendererOptions
@@ -51,6 +46,7 @@ type AudioRendererOptions struct {
 	SampleRate   int
 	Volume       int
 	Ambiance     map[string]string
+	Music        map[string]string
 	StatusOutput io.Writer
 	Colors       bool
 }
@@ -79,6 +75,12 @@ func NewAudioRenderer(p []t.Period, ar *AudioRendererOptions) (*AudioRenderer, e
 	if err != nil {
 		return nil, err
 	}
+	musicState, err := mus.NewRuntime(p, ar.Music, ar.SampleRate, func(paths []string, sampleRate int) (mus.SampleAudio, error) {
+		return mus.NewAudio(paths, sampleRate)
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	renderer := &AudioRenderer{
 		plan:                 compileRenderPlan(p, ar.SampleRate),
@@ -86,14 +88,16 @@ func NewAudioRenderer(p []t.Period, ar *AudioRendererOptions) (*AudioRenderer, e
 		waveTables:           wt.Init(),
 		noiseGenerator:       NewNoiseGenerator(),
 		ambianceState:        ambianceState,
+		musicState:           musicState,
 		AudioRendererOptions: ar,
 	}
 	renderer.syncEngine = audiosync.NewEngine(renderer.SampleRate, func(ch int, periodIdx int, trackType t.TrackType) {
-		if renderer.ambianceState == nil {
-			return
+		if renderer.ambianceState != nil {
+			renderer.ambianceState.UpdateChannelIndex(ch, periodIdx, trackType)
 		}
-
-		renderer.ambianceState.UpdateChannelIndex(ch, periodIdx, trackType)
+		if renderer.musicState != nil {
+			renderer.musicState.UpdateChannelIndex(ch, periodIdx, trackType)
+		}
 	})
 	renderer.effectProcessor = efx.NewProcessor(renderer.SampleRate, renderer.waveTables)
 
@@ -105,6 +109,9 @@ func (r *AudioRenderer) Render(consume func(samples []int) error) error {
 	defer func() {
 		if r.ambianceState != nil {
 			r.ambianceState.Close()
+		}
+		if r.musicState != nil {
+			r.musicState.Close()
 		}
 	}()
 

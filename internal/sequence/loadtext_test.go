@@ -1,15 +1,6 @@
-//go:build !wasm
-
-/*
- * SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment
- * https://synapseq.org
- *
- * Copyright (c) 2025-2026 SynapSeq Foundation
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2.
- * See the file COPYING.txt for details.
- */
+// Copyright (C) 2026 SynapSeq Contributors
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package sequence
 
@@ -43,6 +34,21 @@ func writeRelFile(tst *testing.T, dir, relPath, content string) string {
 
 	if err := os.WriteFile(path, []byte(strings.TrimSpace(content)+"\n"), 0o600); err != nil {
 		tst.Fatalf("write temp rel file: %v", err)
+	}
+
+	return path
+}
+
+func writeRelBytes(tst *testing.T, dir, relPath string, content []byte) string {
+	tst.Helper()
+
+	path := filepath.Join(dir, relPath)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		tst.Fatalf("mkdir temp rel bytes dir: %v", err)
+	}
+
+	if err := os.WriteFile(path, content, 0o600); err != nil {
+		tst.Fatalf("write temp rel bytes file: %v", err)
 	}
 
 	return path
@@ -119,6 +125,7 @@ beta
 00:01:00 beta
 `
 	path := writeSeqFile(ts, seq)
+	writeRelBytes(ts, filepath.Dir(path), "testdata/noise.wav", nil)
 	abPath := filepath.Join(filepath.Dir(path), "testdata", "noise.wav")
 
 	result, err := loadTextSequenceFile(ts, path)
@@ -164,6 +171,194 @@ beta
 	}
 	if !hasTrack(periods[1].TrackStart, wantToneBeta) {
 		ts.Fatalf("missing beta tracks in period[1]: %+v", periods[1].TrackStart)
+	}
+}
+
+func TestLoadTextSequence_AmbianceResolvesLocalMP3WhenWAVMissing(ts *testing.T) {
+	seq := `
+@ambiance rain audio/rain
+
+alpha
+  ambiance rain amplitude 20
+
+00:00:00 alpha
+00:00:01 alpha
+`
+	path := writeSeqFile(ts, seq)
+	writeRelBytes(ts, filepath.Dir(path), "audio/rain.mp3", nil)
+
+	result, err := loadTextSequenceFile(ts, path)
+	if err != nil {
+		ts.Fatalf("LoadTextSequence error: %v", err)
+	}
+
+	want := filepath.Join(filepath.Dir(path), "audio", "rain.mp3")
+	if result.Options.Ambiance["rain"] != want {
+		ts.Fatalf("expected ambiance path %q, got %q", want, result.Options.Ambiance["rain"])
+	}
+}
+
+func TestLoadTextSequence_AmbiancePrefersLocalWAVOverMP3(ts *testing.T) {
+	seq := `
+@ambiance rain audio/rain
+
+alpha
+  ambiance rain amplitude 20
+
+00:00:00 alpha
+00:00:01 alpha
+`
+	path := writeSeqFile(ts, seq)
+	writeRelBytes(ts, filepath.Dir(path), "audio/rain.wav", nil)
+	writeRelBytes(ts, filepath.Dir(path), "audio/rain.mp3", nil)
+
+	result, err := loadTextSequenceFile(ts, path)
+	if err != nil {
+		ts.Fatalf("LoadTextSequence error: %v", err)
+	}
+
+	want := filepath.Join(filepath.Dir(path), "audio", "rain.wav")
+	if result.Options.Ambiance["rain"] != want {
+		ts.Fatalf("expected ambiance path %q, got %q", want, result.Options.Ambiance["rain"])
+	}
+}
+
+func TestLoadTextSequence_AmbianceReportsWAVAndMP3WhenMissing(ts *testing.T) {
+	seq := `
+@ambiance rain audio/rain
+
+alpha
+  ambiance rain amplitude 20
+
+00:00:00 alpha
+00:00:01 alpha
+`
+	path := writeSeqFile(ts, seq)
+
+	_, err := loadTextSequenceFile(ts, path)
+	if err == nil {
+		ts.Fatalf("expected missing ambiance error")
+	}
+
+	if !strings.Contains(err.Error(), "audio/rain.wav") || !strings.Contains(err.Error(), "audio/rain.mp3") {
+		ts.Fatalf("expected error to mention both attempted files, got: %v", err)
+	}
+}
+
+func TestLoadTextSequence_AmbiancePreservesRemoteURL(ts *testing.T) {
+	seq := `
+@ambiance rain https://example.com/audio/rain.mp3
+
+alpha
+  ambiance rain amplitude 20
+
+00:00:00 alpha
+00:00:01 alpha
+`
+	path := writeSeqFile(ts, seq)
+
+	result, err := loadTextSequenceFile(ts, path)
+	if err != nil {
+		ts.Fatalf("LoadTextSequence error: %v", err)
+	}
+
+	want := "https://example.com/audio/rain.mp3"
+	if result.Options.Ambiance["rain"] != want {
+		ts.Fatalf("expected ambiance URL %q, got %q", want, result.Options.Ambiance["rain"])
+	}
+}
+
+func TestLoadTextSequence_MusicPrefersLocalMP3OverWAV(ts *testing.T) {
+	seq := `
+@music meditation audio/meditation
+
+alpha
+  music meditation amplitude 20
+
+00:00:00 alpha
+00:00:01 alpha
+`
+	path := writeSeqFile(ts, seq)
+	writeRelBytes(ts, filepath.Dir(path), "audio/meditation.mp3", nil)
+	writeRelBytes(ts, filepath.Dir(path), "audio/meditation.wav", nil)
+
+	result, err := loadTextSequenceFile(ts, path)
+	if err != nil {
+		ts.Fatalf("LoadTextSequence error: %v", err)
+	}
+
+	want := filepath.Join(filepath.Dir(path), "audio", "meditation.mp3")
+	if result.Options.Music["meditation"] != want {
+		ts.Fatalf("expected music path %q, got %q", want, result.Options.Music["meditation"])
+	}
+}
+
+func TestLoadTextSequence_MusicResolvesLocalWAVWhenMP3Missing(ts *testing.T) {
+	seq := `
+@music meditation audio/meditation
+
+alpha
+  music meditation amplitude 20
+
+00:00:00 alpha
+00:00:01 alpha
+`
+	path := writeSeqFile(ts, seq)
+	writeRelBytes(ts, filepath.Dir(path), "audio/meditation.wav", nil)
+
+	result, err := loadTextSequenceFile(ts, path)
+	if err != nil {
+		ts.Fatalf("LoadTextSequence error: %v", err)
+	}
+
+	want := filepath.Join(filepath.Dir(path), "audio", "meditation.wav")
+	if result.Options.Music["meditation"] != want {
+		ts.Fatalf("expected music path %q, got %q", want, result.Options.Music["meditation"])
+	}
+}
+
+func TestLoadTextSequence_MusicReportsMP3AndWAVWhenMissing(ts *testing.T) {
+	seq := `
+@music meditation audio/meditation
+
+alpha
+  music meditation amplitude 20
+
+00:00:00 alpha
+00:00:01 alpha
+`
+	path := writeSeqFile(ts, seq)
+
+	_, err := loadTextSequenceFile(ts, path)
+	if err == nil {
+		ts.Fatalf("expected missing music error")
+	}
+
+	if !strings.Contains(err.Error(), "audio/meditation.mp3") || !strings.Contains(err.Error(), "audio/meditation.wav") {
+		ts.Fatalf("expected error to mention both attempted files, got: %v", err)
+	}
+}
+
+func TestLoadTextSequence_MusicPreservesRemoteURL(ts *testing.T) {
+	seq := `
+@music meditation https://example.com/audio/meditation.mp3
+
+alpha
+  music meditation amplitude 20
+
+00:00:00 alpha
+00:00:01 alpha
+`
+	path := writeSeqFile(ts, seq)
+
+	result, err := loadTextSequenceFile(ts, path)
+	if err != nil {
+		ts.Fatalf("LoadTextSequence error: %v", err)
+	}
+
+	want := "https://example.com/audio/meditation.mp3"
+	if result.Options.Music["meditation"] != want {
+		ts.Fatalf("expected music URL %q, got %q", want, result.Options.Music["meditation"])
 	}
 }
 
@@ -329,6 +524,24 @@ alpha
 		ts.Fatalf("expected error for ambiance path with extension")
 	}
 	if !strings.Contains(err.Error(), "ambiance local path must not include file extension") {
+		ts.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestLoadTextSequence_Error_MusicPathWithExtension(ts *testing.T) {
+	seq := `
+@music meditation audio/meditation.mp3
+alpha
+  music meditation amplitude 10
+00:00:00 alpha
+00:01:00 alpha
+`
+	path := writeSeqFile(ts, seq)
+	_, err := loadTextSequenceFile(ts, path)
+	if err == nil {
+		ts.Fatalf("expected error for music path with extension")
+	}
+	if !strings.Contains(err.Error(), "music local path must not include file extension") {
 		ts.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -679,6 +892,9 @@ alpha
 	writeRelFile(ts, dir, "packs/river.spsc", `
 @ambiance river audio/river
 `)
+	writeRelBytes(ts, dir, "packs/audio/forest.wav", nil)
+	writeRelBytes(ts, dir, "packs/audio/river.wav", nil)
+	writeRelBytes(ts, dir, "audio/wind.wav", nil)
 
 	seqPath := writeRelFile(ts, dir, "seq.spsq", `
 @extends packs/forest
