@@ -12,7 +12,7 @@ DATE    	    := $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 # Windows configuration
 MAJOR_VERSION 			 := $(shell echo $(VERSION) | cut -d. -f1)
 MINOR_VERSION 			 := $(shell echo $(VERSION) | cut -d. -f2)
-PATCH_VERSION 			 := $(shell echo $(VERSION) | cut -d. -f3)
+PATCH_VERSION 			 := $(shell echo $(VERSION) | cut -d. -f3 | sed -E 's/[^0-9].*//')
 GO_VERSION_INFO_CMD 	 := github.com/josephspurrier/goversioninfo/cmd/goversioninfo@v1.5.0
 GO_VERSION_INFO_CMD_ARGS := -company="SynapSeq Foundation <synapseq.org>" \
 							-description="Text-Driven Audio Sequencer for Brainwave Entrainment" \
