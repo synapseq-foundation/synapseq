@@ -50,6 +50,7 @@ Install with [Homebrew](https://brew.sh):
 
 ```bash
 brew tap synapseq-foundation/synapseq
+brew trust synapseq-foundation/synapseq # For homebrew >= 6.x
 brew install synapseq
 ```
 
@@ -123,7 +124,19 @@ By default, the output uses the sequence name and the `.wav` extension. An
 output file can be specified explicitly:
 
 ```bash
-synapseq -get calm-state focus.wav
+synapseq -get calm-state calm-state.wav
+```
+
+You can export to mp3 using the `-mp3` flag:
+
+```bash
+synapseq -mp3 -get calm-state calm-state.mp3
+```
+
+Or with `.mp3` extension:
+
+```bash
+synapseq -get calm-state calm-state.mp3
 ```
 
 ## Programmatic API
