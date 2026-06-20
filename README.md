@@ -28,7 +28,7 @@ A basic `.spsq` sequence is plain text: define options, declare presets with ind
 
 # Presets
 focus
-  tone 220 binaural 10 amplitude 25
+  tone 220 binaural 12 amplitude 25
   noise pink smooth 15 amplitude 12
 
 # Timeline
@@ -76,6 +76,55 @@ After installation on any platform, read the repository docs in this order:
 
 - [SYNTAX](docs/SYNTAX.md)
 - [HOW IT WORKS](docs/HOW_IT_WORKS.md)
+
+## Examples
+
+SynapSeq Remote provides ready-to-use sequences. Sync the local index before
+listing, searching, downloading, or generating a remote sequence:
+
+```bash
+synapseq -sync
+```
+
+List all available sequences:
+
+```bash
+synapseq -list
+```
+
+Search sequences by a word found in their name, description, or category:
+
+```bash
+synapseq -search focus
+```
+
+Use the sequence ID shown by `-list` or `-search` to download its `.spsq` file.
+This is the recommended option when you want to keep and inspect the sequence
+on your machine:
+
+```bash
+synapseq -download calm-state
+```
+
+The file is saved as `calm-state.spsq` in the current directory. You can
+also provide a destination directory:
+
+```bash
+synapseq -download calm-state ./sequences
+```
+
+To download a remote sequence and generate its audio in one step, use `-get`:
+
+```bash
+synapseq -get calm-state
+```
+
+By default, the output uses the sequence name and the `.wav` extension. An
+output file can be specified explicitly:
+
+```bash
+synapseq -get calm-state focus.wav
+```
 
 ## Programmatic API
 Example:
