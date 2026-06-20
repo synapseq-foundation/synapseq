@@ -161,8 +161,8 @@ func main() {
 
 	// Create a new preset for focus mode
 	focus := builder.NewPreset("focus")
-	// Add tone with 220 Hz, binaural with 10 Hz, and amplitude of 25%
-	focus.Tone(220).Binaural(10).Amplitude(25)
+	// Add tone with 220 Hz, binaural with 12 Hz, and amplitude of 25%
+	focus.Tone(220).Binaural(12).Amplitude(25)
 	// Add pink noise with 15% of smoothness and amplitude of 12%
 	focus.PinkNoise(15).Amplitude(12)
 
