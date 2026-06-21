@@ -250,6 +250,25 @@ beta
 	// Entry 2: 00:01:00 beta smooth 2
 }
 
+func ExampleLoadedContext_Duration() {
+	ctx := synapseq.NewAppContext()
+
+	loaded, err := ctx.LoadContent(`alpha
+  waveform sine tone 300 binaural 10 amplitude 20
+
+00:00:00 alpha
+00:01:00 alpha
+`)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Duration: %s\n", loaded.Duration())
+
+	// Output:
+	// Duration: 1m0s
+}
+
 func ExampleLoadedContext_Extends() {
 	// Create a new application context
 	ctx := synapseq.NewAppContext()
