@@ -19,10 +19,15 @@ func main() {
 	fadeIn := flag.Int("i", 0, "fade in duration")
 	fadeOut := flag.Int("o", 0, "fade out duration")
 	duration := flag.Int("d", 60, "duration in seconds")
-	file := flag.String("f", "", "output file")
+	help := flag.Bool("h", false, "show help")
+	file := flag.String("f", "", "output file. Supported formats: .wav, .mp3")
 	flag.Parse()
 
-	fmt.Fprintln(os.Stderr, "Usage: binaural-cli -c <carrier> -b <beat> -a <amplitude> -i <fadeIn> -o <fadeOut> -d <duration> -f <file>")
+	if *help {
+		fmt.Fprintln(os.Stderr, "Usage: binaural-cli [options]")
+		flag.PrintDefaults()
+		os.Exit(0)
+	}
 
 	// Create a synapseq context
 	ctx := synapseq.NewAppContext()
