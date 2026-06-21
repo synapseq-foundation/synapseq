@@ -84,6 +84,13 @@ Output methods:
   - loaded.Stream(writer) writes raw PCM to an io.Writer
   - loaded.JSON() returns JSON dump bytes
 
+# Sequence Inspection
+
+Use Duration to retrieve the total duration of the loaded sequence as a
+time.Duration:
+
+	duration := loaded.Duration()
+
 # Thread Safety
 
 AppContext methods are safe for concurrent use because configuration methods

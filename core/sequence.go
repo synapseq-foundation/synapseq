@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"maps"
 	"path/filepath"
+	"time"
 
 	"github.com/synapseq-foundation/synapseq/v4/internal/dump"
 	r "github.com/synapseq-foundation/synapseq/v4/internal/resource"
@@ -191,6 +192,16 @@ func (lc *LoadedContext) Timeline() []TimelineEntry {
 	}
 
 	return timeline
+}
+
+// Duration returns the duration of the sequence in seconds.
+func (lc *LoadedContext) Duration() time.Duration {
+	if lc.sequence == nil || len(lc.sequence.Periods) == 0 {
+		return 0
+	}
+
+	tim := lc.sequence.Periods[len(lc.sequence.Periods)-1].Time
+	return time.Duration(tim) * time.Millisecond
 }
 
 // RawContent returns a defensive copy of raw content.
