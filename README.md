@@ -192,8 +192,8 @@ func main() {
 ```
 
 Docs:
-- [core](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4/core)
-- [spsq](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4/spsq)
+- [core](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4@v4.40.3-foundation/core)
+- [spsq](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4@v4.40.3-foundation/spsq)
 
 ## Contributing
 
