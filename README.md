@@ -1,19 +1,45 @@
 <h1 align="center">SynapSeq</h1>
 
 <p align="center">
-<p align="center">
 <img src="./assets/synapseq-banner-dark.svg" alt="SynapSeq - Neural Audio Sequencing Engine" />
 </p>
-  <p align="center">
+<p align="center">
   <a href="https://github.com/synapseq-foundation/synapseq/releases/latest"><img src="https://img.shields.io/github/v/release/synapseq-foundation/synapseq?color=blue&logo=github" alt="Release"></a>
   <a href="COPYING.txt"><img src="https://img.shields.io/badge/license-GPL%20v3%20or%20later-blue.svg?logo=open-source-initiative&logoColor=white" alt="License"></a>
   <a href="https://github.com/synapseq-foundation/synapseq/commits"><img src="https://img.shields.io/github/commit-activity/m/synapseq-foundation/synapseq?color=ff69b4&logo=git" alt="Commit Activity"></a>
 </p>
-</p>
 
-<p align="center"><strong>Text-Driven Audio Sequencer for Brainwave Entrainment</strong></p>
+<p align="center"><strong>A text-driven audio sequencer for creative and experimental sound sessions</strong></p>
 
-**SynapSeq** is a text-driven audio sequencer for building clear, repeatable brainwave and ambient sessions using a simple domain-specific language, written as SynapSeq sequences (.spsq).
+**SynapSeq** turns plain-text sequences into evolving audio. Its small domain-specific language lets you combine tones, binaural, monaural, and isochronic rhythms, noise, music, ambiance, effects, and transitions on a precise timeline.
+
+Sequences are stored as readable `.spsq` files, making them easy to inspect, reproduce, share, and keep under version control. You can render them from the command line or build them programmatically with the Go API.
+
+## Why SynapSeq?
+
+Most audio tools represent a session as a visual project file. SynapSeq approaches it as a written score: presets describe **what plays**, while the timeline describes **how the sound changes**.
+
+This makes SynapSeq useful for:
+
+- sound designers and musicians exploring procedural soundscapes;
+- creators building sessions for meditation, relaxation, focus, or sleep routines;
+- developers integrating deterministic audio generation into Go applications;
+- researchers, students, and audio enthusiasts who need experiments to be documented and repeatable;
+- communities that want to exchange compact, human-readable audio recipes instead of large project files.
+
+SynapSeq is best understood as a **creative and experimental audio tool**. It gives you precise control over sound generation, but it does not prescribe what a sequence should be used for or promise a particular effect on the listener.
+
+> [!IMPORTANT]
+> SynapSeq is not a medical device and is not intended to diagnose, treat, cure, or prevent any condition. Terms such as *brainwave entrainment*, *focus*, *sleep*, and *relaxation* describe common creative or experimental uses, not guaranteed health or cognitive outcomes. Listen at a comfortable volume and use appropriate care when creating or evaluating sessions.
+
+## What You Can Create
+
+- stereo binaural, monaural, and isochronic tone sequences;
+- layered noise, music, and ambient soundscapes;
+- gradual or stepped changes in pitch, rhythm, amplitude, and other parameters;
+- spatial movement and modulation through effects;
+- repeatable sessions rendered as WAV, streamed as PCM, played directly, or converted to MP3;
+- reusable presets and sequences extended from other `.spsq` files.
 
 ## What It Looks Like
 
@@ -37,6 +63,14 @@ focus
 ```
 
 See [SYNTAX](docs/SYNTAX.md) for the complete language reference.
+
+Save the example as `focus.spsq`, then render it:
+
+```bash
+synapseq focus.spsq
+```
+
+The result is a repeatable audio session generated from the text definition. See [HOW IT WORKS](docs/HOW_IT_WORKS.md) for a perceptual explanation of the tone methods, transitions, and effects.
 
 ## Quick Start
 
@@ -69,14 +103,14 @@ If you prefer to install manually, download the appropriate archive from the lat
 
 If you want to build SynapSeq from source, see the [Compilation Guide](docs/COMPILE.md).
 
-### Usage
+### Next Steps
 
 After installation on any platform, read the repository docs in this order:
 
 - [SYNTAX](docs/SYNTAX.md)
 - [HOW IT WORKS](docs/HOW_IT_WORKS.md)
 
-## Examples
+## SynapSeq Remote
 
 SynapSeq Remote provides ready-to-use sequences. Sync the local index before
 listing, searching, downloading, or generating a remote sequence:
@@ -138,7 +172,9 @@ synapseq -get calm-state calm-state.mp3
 ```
 
 ## Programmatic API
-Example:
+
+The public Go API can construct the same `.spsq` representation in code and pass it through the regular loading, validation, and rendering pipeline:
+
 ```go
 package main
 
