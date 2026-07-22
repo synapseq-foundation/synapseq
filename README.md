@@ -73,6 +73,48 @@ synapseq focus.spsq
 
 The result is a repeatable audio session generated from the text definition. See [HOW IT WORKS](docs/HOW_IT_WORKS.md) for a perceptual explanation of the tone methods, transitions, and effects.
 
+## Create Sequences With AI Agents
+
+SynapSeq publishes the [`create-spsq` skill](https://skills.sh/synapseq-foundation/synapseq/create-spsq) for generating, editing, and validating `.spsq` sequences with AI coding agents. Install SynapSeq first using the [Quick Start](#quick-start) instructions so the agent can validate generated files with `synapseq -test`.
+
+Install the skill interactively from its `skills.sh` source:
+
+```bash
+npx skills add https://github.com/synapseq-foundation/synapseq --skill create-spsq
+```
+
+To install it globally for a specific agent without prompts, use one of these commands:
+
+```bash
+# Codex
+npx skills add https://github.com/synapseq-foundation/synapseq --skill create-spsq --global --agent codex --yes
+
+# Claude Code
+npx skills add https://github.com/synapseq-foundation/synapseq --skill create-spsq --global --agent claude-code --yes
+```
+
+Omit `--global` to install the skill only in the current project.
+
+### Codex
+
+Start Codex in the directory where you want to create the sequence and mention the skill explicitly with `$create-spsq`:
+
+```text
+$create-spsq Create a 20-minute relaxation sequence with a smooth binaural fade-in and fade-out.
+```
+
+You can also describe the task normally; Codex may select the skill automatically when the request matches its description.
+
+### Claude Code
+
+Start Claude Code in the target directory and invoke the installed skill as a slash command:
+
+```text
+/create-spsq Create a 20-minute relaxation sequence with a smooth binaural fade-in and fade-out.
+```
+
+Claude Code can also load the skill automatically when a request matches its description. Explicit invocation is the most predictable option for both agents.
+
 ## Quick Start
 
 The recommended way to install SynapSeq is through the platform package manager.
