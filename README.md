@@ -7,6 +7,7 @@
   <a href="https://github.com/synapseq-foundation/synapseq/releases/latest"><img src="https://img.shields.io/github/v/release/synapseq-foundation/synapseq?color=blue&logo=github" alt="Release"></a>
   <a href="COPYING.txt"><img src="https://img.shields.io/badge/license-GPL%20v3%20or%20later-blue.svg?logo=open-source-initiative&logoColor=white" alt="License"></a>
   <a href="https://github.com/synapseq-foundation/synapseq/commits"><img src="https://img.shields.io/github/commit-activity/m/synapseq-foundation/synapseq?color=ff69b4&logo=git" alt="Commit Activity"></a>
+  <a href="https://skills.sh/synapseq-foundation/synapseq"><img src="https://skills.sh/b/synapseq-foundation/synapseq" alt="skills.sh"></a>
 </p>
 
 <p align="center"><strong>SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment</strong></p>
