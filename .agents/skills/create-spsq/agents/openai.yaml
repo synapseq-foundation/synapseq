@@ -1,0 +1,4 @@
+interface:
+  display_name: "Create SPSQ"
+  short_description: "Create, edit, and validate SynapSeq sequences"
+  default_prompt: "Use $create-spsq to create and validate a SynapSeq sequence for my listening goal."
