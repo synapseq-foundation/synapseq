@@ -1,17 +1,29 @@
 ---
 name: create-spsq
-description: Create and validate new SynapSeq `.spsq` brainwave-entrainment sequence files. Use when an agent needs to translate a listening goal into a new sequence or create a new adapted, corrected, or extended sequence from an existing read-only `.spsq` reference and its `.spsc` dependencies. Never edit, overwrite, move, or delete an existing sequence or dependency. Use `$review-spsq` for technical audit or validation of existing files and `$explain-spsq` for syntax lessons or didactic walkthroughs.
+description: Create new SynapSeq `.spsq` sequence files from a user description or from an existing sequence used as a read-only reference. Use when the task requires a new file, variant, adaptation, or revised version. Validate every new file, but never modify an existing `.spsq`, `.spsc`, dependency, or occupied destination in place. Use `review-spsq` for critical audits and `explain-spsq` for teaching or clarification.
 ---
 
 # Create SPSQ Sequences
 
 Create syntactically valid, listenable SynapSeq sequences while keeping claims about their effects modest. Reply in the user's language even though the DSL keywords and this skill are in English.
 
+This is the only SynapSeq skill authorized to create complete `.spsq` files. It creates from scratch or derives a new version from read-only material; it never edits an artifact in place.
+
 ## Load the language reference
 
 Read [references/spsq-language.md](references/spsq-language.md) before writing a new sequence. It contains the accepted line forms, validated ranges, timeline semantics, and examples.
 
 When working inside the SynapSeq repository, consult `docs/SYNTAX.md` and the parser only if the bundled reference appears stale or the requested feature is not covered. Treat the current parser and sequence builder as authoritative.
+
+Read [references/handoff-contract.md](references/handoff-contract.md) only when consuming or producing a real handoff to another skill.
+
+## Route by primary intent
+
+Use this skill when the main action is create, generate, produce, assemble, recreate, transform into another file, create a variant, or apply recommendations as a new version.
+
+- For review, audit, quality assessment, risk identification, or validation of an existing file, recommend `review-spsq`.
+- For explanation, teaching, line interpretation, or feature comparison, recommend `explain-spsq`.
+- For a compound request that requires review findings before creation, hand off to `review-spsq` unless concrete recommendations are already supplied. When recommendations are supplied, create the new file without recreating the audit or extended lesson.
 
 ## Gather the intent
 
@@ -23,6 +35,8 @@ Extract these requirements from the request:
 - available local paths or URLs for ambiance and music;
 - desired output path;
 - any existing `.spsq` supplied as a read-only design or content reference.
+
+When the request contains a `synapseq_task` handoff targeted at `create-spsq`, treat its natural-language prompt as authoritative and the YAML as structured supporting context. Verify the referenced files and requested destination instead of assuming they exist. Preserve the stated objective, constraints, and `preserve` items, but decide the concrete valid SPSQ implementation here.
 
 For a vague request such as “make a focus sequence,” ask only for the missing essentials: duration and whether the user prefers a method or delegates that choice. Ask about headphones only when binaural is a likely choice. Do not block on optional details once those essentials are known.
 
@@ -41,13 +55,15 @@ Treat focus, sleep, relaxation, meditation, and similar terms as creative listen
 
 Do not invent ambiance or music assets. Use only paths, URLs, or named resources supplied by the user or already present in the sequence and its `.spsc` dependencies. If a requested external layer has no source, ask for it or omit that layer and say so.
 
-## Protect existing files
+## Enforce immutable inputs
 
-Treat every existing file as read-only, including source `.spsq` files, `.spsc` dependencies, ambiance, music, and any path already occupying the requested destination. Never overwrite, edit, format, rename, move, delete, change permissions on, or otherwise mutate them.
+An existing artifact means any path present before this task begins. Treat every such path as read-only, including source `.spsq` files, `.spsc` dependencies, ambiance, music, and occupied destinations.
+
+Never overwrite, edit, format, rename, move, delete, change permissions on, or otherwise mutate an existing artifact. Do not use in-place mutation commands such as `sed -i`, `perl -pi`, `truncate`, `rm`, or `mv` on a source, and do not redirect output over an existing path.
 
 If the user asks to edit, change, adapt, extend, or repair an existing `.spsq`, interpret the request as creating a new derived `.spsq`. Read the entire source and every accessible local `.spsc` it extends, but apply the requested changes only to the new output. Preserve unrelated options, comments, resource declarations, preset names, track order, and formatting when copying material into the derivative.
 
-If the user asks only to audit, review, diagnose, or validate an existing file, recommend `$review-spsq`. If the user asks for a syntax lesson or didactic walkthrough, recommend `$explain-spsq`.
+If the user asks only to audit, review, diagnose, or validate an existing file, finish with a portable handoff to `review-spsq` rather than doing a reduced review. If the user asks only for a syntax lesson or didactic walkthrough, hand off to `explain-spsq`.
 
 ## Choose a new output path
 
@@ -58,14 +74,16 @@ For a sequence derived from an existing file:
 1. Use an explicitly requested output only when it differs from the source and does not already exist.
 2. If the requested output is the source or any other existing path, do not write; ask for a new path.
 3. If no output is requested, create it beside the source so relative `@extends`, ambiance, and music paths retain their meaning.
-4. Derive a short lowercase hyphenated name from the requested change. If that name exists, add `-2`, `-3`, and so on before `.spsq` until the path is unused.
+4. Prefer `<source-stem>-v2.spsq`; if the source already ends in `-vN`, increment `N`. If that path exists, continue to the next unused version. A descriptive lowercase hyphenated name requested by the user is also acceptable when unused.
 5. If the user requests another directory, verify that every relative dependency remains valid from the new location. If SPSQ path rules prevent that, ask for a compatible destination; do not copy or modify dependencies or media.
 
 When filesystem tools are unavailable, return one fenced `spsq` block as a new sequence and state that no file was written.
 
 ## Create the file
 
-Write only to the unused output selected above. For a derivative, make the smallest coherent change that satisfies the request and recheck channel ordering and every timeline reference after changing presets. The new output may be revised during its own creation and validation, but its read-only sources and dependencies may not.
+Recheck that the selected output is still unused immediately before writing. Write only to that reserved path. For a derivative, make the smallest coherent change that satisfies the request and recheck channel ordering and every timeline reference after changing presets.
+
+The newly reserved output may be revised during this creation-and-validation run. That exception applies only to the new output; all artifacts that existed before the task remain immutable.
 
 Use exactly two ASCII spaces for tracks and overrides. Never use quoted strings: the language tokenizes on whitespace and has no quoting syntax.
 
@@ -102,3 +120,7 @@ If validation cannot run because the CLI or referenced media is unavailable, per
 ## Deliver the result
 
 State the newly created path, whether CLI validation passed, and a concise description of the sound sources and phase progression. When a source was provided, explicitly confirm that it and its dependencies were used read-only and left unchanged. Mention headphones for binaural content. Do not restate the whole file when it was already written unless the user asks.
+
+For a derived sequence, summarize the meaningful differences from the source without turning the response into a full quality audit.
+
+After completing the new file, recommend `review-spsq` only when an independent audit has clear value, such as for a long sequence, dense layering, many effects, complex inheritance, external dependencies, or a detailed artistic brief. Recommend `explain-spsq` only when a separate didactic walkthrough was requested. For either case, emit the portable handoff contract; never assume another skill can be invoked automatically.

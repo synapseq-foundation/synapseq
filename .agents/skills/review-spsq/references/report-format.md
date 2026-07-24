@@ -6,6 +6,7 @@
 - [Single-file report](#single-file-report)
 - [Batch report](#batch-report)
 - [Prioritization](#prioritization)
+- [Handoff after review](#handoff-after-review)
 - [Example report](#example-report)
 
 ## Finding format
@@ -84,7 +85,9 @@ When validation does not run, write `File valid: not verified`; never infer “y
 
 When the user asks for applied corrections, add one concise note after recommendations:
 
-> This review is read-only. No file was changed. Use `$create-spsq` to create a new corrected version from this source.
+> This review is read-only. No file was changed. The handoff below describes a new version for `create-spsq`.
+
+Then append the natural-language handoff, self-contained prompt, and YAML context defined in `handoff-contract.md`.
 
 ## Batch report
 
@@ -126,6 +129,147 @@ Order recommendations:
 5. optional artistic refinements.
 
 Do not automatically prioritize minimalism, low track count, or one particular entrainment method.
+
+## Handoff after review
+
+Use no handoff when the report fully answers the request and no separate next task has clear value.
+
+When changes are recommended and the user wants them applied, target `create-spsq`. Convert findings into concrete requirements instead of referring to finding identifiers alone:
+
+````markdown
+## Recommended next task
+
+- Skill: `create-spsq`
+- Reason: create a new version that incorporates the review recommendations
+- Input files:
+  - `psychedelic-journey.spsq`
+- Suggested output file:
+  - `psychedelic-journey-v2.spsq`
+- Objective:
+  - reduce competition in the stereo field;
+  - make the final phase more progressive;
+  - preserve the psychedelic identity.
+- Requirements:
+  - remove pan from the pink noise in preset `peak`;
+  - reduce doppler intensity in preset `peak`;
+  - create an intermediate grounding phase;
+  - preserve the total duration of 25 minutes;
+  - validate the new file with `synapseq -test`.
+- Constraints:
+  - do not modify `psychedelic-journey.spsq`;
+  - preserve the binaural beats;
+  - maintain the original narrative structure;
+  - use only supported syntax.
+- Completion criteria:
+  - new file created;
+  - original file left intact;
+  - validation completed successfully.
+
+## Prompt for the next skill
+
+```text
+$create-spsq Use psychedelic-journey.spsq as a reference and create
+psychedelic-journey-v2.spsq. Preserve the total duration of 25 minutes, the
+binaural beats, narrative structure, and psychedelic identity. Remove pan from
+the pink noise in preset peak, reduce doppler intensity in that preset, and
+create an intermediate grounding phase to make the slowdown more progressive.
+Do not modify the original file. Use only supported syntax and validate the
+new file with synapseq -test.
+```
+
+## Structured context
+
+```yaml
+synapseq_task:
+  source_skill: review-spsq
+  target_skill: create-spsq
+  operation: create_new_version
+  source_files:
+    - psychedelic-journey.spsq
+  output_file: psychedelic-journey-v2.spsq
+  objective:
+    - reduce_stereo_competition
+    - improve_grounding_progression
+  requirements:
+    - remove_pan_from_peak_noise
+    - reduce_peak_doppler_intensity
+    - add_intermediate_grounding_preset
+    - preserve_25_minute_duration
+    - validate_with_synapseq_test
+  preserve:
+    - total_duration
+    - artistic_identity
+    - binaural_structure
+    - narrative_structure
+  changes:
+    - remove_pan_from_peak_noise
+    - reduce_peak_doppler_intensity
+    - add_intermediate_grounding_preset
+  constraints:
+    - never_modify_source
+    - use_supported_syntax_only
+  completion_criteria:
+    - new_file_created
+    - source_file_unchanged
+    - validation_passed
+```
+````
+
+When a valid construction deserves a separate lesson, target `explain-spsq`:
+
+````markdown
+## Recommended next task
+
+- Skill: `explain-spsq`
+- Reason: explain a valid construction in depth
+- Input files:
+  - `session.spsq`
+- Suggested output file:
+  - not applicable
+- Objective:
+  - explain why consecutive entries with the same preset do not create evolution.
+- Requirements:
+  - consider the entries at `00:20:30` and `00:24:30`;
+  - explain interpolation and the absence of parameter changes.
+- Constraints:
+  - do not modify files;
+  - do not generate a new sequence.
+- Completion criteria:
+  - behavior explained from SynapSeq syntax and engine semantics.
+
+## Prompt for the next skill
+
+```text
+$explain-spsq Read session.spsq and explain didactically why the entries at
+00:20:30 and 00:24:30, which use the same preset without changing parameters,
+do not create sonic evolution. Explain how interpolation works over that
+interval. Do not modify files or generate a new sequence.
+```
+
+## Structured context
+
+```yaml
+synapseq_task:
+  source_skill: review-spsq
+  target_skill: explain-spsq
+  operation: explain_behavior
+  source_files:
+    - session.spsq
+  output_file: null
+  objective:
+    - explain_static_repeated_preset
+  requirements:
+    - inspect_timeline_entries_00_20_30_and_00_24_30
+    - explain_interpolation_without_parameter_change
+  preserve: []
+  changes: []
+  constraints:
+    - never_modify_source
+    - never_create_sequence
+  completion_criteria:
+    - behavior_explained_from_synapseq_semantics
+```
+````
 
 ## Example report
 
