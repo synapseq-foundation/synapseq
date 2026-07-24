@@ -1,11 +1,13 @@
 ---
 name: review-spsq
-description: Audit existing SynapSeq `.spsq` files without modifying them. Use for technical reviews, validation, critique, directory or multi-file audits, and analysis of syntax, builder semantics, dependencies, sound structure, timeline composition, responsible claims, or likely unexpected behavior. Classify findings as critical errors, technical warnings, artistic observations, or optional suggestions. Never save corrections; recommend `$create-spsq` when the user wants a new corrected sequence.
+description: Review an existing SynapSeq `.spsq` sequence for syntax, semantic correctness, sound structure, layering, timeline progression, transitions, dependencies, responsible claims, and likely unexpected behavior. Use for audits, critical analysis, quality checks, and batch review. Produce a read-only severity-classified report and recommendations; never modify or create sequence files.
 ---
 
 # Review SPSQ Sequences
 
 Review SPSQ files as a technical auditor and thoughtful sound-design critic. Stay read-only even when the user asks to fix, improve, optimize, or apply changes. Reply in the user's language.
+
+This skill diagnoses and recommends. It never implements a correction or creates a replacement sequence.
 
 ## Load the review references
 
@@ -17,18 +19,31 @@ Read all three references before reviewing:
 
 When working inside the SynapSeq repository, also consult `README.md`, `docs/SYNTAX.md`, `docs/HOW_IT_WORKS.md`, and the parser or sequence builder when a bundled reference appears stale or incomplete. Treat the current implementation as authoritative.
 
+Read [references/handoff-contract.md](references/handoff-contract.md) only when consuming or producing a real handoff.
+
+## Route by primary intent
+
+Use this skill when the main action is review, evaluate, analyze critically, audit, verify quality, find problems, identify risks, or suggest improvements.
+
+- For a new file, variant, or applied recommendations, complete the review and hand off to `create-spsq`.
+- For a focused lesson or deeper explanation of a valid construction, hand off to `explain-spsq` only when that teaching is a distinct requested next step.
+- Include enough explanation to justify every finding; do not delegate ordinary warning explanations.
+
 ## Keep every source read-only
 
-Never create, edit, format, rename, move, delete, or change permissions on an `.spsq`, `.spsc`, ambiance, music, or other project file. Suggestions and short corrected fragments belong only in the report.
+Never create, edit, format, rename, move, delete, overwrite, or change permissions on an `.spsq`, `.spsc`, ambiance, music, or other project artifact that existed before the review. Suggestions and short corrected fragments belong only in the report. The only writable exception is an isolated temporary render created after the task begins for explicitly requested deep audio analysis; remove only that temporary artifact.
 
 If the user asks to apply corrections:
 
 1. complete the read-only review;
 2. state that no file was changed;
 3. show only the smallest useful suggested fragments;
-4. recommend `$create-spsq` to create a new corrected file from the reviewed source.
+4. choose a suggested unused output name;
+5. emit a complete portable handoff to `create-spsq`.
 
 Do not emit a complete rewritten sequence under this skill.
+
+Suggest `<source-stem>-v2.spsq` by default. If the source already ends in `-vN`, increment `N`; if that path exists, continue until the suggestion is unused. This check reserves nothing and authorizes no write.
 
 ## Resolve the review scope
 
@@ -137,4 +152,8 @@ Always finish with:
 - which dependencies or media could not be inspected;
 - confirmation that no source file was modified;
 - static-analysis limitations;
-- `$create-spsq` guidance only when the user requested an applied correction or new corrected version.
+- a portable `create-spsq` handoff when the user requested an applied correction or when a new version is the clearest useful next step.
+
+Do not add a handoff mechanically. When one is warranted, include concrete findings as changes, preserve the sequence's stated identity and valid dependencies, and require a differently named output plus `synapseq -test`. The prompt must be self-contained and must not say only “apply the recommendations above.”
+
+For a compound request such as “review, explain, and create a better version,” perform the review and explain the findings sufficiently in the report. Then produce one `create-spsq` handoff; do not create the file and do not add a redundant `explain-spsq` handoff.

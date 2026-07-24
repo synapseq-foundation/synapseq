@@ -60,6 +60,39 @@ These rules must be preserved when making changes:
 5. **`internal/audio` owns synthesis and rendering** - `core` calls it, does not reimplement audio concerns
 6. **Keep audio engine concrete** - Prefer focused collaborators over abstract interfaces
 
+## SynapSeq Agent Skills
+
+The repository ships three complementary skills under `.agents/skills/`:
+
+- **`create-spsq`** creates and validates new `.spsq` files, either from scratch or from existing read-only references. It never modifies an existing `.spsq` or `.spsc` in place.
+- **`explain-spsq`** teaches SPSQ syntax and explains existing `.spsq` or `.spsc` files without creating or modifying them.
+- **`review-spsq`** validates and audits existing `.spsq` files, producing a read-only technical and compositional report.
+
+Keep their responsibilities distinct. Route creation and new versions to `create-spsq`, didactic questions to `explain-spsq`, and critical analysis to `review-spsq`.
+
+### Mandatory synchronization for SPSQ language changes
+
+Any change that affects accepted `.spsq` or `.spsc` syntax, parser behavior, builder semantics, validation rules, tracks, effects, options, inheritance, transitions, timeline behavior, or diagnostics must be reflected in the skills in the same change. A parser or language change is incomplete until the bundled skill references and workflows agree with the implementation.
+
+At minimum, review and update:
+
+1. `docs/SYNTAX.md` for grammar, placement, ranges, and validation rules;
+2. `docs/HOW_IT_WORKS.md` when audible or temporal behavior changes;
+3. `.agents/skills/create-spsq/references/spsq-language.md`;
+4. `.agents/skills/explain-spsq/references/spsq-language.md`;
+5. `.agents/skills/review-spsq/references/review-checklist.md`;
+6. each affected `SKILL.md`, plus review sound-design or report references when the change alters analysis or output guidance.
+
+Also update `README.md` when the language change affects user-facing examples or capabilities, and update `agents/openai.yaml` when a skill's routing description changes.
+
+Before completing an SPSQ language change:
+
+- add or update parser and sequence-builder tests;
+- validate representative valid and invalid `.spsq` fixtures with `synapseq -test`;
+- run `make test`;
+- run the skill-creator `quick_validate.py` check for all three skill directories;
+- verify that no skill documents syntax, ranges, effects, or behavior that the current implementation no longer supports.
+
 ## Git Workflow
 
 - **Default branch**: `main`

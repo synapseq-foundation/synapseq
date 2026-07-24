@@ -81,9 +81,11 @@ The result is a repeatable audio session generated from the text definition. See
 
 SynapSeq publishes three complementary skills for AI coding agents:
 
-- [`create-spsq`](https://skills.sh/synapseq-foundation/synapseq/create-spsq) creates and validates new `.spsq` sequences, either from scratch or from existing read-only references.
-- [`explain-spsq`](https://skills.sh/synapseq-foundation/synapseq/explain-spsq) explains supplied sequences and teaches SPSQ syntax without changing files.
-- [`review-spsq`](https://skills.sh/synapseq-foundation/synapseq/review-spsq) audits existing sequences, validates them, and reports technical and artistic findings without changing files.
+- [`create-spsq`](https://skills.sh/synapseq-foundation/synapseq/create-spsq) creates and validates a new `.spsq`, either from scratch or from an existing read-only reference.
+- [`explain-spsq`](https://skills.sh/synapseq-foundation/synapseq/explain-spsq) teaches SPSQ syntax and explains existing sequences without changing files.
+- [`review-spsq`](https://skills.sh/synapseq-foundation/synapseq/review-spsq) audits existing sequences and reports technical, structural, and artistic findings without changing files.
+
+Choose by the main action: **create** a new file, **explain** how something works, or **review** an existing file critically. Only `create-spsq` writes complete sequence files, and it always uses a new path; no skill edits an existing `.spsq` or `.spsc` in place. A review that recommends changes can provide a self-contained handoff for `create-spsq`, while complex newly created sequences can optionally be handed to `review-spsq`.
 
 Install any skill interactively from its `skills.sh` source:
 
