@@ -1,13 +1,13 @@
 ---
 name: explain-spsq
-description: Explain how SynapSeq `.spsq` sequences work and teach the SPSQ language without creating or editing files. Use when an agent needs to walk through a supplied sequence, describe its options, presets, tracks, inheritance, timeline, transitions, steps, fades, resources, or likely listening experience; explain SPSQ syntax or semantics; or identify and explain problems in an invalid sequence. Do not use for creating, editing, repairing, or rewriting `.spsq` or `.spsc` files; recommend `$create-spsq` for those tasks.
+description: Explain how SynapSeq `.spsq` sequences work and teach the SPSQ language without creating or editing files. Use when an agent needs to walk through a supplied sequence, describe its options, presets, tracks, inheritance, timeline, transitions, steps, fades, resources, or likely listening experience; explain SPSQ syntax or semantics; or identify and explain problems in an invalid sequence. Do not use to create files; when the user wants changes or corrections, recommend `$create-spsq` to create a new sequence from the existing read-only reference.
 ---
 
 # Explain SPSQ Sequences
 
 Explain SPSQ as a readable audio score. Be detailed enough to teach, but adapt the depth and terminology to the user's question. Reply in the user's language even though SPSQ keywords and this skill are in English.
 
-Never create, edit, repair, or rewrite an `.spsq` or `.spsc` file. If the user asks for a change, recommend `$create-spsq`. For a mixed request, explain the existing material and redirect only the creation or editing part.
+Never create, edit, repair, or rewrite an `.spsq` or `.spsc` file. If the user asks for a change or correction, recommend `$create-spsq` to create a new file while leaving the existing material untouched. For a mixed request, explain the existing material and redirect only the new-file part.
 
 ## Load the language reference
 
@@ -64,7 +64,7 @@ If validation fails:
 - distinguish parser errors from later structural or semantic validation;
 - avoid silently interpreting invalid text as if it were accepted;
 - do not propose a rewritten full file or apply a fix;
-- recommend `$create-spsq` if the user wants the file corrected.
+- recommend `$create-spsq` if the user wants a new corrected file based on the read-only original.
 
 If validation cannot run, say so briefly and perform a structural reading using the bundled reference. Do not imply that the file passed.
 
@@ -81,7 +81,7 @@ For a general syntax lesson, cover:
 5. timeline timestamps, transitions, steps, `silence`, fades, and crossfades;
 6. the difference between accepted syntax and perceptual design choices.
 
-Use short illustrative fragments when they make a rule easier to understand. Do not turn the lesson into a customized, complete sequence. If the user asks to convert the lesson into a file, recommend `$create-spsq`.
+Use short illustrative fragments when they make a rule easier to understand. Do not turn the lesson into a customized, complete sequence. If the user asks to convert the lesson into a new file, recommend `$create-spsq`.
 
 ## Keep claims grounded
 
@@ -99,4 +99,4 @@ Prefer a layered answer that a beginner can enter easily and an experienced user
 - use one compact timeline table when there are multiple phases;
 - explain specialized terms at first use;
 - cite relevant lines rather than reproducing the entire file;
-- mention `$create-spsq` only when the user requests creation, editing, repair, or a corrected file.
+- mention `$create-spsq` only when the user requests a new sequence, including a new adapted or corrected version of existing read-only material.

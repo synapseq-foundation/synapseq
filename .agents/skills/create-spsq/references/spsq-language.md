@@ -140,7 +140,7 @@ Noise colors are `white`, `pink`, and `brown`. Noise effects are `pan` and `modu
   music bed effect modulation 0.1 intensity 25 amplitude 15
 ```
 
-Ambiance and music support `pan` and `modulation`, not `doppler`. Their source name must match an `@ambiance` or `@music` declaration. Although the current parser permits a waveform prefix for these sources, avoid it unless preserving an existing sequence because waveform is primarily meaningful for generated tones.
+Ambiance and music support `pan` and `modulation`, not `doppler`. Their source name must match an `@ambiance` or `@music` declaration. Although the current parser permits a waveform prefix for these sources, avoid it unless retaining that behavior from a read-only reference in a new derived sequence because waveform is primarily meaningful for generated tones.
 
 ## Values and limits
 
