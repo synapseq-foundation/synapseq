@@ -7,6 +7,8 @@
   <a href="https://github.com/synapseq-foundation/synapseq/releases/latest"><img src="https://img.shields.io/github/v/release/synapseq-foundation/synapseq?color=blue&logo=github" alt="Release"></a>
   <a href="COPYING.txt"><img src="https://img.shields.io/badge/license-GPL%20v3%20or%20later-blue.svg?logo=open-source-initiative&logoColor=white" alt="License"></a>
   <a href="https://github.com/synapseq-foundation/synapseq/commits"><img src="https://img.shields.io/github/commit-activity/m/synapseq-foundation/synapseq?color=ff69b4&logo=git" alt="Commit Activity"></a>
+</p>
+<p align="center">
   <a href="https://skills.sh/synapseq-foundation/synapseq/create-spsq"><img src="https://img.shields.io/badge/skills.sh-create--spsq-000000?logo=vercel&logoColor=white" alt="create-spsq on skills.sh"></a>
   <a href="https://skills.sh/synapseq-foundation/synapseq/explain-spsq"><img src="https://img.shields.io/badge/skills.sh-explain--spsq-000000?logo=vercel&logoColor=white" alt="explain-spsq on skills.sh"></a>
 </p>
@@ -78,7 +80,7 @@ The result is a repeatable audio session generated from the text definition. See
 
 SynapSeq publishes two complementary skills for AI coding agents:
 
-- [`create-spsq`](https://skills.sh/synapseq-foundation/synapseq/create-spsq) creates, edits, repairs, and validates `.spsq` sequences.
+- [`create-spsq`](https://skills.sh/synapseq-foundation/synapseq/create-spsq) creates and validates new `.spsq` sequences, either from scratch or from existing read-only references.
 - [`explain-spsq`](https://skills.sh/synapseq-foundation/synapseq/explain-spsq) explains supplied sequences and teaches SPSQ syntax without changing files.
 
 Install either skill interactively from its `skills.sh` source:

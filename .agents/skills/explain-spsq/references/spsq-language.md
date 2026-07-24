@@ -208,7 +208,7 @@ Common invalid conditions include:
 - a resource path with an extension, absolute root, backslash, or `..`;
 - out-of-range values or too many steps for the interval.
 
-When explaining invalid input, preserve the difference between intended meaning and accepted behavior. State what the line appears intended to mean, why SynapSeq rejects it, and what consequence that has. Leave correction or rewriting to `$create-spsq`.
+When explaining invalid input, preserve the difference between intended meaning and accepted behavior. State what the line appears intended to mean, why SynapSeq rejects it, and what consequence that has. Leave creation of a corrected copy to `$create-spsq`; the original remains read-only.
 
 ## Explanation vocabulary
 
