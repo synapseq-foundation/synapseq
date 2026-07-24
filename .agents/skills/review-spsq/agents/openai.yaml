@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review SPSQ"
+  short_description: "Audit SynapSeq sequences and sound design"
+  default_prompt: "Use $review-spsq to audit this SynapSeq sequence and produce a technical review."

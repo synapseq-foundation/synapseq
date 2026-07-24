@@ -1,6 +1,6 @@
 ---
 name: create-spsq
-description: Create and validate new SynapSeq `.spsq` brainwave-entrainment sequence files. Use when an agent needs to translate a listening goal into a new sequence or create a new adapted, corrected, or extended sequence from an existing read-only `.spsq` reference and its `.spsc` dependencies. Never edit, overwrite, move, or delete an existing sequence or dependency. Use `$explain-spsq` for explanation, review, diagnosis, or validation of an existing file when no new output is requested.
+description: Create and validate new SynapSeq `.spsq` brainwave-entrainment sequence files. Use when an agent needs to translate a listening goal into a new sequence or create a new adapted, corrected, or extended sequence from an existing read-only `.spsq` reference and its `.spsc` dependencies. Never edit, overwrite, move, or delete an existing sequence or dependency. Use `$review-spsq` for technical audit or validation of existing files and `$explain-spsq` for syntax lessons or didactic walkthroughs.
 ---
 
 # Create SPSQ Sequences
@@ -47,7 +47,7 @@ Treat every existing file as read-only, including source `.spsq` files, `.spsc` 
 
 If the user asks to edit, change, adapt, extend, or repair an existing `.spsq`, interpret the request as creating a new derived `.spsq`. Read the entire source and every accessible local `.spsc` it extends, but apply the requested changes only to the new output. Preserve unrelated options, comments, resource declarations, preset names, track order, and formatting when copying material into the derivative.
 
-If the user asks only to explain, review, diagnose, or validate an existing file and does not want a new file, recommend `$explain-spsq`.
+If the user asks only to audit, review, diagnose, or validate an existing file, recommend `$review-spsq`. If the user asks for a syntax lesson or didactic walkthrough, recommend `$explain-spsq`.
 
 ## Choose a new output path
 
