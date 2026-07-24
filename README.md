@@ -8,6 +8,7 @@
   <a href="COPYING.txt"><img src="https://img.shields.io/badge/license-GPL%20v3%20or%20later-blue.svg?logo=open-source-initiative&logoColor=white" alt="License"></a>
   <a href="https://github.com/synapseq-foundation/synapseq/commits"><img src="https://img.shields.io/github/commit-activity/m/synapseq-foundation/synapseq?color=ff69b4&logo=git" alt="Commit Activity"></a>
   <a href="https://skills.sh/synapseq-foundation/synapseq/create-spsq"><img src="https://img.shields.io/badge/skills.sh-create--spsq-000000?logo=vercel&logoColor=white" alt="create-spsq on skills.sh"></a>
+  <a href="https://skills.sh/synapseq-foundation/synapseq/explain-spsq"><img src="https://img.shields.io/badge/skills.sh-explain--spsq-000000?logo=vercel&logoColor=white" alt="explain-spsq on skills.sh"></a>
 </p>
 
 <p align="center"><strong>SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment</strong></p>
@@ -73,47 +74,55 @@ synapseq focus.spsq
 
 The result is a repeatable audio session generated from the text definition. See [HOW IT WORKS](docs/HOW_IT_WORKS.md) for a perceptual explanation of the tone methods, transitions, and effects.
 
-## Create Sequences With AI Agents
+## Use SPSQ With AI Agents
 
-SynapSeq publishes the [`create-spsq` skill](https://skills.sh/synapseq-foundation/synapseq/create-spsq) for generating, editing, and validating `.spsq` sequences with AI coding agents. Install SynapSeq first using the [Quick Start](#quick-start) instructions so the agent can validate generated files with `synapseq -test`.
+SynapSeq publishes two complementary skills for AI coding agents:
 
-Install the skill interactively from its `skills.sh` source:
+- [`create-spsq`](https://skills.sh/synapseq-foundation/synapseq/create-spsq) creates, edits, repairs, and validates `.spsq` sequences.
+- [`explain-spsq`](https://skills.sh/synapseq-foundation/synapseq/explain-spsq) explains supplied sequences and teaches SPSQ syntax without changing files.
+
+Install either skill interactively from its `skills.sh` source:
 
 ```bash
 npx skills add https://github.com/synapseq-foundation/synapseq --skill create-spsq
+npx skills add https://github.com/synapseq-foundation/synapseq --skill explain-spsq
 ```
 
-To install it globally for a specific agent without prompts, use one of these commands:
+To install a skill globally for a specific agent without prompts, use the corresponding command:
 
 ```bash
 # Codex
 npx skills add https://github.com/synapseq-foundation/synapseq --skill create-spsq --global --agent codex --yes
+npx skills add https://github.com/synapseq-foundation/synapseq --skill explain-spsq --global --agent codex --yes
 
 # Claude Code
 npx skills add https://github.com/synapseq-foundation/synapseq --skill create-spsq --global --agent claude-code --yes
+npx skills add https://github.com/synapseq-foundation/synapseq --skill explain-spsq --global --agent claude-code --yes
 ```
 
 Omit `--global` to install the skill only in the current project.
 
 ### Codex
 
-Start Codex in the directory where you want to create the sequence and mention the skill explicitly with `$create-spsq`:
+Mention the skill explicitly according to the task:
 
 ```text
 $create-spsq Create a 20-minute relaxation sequence with a smooth binaural fade-in and fade-out.
+$explain-spsq Explain the presets, tracks, and timeline in focus.spsq.
 ```
 
 You can also describe the task normally; Codex may select the skill automatically when the request matches its description.
 
 ### Claude Code
 
-Start Claude Code in the target directory and invoke the installed skill as a slash command:
+Invoke the installed skill as a slash command:
 
 ```text
 /create-spsq Create a 20-minute relaxation sequence with a smooth binaural fade-in and fade-out.
+/explain-spsq Explain the presets, tracks, and timeline in focus.spsq.
 ```
 
-Claude Code can also load the skill automatically when a request matches its description. Explicit invocation is the most predictable option for both agents.
+Claude Code can also load a skill automatically when a request matches its description. Explicit invocation is the most predictable option for both agents. Install SynapSeq using the [Quick Start](#quick-start) instructions when the agent needs to validate a local file with `synapseq -test`.
 
 ## Quick Start
 

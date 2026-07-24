@@ -1,0 +1,4 @@
+interface:
+  display_name: "Explain SPSQ"
+  short_description: "Understand SynapSeq sequences and syntax"
+  default_prompt: "Use $explain-spsq to explain how this SynapSeq sequence works."
