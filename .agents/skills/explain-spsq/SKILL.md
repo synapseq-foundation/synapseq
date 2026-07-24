@@ -1,6 +1,6 @@
 ---
 name: explain-spsq
-description: Explain how SynapSeq `.spsq` sequences work and teach the SPSQ language without creating or editing files. Use when an agent needs to walk through a supplied sequence, describe its options, presets, tracks, inheritance, timeline, transitions, steps, fades, resources, or likely listening experience; explain SPSQ syntax or semantics; or identify and explain problems in an invalid sequence. Do not use to create files; when the user wants changes or corrections, recommend `$create-spsq` to create a new sequence from the existing read-only reference.
+description: Explain how SynapSeq `.spsq` sequences work and teach the SPSQ language without creating or editing files. Use for didactic walkthroughs of supplied sequences and questions about SPSQ syntax, semantics, tracks, inheritance, timelines, transitions, fades, or likely listening experience. Use `$review-spsq` for systematic technical audits, validation, severity-classified findings, or batch review. When the user wants a new changed or corrected file, recommend `$create-spsq`.
 ---
 
 # Explain SPSQ Sequences
@@ -20,6 +20,8 @@ When working inside the SynapSeq repository, consult `docs/SYNTAX.md`, `docs/HOW
 Use **file walkthrough** when the user supplies or points to an `.spsq` file or pastes SPSQ content. Use **language lesson** when the user asks how SPSQ syntax or one of its constructs works.
 
 If the user refers to a file that is not available, ask for the file, its path, or its contents. Do not substitute a newly invented sequence.
+
+If the user asks for a systematic audit, critical assessment, severity-classified report, validation-only check, or review of multiple files, recommend `$review-spsq`.
 
 ## Walk through a sequence
 

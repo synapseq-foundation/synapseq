@@ -11,6 +11,7 @@
 <p align="center">
   <a href="https://skills.sh/synapseq-foundation/synapseq/create-spsq"><img src="https://img.shields.io/badge/skills.sh-create--spsq-000000?logo=vercel&logoColor=white" alt="create-spsq on skills.sh"></a>
   <a href="https://skills.sh/synapseq-foundation/synapseq/explain-spsq"><img src="https://img.shields.io/badge/skills.sh-explain--spsq-000000?logo=vercel&logoColor=white" alt="explain-spsq on skills.sh"></a>
+  <a href="https://skills.sh/synapseq-foundation/synapseq/review-spsq"><img src="https://img.shields.io/badge/skills.sh-review--spsq-000000?logo=vercel&logoColor=white" alt="review-spsq on skills.sh"></a>
 </p>
 
 <p align="center"><strong>SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment</strong></p>
@@ -78,16 +79,18 @@ The result is a repeatable audio session generated from the text definition. See
 
 ## Use SPSQ With AI Agents
 
-SynapSeq publishes two complementary skills for AI coding agents:
+SynapSeq publishes three complementary skills for AI coding agents:
 
 - [`create-spsq`](https://skills.sh/synapseq-foundation/synapseq/create-spsq) creates and validates new `.spsq` sequences, either from scratch or from existing read-only references.
 - [`explain-spsq`](https://skills.sh/synapseq-foundation/synapseq/explain-spsq) explains supplied sequences and teaches SPSQ syntax without changing files.
+- [`review-spsq`](https://skills.sh/synapseq-foundation/synapseq/review-spsq) audits existing sequences, validates them, and reports technical and artistic findings without changing files.
 
-Install either skill interactively from its `skills.sh` source:
+Install any skill interactively from its `skills.sh` source:
 
 ```bash
 npx skills add https://github.com/synapseq-foundation/synapseq --skill create-spsq
 npx skills add https://github.com/synapseq-foundation/synapseq --skill explain-spsq
+npx skills add https://github.com/synapseq-foundation/synapseq --skill review-spsq
 ```
 
 To install a skill globally for a specific agent without prompts, use the corresponding command:
@@ -96,10 +99,12 @@ To install a skill globally for a specific agent without prompts, use the corres
 # Codex
 npx skills add https://github.com/synapseq-foundation/synapseq --skill create-spsq --global --agent codex --yes
 npx skills add https://github.com/synapseq-foundation/synapseq --skill explain-spsq --global --agent codex --yes
+npx skills add https://github.com/synapseq-foundation/synapseq --skill review-spsq --global --agent codex --yes
 
 # Claude Code
 npx skills add https://github.com/synapseq-foundation/synapseq --skill create-spsq --global --agent claude-code --yes
 npx skills add https://github.com/synapseq-foundation/synapseq --skill explain-spsq --global --agent claude-code --yes
+npx skills add https://github.com/synapseq-foundation/synapseq --skill review-spsq --global --agent claude-code --yes
 ```
 
 Omit `--global` to install the skill only in the current project.
@@ -111,6 +116,7 @@ Mention the skill explicitly according to the task:
 ```text
 $create-spsq Create a 20-minute relaxation sequence with a smooth binaural fade-in and fade-out.
 $explain-spsq Explain the presets, tracks, and timeline in focus.spsq.
+$review-spsq Audit focus.spsq and report technical, structural, and artistic findings.
 ```
 
 You can also describe the task normally; Codex may select the skill automatically when the request matches its description.
@@ -122,6 +128,7 @@ Invoke the installed skill as a slash command:
 ```text
 /create-spsq Create a 20-minute relaxation sequence with a smooth binaural fade-in and fade-out.
 /explain-spsq Explain the presets, tracks, and timeline in focus.spsq.
+/review-spsq Audit focus.spsq and report technical, structural, and artistic findings.
 ```
 
 Claude Code can also load a skill automatically when a request matches its description. Explicit invocation is the most predictable option for both agents. Install SynapSeq using the [Quick Start](#quick-start) instructions when the agent needs to validate a local file with `synapseq -test`.
