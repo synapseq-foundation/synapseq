@@ -79,37 +79,51 @@ The result is a repeatable audio session generated from the text definition. See
 
 ## Use SPSQ With AI Agents
 
-SynapSeq publishes three complementary skills for AI coding agents:
+SynapSeq publishes three complementary [skills](https://skills.sh/synapseq-foundation/synapseq) for AI coding agents:
 
-- [`create-spsq`](https://skills.sh/synapseq-foundation/synapseq/create-spsq) creates and validates a new `.spsq`, either from scratch or from an existing read-only reference.
-- [`explain-spsq`](https://skills.sh/synapseq-foundation/synapseq/explain-spsq) teaches SPSQ syntax and explains existing sequences without changing files.
-- [`review-spsq`](https://skills.sh/synapseq-foundation/synapseq/review-spsq) audits existing sequences and reports technical, structural, and artistic findings without changing files.
+| Skill | Use it to | Result | Existing files |
+|-------|-----------|--------|----------------|
+| [`create-spsq`](https://skills.sh/synapseq-foundation/synapseq/create-spsq) | Create a sequence from scratch or derive a new version from a reference | A new validated `.spsq` file | Never modified or overwritten |
+| [`explain-spsq`](https://skills.sh/synapseq-foundation/synapseq/explain-spsq) | Learn SPSQ syntax or understand how an existing sequence behaves | A didactic, read-only explanation | Never modified |
+| [`review-spsq`](https://skills.sh/synapseq-foundation/synapseq/review-spsq) | Audit syntax, semantics, sound structure, and timeline composition | A read-only report with prioritized findings | Never modified |
 
-Choose by the main action: **create** a new file, **explain** how something works, or **review** an existing file critically. Only `create-spsq` writes complete sequence files, and it always uses a new path; no skill edits an existing `.spsq` or `.spsc` in place. A review that recommends changes can provide a self-contained handoff for `create-spsq`, while complex newly created sequences can optionally be handed to `review-spsq`.
+Choose by the main action: **create**, **explain**, or **review**. The skills can hand work to one another through self-contained prompts, but only `create-spsq` writes complete sequence files, always at a new path.
 
-Install any skill interactively from its `skills.sh` source:
+### Install the complete suite
+
+Installing all three skills is recommended because they share routing and handoff conventions. The [`skills` CLI](https://github.com/vercel-labs/skills) accepts `'*'` to select every skill in the repository:
 
 ```bash
-npx skills add https://github.com/synapseq-foundation/synapseq --skill create-spsq
-npx skills add https://github.com/synapseq-foundation/synapseq --skill explain-spsq
-npx skills add https://github.com/synapseq-foundation/synapseq --skill review-spsq
+npx skills add synapseq-foundation/synapseq --skill '*'
 ```
 
-To install a skill globally for a specific agent without prompts, use the corresponding command:
+The command is interactive and lets you choose the target agent and installation scope. For a global, non-interactive installation targeting one agent:
 
 ```bash
 # Codex
-npx skills add https://github.com/synapseq-foundation/synapseq --skill create-spsq --global --agent codex --yes
-npx skills add https://github.com/synapseq-foundation/synapseq --skill explain-spsq --global --agent codex --yes
-npx skills add https://github.com/synapseq-foundation/synapseq --skill review-spsq --global --agent codex --yes
+npx skills add synapseq-foundation/synapseq --skill '*' --global --agent codex --yes
 
 # Claude Code
-npx skills add https://github.com/synapseq-foundation/synapseq --skill create-spsq --global --agent claude-code --yes
-npx skills add https://github.com/synapseq-foundation/synapseq --skill explain-spsq --global --agent claude-code --yes
-npx skills add https://github.com/synapseq-foundation/synapseq --skill review-spsq --global --agent claude-code --yes
+npx skills add synapseq-foundation/synapseq --skill '*' --global --agent claude-code --yes
 ```
 
-Omit `--global` to install the skill only in the current project.
+Omit `--global` from these commands to install the suite only in the current project.
+
+To install all three skills for every supported agent detected by the CLI, without prompts:
+
+```bash
+npx skills add synapseq-foundation/synapseq --all
+```
+
+### Install one skill
+
+If you only need one responsibility, select it explicitly:
+
+```bash
+npx skills add synapseq-foundation/synapseq --skill create-spsq
+npx skills add synapseq-foundation/synapseq --skill explain-spsq
+npx skills add synapseq-foundation/synapseq --skill review-spsq
+```
 
 ### Codex
 
