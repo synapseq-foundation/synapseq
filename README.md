@@ -77,6 +77,40 @@ synapseq focus.spsq
 
 The result is a repeatable audio session generated from the text definition. See [HOW IT WORKS](docs/HOW_IT_WORKS.md) for a perceptual explanation of the tone methods, transitions, and effects.
 
+## Convert SBaGen Sequences
+
+Starting with SynapSeq 4.41.0, you can convert classic [SBaGen](http://uazu.net/sbagen/) `.sbg` sequences into `.spsq` files:
+
+```bash
+synapseq -sbg session.sbg
+synapseq -sbg session.sbg converted.spsq
+synapseq -sbg session.sbg - > converted.spsq
+```
+
+When the output is omitted, SynapSeq writes a `.spsq` file alongside the source using the same name. Use `-` to send the converted SPSQ content to standard output.
+
+> [!WARNING]
+> SBaGen conversion is experimental. More complex sequences can produce differences or conversion errors because SBaGen and SynapSeq do not have identical sound sources, transition behavior, or media support. Review and validate the generated `.spsq` before using it.
+
+The public Go API provides the same conversion flow:
+
+```go
+ctx := synapseq.NewAppContext()
+converter, err := sbg.New(ctx)
+if err != nil {
+    panic(err)
+}
+
+loaded, err := converter.LoadFile("session.sbg")
+if err != nil {
+    panic(err)
+}
+
+content := loaded.RawContent()
+```
+
+Use `converter.LoadContent(sbgContent)` when the SBaGen source text is already available in memory.
+
 ## Use SPSQ With AI Agents
 
 SynapSeq publishes three complementary [skills](https://skills.sh/synapseq-foundation/synapseq) for AI coding agents:
@@ -307,6 +341,7 @@ func main() {
 Docs:
 - [core](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4@v4.40.3-foundation/core)
 - [spsq](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4@v4.40.3-foundation/spsq)
+- [sbg](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4@v4.40.3-foundation/sbg)
 
 ## Contributing
 
