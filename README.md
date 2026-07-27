@@ -14,8 +14,6 @@
 <img src="./assets/synapseq-banner-dark.svg" alt="SynapSeq - Neural Audio Sequencing Engine" />
 </p>
 
-<p align="center"><strong>SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment</strong></p>
-
 <p align="center">
   <a href="#quick-start"><strong>Quick Start</strong></a>
   &nbsp;&middot;&nbsp;
