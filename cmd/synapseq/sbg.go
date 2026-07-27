@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/synapseq-foundation/synapseq/v4/internal/cli"
-	sbg "github.com/synapseq-foundation/synapseq/v4/internal/sbagen"
+	"github.com/synapseq-foundation/synapseq/v4/sbg"
 )
 
 const sbgConversionWarning = "SBaGen conversion is approximate and may contain errors; review the generated SPSQ before use."
@@ -38,10 +38,11 @@ func runSBGConversion(args []string, quiet bool, statusWriter, outputWriter io.W
 			return err
 		}
 	}
-	content, err := sbg.ConvertFile(inputPath, outputPath)
+	loaded, err := sbg.LoadFile(inputPath)
 	if err != nil {
 		return err
 	}
+	content := loaded.RawContent()
 	if outputPath == "-" {
 		if outputWriter == nil {
 			return fmt.Errorf("SPSQ output writer is nil")

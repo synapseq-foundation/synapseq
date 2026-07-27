@@ -17,7 +17,7 @@ SynapSeq is organized around a few practical goals:
 
 These invariants are important when changing the codebase:
 
-1. `core` is the public Go API. External consumers should be able to load sequences, inspect metadata, render WAV, stream PCM, and generate JSON dumps through `core` without importing internal packages.
+1. `core` is the public runtime Go API. External consumers should be able to load sequences, inspect metadata, render WAV, stream PCM, and generate JSON dumps through `core` without importing internal packages. Public construction and conversion helpers such as `spsq` and `sbg` return `core.LoadedContext` values.
 2. `cmd/synapseq` is the CLI shell. It parses flags, dispatches commands, and orchestrates output, but it should not absorb parser or renderer logic.
 3. `internal/types` must remain a dependency leaf. It defines the domain model and must not import other internal packages.
 4. `internal/sequence` owns sequence loading and construction. `internal/parser` parses the DSL, but `internal/sequence` is responsible for turning parsed content into a valid `types.Sequence`.
@@ -32,7 +32,7 @@ The main end-to-end runtime looks like this:
 ```mermaid
 flowchart TD
 	CLI[cmd/synapseq\nCLI entry and dispatch] --> Core[core\nAppContext and LoadedContext]
-	CLI --> SBG[internal/sbagen\nSBaGen parser and converter]
+	CLI --> SBG[sbg\nSBaGen converter API]
 	SBG --> SPSQ
 	SPSQ[spsq\nprogrammatic .spsq builder] --> Core
 	Core --> Seq[internal/sequence\nload and build Sequence]
@@ -156,9 +156,9 @@ This package manages SynapSeq Remote sequences:
 
 Remote is optional input infrastructure, not part of the renderer itself.
 
-### `internal/sbagen`
+### `sbg`
 
-This package parses supported SBaGen input and maps its structured values into the public `spsq` builder. It does not serialize SPSQ text directly. The generated text is validated through `core`, and the CLI writes `LoadedContext.RawContent()` to the requested destination.
+This public package parses supported SBaGen input and maps its structured values into the public `spsq` builder. `LoadFile` and `LoadContent` return validated `core.LoadedContext` values; the CLI writes `RawContent()` to the requested destination.
 
 ### `internal/cli`
 
