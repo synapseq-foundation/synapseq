@@ -164,7 +164,7 @@ func advancedHelpOptions() []helpOption {
 
 func windowsHelpOptions() []helpOption {
 	return []helpOption{
-		{FlagText: "-install-file-association", ColumnWidth: 30, Description: "Associate .spsq files with SynapSeq"},
-		{FlagText: "-uninstall-file-association", ColumnWidth: 30, Description: "Remove .spsq file association"},
+		{FlagText: "-install-file-association", ColumnWidth: 30, Description: "Associate .spsq files and add .sbg conversion"},
+		{FlagText: "-uninstall-file-association", ColumnWidth: 30, Description: "Remove .spsq association and .sbg conversion"},
 	}
 }

@@ -172,7 +172,7 @@ winget update
 winget install synapseq
 ```
 
-After installation, you can run `synapseq -install-file-association` to associate `.spsq` files with SynapSeq and enable additional Explorer context menu actions.
+After installation, you can run `synapseq -install-file-association` to associate `.spsq` files with SynapSeq, enable additional Explorer context menu actions, and add a `.sbg` action that converts SBaGen sequences to `.spsq`.
 
 ### Manual Downloads
 
