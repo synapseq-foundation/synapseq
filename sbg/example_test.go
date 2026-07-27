@@ -9,13 +9,18 @@ import (
 	"os"
 	"path/filepath"
 
+	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
 	"github.com/synapseq-foundation/synapseq/v4/sbg"
 )
 
 const exampleContent = "alpha: 300+10/20\noff: -\nNOW alpha\n+00:01:00 off\n"
 
-func ExampleLoadContent() {
-	loaded, err := sbg.LoadContent(exampleContent)
+func ExampleConverter_LoadContent() {
+	converter, err := sbg.New(synapseq.NewAppContext())
+	if err != nil {
+		panic(err)
+	}
+	loaded, err := converter.LoadContent(exampleContent)
 	if err != nil {
 		panic(err)
 	}
@@ -24,7 +29,7 @@ func ExampleLoadContent() {
 	// Output: 1m0s
 }
 
-func ExampleLoadFile() {
+func ExampleConverter_LoadFile() {
 	dir, err := os.MkdirTemp("", "synapseq-sbg-example")
 	if err != nil {
 		panic(err)
@@ -35,7 +40,11 @@ func ExampleLoadFile() {
 	if err := os.WriteFile(path, []byte(exampleContent), 0o600); err != nil {
 		panic(err)
 	}
-	loaded, err := sbg.LoadFile(path)
+	converter, err := sbg.New(synapseq.NewAppContext())
+	if err != nil {
+		panic(err)
+	}
+	loaded, err := converter.LoadFile(path)
 	if err != nil {
 		panic(err)
 	}

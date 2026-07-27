@@ -23,7 +23,7 @@ func TestRunSBGConversionUsesDefaultOutputAndWarns(t *testing.T) {
 		t.Fatalf("write input: %v", err)
 	}
 	var status bytes.Buffer
-	if err := runSBGConversion([]string{inputPath}, false, &status, nil); err != nil {
+	if err := runSBGConversion([]string{inputPath}, &cli.CLIOptions{}, &status, nil); err != nil {
 		t.Fatalf("runSBGConversion error: %v", err)
 	}
 	if !strings.Contains(status.String(), "conversion is approximate") || !strings.Contains(status.String(), "Converted:") || !strings.Contains(status.String(), inputPath[:len(inputPath)-len(".sbg")]+".spsq") {
@@ -50,7 +50,7 @@ func TestRunSBGConversionOverwritesOutput(t *testing.T) {
 	if err := os.WriteFile(outputPath, []byte("old"), 0o600); err != nil {
 		t.Fatalf("write old output: %v", err)
 	}
-	if err := runSBGConversion([]string{inputPath, outputPath}, false, nil, nil); err != nil {
+	if err := runSBGConversion([]string{inputPath, outputPath}, &cli.CLIOptions{}, nil, nil); err != nil {
 		t.Fatalf("runSBGConversion error: %v", err)
 	}
 	content, err := os.ReadFile(outputPath)
@@ -70,7 +70,7 @@ func TestRunSBGConversionWritesToStandardOutput(t *testing.T) {
 		t.Fatalf("write input: %v", err)
 	}
 	var output bytes.Buffer
-	if err := runSBGConversion([]string{inputPath, "-"}, false, nil, &output); err != nil {
+	if err := runSBGConversion([]string{inputPath, "-"}, &cli.CLIOptions{}, nil, &output); err != nil {
 		t.Fatalf("runSBGConversion error: %v", err)
 	}
 	if !strings.Contains(output.String(), "00:00:30 alpha steady 0") {
@@ -90,7 +90,7 @@ func TestRunSBGConversionQuietSuppressesStatus(t *testing.T) {
 	}
 	var status bytes.Buffer
 	var output bytes.Buffer
-	if err := runSBGConversion([]string{inputPath, "-"}, true, &status, &output); err != nil {
+	if err := runSBGConversion([]string{inputPath, "-"}, &cli.CLIOptions{Quiet: true}, &status, &output); err != nil {
 		t.Fatalf("runSBGConversion error: %v", err)
 	}
 	if status.Len() != 0 {

@@ -8,14 +8,19 @@ sequences.
 
 # Overview
 
-LoadFile converts a local SBaGen file. LoadContent converts SBaGen text already
-held in memory. Both functions return a core.LoadedContext, so callers can
-inspect the generated sequence, retrieve its SPSQ representation through
+New receives the caller's core.AppContext and returns a Converter. Its LoadFile
+method converts a local SBaGen file, while LoadContent converts SBaGen text
+already held in memory. Both methods return a core.LoadedContext, so callers
+can inspect the generated sequence, retrieve its SPSQ representation through
 RawContent, or render it with the regular core API.
 
 # Example Usage
 
-	loaded, err := sbg.LoadFile("session.sbg")
+	converter, err := sbg.New(synapseq.NewAppContext())
+	if err != nil {
+		log.Fatal(err)
+	}
+	loaded, err := converter.LoadFile("session.sbg")
 	if err != nil {
 		log.Fatal(err)
 	}
