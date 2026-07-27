@@ -1,9 +1,6 @@
 <h1 align="center">SynapSeq</h1>
 
 <p align="center">
-<img src="./assets/synapseq-banner-dark.svg" alt="SynapSeq - Neural Audio Sequencing Engine" />
-</p>
-<p align="center">
   <a href="https://github.com/synapseq-foundation/synapseq/releases/latest"><img src="https://img.shields.io/github/v/release/synapseq-foundation/synapseq?color=blue&logo=github" alt="Release"></a>
   <a href="COPYING.txt"><img src="https://img.shields.io/badge/license-GPL%20v3%20or%20later-blue.svg?logo=open-source-initiative&logoColor=white" alt="License"></a>
   <a href="https://github.com/synapseq-foundation/synapseq/commits"><img src="https://img.shields.io/github/commit-activity/m/synapseq-foundation/synapseq?color=ff69b4&logo=git" alt="Commit Activity"></a>
@@ -13,8 +10,25 @@
   <a href="https://skills.sh/synapseq-foundation/synapseq/explain-spsq"><img src="https://img.shields.io/badge/skills.sh-explain--spsq-000000?logo=vercel&logoColor=white" alt="explain-spsq on skills.sh"></a>
   <a href="https://skills.sh/synapseq-foundation/synapseq/review-spsq"><img src="https://img.shields.io/badge/skills.sh-review--spsq-000000?logo=vercel&logoColor=white" alt="review-spsq on skills.sh"></a>
 </p>
+<p align="center">
+<img src="./assets/synapseq-banner-dark.svg" alt="SynapSeq - Neural Audio Sequencing Engine" />
+</p>
 
 <p align="center"><strong>SynapSeq - Text-Driven Audio Sequencer for Brainwave Entrainment</strong></p>
+
+<p align="center">
+  <a href="#quick-start"><strong>Quick Start</strong></a>
+  &nbsp;&middot;&nbsp;
+  <a href="#convert-sbagen-sequences">SBaGen</a>
+  &nbsp;&middot;&nbsp;
+  <a href="#synapseq-remote">Remote</a>
+  &nbsp;&middot;&nbsp;
+  <a href="#programmatic-api">Go API</a>
+  &nbsp;&middot;&nbsp;
+  <a href="#use-spsq-with-ai-agents">AI Agents</a>
+  &nbsp;&middot;&nbsp;
+  <a href="docs/SYNTAX.md">Syntax</a>
+</p>
 
 **SynapSeq** turns plain-text sequences into evolving audio. Its small domain-specific language lets you combine tones, binaural, monaural, and isochronic rhythms, noise, music, ambiance, effects, and transitions on a precise timeline.
 
@@ -77,6 +91,44 @@ synapseq focus.spsq
 
 The result is a repeatable audio session generated from the text definition. See [HOW IT WORKS](docs/HOW_IT_WORKS.md) for a perceptual explanation of the tone methods, transitions, and effects.
 
+## Quick Start
+
+The recommended way to install SynapSeq is through the platform package manager.
+
+### Homebrew (macOS & Linux)
+
+Install with [Homebrew](https://brew.sh):
+
+```bash
+brew tap synapseq-foundation/synapseq
+brew trust synapseq-foundation/synapseq # For homebrew >= 6.x
+brew install synapseq
+```
+
+### Winget (Windows)
+
+Install with [Winget](https://learn.microsoft.com/en-us/windows/package-manager/winget):
+
+```powershell
+winget update
+winget install synapseq
+```
+
+After installation, you can run `synapseq -install-file-association` to associate `.spsq` files with SynapSeq, enable additional Explorer context menu actions, and add a `.sbg` action that converts SBaGen sequences to `.spsq`.
+
+### Manual Downloads
+
+If you prefer to install manually, download the appropriate archive from the latest GitHub release: [4.41.0](https://github.com/synapseq-foundation/synapseq/releases/tag/v4.41.0-foundation).
+
+If you want to build SynapSeq from source, see the [Compilation Guide](docs/COMPILE.md).
+
+### Next Steps
+
+After installation on any platform, read the repository docs in this order:
+
+- [SYNTAX](docs/SYNTAX.md)
+- [HOW IT WORKS](docs/HOW_IT_WORKS.md)
+
 ## Convert SBaGen Sequences
 
 Starting with SynapSeq 4.41.0, you can convert classic [SBaGen](http://uazu.net/sbagen/) `.sbg` sequences into `.spsq` files:
@@ -92,24 +144,7 @@ When the output is omitted, SynapSeq writes a `.spsq` file alongside the source 
 > [!WARNING]
 > SBaGen conversion is experimental. More complex sequences can produce differences or conversion errors because SBaGen and SynapSeq do not have identical sound sources, transition behavior, or media support. Review and validate the generated `.spsq` before using it.
 
-The public Go API provides the same conversion flow:
-
-```go
-ctx := synapseq.NewAppContext()
-converter, err := sbg.New(ctx)
-if err != nil {
-    panic(err)
-}
-
-loaded, err := converter.LoadFile("session.sbg")
-if err != nil {
-    panic(err)
-}
-
-content := loaded.RawContent()
-```
-
-Use `converter.LoadContent(sbgContent)` when the SBaGen source text is already available in memory.
+For a Go example using the `sbg` library, see [Programmatic API](#programmatic-api).
 
 ## Use SPSQ With AI Agents
 
@@ -182,44 +217,6 @@ Invoke the installed skill as a slash command:
 ```
 
 Claude Code can also load a skill automatically when a request matches its description. Explicit invocation is the most predictable option for both agents. Install SynapSeq using the [Quick Start](#quick-start) instructions when the agent needs to validate a local file with `synapseq -test`.
-
-## Quick Start
-
-The recommended way to install SynapSeq is through the platform package manager.
-
-### Homebrew (macOS & Linux)
-
-Install with [Homebrew](https://brew.sh):
-
-```bash
-brew tap synapseq-foundation/synapseq
-brew trust synapseq-foundation/synapseq # For homebrew >= 6.x
-brew install synapseq
-```
-
-### Winget (Windows)
-
-Install with [Winget](https://learn.microsoft.com/en-us/windows/package-manager/winget/):
-
-```powershell
-winget update
-winget install synapseq
-```
-
-After installation, you can run `synapseq -install-file-association` to associate `.spsq` files with SynapSeq, enable additional Explorer context menu actions, and add a `.sbg` action that converts SBaGen sequences to `.spsq`.
-
-### Manual Downloads
-
-If you prefer to install manually, download the appropriate archive from the latest GitHub release: [4.40.1](https://github.com/synapseq-foundation/synapseq/releases/tag/v4.40.1-foundation).
-
-If you want to build SynapSeq from source, see the [Compilation Guide](docs/COMPILE.md).
-
-### Next Steps
-
-After installation on any platform, read the repository docs in this order:
-
-- [SYNTAX](docs/SYNTAX.md)
-- [HOW IT WORKS](docs/HOW_IT_WORKS.md)
 
 ## SynapSeq Remote
 
@@ -337,6 +334,27 @@ func main() {
 	}
 }
 ```
+
+### Convert SBaGen Sequences
+
+The `sbg` package provides the same SBaGen conversion flow in Go:
+
+```go
+ctx := synapseq.NewAppContext()
+converter, err := sbg.New(ctx)
+if err != nil {
+    panic(err)
+}
+
+loaded, err := converter.LoadFile("session.sbg")
+if err != nil {
+    panic(err)
+}
+
+content := loaded.RawContent()
+```
+
+Use `converter.LoadContent(sbgContent)` when the SBaGen source text is already available in memory.
 
 Docs:
 - [core](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4@v4.40.3-foundation/core)
