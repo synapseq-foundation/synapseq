@@ -13,7 +13,7 @@ import (
 	"github.com/synapseq-foundation/synapseq/v4/internal/fileassoc"
 )
 
-// installWindowsFileAssociation sets up the file association for .spsq files on Windows
+// installWindowsFileAssociation sets up the .spsq association and .sbg conversion action on Windows.
 func installWindowsFileAssociation(quiet bool) error {
 	_ = fileassoc.CleanSynapSeqWindowsRegistry()
 
@@ -25,19 +25,19 @@ func installWindowsFileAssociation(quiet bool) error {
 	}
 
 	if !quiet {
-		fmt.Println(cli.SuccessText("Successfully installed .spsq file association with SynapSeq."))
+		fmt.Println(cli.SuccessText("Successfully installed .spsq file association and .sbg conversion action with SynapSeq."))
 	}
 	return nil
 }
 
-// uninstallWindowsFileAssociation removes the file association for .spsq files on Windows
+// uninstallWindowsFileAssociation removes the .spsq association and .sbg conversion action on Windows.
 func uninstallWindowsFileAssociation(quiet bool) error {
 	if err := fileassoc.CleanSynapSeqWindowsRegistry(); err != nil {
 		return err
 	}
 
 	if !quiet {
-		fmt.Println(cli.SuccessText("Successfully removed .spsq file association with SynapSeq."))
+		fmt.Println(cli.SuccessText("Successfully removed .spsq file association and .sbg conversion action with SynapSeq."))
 	}
 	return nil
 }

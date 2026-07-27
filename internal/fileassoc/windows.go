@@ -59,6 +59,8 @@ func CleanSynapSeqWindowsRegistry() error {
 		`Software\Classes\SystemFileAssociations\.wav\shell\SynapSeqExtract`)
 	_ = deleteRegistryTree(registry.CURRENT_USER,
 		`Software\Classes\SystemFileAssociations\.mp3\shell\SynapSeqExtract`)
+	_ = deleteRegistryTree(registry.CURRENT_USER,
+		`Software\Classes\SystemFileAssociations\.sbg\shell\SynapSeqConvert`)
 
 	return nil
 }
@@ -282,6 +284,36 @@ func InstallWindowsContextMenu() error {
 
 	mp3Cmd := `cmd.exe /C synapseq -mp3 "%1" & echo. & pause`
 	mp3CmdKey.SetStringValue("", mp3Cmd)
+
+	// ===============================
+	// Convert SBaGen to SPSQ
+	// ===============================
+	sbgBase := `Software\Classes\SystemFileAssociations\.sbg\shell\SynapSeqConvert`
+	sbgKey, _, err := registry.CreateKey(
+		registry.CURRENT_USER,
+		sbgBase,
+		registry.SET_VALUE,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create SBaGen conversion menu: %w", err)
+	}
+	defer sbgKey.Close()
+
+	sbgKey.SetStringValue("", "SynapSeq: Convert to SPSQ")
+	sbgKey.SetStringValue("Icon", exePath+",0")
+
+	sbgCmdKey, _, err := registry.CreateKey(
+		registry.CURRENT_USER,
+		sbgBase+`\command`,
+		registry.SET_VALUE,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create SBaGen conversion command: %w", err)
+	}
+	defer sbgCmdKey.Close()
+
+	sbgCmd := `cmd.exe /C synapseq -sbg "%1" & echo. & pause`
+	sbgCmdKey.SetStringValue("", sbgCmd)
 
 	return nil
 }
