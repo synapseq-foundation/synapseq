@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
 	"github.com/synapseq-foundation/synapseq/v4/internal/cli"
 	"github.com/synapseq-foundation/synapseq/v4/sbg"
 )
@@ -38,7 +39,11 @@ func runSBGConversion(args []string, quiet bool, statusWriter, outputWriter io.W
 			return err
 		}
 	}
-	loaded, err := sbg.LoadFile(inputPath)
+	converter, err := sbg.New(synapseq.NewAppContext())
+	if err != nil {
+		return err
+	}
+	loaded, err := converter.LoadFile(inputPath)
 	if err != nil {
 		return err
 	}

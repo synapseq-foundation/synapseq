@@ -9,7 +9,25 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
 )
+
+func newTestConverter(t *testing.T) *Converter {
+	t.Helper()
+	converter, err := New(synapseq.NewAppContext())
+	if err != nil {
+		t.Fatalf("New error: %v", err)
+	}
+	return converter
+}
+
+func TestNewRejectsNilContext(t *testing.T) {
+	converter, err := New(nil)
+	if err == nil {
+		t.Fatalf("expected error, got converter %#v", converter)
+	}
+}
 
 func TestLoadFileUsesSPSQBuilder(t *testing.T) {
 	dir := t.TempDir()
@@ -25,7 +43,7 @@ func TestLoadFileUsesSPSQBuilder(t *testing.T) {
 		t.Fatalf("write input: %v", err)
 	}
 
-	loaded, err := LoadFile(inputPath)
+	loaded, err := newTestConverter(t).LoadFile(inputPath)
 	if err != nil {
 		t.Fatalf("LoadFile error: %v", err)
 	}
@@ -55,7 +73,7 @@ func TestLoadFileNOWUsesThirtySecondFadeIn(t *testing.T) {
 		t.Fatalf("write input: %v", err)
 	}
 
-	loaded, err := LoadFile(inputPath)
+	loaded, err := newTestConverter(t).LoadFile(inputPath)
 	if err != nil {
 		t.Fatalf("LoadFile error: %v", err)
 	}
@@ -74,7 +92,7 @@ func TestLoadContentSupportsAbsoluteTimelineTimes(t *testing.T) {
 		"00:20:00 ts2 ->",
 		"00:20:30 off",
 	}, "\n")
-	loaded, err := LoadContent(input)
+	loaded, err := newTestConverter(t).LoadContent(input)
 	if err != nil {
 		t.Fatalf("LoadContent error: %v", err)
 	}
@@ -97,7 +115,7 @@ func TestLoadFileOmitsMixWithoutMusicOption(t *testing.T) {
 		t.Fatalf("write input: %v", err)
 	}
 
-	loaded, err := LoadFile(inputPath)
+	loaded, err := newTestConverter(t).LoadFile(inputPath)
 	if err != nil {
 		t.Fatalf("LoadFile error: %v", err)
 	}

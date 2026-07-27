@@ -16,23 +16,36 @@ import (
 	"github.com/synapseq-foundation/synapseq/v4/spsq"
 )
 
+// Converter converts SBaGen content through the provided SynapSeq application context.
+type Converter struct {
+	ctx *synapseq.AppContext
+}
+
+// New creates an SBaGen converter using ctx.
+func New(ctx *synapseq.AppContext) (*Converter, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("context is nil")
+	}
+	return &Converter{ctx: ctx}, nil
+}
+
 // LoadFile converts the SBaGen sequence at path into a validated SynapSeq sequence.
-func LoadFile(path string) (*synapseq.LoadedContext, error) {
+func (c *Converter) LoadFile(path string) (*synapseq.LoadedContext, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("open SBaGen file %q: %w", path, err)
 	}
 	defer file.Close()
 
-	return load(path, file)
+	return c.load(path, file)
 }
 
 // LoadContent converts in-memory SBaGen content into a validated SynapSeq sequence.
-func LoadContent(content string) (*synapseq.LoadedContext, error) {
-	return load("<content>", strings.NewReader(content))
+func (c *Converter) LoadContent(content string) (*synapseq.LoadedContext, error) {
+	return c.load("<content>", strings.NewReader(content))
 }
 
-func load(source string, reader io.Reader) (*synapseq.LoadedContext, error) {
+func (c *Converter) load(source string, reader io.Reader) (*synapseq.LoadedContext, error) {
 	parsed, err := parse(source, reader)
 	if err != nil {
 		return nil, err
@@ -41,7 +54,7 @@ func load(source string, reader io.Reader) (*synapseq.LoadedContext, error) {
 	if err != nil {
 		return nil, err
 	}
-	loaded, err := builder.Load(synapseq.NewAppContext())
+	loaded, err := builder.Load(c.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("validate converted sequence: %w", err)
 	}

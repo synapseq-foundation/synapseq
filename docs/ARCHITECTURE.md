@@ -158,7 +158,7 @@ Remote is optional input infrastructure, not part of the renderer itself.
 
 ### `sbg`
 
-This public package parses supported SBaGen input and maps its structured values into the public `spsq` builder. `LoadFile` and `LoadContent` return validated `core.LoadedContext` values; the CLI writes `RawContent()` to the requested destination.
+This public package parses supported SBaGen input and maps its structured values into the public `spsq` builder. `New` receives a caller-owned `core.AppContext`, and its `LoadFile` and `LoadContent` methods return validated `core.LoadedContext` values. The CLI writes `RawContent()` to the requested destination.
 
 ### `internal/cli`
 
