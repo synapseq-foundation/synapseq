@@ -2,6 +2,9 @@ PackageIdentifier: ruanklein.synapseq
 PackageVersion: __VERSION__
 InstallerType: zip
 NestedInstallerType: portable
+Dependencies:
+  PackageDependencies:
+    - PackageIdentifier: Gyan.FFmpeg
 Installers:
   - Architecture: x64
     InstallerUrl: __RELEASE_BASE_URL__/synapseq-v__VERSION__-windows-amd64.zip
