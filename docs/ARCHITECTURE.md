@@ -32,6 +32,8 @@ The main end-to-end runtime looks like this:
 ```mermaid
 flowchart TD
 	CLI[cmd/synapseq\nCLI entry and dispatch] --> Core[core\nAppContext and LoadedContext]
+	CLI --> SBG[internal/sbagen\nSBaGen parser and converter]
+	SBG --> SPSQ
 	SPSQ[spsq\nprogrammatic .spsq builder] --> Core
 	Core --> Seq[internal/sequence\nload and build Sequence]
 	Seq --> Parser[internal/parser\nparse DSL tokens and structures]
@@ -56,7 +58,7 @@ Programmatic Go callers can also construct `.spsq` content with `spsq.Builder` a
 This is the executable entry layer.
 
 - `main.go` handles process startup, flag parsing, and top-level command routing.
-- `dispatch.go` executes special commands such as `-version`, `-manual`, and `-sync`, `-list`, `-search`, `-info`, `-download`, `-get`, `-clean`.
+- `dispatch.go` executes special commands such as `-version`, `-sbg`, and `-sync`, `-list`, `-search`, `-info`, `-download`, `-get`, `-clean`.
 - `sequencehandlers.go` handles the standard local sequence flow.
 - `output.go` routes loaded sequences to JSON dump, stream, WAV, playback, or MP3 conversion.
 - `remote.go` implements CLI-facing Remote commands.
@@ -153,6 +155,10 @@ This package manages SynapSeq Remote sequences:
 - downloading sequences.
 
 Remote is optional input infrastructure, not part of the renderer itself.
+
+### `internal/sbagen`
+
+This package parses supported SBaGen input and maps its structured values into the public `spsq` builder. It does not serialize SPSQ text directly. The generated text is validated through `core`, and the CLI writes `LoadedContext.RawContent()` to the requested destination.
 
 ### `internal/cli`
 

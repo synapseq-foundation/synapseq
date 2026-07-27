@@ -315,3 +315,10 @@ func TestPrepareSequenceCommandUsesExplicitOutput(ts *testing.T) {
 		ts.Fatalf("expected output format .json, got %q", command.outputFormat)
 	}
 }
+
+func TestResolveSpecialCommandSBG(ts *testing.T) {
+	command := clistyle.ResolveSpecialCommand(&clistyle.CLIOptions{ConvertSBG: true}, []string{"input.sbg", "output.spsq"})
+	if command.Kind != clistyle.SpecialCommandSBG {
+		ts.Fatalf("expected SBG command, got %q", command.Kind)
+	}
+}

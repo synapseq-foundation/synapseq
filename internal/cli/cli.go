@@ -23,6 +23,7 @@ const (
 	SpecialCommandInstallFileAssociation   SpecialCommandKind = "install-file-association"
 	SpecialCommandUninstallFileAssociation SpecialCommandKind = "uninstall-file-association"
 	SpecialCommandDoctor                   SpecialCommandKind = "doctor"
+	SpecialCommandSBG                      SpecialCommandKind = "sbg"
 )
 
 type SpecialCommand struct {
@@ -74,6 +75,8 @@ type CLIOptions struct {
 	FFprobePath string
 	// Show doctor diagnostic information
 	ShowDoctor bool
+	// Convert an SBaGen sequence to SPSQ
+	ConvertSBG bool
 	// Print bash completion script
 	CompletionBash bool
 	// Print zsh completion script
