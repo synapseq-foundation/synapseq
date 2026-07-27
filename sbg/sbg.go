@@ -6,6 +6,7 @@ package sbg
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -15,19 +16,28 @@ import (
 	"github.com/synapseq-foundation/synapseq/v4/spsq"
 )
 
-// ConvertFile converts an SBaGen file into validated SynapSeq content.
-func ConvertFile(inputPath, outputPath string) ([]byte, error) {
-	file, err := os.Open(inputPath)
+// LoadFile converts the SBaGen sequence at path into a validated SynapSeq sequence.
+func LoadFile(path string) (*synapseq.LoadedContext, error) {
+	file, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("open SBaGen file %q: %w", inputPath, err)
+		return nil, fmt.Errorf("open SBaGen file %q: %w", path, err)
 	}
 	defer file.Close()
 
-	parsed, err := parse(inputPath, file)
+	return load(path, file)
+}
+
+// LoadContent converts in-memory SBaGen content into a validated SynapSeq sequence.
+func LoadContent(content string) (*synapseq.LoadedContext, error) {
+	return load("<content>", strings.NewReader(content))
+}
+
+func load(source string, reader io.Reader) (*synapseq.LoadedContext, error) {
+	parsed, err := parse(source, reader)
 	if err != nil {
 		return nil, err
 	}
-	builder, err := build(parsed, inputPath)
+	builder, err := build(parsed, source)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +45,7 @@ func ConvertFile(inputPath, outputPath string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("validate converted sequence: %w", err)
 	}
-	return loaded.RawContent(), nil
+	return loaded, nil
 }
 
 func build(parsed *sequence, inputPath string) (*spsq.Builder, error) {

@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Package sbg parses and converts SBaGen sequence files.
 package sbg
 
 import (
