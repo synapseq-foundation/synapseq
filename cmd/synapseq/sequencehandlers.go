@@ -50,12 +50,15 @@ func prepareSequenceCommand(args []string, opts *cli.CLIOptions) (*sequenceComma
 }
 
 func loadSequenceContext(inputFile, outputFile string, verboseWriter io.Writer, opts *cli.CLIOptions) (*synapseq.LoadedContext, error) {
+	return newAppContext(outputFile, verboseWriter, opts).LoadFile(inputFile)
+}
+
+func newAppContext(outputFile string, verboseWriter io.Writer, opts *cli.CLIOptions) *synapseq.AppContext {
 	appCtx := synapseq.NewAppContext()
 	if !opts.Quiet && outputFile != "-" && verboseWriter != nil {
 		appCtx = appCtx.WithVerbose(verboseWriter, !opts.NoColor)
 	}
-
-	return appCtx.LoadFile(inputFile)
+	return appCtx
 }
 
 func runLoadedSequence(loadedCtx *synapseq.LoadedContext, outputFile, outputFormat string, opts *cli.CLIOptions) error {

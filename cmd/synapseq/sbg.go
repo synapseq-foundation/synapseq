@@ -11,14 +11,16 @@ import (
 	"path/filepath"
 	"strings"
 
-	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
 	"github.com/synapseq-foundation/synapseq/v4/internal/cli"
 	"github.com/synapseq-foundation/synapseq/v4/sbg"
 )
 
 const sbgConversionWarning = "SBaGen conversion is approximate and may contain errors; review the generated SPSQ before use."
 
-func runSBGConversion(args []string, quiet bool, statusWriter, outputWriter io.Writer) error {
+func runSBGConversion(args []string, opts *cli.CLIOptions, statusWriter, outputWriter io.Writer) error {
+	if opts == nil {
+		return fmt.Errorf("CLI options are nil")
+	}
 	if len(args) < 1 || len(args) > 2 {
 		return fmt.Errorf("invalid SBaGen conversion arguments\nUsage: synapseq -sbg <file.sbg> [output.spsq]")
 	}
@@ -34,12 +36,12 @@ func runSBGConversion(args []string, quiet bool, statusWriter, outputWriter io.W
 		return fmt.Errorf("SPSQ output must use the .spsq extension: %q", outputPath)
 	}
 
-	if !quiet && statusWriter != nil {
+	if !opts.Quiet && statusWriter != nil {
 		if err := writeSBGConversionWarning(statusWriter); err != nil {
 			return err
 		}
 	}
-	converter, err := sbg.New(synapseq.NewAppContext())
+	converter, err := sbg.New(newAppContext(outputPath, statusWriter, opts))
 	if err != nil {
 		return err
 	}
@@ -58,7 +60,7 @@ func runSBGConversion(args []string, quiet bool, statusWriter, outputWriter io.W
 	if err := os.WriteFile(outputPath, content, 0o644); err != nil {
 		return fmt.Errorf("write converted sequence %q: %w", outputPath, err)
 	}
-	if !quiet && statusWriter != nil {
+	if !opts.Quiet && statusWriter != nil {
 		return writeSBGConversionSuccess(statusWriter, outputPath)
 	}
 	return nil
