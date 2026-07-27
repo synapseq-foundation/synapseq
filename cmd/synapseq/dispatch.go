@@ -5,6 +5,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/synapseq-foundation/synapseq/v4/internal/cli"
 )
 
@@ -48,6 +50,8 @@ func dispatchSpecialCommand(opts *cli.CLIOptions, args []string) (bool, error) {
 		return true, uninstallWindowsFileAssociation(opts.Quiet)
 	case cli.SpecialCommandDoctor:
 		return true, runDoctor()
+	case cli.SpecialCommandSBG:
+		return true, runSBGConversion(args, opts.Quiet, os.Stderr, os.Stdout)
 	default:
 		return false, nil
 	}

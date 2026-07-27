@@ -77,6 +77,12 @@ func TestParseFlags(ts *testing.T) {
 			expectedArgs: []string{"input.spsq"},
 			expectError:  false,
 		},
+		{
+			args:         []string{"cmd", "-sbg", "input.sbg", "output.spsq"},
+			expected:     &CLIOptions{ConvertSBG: true},
+			expectedArgs: []string{"input.sbg", "output.spsq"},
+			expectError:  false,
+		},
 		// Test and quiet combined
 		{
 			args:         []string{"cmd", "-test", "-quiet", "input.spsq"},
@@ -239,6 +245,9 @@ func TestParseFlags(ts *testing.T) {
 		if opts.Play != test.expected.Play {
 			ts.Errorf("For args %v, Play: expected %v but got %v", test.args, test.expected.Play, opts.Play)
 		}
+		if opts.ConvertSBG != test.expected.ConvertSBG {
+			ts.Errorf("For args %v, ConvertSBG: expected %v but got %v", test.args, test.expected.ConvertSBG, opts.ConvertSBG)
+		}
 		if opts.RemoteSync != test.expected.RemoteSync {
 			ts.Errorf("For args %v, RemoteSync: expected %v but got %v", test.args, test.expected.RemoteSync, opts.RemoteSync)
 		}
@@ -397,7 +406,8 @@ func TestHelpIncludesQuickStart(ts *testing.T) {
 		"synapseq session.spsq",
 		"Generate session.wav in the current folder",
 		"Most common options:",
-		"-dump             Render JSON sequence data",
+		"-dump              Render JSON sequence data",
+		"-sbg FILE [OUTPUT] Convert an SBaGen file to SPSQ",
 		"Remote:",
 		"Run -sync first to initialize the local Remote index.",
 		"-sync",
