@@ -15,7 +15,7 @@ import (
 func parse(source string, reader io.Reader) (*sequence, error) {
 	result := &sequence{source: source}
 	definitions := make(map[string]struct{})
-	relativeBase := time.Duration(0)
+	var relativeBase time.Duration
 	scanner := bufio.NewScanner(reader)
 	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
 
@@ -33,10 +33,13 @@ func parse(source string, reader io.Reader) (*sequence, error) {
 		}
 
 		fields := strings.Fields(line)
-		if musicPath, ok, err := parseMusicOption(fields); err != nil {
+		musicPath, ok, err := parseMusicOption(fields)
+		if err != nil {
 			return nil, lineError(source, lineNumber, err.Error())
-		} else if ok {
+		}
+		if ok {
 			result.musicPath = musicPath
+			result.musicLine = lineNumber
 			continue
 		}
 

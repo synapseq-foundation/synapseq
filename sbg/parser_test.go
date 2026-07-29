@@ -23,13 +23,13 @@ func TestParseSequence(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse error: %v", err)
 	}
-	if parsed.musicPath != "audio/background.mp3" {
-		t.Fatalf("music path = %q", parsed.musicPath)
+	if parsed.musicPath != "audio/background.mp3" || parsed.musicLine != 1 {
+		t.Fatalf("music source = %q at line %d", parsed.musicPath, parsed.musicLine)
 	}
 	if len(parsed.definitions) != 2 || len(parsed.definitions[0].voices) != 5 {
 		t.Fatalf("definitions = %#v", parsed.definitions)
 	}
-	if got := parsed.definitions[0].voices[3]; got.kind != voiceSpin || got.width != 300 || got.beat != 4.2 || got.amplitude != 10 {
+	if got := parsed.definitions[0].voices[3]; got.kind != voiceSpin || got.carrier != 300 || got.beat != 4.2 || got.amplitude != 10 {
 		t.Fatalf("spin voice = %#v", got)
 	}
 	if got := parsed.timeline[0]; !got.initial || got.at != 15*time.Second || got.name != "alpha" {
@@ -52,5 +52,13 @@ func TestParseAbsoluteTimelineTimes(t *testing.T) {
 	}
 	if got := parsed.timeline[2].at; got != 20*time.Minute {
 		t.Fatalf("absolute timeline time = %v", got)
+	}
+}
+
+func TestParseRejectsNegativeTimelineFields(t *testing.T) {
+	input := "alpha: 300+10/20\n-1:00 alpha\n"
+	_, err := parse("test.sbg", strings.NewReader(input))
+	if err == nil || !strings.Contains(err.Error(), "invalid timeline time") {
+		t.Fatalf("error = %v", err)
 	}
 }

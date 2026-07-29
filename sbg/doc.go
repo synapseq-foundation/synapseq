@@ -32,7 +32,10 @@ RawContent, or render it with the regular core API.
 
 Supported SBaGen voices are mapped to the corresponding SPSQ tracks. Binaural
 sign orientation is not represented by SPSQ. Spin voices are approximated with
-pink noise and a pan effect. SBaGen soundtrack input (-m and mix voices) is
-omitted. SBaGen fade markers are accepted but converted to steady transitions.
+pink noise and a pan effect. An SBaGen -m source becomes the SPSQ music source
+named music, and each mix voice becomes a music track. Music paths must remain
+within the current directory and cannot contain parent traversal; their
+extension is removed so SynapSeq can resolve an MP3 or WAV source. SBaGen fade
+markers are accepted but converted to steady transitions.
 */
 package sbg
