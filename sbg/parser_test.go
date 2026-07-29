@@ -26,6 +26,9 @@ func TestParseSequence(t *testing.T) {
 	if parsed.musicPath != "audio/background.mp3" || parsed.musicLine != 1 {
 		t.Fatalf("music source = %q at line %d", parsed.musicPath, parsed.musicLine)
 	}
+	if parsed.sampleRate != defaultSampleRate {
+		t.Fatalf("sample rate = %d", parsed.sampleRate)
+	}
 	if len(parsed.definitions) != 2 || len(parsed.definitions[0].voices) != 5 {
 		t.Fatalf("definitions = %#v", parsed.definitions)
 	}
@@ -60,5 +63,43 @@ func TestParseRejectsNegativeTimelineFields(t *testing.T) {
 	_, err := parse("test.sbg", strings.NewReader(input))
 	if err == nil || !strings.Contains(err.Error(), "invalid timeline time") {
 		t.Fatalf("error = %v", err)
+	}
+}
+
+func TestParseSampleRateOption(t *testing.T) {
+	input := "-SE -r 48000 -m audio/background.mp3\nalpha: 300+10/20\nNOW alpha\n"
+	parsed, err := parse("test.sbg", strings.NewReader(input))
+	if err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
+	if parsed.sampleRate != 48000 {
+		t.Fatalf("sample rate = %d", parsed.sampleRate)
+	}
+	if parsed.musicPath != "audio/background.mp3" {
+		t.Fatalf("music path = %q", parsed.musicPath)
+	}
+}
+
+func TestParseSampleRateLastOptionWins(t *testing.T) {
+	input := "-r 22050\n-r 48000\nalpha: 300+10/20\nNOW alpha\n"
+	parsed, err := parse("test.sbg", strings.NewReader(input))
+	if err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
+	if parsed.sampleRate != 48000 {
+		t.Fatalf("sample rate = %d", parsed.sampleRate)
+	}
+}
+
+func TestParseRejectsInvalidSampleRateOption(t *testing.T) {
+	for _, input := range []string{
+		"-r\nalpha: 300+10/20\nNOW alpha\n",
+		"-r invalid\nalpha: 300+10/20\nNOW alpha\n",
+		"-r 999999999999999999999999999999\nalpha: 300+10/20\nNOW alpha\n",
+	} {
+		_, err := parse("test.sbg", strings.NewReader(input))
+		if err == nil || !strings.Contains(err.Error(), "-r requires") {
+			t.Fatalf("input %q: error = %v", input, err)
+		}
 	}
 }

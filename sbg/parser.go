@@ -13,7 +13,7 @@ import (
 )
 
 func parse(source string, reader io.Reader) (*sequence, error) {
-	result := &sequence{source: source}
+	result := &sequence{source: source, sampleRate: defaultSampleRate}
 	definitions := make(map[string]struct{})
 	var relativeBase time.Duration
 	scanner := bufio.NewScanner(reader)
@@ -37,9 +37,18 @@ func parse(source string, reader io.Reader) (*sequence, error) {
 		if err != nil {
 			return nil, lineError(source, lineNumber, err.Error())
 		}
+		sampleRate, hasSampleRate, err := parseSampleRateOption(fields)
+		if err != nil {
+			return nil, lineError(source, lineNumber, err.Error())
+		}
 		if ok {
 			result.musicPath = musicPath
 			result.musicLine = lineNumber
+		}
+		if hasSampleRate {
+			result.sampleRate = sampleRate
+		}
+		if ok || hasSampleRate {
 			continue
 		}
 

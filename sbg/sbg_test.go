@@ -118,6 +118,39 @@ func TestLoadContentSupportsAbsoluteTimelineTimes(t *testing.T) {
 	}
 }
 
+func TestLoadContentConvertsSampleRate(t *testing.T) {
+	loaded, err := newTestConverter(t).LoadContent("-r 48000\nalpha: 300+10/20\nNOW alpha\n")
+	if err != nil {
+		t.Fatalf("LoadContent error: %v", err)
+	}
+	if loaded.SampleRate() != 48000 {
+		t.Fatalf("sample rate = %d", loaded.SampleRate())
+	}
+	if !strings.Contains(string(loaded.RawContent()), "@samplerate 48000") {
+		t.Fatalf("sample rate was not converted:\n%s", loaded.RawContent())
+	}
+}
+
+func TestLoadContentUsesDefaultSampleRate(t *testing.T) {
+	loaded, err := newTestConverter(t).LoadContent("alpha: 300+10/20\nNOW alpha\n")
+	if err != nil {
+		t.Fatalf("LoadContent error: %v", err)
+	}
+	if loaded.SampleRate() != defaultSampleRate {
+		t.Fatalf("sample rate = %d", loaded.SampleRate())
+	}
+	if !strings.Contains(string(loaded.RawContent()), "@samplerate 44100") {
+		t.Fatalf("default sample rate was not emitted:\n%s", loaded.RawContent())
+	}
+}
+
+func TestLoadContentDelegatesInvalidSampleRateToSPSQ(t *testing.T) {
+	_, err := newTestConverter(t).LoadContent("-r 0\nalpha: 300+10/20\nNOW alpha\n")
+	if err == nil || !strings.Contains(err.Error(), "invalid sample rate") {
+		t.Fatalf("error = %v", err)
+	}
+}
+
 func TestLoadContentRejectsMixWithoutMusicSource(t *testing.T) {
 	_, err := newTestConverter(t).LoadContent("alpha: pink/20 mix/20\noff: -\nNOW alpha\n+00:01:00 off\n")
 	if err == nil || !strings.Contains(err.Error(), "mix voice requires a -m music source") {
