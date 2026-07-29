@@ -87,6 +87,10 @@ func (b *Builder) content() string {
 		fmt.Fprintf(&content, "%s%s %s %s\n", opt, t.KeywordOptionAmbiance, ambiance.name, ambiance.path)
 	}
 	for _, music := range b.music {
+		if music.name == music.path {
+			fmt.Fprintf(&content, "%s%s %s\n", opt, t.KeywordOptionMusic, music.name)
+			continue
+		}
 		fmt.Fprintf(&content, "%s%s %s %s\n", opt, t.KeywordOptionMusic, music.name, music.path)
 	}
 
