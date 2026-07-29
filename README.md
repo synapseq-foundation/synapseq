@@ -139,6 +139,8 @@ synapseq -sbg session.sbg - > converted.spsq
 
 When the output is omitted, SynapSeq writes a `.spsq` file alongside the source using the same name. Use `-` to send the converted SPSQ content to standard output.
 
+SBaGen `-m` sources and `mix` voices convert to SPSQ music options and tracks. The music file must be inside the current working directory without `..` traversal; its extension is removed and SynapSeq resolves the resulting base as `.mp3` or `.wav`.
+
 > [!WARNING]
 > SBaGen conversion is experimental. More complex sequences can produce differences or conversion errors because SBaGen and SynapSeq do not have identical sound sources, transition behavior, or media support. Review and validate the generated `.spsq` before using it.
 

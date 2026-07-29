@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -50,7 +51,7 @@ func (c *Converter) load(source string, reader io.Reader) (*synapseq.LoadedConte
 	if err != nil {
 		return nil, err
 	}
-	builder, err := build(parsed, source)
+	builder, err := build(parsed)
 	if err != nil {
 		return nil, err
 	}
@@ -61,22 +62,56 @@ func (c *Converter) load(source string, reader io.Reader) (*synapseq.LoadedConte
 	return loaded, nil
 }
 
-func build(parsed *sequence, inputPath string) (*spsq.Builder, error) {
+func build(parsed *sequence) (*spsq.Builder, error) {
 	builder := spsq.New()
+	var musicName string
+	if parsed.musicPath != "" {
+		musicPath, err := currentRelativeMusicPath(parsed.musicPath)
+		if err != nil {
+			return nil, lineError(parsed.source, parsed.musicLine, err.Error())
+		}
+		musicName = filepath.Base(musicPath)
+		builder.Music(musicName, musicPath)
+	}
 
+	presets, allOff, err := convertDefinitions(builder, parsed, musicName)
+	if err != nil {
+		return nil, err
+	}
+	if err := appendTimeline(builder, parsed, presets, allOff); err != nil {
+		return nil, err
+	}
+
+	return builder, nil
+}
+
+func convertDefinitions(
+	builder *spsq.Builder,
+	parsed *sequence,
+	musicName string,
+) (map[string]*spsq.Preset, map[string]struct{}, error) {
 	presets := make(map[string]*spsq.Preset, len(parsed.definitions))
 	names := convertedNames(parsed.definitions)
-	allOff := make(map[string]bool)
+	allOff := make(map[string]struct{})
 	for _, definition := range parsed.definitions {
-		active := 0
+		hasTrack := false
+		hasOff := false
 		for _, voice := range definition.voices {
-			if voice.kind != voiceOff && voice.kind != voiceMix {
-				active++
+			if voice.kind == voiceMix && parsed.musicPath == "" {
+				return nil, nil, lineError(parsed.source, definition.line, "mix voice requires a -m music source")
 			}
+			if voice.kind == voiceOff {
+				hasOff = true
+				continue
+			}
+			hasTrack = true
 		}
-		if active == 0 {
-			allOff[definition.name] = true
-			continue
+		if !hasTrack {
+			if hasOff {
+				allOff[definition.name] = struct{}{}
+				continue
+			}
+			return nil, nil, lineError(parsed.source, definition.line, fmt.Sprintf("NameDef %q has no convertible voices", definition.name))
 		}
 
 		preset := builder.NewPreset(names[definition.name])
@@ -93,15 +128,22 @@ func build(parsed *sequence, inputPath string) (*spsq.Builder, error) {
 			case voiceSpin:
 				preset.Pink(0).Pan(voice.beat).Intensity(100).Amplitude(voice.amplitude)
 			case voiceMix:
-				// SBaGen soundtrack input has no direct conversion target.
-				continue
+				preset.Music(musicName).Amplitude(voice.amplitude)
 			}
 		}
 		presets[definition.name] = preset
 	}
+	return presets, allOff, nil
+}
 
+func appendTimeline(
+	builder *spsq.Builder,
+	parsed *sequence,
+	presets map[string]*spsq.Preset,
+	allOff map[string]struct{},
+) error {
 	if len(parsed.timeline) == 0 {
-		return nil, fmt.Errorf("convert %q: no timeline entries found", inputPath)
+		return fmt.Errorf("convert %q: no timeline entries found", parsed.source)
 	}
 	firstEvent := parsed.timeline[0]
 	baseTime := firstEvent.at
@@ -109,15 +151,17 @@ func build(parsed *sequence, inputPath string) (*spsq.Builder, error) {
 		baseTime = 0
 		builder.SilenceAt(0).Steady()
 	}
+	var previousAt time.Duration
 	for index, event := range parsed.timeline {
 		at := event.at - baseTime
 		if index == 0 && event.initial && event.at == 0 {
 			at = 30 * time.Second
 		}
-		if index > 0 && at <= timelineAt(parsed.timeline[index-1], index-1, baseTime) {
-			return nil, lineError(parsed.source, event.line, "timeline entries must be strictly increasing")
+		if index > 0 && at <= previousAt {
+			return lineError(parsed.source, event.line, "timeline entries must be strictly increasing")
 		}
-		if allOff[event.name] {
+		previousAt = at
+		if _, off := allOff[event.name]; off {
 			if index == 0 && firstEvent.initial {
 				continue
 			}
@@ -126,19 +170,54 @@ func build(parsed *sequence, inputPath string) (*spsq.Builder, error) {
 		}
 		preset := presets[event.name]
 		if preset == nil {
-			return nil, lineError(parsed.source, event.line, fmt.Sprintf("NameDef %q has no convertible voices", event.name))
+			return lineError(parsed.source, event.line, fmt.Sprintf("NameDef %q has no convertible voices", event.name))
 		}
 		builder.PresetAt(at, preset).Steady()
 	}
-	return builder, nil
+	return nil
 }
 
-func timelineAt(event timelineEvent, index int, baseTime time.Duration) time.Duration {
-	at := event.at - baseTime
-	if index == 0 && event.initial && event.at == 0 {
-		return 30 * time.Second
+func currentRelativeMusicPath(value string) (string, error) {
+	if strings.Contains(value, "://") {
+		return "", fmt.Errorf("music source must be a local path")
 	}
-	return at
+	if strings.Contains(value, "\\") {
+		return "", fmt.Errorf("music source must use '/' path separators")
+	}
+	if hasParentTraversal(value) {
+		return "", fmt.Errorf("music source must not contain parent directory traversal")
+	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("get current directory: %w", err)
+	}
+	absolutePath, err := filepath.Abs(value)
+	if err != nil {
+		return "", fmt.Errorf("resolve music source %q: %w", value, err)
+	}
+	relativePath, err := filepath.Rel(cwd, absolutePath)
+	if err != nil {
+		return "", fmt.Errorf("relativize music source %q: %w", value, err)
+	}
+	if relativePath == ".." || strings.HasPrefix(relativePath, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("music source must be inside the current directory")
+	}
+
+	basePath := strings.TrimSuffix(relativePath, filepath.Ext(relativePath))
+	if basePath == "." || basePath == "" {
+		return "", fmt.Errorf("music source must name a file")
+	}
+	return filepath.ToSlash(basePath), nil
+}
+
+func hasParentTraversal(path string) bool {
+	for _, part := range strings.Split(path, "/") {
+		if part == ".." {
+			return true
+		}
+	}
+	return false
 }
 
 func convertedNames(definitions []nameDef) map[string]string {

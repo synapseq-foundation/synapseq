@@ -55,7 +55,7 @@ func TestBuilderLoadPreservesOrder(t *testing.T) {
 		"@volume 80",
 		"@ambiance rain rain",
 		"@ambiance wind wind",
-		"@music meditation meditation",
+		"@music meditation",
 		"",
 		"# Presets",
 		"alpha",

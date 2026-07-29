@@ -22,7 +22,6 @@ type voice struct {
 	carrier   float64
 	beat      float64
 	amplitude float64
-	width     float64
 }
 
 type nameDef struct {
@@ -42,6 +41,7 @@ type timelineEvent struct {
 type sequence struct {
 	source      string
 	musicPath   string
+	musicLine   int
 	definitions []nameDef
 	timeline    []timelineEvent
 }
