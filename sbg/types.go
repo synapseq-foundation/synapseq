@@ -6,6 +6,8 @@ package sbg
 
 import "time"
 
+const defaultSampleRate = 44100
+
 type voiceKind int
 
 const (
@@ -40,6 +42,7 @@ type timelineEvent struct {
 
 type sequence struct {
 	source      string
+	sampleRate  int
 	musicPath   string
 	musicLine   int
 	definitions []nameDef

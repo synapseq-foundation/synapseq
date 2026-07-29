@@ -7,6 +7,7 @@ package sbg
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -21,6 +22,23 @@ func parseMusicOption(fields []string) (string, bool, error) {
 		return fields[index+1], true, nil
 	}
 	return "", false, nil
+}
+
+func parseSampleRateOption(fields []string) (int, bool, error) {
+	for index, field := range fields {
+		if field != "-r" {
+			continue
+		}
+		if index+1 >= len(fields) {
+			return 0, true, errors.New("-r requires a sample rate")
+		}
+		sampleRate, err := strconv.Atoi(fields[index+1])
+		if err != nil {
+			return 0, true, errors.New("-r requires an integer sample rate")
+		}
+		return sampleRate, true, nil
+	}
+	return 0, false, nil
 }
 
 func validName(value string) bool {

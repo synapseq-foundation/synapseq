@@ -63,7 +63,7 @@ func (c *Converter) load(source string, reader io.Reader) (*synapseq.LoadedConte
 }
 
 func build(parsed *sequence) (*spsq.Builder, error) {
-	builder := spsq.New()
+	builder := spsq.New().SampleRate(parsed.sampleRate)
 	var musicName string
 	if parsed.musicPath != "" {
 		musicPath, err := currentRelativeMusicPath(parsed.musicPath)
