@@ -5,7 +5,9 @@
 package main
 
 import (
+	"context"
 	"os"
+	"os/signal"
 
 	"github.com/synapseq-foundation/synapseq/v4/internal/cli"
 )
@@ -53,7 +55,9 @@ func dispatchSpecialCommand(opts *cli.CLIOptions, args []string) (bool, error) {
 	case cli.SpecialCommandSBG:
 		return true, runSBGConversion(args, opts, os.Stderr, os.Stdout)
 	case cli.SpecialCommandAI:
-		return true, runAI(opts.AI, args, opts, os.Stderr, os.Stdout)
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+		defer stop()
+		return true, runAI(ctx, opts.AI, args, opts, os.Stderr, os.Stdout)
 	default:
 		return false, nil
 	}

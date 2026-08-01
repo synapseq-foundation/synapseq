@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/signal"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -22,14 +21,7 @@ import (
 
 var promptDurationPattern = regexp.MustCompile(`(?i)\b(\d+)\s*(hours?|hrs?|h|minutes?|mins?|m)\b`)
 
-func runAI(prompt string, args []string, opts *cli.CLIOptions, statusWriter, outputWriter io.Writer) error {
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer stop()
-
-	return runAIContext(ctx, prompt, args, opts, statusWriter, outputWriter)
-}
-
-func runAIContext(ctx context.Context, prompt string, args []string, opts *cli.CLIOptions, statusWriter, outputWriter io.Writer) error {
+func runAI(ctx context.Context, prompt string, args []string, opts *cli.CLIOptions, statusWriter, outputWriter io.Writer) error {
 	if opts == nil {
 		return fmt.Errorf("CLI options are nil")
 	}
@@ -64,7 +56,7 @@ func runAIContext(ctx context.Context, prompt string, args []string, opts *cli.C
 
 	progress := startAIProgress(statusWriter, opts.Quiet)
 
-	loaded, err := synapseq.NewAppContext().AIContext(ctx, prompt, &synapseq.AIOptions{
+	loaded, err := synapseq.NewAppContext().AI(ctx, prompt, &synapseq.AIOptions{
 		Model:       opts.AIModel,
 		BaseURL:     opts.AIBaseURL,
 		Temperature: temperature,

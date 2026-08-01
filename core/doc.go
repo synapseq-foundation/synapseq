@@ -21,6 +21,7 @@ SynapSeq currently supports text input in .spsq format.
 	package main
 
 	import (
+	    "context"
 	    "log"
 	    "os"
 
@@ -97,7 +98,7 @@ time out after five minutes by default; configure SYNAPSEQ_AI_TIMEOUT or
 AIOptions.Timeout with a positive time.Duration.
 
 	ctx := synapseq.NewAppContext()
-	loaded, err := ctx.AI("Generate a 10 minute relaxation sequence", &synapseq.AIOptions{
+	loaded, err := ctx.AI(context.Background(), "Generate a 10 minute relaxation sequence", &synapseq.AIOptions{
 	    Model:   "local-model",
 	    BaseURL: "http://localhost:1234",
 	})
@@ -109,9 +110,10 @@ AIOptions.Timeout with a positive time.Duration.
 AI returns an error when the API request fails, the request cannot be
 understood, or the model response is not valid SPSQ. No output file is created
 by this API; callers can inspect RawContent or render the returned
-LoadedContext as usual. AIContext accepts a context.Context for cancellation
-and automatically asks the model to repair invalid SPSQ responses up to two
-times.
+LoadedContext as usual. AI accepts a context.Context for cancellation and
+automatically asks the model to repair invalid SPSQ responses up to two times.
+English prompts that use supported mental-state or profile terms also
+receive semantic validation of beat ranges, carriers, and timeline progression.
 
 # Sequence Inspection
 

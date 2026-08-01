@@ -197,6 +197,8 @@ synapseq -ai "Generate a 15 minute focus sequence"
 
 SynapSeq validates every response and automatically asks the model to repair invalid SPSQ up to two times. Press `Ctrl+C` to cancel a pending request.
 
+For English prompts containing `delta`, `theta`, `alpha`, `beta`, `gamma`, `sleep`, `meditation`, `focus`, or `relaxation`, SynapSeq also validates the generated beat ranges, audible carriers, and required profile progression before writing the sequence. These checks are sound-design constraints and do not promise a listener outcome.
+
 To generate SPSQ through the public Go API, see [AI Generation From Go](#ai-generation-from-go).
 
 ## Use SPSQ With AI Agents
@@ -318,6 +320,7 @@ The public Go API can construct the same `.spsq` representation in code and pass
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 	"time"
@@ -327,7 +330,7 @@ import (
 
 func main() {
 	ctx := synapseq.NewAppContext()
-	loaded, err := ctx.AI("Generate a 10 minute relaxation sequence", &synapseq.AIOptions{
+	loaded, err := ctx.AI(context.Background(), "Generate a 10 minute relaxation sequence", &synapseq.AIOptions{
 		Model:   "local-model",
 		BaseURL: "http://localhost:1234",
 		Timeout: durationPtr(90 * time.Second),
@@ -346,7 +349,7 @@ func durationPtr(value time.Duration) *time.Duration {
 }
 ```
 
-Omit `AIOptions` to use `SYNAPSEQ_AI_MODEL`, `SYNAPSEQ_AI_BASE_URL`, `SYNAPSEQ_AI_TIMEOUT`, and the default OpenAI configuration. Use `AppContext.AIContext` with your own `context.Context` when the calling program needs cancellation. The returned `LoadedContext` is already validated and can also be rendered directly with `loaded.WAV`.
+Omit `AIOptions` to use `SYNAPSEQ_AI_MODEL`, `SYNAPSEQ_AI_BASE_URL`, `SYNAPSEQ_AI_TIMEOUT`, and the default OpenAI configuration. Pass your own `context.Context` to `AppContext.AI` when the calling program needs cancellation. The returned `LoadedContext` is already validated and can also be rendered directly with `loaded.WAV`.
 
 ### SPSQ Builder
 

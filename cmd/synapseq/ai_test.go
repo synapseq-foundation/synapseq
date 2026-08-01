@@ -6,6 +6,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -29,7 +30,8 @@ func TestRunAIWritesValidatedSequence(ts *testing.T) {
 	outputPath := filepath.Join(ts.TempDir(), "relax.spsq")
 	var status bytes.Buffer
 	err := runAI(
-		"Generate a 10 minutes of relaxation sequence",
+		context.Background(),
+		"Generate a 10 minute session",
 		[]string{outputPath},
 		&cli.CLIOptions{AIBaseURL: server.URL},
 		&status,
@@ -66,7 +68,7 @@ func TestRunAIStreamsOnlySPSQ(ts *testing.T) {
 	ts.Setenv("SYNAPSEQ_AI_API_KEY", "test-key")
 
 	var output bytes.Buffer
-	err := runAI("Generate focus", []string{"-"}, &cli.CLIOptions{AIBaseURL: server.URL}, &bytes.Buffer{}, &output)
+	err := runAI(context.Background(), "Generate a session", []string{"-"}, &cli.CLIOptions{AIBaseURL: server.URL}, &bytes.Buffer{}, &output)
 	if err != nil {
 		ts.Fatalf("runAI error: %v", err)
 	}
@@ -81,14 +83,14 @@ func TestRunAIRejectsExistingOutputBeforeRequest(ts *testing.T) {
 		ts.Fatalf("create output: %v", err)
 	}
 
-	err := runAI("Generate focus", []string{outputPath}, &cli.CLIOptions{}, &bytes.Buffer{}, &bytes.Buffer{})
+	err := runAI(context.Background(), "Generate focus", []string{outputPath}, &cli.CLIOptions{}, &bytes.Buffer{}, &bytes.Buffer{})
 	if err == nil || !strings.Contains(err.Error(), "already exists") {
 		ts.Fatalf("unexpected error: %v", err)
 	}
 }
 
 func TestRunAIRejectsEmptyPrompt(ts *testing.T) {
-	err := runAI("", []string{"-"}, &cli.CLIOptions{}, &bytes.Buffer{}, &bytes.Buffer{})
+	err := runAI(context.Background(), "", []string{"-"}, &cli.CLIOptions{}, &bytes.Buffer{}, &bytes.Buffer{})
 	if err == nil || !strings.Contains(err.Error(), "prompt cannot be empty") {
 		ts.Fatalf("unexpected error: %v", err)
 	}
