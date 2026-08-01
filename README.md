@@ -175,6 +175,8 @@ synapseq -ai "Generate a 15 minute focus sequence"
 
 `SYNAPSEQ_AI_MODEL` and `SYNAPSEQ_AI_BASE_URL` are optional. The default model is `gpt-4.1-mini` and the default API host is OpenAI. Use `-ai-model MODEL` and `-ai-base-url URL` to override their environment-variable values for one command.
 
+To generate SPSQ through the public Go API, see [AI Generation From Go](#ai-generation-from-go).
+
 ## Use SPSQ With AI Agents
 
 SynapSeq publishes three complementary [skills](https://skills.sh/synapseq-foundation/synapseq) for AI coding agents:
@@ -285,6 +287,42 @@ synapseq -get calm-state calm-state.mp3
 ## Programmatic API
 
 The public Go API can construct the same `.spsq` representation in code and pass it through the regular loading, validation, and rendering pipeline:
+
+### AI Generation From Go
+
+`AppContext.AI` generates and validates SPSQ through an OpenAI-compatible API. Set `SYNAPSEQ_AI_API_KEY` before calling it; `AIOptions` can select a local model or API host:
+
+```go
+package main
+
+import (
+	"log"
+	"os"
+
+	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
+)
+
+func main() {
+	ctx := synapseq.NewAppContext()
+	loaded, err := ctx.AI("Generate a 10 minute relaxation sequence", &synapseq.AIOptions{
+		Model:   "local-model",
+		BaseURL: "http://localhost:1234",
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := os.WriteFile("relaxation.spsq", loaded.RawContent(), 0o644); err != nil {
+		log.Fatal(err)
+	}
+}
+```
+
+Omit `AIOptions` to use `SYNAPSEQ_AI_MODEL`, `SYNAPSEQ_AI_BASE_URL`, and the default OpenAI configuration. The returned `LoadedContext` is already validated and can also be rendered directly with `loaded.WAV`.
+
+### SPSQ Builder
+
+Use the builder API to construct an SPSQ sequence programmatically:
 
 ```go
 package main
