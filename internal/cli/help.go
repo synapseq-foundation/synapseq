@@ -35,9 +35,7 @@ func Help() {
 	writeOutputSection(writer)
 	writeOptionsSection(writer, "Most common options:", commonHelpOptions())
 	writeAISection(writer)
-	writeMutedLeadSection(writer, "Remote:", "Run -sync first to initialize the local Remote index.")
-	writeOptionsList(writer, remoteHelpOptions())
-	fmt.Fprintln(writer)
+	writeRemoteSection(writer)
 	writeOptionsSection(writer, "Advanced:", advancedHelpOptions())
 
 	if runtime.GOOS == "windows" {
@@ -125,16 +123,22 @@ func writeIndentedOptionsList(writer io.Writer, indent string, options []helpOpt
 func writeAISection(writer io.Writer) {
 	fmt.Fprintf(writer, "%s\n", Section("AI:"))
 	fmt.Fprintf(writer, "  %s\n\n", Muted("Requires SYNAPSEQ_AI_API_KEY."))
-	writeAISubsection(writer, "Command:", aiCommandHelpOptions())
-	writeAISubsection(writer, "Options:", aiConfigurationHelpOptions())
-	writeAISubsection(writer, "Environment:", aiEnvironmentHelpOptions())
+	writeHelpSubsection(writer, "Command:", aiCommandHelpOptions())
+	writeHelpSubsection(writer, "Options:", aiConfigurationHelpOptions())
+	writeHelpSubsection(writer, "Environment:", aiEnvironmentHelpOptions())
 	fmt.Fprintf(writer, "  %s %s\n\n", Label("Priority:"), Muted("-ai-* option > SYNAPSEQ_AI_* environment variable > CLI default"))
 }
 
-func writeAISubsection(writer io.Writer, label string, options []helpOption) {
+func writeHelpSubsection(writer io.Writer, label string, options []helpOption) {
 	fmt.Fprintf(writer, "  %s\n", Label(label))
 	writeIndentedOptionsList(writer, "    ", options)
 	fmt.Fprintln(writer)
+}
+
+func writeRemoteSection(writer io.Writer) {
+	writeMutedLeadSection(writer, "Remote:", "Run -sync first to initialize the local Remote index.")
+	writeHelpSubsection(writer, "Commands:", remoteHelpOptions())
+	writeHelpSubsection(writer, "Environment:", remoteEnvironmentHelpOptions())
 }
 
 func quickStartExamples() []helpExample {
@@ -192,12 +196,19 @@ func aiEnvironmentHelpOptions() []helpOption {
 func remoteHelpOptions() []helpOption {
 	return []helpOption{
 		{FlagText: "-sync", ColumnWidth: 28, Description: "Sync the local Remote index"},
+		{FlagText: "-sync-url URL", ColumnWidth: 28, Description: "Sync a custom Remote base URL"},
 		{FlagText: "-list", ColumnWidth: 28, Description: "List available remote sequences"},
 		{FlagText: "-search WORD", ColumnWidth: 28, Description: "Search remote sequences"},
 		{FlagText: "-info NAME", ColumnWidth: 28, Description: "Show information about a remote sequence"},
 		{FlagText: "-download NAME [DIR]", ColumnWidth: 28, Description: "Download a remote sequence"},
 		{FlagText: "-get NAME [OUTPUT]", ColumnWidth: 28, Description: "Download and generate in one step"},
 		{FlagText: "-clean", ColumnWidth: 28, Description: "Clean up local Remote cache"},
+	}
+}
+
+func remoteEnvironmentHelpOptions() []helpOption {
+	return []helpOption{
+		{FlagText: "SYNAPSEQ_REMOTE_BASE_URL", ColumnWidth: 28, Description: "Custom Remote base URL"},
 	}
 }
 

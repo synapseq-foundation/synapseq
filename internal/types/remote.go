@@ -16,6 +16,7 @@ type RemoteEntry struct {
 	Description     string `json:"description"`
 	DurationMinutes int    `json:"durationMinutes"`
 	Sequence        string `json:"sequence"`
+	Artwork         string `json:"artwork"`
 	Category        string `json:"category"`
 	CreatedAt       string `json:"createdAt"`
 }

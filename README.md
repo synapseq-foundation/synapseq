@@ -256,6 +256,19 @@ listing, searching, downloading, or generating a remote sequence:
 synapseq -sync
 ```
 
+To sync a self-hosted catalog, pass its base URL. Custom catalogs serve their
+index at `/index.json`, unlike the official catalog's `/free/index.json`:
+
+```bash
+synapseq -sync-url https://my-sequences.com
+```
+
+Set `SYNAPSEQ_REMOTE_BASE_URL` to use that catalog with `-list`, `-search`,
+`-info`, `-download`, and `-get` in later commands. Custom URLs must be a root
+HTTP(S) URL, without a path, credentials, query, or fragment. SynapSeq stores
+each custom catalog in its own cache directory and validates the catalog JSON
+and every downloaded SPSQ file before use.
+
 List all available sequences:
 
 ```bash

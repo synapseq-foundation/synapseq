@@ -119,6 +119,12 @@ func TestParseFlags(ts *testing.T) {
 			expectError:  false,
 		},
 		{
+			args:         []string{"cmd", "-sync-url", "https://my-sequences.com"},
+			expected:     &CLIOptions{RemoteSyncURL: "https://my-sequences.com"},
+			expectedArgs: []string{},
+			expectError:  false,
+		},
+		{
 			args:         []string{"cmd", "-clean"},
 			expected:     &CLIOptions{RemoteClean: true},
 			expectedArgs: []string{},
@@ -250,6 +256,9 @@ func TestParseFlags(ts *testing.T) {
 		}
 		if opts.RemoteSync != test.expected.RemoteSync {
 			ts.Errorf("For args %v, RemoteSync: expected %v but got %v", test.args, test.expected.RemoteSync, opts.RemoteSync)
+		}
+		if opts.RemoteSyncURL != test.expected.RemoteSyncURL {
+			ts.Errorf("For args %v, RemoteSyncURL: expected %q but got %q", test.args, test.expected.RemoteSyncURL, opts.RemoteSyncURL)
 		}
 		if opts.RemoteClean != test.expected.RemoteClean {
 			ts.Errorf("For args %v, RemoteClean: expected %v but got %v", test.args, test.expected.RemoteClean, opts.RemoteClean)

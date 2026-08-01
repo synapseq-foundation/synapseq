@@ -54,6 +54,8 @@ type CLIOptions struct {
 	Play bool
 	// Remote sync index of available sequences
 	RemoteSync bool
+	// Remote sync index from a custom base URL
+	RemoteSyncURL string
 	// Remote clean up local cache
 	RemoteClean bool
 	// Remote list available sequences

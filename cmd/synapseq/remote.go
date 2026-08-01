@@ -21,11 +21,22 @@ import (
 const remoteIndexMissingError = "remote index not found. Please run 'synapseq -sync' to fetch the latest Remote index"
 
 // remoteRunSync updates the local Remote index.
-func remoteRunSync(quiet bool) error {
-	if err := remote.RemoteSync(); err != nil {
+func remoteRunSync(baseURL string, quiet bool) error {
+	var err error
+	if baseURL == "" {
+		err = remote.RemoteSync()
+	} else {
+		err = remote.RemoteSyncURL(baseURL)
+	}
+	if err != nil {
 		return fmt.Errorf("failed to sync remote. Error\n  %v", err)
 	}
-	index, err := loadRemoteIndex()
+	var index *t.RemoteIndex
+	if baseURL == "" {
+		index, err = loadRemoteIndex()
+	} else {
+		index, err = remote.GetIndexURL(baseURL)
+	}
 	if err != nil {
 		return fmt.Errorf("failed to get remote index. Error\n  %v", err)
 	}
@@ -179,6 +190,9 @@ func remoteRunInfo(sequenceID string) error {
 	entry := findRemoteEntryByID(index, sequenceID)
 	if entry == nil {
 		return fmt.Errorf("sequence not found: %s", sequenceID)
+	}
+	if _, err := remote.RemoteDownload(entry); err != nil {
+		return fmt.Errorf("failed to download and validate sequence from remote. Error\n  %v", err)
 	}
 
 	printRemoteInfoSummary(entry)
