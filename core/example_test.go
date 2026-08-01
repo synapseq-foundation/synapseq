@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
 )
@@ -67,8 +68,10 @@ func ExampleAppContext_AI() {
 
 	ctx := synapseq.NewAppContext()
 	loaded, err := ctx.AI(context.Background(), "Generate a 10 minute relaxation sequence", &synapseq.AIOptions{
-		Model:   "local-model",
-		BaseURL: "http://localhost:1234",
+		Model:       "local-model",
+		BaseURL:     "http://localhost:1234",
+		Temperature: 1,
+		Timeout:     time.Minute,
 	})
 	if err != nil {
 		log.Fatal(err)

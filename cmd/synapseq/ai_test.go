@@ -103,30 +103,36 @@ func TestAIOutputPathUsesIntentAndDuration(ts *testing.T) {
 }
 
 func TestCLIAITemperature(ts *testing.T) {
-	temperature, err := cliAITemperature("0.2")
+	temperature, err := cliAITemperature("0.2", "")
 	if err != nil {
 		ts.Fatalf("cliAITemperature error: %v", err)
 	}
-	if temperature == nil || *temperature != 0.2 {
-		ts.Fatalf("unexpected temperature: %#v", temperature)
+	if temperature != 0.2 {
+		ts.Fatalf("unexpected temperature: %v", temperature)
 	}
 
-	if _, err := cliAITemperature("not-a-number"); err == nil {
+	if _, err := cliAITemperature("not-a-number", ""); err == nil {
 		ts.Fatal("expected invalid temperature error")
+	}
+	if temperature, err := cliAITemperature("", ""); err != nil || temperature != defaultAITemperature {
+		ts.Fatalf("expected default temperature, got %v (%v)", temperature, err)
 	}
 }
 
 func TestCLIAITimeout(ts *testing.T) {
-	timeout, err := cliAITimeout("90s")
+	timeout, err := cliAITimeout("90s", "")
 	if err != nil {
 		ts.Fatalf("cliAITimeout error: %v", err)
 	}
-	if timeout == nil || *timeout != 90*time.Second {
-		ts.Fatalf("unexpected timeout: %#v", timeout)
+	if timeout != 90*time.Second {
+		ts.Fatalf("unexpected timeout: %s", timeout)
 	}
 
-	if _, err := cliAITimeout("not-a-duration"); err == nil {
+	if _, err := cliAITimeout("not-a-duration", ""); err == nil {
 		ts.Fatal("expected invalid timeout error")
+	}
+	if timeout, err := cliAITimeout("", ""); err != nil || timeout != defaultAITimeout {
+		ts.Fatalf("expected default timeout, got %s (%v)", timeout, err)
 	}
 }
 
