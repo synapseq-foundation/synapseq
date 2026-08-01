@@ -58,6 +58,25 @@ alpha
 	// Output: Sequence content loaded successfully
 }
 
+func ExampleAppContext_AI() {
+	// SYNAPSEQ_AI_API_KEY is required by AppContext.AI.
+	if os.Getenv("SYNAPSEQ_AI_API_KEY") == "" {
+		return
+	}
+
+	ctx := synapseq.NewAppContext()
+	loaded, err := ctx.AI("Generate a 10 minute relaxation sequence", &synapseq.AIOptions{
+		Model:   "local-model",
+		BaseURL: "http://localhost:1234",
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// AI validates the response before returning it.
+	fmt.Print(string(loaded.RawContent()))
+}
+
 func ExampleLoadedContext_WAV() {
 	// Create a new application context
 	ctx := synapseq.NewAppContext()

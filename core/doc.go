@@ -84,6 +84,29 @@ Output methods:
   - loaded.Stream(writer) writes raw PCM to an io.Writer
   - loaded.JSON() returns JSON dump bytes
 
+# AI Generation
+
+Use AppContext.AI to generate and validate an SPSQ sequence with an
+OpenAI-compatible chat completion API. Set SYNAPSEQ_AI_API_KEY before calling
+AI. Model and API host default to gpt-4.1-mini and the OpenAI API; configure a
+local or alternate provider through AIOptions or the SYNAPSEQ_AI_MODEL and
+SYNAPSEQ_AI_BASE_URL environment variables.
+
+	ctx := synapseq.NewAppContext()
+	loaded, err := ctx.AI("Generate a 10 minute relaxation sequence", &synapseq.AIOptions{
+	    Model:   "local-model",
+	    BaseURL: "http://localhost:1234",
+	})
+	if err != nil {
+	    log.Fatal(err)
+	}
+	content := loaded.RawContent()
+
+AI returns an error when the API request fails, the request cannot be
+understood, or the model response is not valid SPSQ. No output file is created
+by this API; callers can inspect RawContent or render the returned
+LoadedContext as usual.
+
 # Sequence Inspection
 
 Use Duration to retrieve the total duration of the loaded sequence as a
