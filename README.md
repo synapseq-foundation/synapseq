@@ -193,7 +193,7 @@ set SYNAPSEQ_AI_MODEL=gpt-4.1-mini
 synapseq -ai "Generate a 15 minute focus sequence"
 ```
 
-`SYNAPSEQ_AI_MODEL`, `SYNAPSEQ_AI_BASE_URL`, `SYNAPSEQ_AI_TEMPERATURE`, and `SYNAPSEQ_AI_TIMEOUT` are optional. The default model is `gpt-4.1-mini`, the default API host is OpenAI, and requests time out after five minutes. When temperature is omitted, SynapSeq lets the selected model use its default; this is required by models that do not accept a custom temperature. Use `-ai-model MODEL`, `-ai-base-url URL`, `-ai-temperature VALUE`, and `-ai-timeout DURATION` to override their environment-variable values for one command.
+`SYNAPSEQ_AI_MODEL`, `SYNAPSEQ_AI_BASE_URL`, `SYNAPSEQ_AI_TEMPERATURE`, and `SYNAPSEQ_AI_TIMEOUT` are optional. The default model is `gpt-4.1-mini`, the default API host is OpenAI, CLI temperature is `1`, and requests time out after five minutes. Use `-ai-model MODEL`, `-ai-base-url URL`, `-ai-temperature VALUE`, and `-ai-timeout DURATION` to override their environment-variable values for one command.
 
 SynapSeq validates every response and automatically asks the model to repair invalid SPSQ up to two times. Press `Ctrl+C` to cancel a pending request.
 
@@ -333,7 +333,8 @@ func main() {
 	loaded, err := ctx.AI(context.Background(), "Generate a 10 minute relaxation sequence", &synapseq.AIOptions{
 		Model:   "local-model",
 		BaseURL: "http://localhost:1234",
-		Timeout: durationPtr(90 * time.Second),
+		Temperature: 1,
+		Timeout: 90 * time.Second,
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -343,13 +344,9 @@ func main() {
 		log.Fatal(err)
 	}
 }
-
-func durationPtr(value time.Duration) *time.Duration {
-	return &value
-}
 ```
 
-Omit `AIOptions` to use `SYNAPSEQ_AI_MODEL`, `SYNAPSEQ_AI_BASE_URL`, `SYNAPSEQ_AI_TIMEOUT`, and the default OpenAI configuration. Pass your own `context.Context` to `AppContext.AI` when the calling program needs cancellation. The returned `LoadedContext` is already validated and can also be rendered directly with `loaded.WAV`.
+Set `AIOptions.Temperature` and `AIOptions.Timeout` for the calling application; `SYNAPSEQ_AI_TEMPERATURE` and `SYNAPSEQ_AI_TIMEOUT` are resolved only by the CLI. Omit `Model` or `BaseURL` to use `SYNAPSEQ_AI_MODEL`, `SYNAPSEQ_AI_BASE_URL`, and the default OpenAI configuration. Pass your own `context.Context` to `AppContext.AI` when the calling program needs cancellation. The returned `LoadedContext` is already validated and can also be rendered directly with `loaded.WAV`.
 
 ### SPSQ Builder
 

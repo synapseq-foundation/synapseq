@@ -22,7 +22,7 @@ type Config struct {
 	APIKey      string
 	BaseURL     string
 	Model       string
-	Temperature *float64
+	Temperature float64
 }
 
 type Client struct {
@@ -33,7 +33,7 @@ type Client struct {
 type chatCompletionRequest struct {
 	Model       string    `json:"model"`
 	Messages    []message `json:"messages"`
-	Temperature *float64  `json:"temperature,omitempty"`
+	Temperature float64   `json:"temperature"`
 }
 
 type message struct {

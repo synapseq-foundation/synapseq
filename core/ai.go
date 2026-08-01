@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"math"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -19,7 +18,6 @@ import (
 
 const (
 	defaultAIModel   = "gpt-4.1-mini"
-	defaultAITimeout = 5 * time.Minute
 	aiRepairAttempts = 2
 )
 
@@ -34,12 +32,14 @@ func (ac *AppContext) AI(ctx context.Context, prompt string, options *AIOptions)
 	if ctx == nil {
 		return nil, fmt.Errorf("AI context is nil")
 	}
+	if options == nil {
+		return nil, fmt.Errorf("AI options are nil")
+	}
 
-	temperature, err := aiTemperature(options)
-	if err != nil {
+	if err := validateAITemperature(options.Temperature); err != nil {
 		return nil, err
 	}
-	timeout, err := aiTimeout(options)
+	timeout, err := validateAITimeout(options.Timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func (ac *AppContext) AI(ctx context.Context, prompt string, options *AIOptions)
 		APIKey:      os.Getenv("SYNAPSEQ_AI_API_KEY"),
 		BaseURL:     aiBaseURL(options),
 		Model:       aiModel(options),
-		Temperature: temperature,
+		Temperature: options.Temperature,
 	})
 	if err != nil {
 		return nil, err
@@ -101,48 +101,12 @@ func aiBaseURL(options *AIOptions) string {
 	return os.Getenv("SYNAPSEQ_AI_BASE_URL")
 }
 
-func aiTemperature(options *AIOptions) (*float64, error) {
-	if options != nil && options.Temperature != nil {
-		return options.Temperature, validateAITemperature(*options.Temperature)
-	}
-
-	value := strings.TrimSpace(os.Getenv("SYNAPSEQ_AI_TEMPERATURE"))
-	if value == "" {
-		return nil, nil
-	}
-
-	temperature, err := strconv.ParseFloat(value, 64)
-	if err != nil {
-		return nil, fmt.Errorf("invalid SYNAPSEQ_AI_TEMPERATURE %q: %w", value, err)
-	}
-
-	return &temperature, validateAITemperature(temperature)
-}
-
 func validateAITemperature(temperature float64) error {
 	if math.IsNaN(temperature) || math.IsInf(temperature, 0) || temperature < 0 || temperature > 2 {
 		return fmt.Errorf("AI temperature must be between 0 and 2")
 	}
 
 	return nil
-}
-
-func aiTimeout(options *AIOptions) (time.Duration, error) {
-	if options != nil && options.Timeout != nil {
-		return validateAITimeout(*options.Timeout)
-	}
-
-	value := strings.TrimSpace(os.Getenv("SYNAPSEQ_AI_TIMEOUT"))
-	if value == "" {
-		return defaultAITimeout, nil
-	}
-
-	timeout, err := time.ParseDuration(value)
-	if err != nil {
-		return 0, fmt.Errorf("invalid SYNAPSEQ_AI_TIMEOUT %q: %w", value, err)
-	}
-
-	return validateAITimeout(timeout)
 }
 
 func validateAITimeout(timeout time.Duration) (time.Duration, error) {

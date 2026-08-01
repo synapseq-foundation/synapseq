@@ -21,14 +21,13 @@ type AppContext struct {
 
 // AIOptions configures an OpenAI-compatible model used to generate SPSQ text.
 // Empty Model and BaseURL values use SYNAPSEQ_AI_MODEL and SYNAPSEQ_AI_BASE_URL,
-// then SynapSeq defaults. A nil Temperature uses SYNAPSEQ_AI_TEMPERATURE or
-// omits temperature so the selected model can use its default. A nil Timeout
-// uses SYNAPSEQ_AI_TIMEOUT or the default timeout.
+// then SynapSeq defaults. Temperature must be between 0 and 2. Timeout must be
+// greater than zero.
 type AIOptions struct {
 	Model       string
 	BaseURL     string
-	Temperature *float64
-	Timeout     *time.Duration
+	Temperature float64
+	Timeout     time.Duration
 }
 
 // LoadedContext holds a loaded sequence and execution settings.

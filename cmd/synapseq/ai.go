@@ -21,6 +21,10 @@ import (
 
 var promptDurationPattern = regexp.MustCompile(`(?i)\b(\d+)\s*(hours?|hrs?|h|minutes?|mins?|m)\b`)
 
+const defaultAITimeout = 5 * time.Minute
+
+const defaultAITemperature = 1
+
 func runAI(ctx context.Context, prompt string, args []string, opts *cli.CLIOptions, statusWriter, outputWriter io.Writer) error {
 	if opts == nil {
 		return fmt.Errorf("CLI options are nil")
@@ -45,11 +49,11 @@ func runAI(ctx context.Context, prompt string, args []string, opts *cli.CLIOptio
 		}
 	}
 
-	temperature, err := cliAITemperature(opts.AITemperature)
+	temperature, err := cliAITemperature(opts.AITemperature, os.Getenv("SYNAPSEQ_AI_TEMPERATURE"))
 	if err != nil {
 		return err
 	}
-	timeout, err := cliAITimeout(opts.AITimeout)
+	timeout, err := cliAITimeout(opts.AITimeout, os.Getenv("SYNAPSEQ_AI_TIMEOUT"))
 	if err != nil {
 		return err
 	}
@@ -86,33 +90,53 @@ func runAI(ctx context.Context, prompt string, args []string, opts *cli.CLIOptio
 	return nil
 }
 
-func cliAITemperature(value string) (*float64, error) {
-	if strings.TrimSpace(value) == "" {
-		return nil, nil
+func cliAITemperature(value, environment string) (float64, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		value = strings.TrimSpace(environment)
+	}
+	if value == "" {
+		return defaultAITemperature, nil
 	}
 
 	temperature, err := strconv.ParseFloat(value, 64)
 	if err != nil {
-		return nil, fmt.Errorf("invalid -ai-temperature %q: %w", value, err)
+		return 0, fmt.Errorf("invalid AI temperature %q: %w", value, err)
 	}
 
-	return &temperature, nil
+	if err := validateCLIAITemperature(temperature); err != nil {
+		return 0, err
+	}
+
+	return temperature, nil
 }
 
-func cliAITimeout(value string) (*time.Duration, error) {
-	if strings.TrimSpace(value) == "" {
-		return nil, nil
+func validateCLIAITemperature(temperature float64) error {
+	if temperature < 0 || temperature > 2 {
+		return fmt.Errorf("AI temperature must be between 0 and 2")
+	}
+
+	return nil
+}
+
+func cliAITimeout(value, environment string) (time.Duration, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		value = strings.TrimSpace(environment)
+	}
+	if value == "" {
+		return defaultAITimeout, nil
 	}
 
 	timeout, err := time.ParseDuration(value)
 	if err != nil {
-		return nil, fmt.Errorf("invalid -ai-timeout %q: %w", value, err)
+		return 0, fmt.Errorf("invalid AI timeout %q: %w", value, err)
 	}
 	if timeout <= 0 {
-		return nil, fmt.Errorf("AI timeout must be greater than zero")
+		return 0, fmt.Errorf("AI timeout must be greater than zero")
 	}
 
-	return &timeout, nil
+	return timeout, nil
 }
 
 func aiOutputPath(prompt string) string {
