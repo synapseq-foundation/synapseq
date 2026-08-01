@@ -171,6 +171,7 @@ export SYNAPSEQ_AI_API_KEY="local-key"
 export SYNAPSEQ_AI_MODEL="google/gemma-4-e4b"
 export SYNAPSEQ_AI_BASE_URL="http://localhost:1234"
 export SYNAPSEQ_AI_TEMPERATURE="0.2"
+export SYNAPSEQ_AI_TIMEOUT="90s"
 synapseq -ai "Generate a 15 minute focus sequence"
 ```
 
@@ -192,7 +193,9 @@ set SYNAPSEQ_AI_MODEL=gpt-4.1-mini
 synapseq -ai "Generate a 15 minute focus sequence"
 ```
 
-`SYNAPSEQ_AI_MODEL`, `SYNAPSEQ_AI_BASE_URL`, and `SYNAPSEQ_AI_TEMPERATURE` are optional. The default model is `gpt-4.1-mini` and the default API host is OpenAI. When temperature is omitted, SynapSeq lets the selected model use its default; this is required by models that do not accept a custom temperature. Use `-ai-model MODEL`, `-ai-base-url URL`, and `-ai-temperature VALUE` to override their environment-variable values for one command.
+`SYNAPSEQ_AI_MODEL`, `SYNAPSEQ_AI_BASE_URL`, `SYNAPSEQ_AI_TEMPERATURE`, and `SYNAPSEQ_AI_TIMEOUT` are optional. The default model is `gpt-4.1-mini`, the default API host is OpenAI, and requests time out after five minutes. When temperature is omitted, SynapSeq lets the selected model use its default; this is required by models that do not accept a custom temperature. Use `-ai-model MODEL`, `-ai-base-url URL`, `-ai-temperature VALUE`, and `-ai-timeout DURATION` to override their environment-variable values for one command.
+
+SynapSeq validates every response and automatically asks the model to repair invalid SPSQ up to two times. Press `Ctrl+C` to cancel a pending request.
 
 To generate SPSQ through the public Go API, see [AI Generation From Go](#ai-generation-from-go).
 
@@ -309,7 +312,7 @@ The public Go API can construct the same `.spsq` representation in code and pass
 
 ### AI Generation From Go
 
-`AppContext.AI` generates and validates SPSQ through an OpenAI-compatible API. Set `SYNAPSEQ_AI_API_KEY` before calling it; `AIOptions` can select a local model or API host:
+`AppContext.AI` generates and validates SPSQ through an OpenAI-compatible API. Set `SYNAPSEQ_AI_API_KEY` before calling it; `AIOptions` can select a local model, API host, or timeout:
 
 ```go
 package main
@@ -317,6 +320,7 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
 )
@@ -326,6 +330,7 @@ func main() {
 	loaded, err := ctx.AI("Generate a 10 minute relaxation sequence", &synapseq.AIOptions{
 		Model:   "local-model",
 		BaseURL: "http://localhost:1234",
+		Timeout: durationPtr(90 * time.Second),
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -335,9 +340,13 @@ func main() {
 		log.Fatal(err)
 	}
 }
+
+func durationPtr(value time.Duration) *time.Duration {
+	return &value
+}
 ```
 
-Omit `AIOptions` to use `SYNAPSEQ_AI_MODEL`, `SYNAPSEQ_AI_BASE_URL`, and the default OpenAI configuration. The returned `LoadedContext` is already validated and can also be rendered directly with `loaded.WAV`.
+Omit `AIOptions` to use `SYNAPSEQ_AI_MODEL`, `SYNAPSEQ_AI_BASE_URL`, `SYNAPSEQ_AI_TIMEOUT`, and the default OpenAI configuration. Use `AppContext.AIContext` with your own `context.Context` when the calling program needs cancellation. The returned `LoadedContext` is already validated and can also be rendered directly with `loaded.WAV`.
 
 ### SPSQ Builder
 

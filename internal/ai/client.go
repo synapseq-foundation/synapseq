@@ -80,6 +80,21 @@ func (c *Client) Generate(ctx context.Context, prompt string) (string, error) {
 		return "", fmt.Errorf("AI prompt cannot be empty")
 	}
 
+	return c.generate(ctx, prompt)
+}
+
+func (c *Client) Repair(ctx context.Context, prompt, content string, validationErr error) (string, error) {
+	repairPrompt := fmt.Sprintf(
+		"Original request:\n%s\n\nGenerated SPSQ that failed validation:\n%s\n\nValidation error:\n%s\n\nReturn only corrected valid SPSQ source. Do not include Markdown, explanation, or any text outside SPSQ.",
+		prompt,
+		content,
+		validationErr,
+	)
+
+	return c.generate(ctx, repairPrompt)
+}
+
+func (c *Client) generate(ctx context.Context, prompt string) (string, error) {
 	body, err := json.Marshal(chatCompletionRequest{
 		Model: c.config.Model,
 		Messages: []message{

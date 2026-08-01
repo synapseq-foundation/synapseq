@@ -7,10 +7,12 @@ package ai
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestGenerateSendsOpenAICompatibleRequest(ts *testing.T) {
@@ -108,5 +110,24 @@ func TestNewRequiresAPIKey(ts *testing.T) {
 	_, err := New(Config{Model: "test"})
 	if err == nil || !strings.Contains(err.Error(), "SYNAPSEQ_AI_API_KEY") {
 		ts.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestGenerateHonorsContextCancellation(ts *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		time.Sleep(50 * time.Millisecond)
+	}))
+	defer server.Close()
+
+	client, err := New(Config{APIKey: "test-key", BaseURL: server.URL, Model: "local-model"})
+	if err != nil {
+		ts.Fatalf("New error: %v", err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	defer cancel()
+
+	_, err = client.Generate(ctx, "make a sequence")
+	if !errors.Is(err, context.DeadlineExceeded) {
+		ts.Fatalf("expected context deadline error, got %v", err)
 	}
 }

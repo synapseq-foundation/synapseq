@@ -5,13 +5,16 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
 	"github.com/synapseq-foundation/synapseq/v4/internal/cli"
@@ -20,6 +23,13 @@ import (
 var promptDurationPattern = regexp.MustCompile(`(?i)\b(\d+)\s*(hours?|hrs?|h|minutes?|mins?|m)\b`)
 
 func runAI(prompt string, args []string, opts *cli.CLIOptions, statusWriter, outputWriter io.Writer) error {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
+	return runAIContext(ctx, prompt, args, opts, statusWriter, outputWriter)
+}
+
+func runAIContext(ctx context.Context, prompt string, args []string, opts *cli.CLIOptions, statusWriter, outputWriter io.Writer) error {
 	if opts == nil {
 		return fmt.Errorf("CLI options are nil")
 	}
@@ -47,13 +57,18 @@ func runAI(prompt string, args []string, opts *cli.CLIOptions, statusWriter, out
 	if err != nil {
 		return err
 	}
+	timeout, err := cliAITimeout(opts.AITimeout)
+	if err != nil {
+		return err
+	}
 
 	progress := startAIProgress(statusWriter, opts.Quiet)
 
-	loaded, err := synapseq.NewAppContext().AI(prompt, &synapseq.AIOptions{
+	loaded, err := synapseq.NewAppContext().AIContext(ctx, prompt, &synapseq.AIOptions{
 		Model:       opts.AIModel,
 		BaseURL:     opts.AIBaseURL,
 		Temperature: temperature,
+		Timeout:     timeout,
 	})
 	progress.Stop()
 	if err != nil {
@@ -90,6 +105,22 @@ func cliAITemperature(value string) (*float64, error) {
 	}
 
 	return &temperature, nil
+}
+
+func cliAITimeout(value string) (*time.Duration, error) {
+	if strings.TrimSpace(value) == "" {
+		return nil, nil
+	}
+
+	timeout, err := time.ParseDuration(value)
+	if err != nil {
+		return nil, fmt.Errorf("invalid -ai-timeout %q: %w", value, err)
+	}
+	if timeout <= 0 {
+		return nil, fmt.Errorf("AI timeout must be greater than zero")
+	}
+
+	return &timeout, nil
 }
 
 func aiOutputPath(prompt string) string {

@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/synapseq-foundation/synapseq/v4/internal/cli"
 )
@@ -110,6 +111,20 @@ func TestCLIAITemperature(ts *testing.T) {
 
 	if _, err := cliAITemperature("not-a-number"); err == nil {
 		ts.Fatal("expected invalid temperature error")
+	}
+}
+
+func TestCLIAITimeout(ts *testing.T) {
+	timeout, err := cliAITimeout("90s")
+	if err != nil {
+		ts.Fatalf("cliAITimeout error: %v", err)
+	}
+	if timeout == nil || *timeout != 90*time.Second {
+		ts.Fatalf("unexpected timeout: %#v", timeout)
+	}
+
+	if _, err := cliAITimeout("not-a-duration"); err == nil {
+		ts.Fatal("expected invalid timeout error")
 	}
 }
 

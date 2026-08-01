@@ -153,10 +153,12 @@ func aiHelpOptions() []helpOption {
 		{FlagText: "-ai-model MODEL", ColumnWidth: 28, Description: "Overrides SYNAPSEQ_AI_MODEL"},
 		{FlagText: "-ai-base-url URL", ColumnWidth: 28, Description: "Overrides SYNAPSEQ_AI_BASE_URL"},
 		{FlagText: "-ai-temperature VALUE", ColumnWidth: 28, Description: "Overrides SYNAPSEQ_AI_TEMPERATURE"},
+		{FlagText: "-ai-timeout DURATION", ColumnWidth: 28, Description: "Overrides SYNAPSEQ_AI_TIMEOUT"},
 		{FlagText: "SYNAPSEQ_AI_API_KEY", ColumnWidth: 28, Description: "Required API key"},
 		{FlagText: "SYNAPSEQ_AI_MODEL", ColumnWidth: 28, Description: "Model name; defaults to gpt-4.1-mini"},
 		{FlagText: "SYNAPSEQ_AI_BASE_URL", ColumnWidth: 28, Description: "OpenAI-compatible API host"},
 		{FlagText: "SYNAPSEQ_AI_TEMPERATURE", ColumnWidth: 28, Description: "Optional sampling temperature from 0 to 2"},
+		{FlagText: "SYNAPSEQ_AI_TIMEOUT", ColumnWidth: 28, Description: "Request timeout; defaults to 5m"},
 	}
 }
 
