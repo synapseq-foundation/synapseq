@@ -174,6 +174,24 @@ export SYNAPSEQ_AI_TEMPERATURE="0.2"
 synapseq -ai "Generate a 15 minute focus sequence"
 ```
 
+### Windows Environment Variables
+
+In PowerShell, set the variables for the current session before invoking SynapSeq:
+
+```powershell
+$env:SYNAPSEQ_AI_API_KEY = "your-api-key"
+$env:SYNAPSEQ_AI_MODEL = "gpt-4.1-mini"
+synapseq -ai "Generate a 15 minute focus sequence"
+```
+
+In Command Prompt, use `set` instead:
+
+```bat
+set SYNAPSEQ_AI_API_KEY=your-api-key
+set SYNAPSEQ_AI_MODEL=gpt-4.1-mini
+synapseq -ai "Generate a 15 minute focus sequence"
+```
+
 `SYNAPSEQ_AI_MODEL`, `SYNAPSEQ_AI_BASE_URL`, and `SYNAPSEQ_AI_TEMPERATURE` are optional. The default model is `gpt-4.1-mini` and the default API host is OpenAI. When temperature is omitted, SynapSeq lets the selected model use its default; this is required by models that do not accept a custom temperature. Use `-ai-model MODEL`, `-ai-base-url URL`, and `-ai-temperature VALUE` to override their environment-variable values for one command.
 
 To generate SPSQ through the public Go API, see [AI Generation From Go](#ai-generation-from-go).
