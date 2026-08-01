@@ -92,7 +92,9 @@ AI. Model and API host default to gpt-4.1-mini and the OpenAI API; configure a
 local or alternate provider through AIOptions or the SYNAPSEQ_AI_MODEL and
 SYNAPSEQ_AI_BASE_URL environment variables. Set SYNAPSEQ_AI_TEMPERATURE to a
 value from 0 through 2 when the selected model supports custom sampling
-temperature; otherwise leave it unset to use the model default.
+temperature; otherwise leave it unset to use the model default. AI requests
+time out after five minutes by default; configure SYNAPSEQ_AI_TIMEOUT or
+AIOptions.Timeout with a positive time.Duration.
 
 	ctx := synapseq.NewAppContext()
 	loaded, err := ctx.AI("Generate a 10 minute relaxation sequence", &synapseq.AIOptions{
@@ -107,7 +109,9 @@ temperature; otherwise leave it unset to use the model default.
 AI returns an error when the API request fails, the request cannot be
 understood, or the model response is not valid SPSQ. No output file is created
 by this API; callers can inspect RawContent or render the returned
-LoadedContext as usual.
+LoadedContext as usual. AIContext accepts a context.Context for cancellation
+and automatically asks the model to repair invalid SPSQ responses up to two
+times.
 
 # Sequence Inspection
 

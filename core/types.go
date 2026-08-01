@@ -6,6 +6,7 @@ package core
 
 import (
 	"io"
+	"time"
 
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
@@ -21,11 +22,13 @@ type AppContext struct {
 // AIOptions configures an OpenAI-compatible model used to generate SPSQ text.
 // Empty Model and BaseURL values use SYNAPSEQ_AI_MODEL and SYNAPSEQ_AI_BASE_URL,
 // then SynapSeq defaults. A nil Temperature uses SYNAPSEQ_AI_TEMPERATURE or
-// omits temperature so the selected model can use its default.
+// omits temperature so the selected model can use its default. A nil Timeout
+// uses SYNAPSEQ_AI_TIMEOUT or the default timeout.
 type AIOptions struct {
 	Model       string
 	BaseURL     string
 	Temperature *float64
+	Timeout     *time.Duration
 }
 
 // LoadedContext holds a loaded sequence and execution settings.

@@ -94,6 +94,8 @@ type CLIOptions struct {
 	AIBaseURL string
 	// Sampling temperature for AI generation
 	AITemperature string
+	// Maximum duration for AI generation
+	AITimeout string
 }
 
 func init() {

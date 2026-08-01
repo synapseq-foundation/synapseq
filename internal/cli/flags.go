@@ -144,6 +144,7 @@ func flagBindings() []flagBinding {
 		{Name: "ai-model", Usage: "OpenAI-compatible model for -ai", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.AIModel }},
 		{Name: "ai-base-url", Usage: "OpenAI-compatible API host for -ai", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.AIBaseURL }},
 		{Name: "ai-temperature", Usage: "Sampling temperature for -ai", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.AITemperature }},
+		{Name: "ai-timeout", Usage: "Maximum duration for -ai", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.AITimeout }},
 		{Name: "dump", Usage: "Render JSON sequence data", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.Dump }},
 		{Name: "quiet", Usage: "Enable quiet mode", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.Quiet }},
 		{Name: "no-color", Usage: "Disable ANSI colors in CLI output", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.NoColor }},
