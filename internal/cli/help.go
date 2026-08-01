@@ -34,6 +34,9 @@ func Help() {
 	writeInputSection(writer)
 	writeOutputSection(writer)
 	writeOptionsSection(writer, "Most common options:", commonHelpOptions())
+	writeMutedLeadSection(writer, "AI:", "Requires SYNAPSEQ_AI_API_KEY. Model and API host can also be configured with environment variables.")
+	writeOptionsList(writer, aiHelpOptions())
+	fmt.Fprintln(writer)
 	writeMutedLeadSection(writer, "Remote:", "Run -sync first to initialize the local Remote index.")
 	writeOptionsList(writer, remoteHelpOptions())
 	fmt.Fprintln(writer)
@@ -123,6 +126,7 @@ func quickStartExamples() []helpExample {
 		{Label: "2. Play audio", CommandText: "synapseq -play session.spsq", Description: "Play the sequence directly with ffplay"},
 		{Label: "3. Export to MP3", CommandText: "synapseq session.spsq session.mp3", Description: "Export to MP3 with ffmpeg"},
 		{Label: "4. Convert SBaGen", CommandText: "synapseq -sbg session.sbg [session.spsq]", Description: "Convert an SBaGen sequence to SPSQ"},
+		{Label: "5. Generate SPSQ", CommandText: "synapseq -ai \"10 minutes of relaxation\" [session.spsq]", Description: "Generate an SPSQ sequence with an OpenAI-compatible model"},
 	}
 }
 
@@ -140,6 +144,17 @@ func commonHelpOptions() []helpOption {
 		{FlagText: "-completion-bash", ColumnWidth: 19, Description: "Generate bash completion script"},
 		{FlagText: "-completion-zsh", ColumnWidth: 19, Description: "Generate zsh completion script"},
 		{FlagText: "-help", ColumnWidth: 19, Description: "Show this help message"},
+	}
+}
+
+func aiHelpOptions() []helpOption {
+	return []helpOption{
+		{FlagText: "-ai PROMPT [OUTPUT]", ColumnWidth: 28, Description: "Generate an SPSQ sequence; use - for standard output"},
+		{FlagText: "-ai-model MODEL", ColumnWidth: 28, Description: "Overrides SYNAPSEQ_AI_MODEL"},
+		{FlagText: "-ai-base-url URL", ColumnWidth: 28, Description: "Overrides SYNAPSEQ_AI_BASE_URL"},
+		{FlagText: "SYNAPSEQ_AI_API_KEY", ColumnWidth: 28, Description: "Required API key"},
+		{FlagText: "SYNAPSEQ_AI_MODEL", ColumnWidth: 28, Description: "Model name; defaults to gpt-4.1-mini"},
+		{FlagText: "SYNAPSEQ_AI_BASE_URL", ColumnWidth: 28, Description: "OpenAI-compatible API host"},
 	}
 }
 

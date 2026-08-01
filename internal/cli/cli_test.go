@@ -295,6 +295,49 @@ func TestParseFlags(ts *testing.T) {
 	}
 }
 
+func TestParseFlagsAI(ts *testing.T) {
+	originalArgs := os.Args
+	defer func() { os.Args = originalArgs }()
+
+	os.Args = []string{
+		"cmd",
+		"-ai", "generate relaxation",
+		"-ai-model", "local-model",
+		"-ai-base-url", "http://localhost:1234",
+		"output.spsq",
+	}
+	opts, args, err := ParseFlags()
+	if err != nil {
+		ts.Fatalf("ParseFlags error: %v", err)
+	}
+	if opts.AI != "generate relaxation" || opts.AIModel != "local-model" || opts.AIBaseURL != "http://localhost:1234" {
+		ts.Fatalf("unexpected AI options: %#v", opts)
+	}
+	if len(args) != 1 || args[0] != "output.spsq" {
+		ts.Fatalf("unexpected positional arguments: %#v", args)
+	}
+	if command := ResolveSpecialCommand(opts, args); command.Kind != SpecialCommandAI {
+		ts.Fatalf("expected AI special command, got %q", command.Kind)
+	}
+}
+
+func TestParseFlagsEmptyAIPromptIsSpecialCommand(ts *testing.T) {
+	originalArgs := os.Args
+	defer func() { os.Args = originalArgs }()
+
+	os.Args = []string{"cmd", "-ai", "", "-"}
+	opts, args, err := ParseFlags()
+	if err != nil {
+		ts.Fatalf("ParseFlags error: %v", err)
+	}
+	if !opts.AIRequested {
+		ts.Fatal("expected -ai to be recorded")
+	}
+	if command := ResolveSpecialCommand(opts, args); command.Kind != SpecialCommandAI {
+		ts.Fatalf("expected AI special command, got %q", command.Kind)
+	}
+}
+
 func TestParseFlagsEdgeCases(ts *testing.T) {
 	originalArgs := os.Args
 	defer func() { os.Args = originalArgs }()

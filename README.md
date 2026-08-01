@@ -21,9 +21,11 @@
   &nbsp;&middot;&nbsp;
   <a href="#synapseq-remote">Remote</a>
   &nbsp;&middot;&nbsp;
-  <a href="#programmatic-api">Go API</a>
-  &nbsp;&middot;&nbsp;
-  <a href="#use-spsq-with-ai-agents">AI Agents</a>
+   <a href="#programmatic-api">Go API</a>
+   &nbsp;&middot;&nbsp;
+   <a href="#generate-spsq-with-ai">AI Generation</a>
+   &nbsp;&middot;&nbsp;
+   <a href="#use-spsq-with-ai-agents">AI Agents</a>
   &nbsp;&middot;&nbsp;
   <a href="docs/SYNTAX.md">Syntax</a>
 </p>
@@ -144,6 +146,35 @@ When the output is omitted, SynapSeq writes a `.spsq` file alongside the source 
 
 For a Go example using the `sbg` library, see [Programmatic API](#programmatic-api).
 
+## Generate SPSQ With AI
+
+Use `-ai` to generate a validated `.spsq` sequence from a natural-language prompt through an OpenAI-compatible API:
+
+```bash
+export SYNAPSEQ_AI_API_KEY="your-api-key"
+synapseq -ai "Generate a 10 minute relaxation sequence"
+```
+
+When no output path is given, SynapSeq creates a descriptive new `.spsq` file in the current directory. Supply a path to choose the destination, or `-` to write only SPSQ content to standard output:
+
+```bash
+synapseq -ai "Generate a 30 minute study sequence" study-30m.spsq
+synapseq -ai "Generate a 20 minute meditation sequence" -
+```
+
+SynapSeq requires `SYNAPSEQ_AI_API_KEY` and validates every model response before writing it. Invalid or unrecognized responses return an error and never create an output file. Existing destination files are not overwritten.
+
+Use an OpenAI-compatible local or remote model with environment variables:
+
+```bash
+export SYNAPSEQ_AI_API_KEY="local-key"
+export SYNAPSEQ_AI_MODEL="google/gemma-4-e4b"
+export SYNAPSEQ_AI_BASE_URL="http://localhost:1234"
+synapseq -ai "Generate a 15 minute focus sequence"
+```
+
+`SYNAPSEQ_AI_MODEL` and `SYNAPSEQ_AI_BASE_URL` are optional. The default model is `gpt-4.1-mini` and the default API host is OpenAI. Use `-ai-model MODEL` and `-ai-base-url URL` to override their environment-variable values for one command.
+
 ## Use SPSQ With AI Agents
 
 SynapSeq publishes three complementary [skills](https://skills.sh/synapseq-foundation/synapseq) for AI coding agents:
@@ -156,41 +187,15 @@ SynapSeq publishes three complementary [skills](https://skills.sh/synapseq-found
 
 Choose by the main action: **create**, **explain**, or **review**. The skills can hand work to one another through self-contained prompts, but only `create-spsq` writes complete sequence files, always at a new path.
 
-### Install the complete suite
+### Install
 
-Installing all three skills is recommended because they share routing and handoff conventions. The [`skills` CLI](https://github.com/vercel-labs/skills) accepts `'*'` to select every skill in the repository:
-
-```bash
-npx skills add synapseq-foundation/synapseq --skill '*'
-```
-
-The command is interactive and lets you choose the target agent and installation scope. For a global, non-interactive installation targeting one agent:
+Install all SynapSeq skills with the [`skills` CLI](https://github.com/vercel-labs/skills):
 
 ```bash
-# Codex
-npx skills add synapseq-foundation/synapseq --skill '*' --global --agent codex --yes
-
-# Claude Code
-npx skills add synapseq-foundation/synapseq --skill '*' --global --agent claude-code --yes
+npx skills add synapseq-foundation/synapseq
 ```
 
-Omit `--global` from these commands to install the suite only in the current project.
-
-To install all three skills for every supported agent detected by the CLI, without prompts:
-
-```bash
-npx skills add synapseq-foundation/synapseq --all
-```
-
-### Install one skill
-
-If you only need one responsibility, select it explicitly:
-
-```bash
-npx skills add synapseq-foundation/synapseq --skill create-spsq
-npx skills add synapseq-foundation/synapseq --skill explain-spsq
-npx skills add synapseq-foundation/synapseq --skill review-spsq
-```
+The command installs the complete skill suite and lets you choose the target agent and installation scope.
 
 ### Codex
 

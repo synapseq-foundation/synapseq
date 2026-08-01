@@ -52,6 +52,8 @@ func dispatchSpecialCommand(opts *cli.CLIOptions, args []string) (bool, error) {
 		return true, runDoctor()
 	case cli.SpecialCommandSBG:
 		return true, runSBGConversion(args, opts, os.Stderr, os.Stdout)
+	case cli.SpecialCommandAI:
+		return true, runAI(opts.AI, args, opts, os.Stderr, os.Stdout)
 	default:
 		return false, nil
 	}
