@@ -6,12 +6,11 @@ package remote
 
 import (
 	"fmt"
-	"strings"
+	"os"
 
+	"github.com/synapseq-foundation/synapseq/v4/internal/sequence"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
-
-const remoteSequenceRootURL = "https://sequence.synapseq.org"
 
 // RemoteGet retrieves a sequence by its ID from the Remote index.
 func RemoteGet(sequenceID string) (*t.RemoteEntry, error) {
@@ -44,10 +43,13 @@ func RemoteDownload(entry *t.RemoteEntry) (string, error) {
 		return "", err
 	}
 	if cached {
+		if err := validateCachedSequence(entryCache); err != nil {
+			return "", err
+		}
 		return entryCache.sequencePath(), nil
 	}
 
-	if err := downloadEntrySequence(entryCache, entry); err != nil {
+	if err := downloadEntrySequence(cache, entryCache, entry); err != nil {
 		return "", err
 	}
 
@@ -63,14 +65,31 @@ func prepareEntryDownload(cache *remoteCache, entry *t.RemoteEntry) (entryCache,
 	return entryCache, nil
 }
 
-func downloadEntrySequence(cache entryCache, entry *t.RemoteEntry) error {
-	if err := downloadFile(remoteSequenceURL(entry.Sequence), cache.sequencePath()); err != nil {
+func downloadEntrySequence(remoteCache *remoteCache, cache entryCache, entry *t.RemoteEntry) error {
+	data, _, err := downloadURL(remoteCache.source.sequenceURL(entry.Sequence))
+	if err != nil {
+		return fmt.Errorf("error downloading sequence %s: %v", entry.ID, err)
+	}
+	if err := validateRemoteSequence(data, cache.sequencePath(), cache.dir); err != nil {
+		return fmt.Errorf("invalid remote sequence %s: %w", entry.ID, err)
+	}
+	if err := os.WriteFile(cache.sequencePath(), data, 0644); err != nil {
 		return fmt.Errorf("error saving sequence %s: %v", entry.ID, err)
 	}
 
 	return nil
 }
 
-func remoteSequenceURL(sequencePath string) string {
-	return remoteSequenceRootURL + "/" + strings.TrimPrefix(sequencePath, "/")
+func validateCachedSequence(cache entryCache) error {
+	data, err := os.ReadFile(cache.sequencePath())
+	if err != nil {
+		return err
+	}
+
+	return validateRemoteSequence(data, cache.sequencePath(), cache.dir)
+}
+
+func validateRemoteSequence(data []byte, sourceFile, baseRef string) error {
+	_, err := sequence.LoadTextSequence(data, sourceFile, baseRef)
+	return err
 }

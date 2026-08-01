@@ -151,6 +151,7 @@ func flagBindings() []flagBinding {
 		{Name: "test", Usage: "Validate syntax without generating output", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.Test }},
 		{Name: "help", Usage: "Show help", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.ShowHelp }},
 		{Name: "sync", Usage: "Sync index of available sequences", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.RemoteSync }, SpecialCommand: SpecialCommandSync},
+		{Name: "sync-url", Usage: "Sync index from a custom Remote base URL", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.RemoteSyncURL }, SpecialCommand: SpecialCommandSync},
 		{Name: "clean", Usage: "Clean up local cache", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.RemoteClean }, SpecialCommand: SpecialCommandClean},
 		{Name: "get", Usage: "Get remote sequence", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.RemoteGet }, SpecialCommand: SpecialCommandGet},
 		{Name: "list", Usage: "List remote sequences", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.RemoteList }, SpecialCommand: SpecialCommandList},

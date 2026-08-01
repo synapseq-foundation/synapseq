@@ -1,0 +1,36 @@
+{
+  "version": "3.0.0",
+  "lastUpdated": "2026-05-13T22:30:42Z",
+  "entries": [
+    {
+      "id": "calm-state",
+      "name": "Calm State",
+      "description": "A soothing sequence for a tranquil and relaxed mental state.",
+      "durationMinutes": 15,
+      "sequence": "free/relaxation/calm-state/calm-state.spsq",
+      "artwork": "free/relaxation/calm-state/calm-state.webp",
+      "category": "Relaxation",
+      "createdAt": "2026-03-21T00:00:00Z"
+    },
+    {
+      "id": "alert-flow",
+      "name": "Alert Flow",
+      "description": "A sequence that helps listeners stay alert and focused.",
+      "durationMinutes": 20,
+      "sequence": "free/focus/alert-flow/alert-flow.spsq",
+      "artwork": "free/focus/alert-flow/alert-flow.webp",
+      "category": "Focus",
+      "createdAt": "2026-03-21T00:00:00Z"
+    },
+    {
+      "id": "gamma",
+      "name": "Gamma",
+      "description": "A pure gamma-state binaural sequence.",
+      "durationMinutes": 25,
+      "sequence": "free/pure/gamma/gamma.spsq",
+      "artwork": "free/pure/gamma/gamma.webp",
+      "category": "Pure",
+      "createdAt": "2026-05-10T00:00:00Z"
+    }
+  ]
+}

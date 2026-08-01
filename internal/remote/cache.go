@@ -12,6 +12,15 @@ import (
 
 // GetCacheDir returns the path to the cache directory for storing Remote data.
 func GetCacheDir() (string, error) {
+	source, err := defaultRemoteSource()
+	if err != nil {
+		return "", err
+	}
+
+	return getCacheDir(source)
+}
+
+func getCacheDir(source remoteSource) (string, error) {
 	var base string
 
 	switch runtime.GOOS {
@@ -29,6 +38,9 @@ func GetCacheDir() (string, error) {
 		} else {
 			base = filepath.Join(os.Getenv("HOME"), ".cache", "synapseq")
 		}
+	}
+	if source.custom {
+		base = filepath.Join(base, "custom", source.cacheKey)
 	}
 
 	if err := os.MkdirAll(base, 0755); err != nil {

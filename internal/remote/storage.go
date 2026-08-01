@@ -5,7 +5,6 @@
 package remote
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 
@@ -13,7 +12,8 @@ import (
 )
 
 type remoteCache struct {
-	root string
+	root   string
+	source remoteSource
 }
 
 type indexCache struct {
@@ -26,12 +26,21 @@ type entryCache struct {
 }
 
 func openRemoteCache() (*remoteCache, error) {
-	root, err := GetCacheDir()
+	source, err := defaultRemoteSource()
 	if err != nil {
 		return nil, err
 	}
 
-	return &remoteCache{root: root}, nil
+	return openRemoteCacheForSource(source)
+}
+
+func openRemoteCacheForSource(source remoteSource) (*remoteCache, error) {
+	root, err := getCacheDir(source)
+	if err != nil {
+		return nil, err
+	}
+
+	return &remoteCache{root: root, source: source}, nil
 }
 
 func (cache *remoteCache) index() indexCache {
@@ -86,12 +95,7 @@ func readIndexFile(path string) (*t.RemoteIndex, error) {
 		return nil, err
 	}
 
-	var index *t.RemoteIndex
-	if err := json.Unmarshal(indexData, &index); err != nil {
-		return nil, err
-	}
-
-	return index, nil
+	return parseRemoteIndex(indexData)
 }
 
 func writeIndexFile(path string, data []byte) error {
