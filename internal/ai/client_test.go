@@ -35,6 +35,9 @@ func TestGenerateSendsOpenAICompatibleRequest(ts *testing.T) {
 		if body.Messages[1].Content != "make a sequence" {
 			ts.Errorf("unexpected user prompt: %q", body.Messages[1].Content)
 		}
+		if body.Temperature != nil {
+			ts.Errorf("expected default temperature to be omitted, got %v", *body.Temperature)
+		}
 
 		_, _ = writer.Write([]byte(`{"choices":[{"message":{"content":"focus\n  tone 220 amplitude 10\n00:00:00 focus\n00:01:00 focus"}}]}`))
 	}))
@@ -51,6 +54,35 @@ func TestGenerateSendsOpenAICompatibleRequest(ts *testing.T) {
 	}
 	if !strings.HasSuffix(content, "\n") || !strings.Contains(content, "tone 220") {
 		ts.Fatalf("unexpected content: %q", content)
+	}
+}
+
+func TestGenerateSendsConfiguredTemperature(ts *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		var body chatCompletionRequest
+		if err := json.NewDecoder(request.Body).Decode(&body); err != nil {
+			ts.Errorf("decode request: %v", err)
+		}
+		if body.Temperature == nil || *body.Temperature != 0.7 {
+			ts.Errorf("unexpected temperature: %#v", body.Temperature)
+		}
+
+		_, _ = writer.Write([]byte(`{"choices":[{"message":{"content":"focus\n  tone 220 amplitude 10\n00:00:00 focus\n00:01:00 focus"}}]}`))
+	}))
+	defer server.Close()
+
+	temperature := 0.7
+	client, err := New(Config{
+		APIKey:      "test-key",
+		BaseURL:     server.URL,
+		Model:       "local-model",
+		Temperature: &temperature,
+	})
+	if err != nil {
+		ts.Fatalf("New error: %v", err)
+	}
+	if _, err := client.Generate(context.Background(), "make a sequence"); err != nil {
+		ts.Fatalf("Generate error: %v", err)
 	}
 }
 

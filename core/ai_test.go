@@ -52,3 +52,36 @@ func TestAIOptionsOverrideEnvironment(ts *testing.T) {
 		ts.Fatalf("expected flag base URL, got %q", got)
 	}
 }
+
+func TestAITemperatureUsesOptionsBeforeEnvironment(ts *testing.T) {
+	ts.Setenv("SYNAPSEQ_AI_TEMPERATURE", "0.2")
+	temperature := 0.7
+
+	got, err := aiTemperature(&AIOptions{Temperature: &temperature})
+	if err != nil {
+		ts.Fatalf("aiTemperature error: %v", err)
+	}
+	if got == nil || *got != 0.7 {
+		ts.Fatalf("expected option temperature 0.7, got %#v", got)
+	}
+}
+
+func TestAITemperatureUsesEnvironment(ts *testing.T) {
+	ts.Setenv("SYNAPSEQ_AI_TEMPERATURE", "0.2")
+
+	got, err := aiTemperature(nil)
+	if err != nil {
+		ts.Fatalf("aiTemperature error: %v", err)
+	}
+	if got == nil || *got != 0.2 {
+		ts.Fatalf("expected environment temperature 0.2, got %#v", got)
+	}
+}
+
+func TestAITemperatureRejectsInvalidValue(ts *testing.T) {
+	ts.Setenv("SYNAPSEQ_AI_TEMPERATURE", "3")
+
+	if _, err := aiTemperature(nil); err == nil {
+		ts.Fatal("expected invalid temperature error")
+	}
+}

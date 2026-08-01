@@ -143,6 +143,7 @@ func flagBindings() []flagBinding {
 		{Name: "ai", Usage: "Generate an SPSQ sequence from a prompt", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.AI }, SpecialCommand: SpecialCommandAI},
 		{Name: "ai-model", Usage: "OpenAI-compatible model for -ai", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.AIModel }},
 		{Name: "ai-base-url", Usage: "OpenAI-compatible API host for -ai", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.AIBaseURL }},
+		{Name: "ai-temperature", Usage: "Sampling temperature for -ai", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.AITemperature }},
 		{Name: "dump", Usage: "Render JSON sequence data", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.Dump }},
 		{Name: "quiet", Usage: "Enable quiet mode", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.Quiet }},
 		{Name: "no-color", Usage: "Disable ANSI colors in CLI output", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.NoColor }},

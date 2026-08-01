@@ -170,10 +170,11 @@ Use an OpenAI-compatible local or remote model with environment variables:
 export SYNAPSEQ_AI_API_KEY="local-key"
 export SYNAPSEQ_AI_MODEL="google/gemma-4-e4b"
 export SYNAPSEQ_AI_BASE_URL="http://localhost:1234"
+export SYNAPSEQ_AI_TEMPERATURE="0.2"
 synapseq -ai "Generate a 15 minute focus sequence"
 ```
 
-`SYNAPSEQ_AI_MODEL` and `SYNAPSEQ_AI_BASE_URL` are optional. The default model is `gpt-4.1-mini` and the default API host is OpenAI. Use `-ai-model MODEL` and `-ai-base-url URL` to override their environment-variable values for one command.
+`SYNAPSEQ_AI_MODEL`, `SYNAPSEQ_AI_BASE_URL`, and `SYNAPSEQ_AI_TEMPERATURE` are optional. The default model is `gpt-4.1-mini` and the default API host is OpenAI. When temperature is omitted, SynapSeq lets the selected model use its default; this is required by models that do not accept a custom temperature. Use `-ai-model MODEL`, `-ai-base-url URL`, and `-ai-temperature VALUE` to override their environment-variable values for one command.
 
 To generate SPSQ through the public Go API, see [AI Generation From Go](#ai-generation-from-go).
 

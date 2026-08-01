@@ -90,7 +90,9 @@ Use AppContext.AI to generate and validate an SPSQ sequence with an
 OpenAI-compatible chat completion API. Set SYNAPSEQ_AI_API_KEY before calling
 AI. Model and API host default to gpt-4.1-mini and the OpenAI API; configure a
 local or alternate provider through AIOptions or the SYNAPSEQ_AI_MODEL and
-SYNAPSEQ_AI_BASE_URL environment variables.
+SYNAPSEQ_AI_BASE_URL environment variables. Set SYNAPSEQ_AI_TEMPERATURE to a
+value from 0 through 2 when the selected model supports custom sampling
+temperature; otherwise leave it unset to use the model default.
 
 	ctx := synapseq.NewAppContext()
 	loaded, err := ctx.AI("Generate a 10 minute relaxation sequence", &synapseq.AIOptions{

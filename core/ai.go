@@ -7,7 +7,9 @@ package core
 import (
 	"context"
 	"fmt"
+	"math"
 	"os"
+	"strconv"
 	"strings"
 
 	internalai "github.com/synapseq-foundation/synapseq/v4/internal/ai"
@@ -23,10 +25,16 @@ func (ac *AppContext) AI(prompt string, options *AIOptions) (*LoadedContext, err
 		return nil, fmt.Errorf("app context is nil")
 	}
 
+	temperature, err := aiTemperature(options)
+	if err != nil {
+		return nil, err
+	}
+
 	client, err := internalai.New(internalai.Config{
-		APIKey:  os.Getenv("SYNAPSEQ_AI_API_KEY"),
-		BaseURL: aiBaseURL(options),
-		Model:   aiModel(options),
+		APIKey:      os.Getenv("SYNAPSEQ_AI_API_KEY"),
+		BaseURL:     aiBaseURL(options),
+		Model:       aiModel(options),
+		Temperature: temperature,
 	})
 	if err != nil {
 		return nil, err
@@ -62,4 +70,30 @@ func aiBaseURL(options *AIOptions) string {
 	}
 
 	return os.Getenv("SYNAPSEQ_AI_BASE_URL")
+}
+
+func aiTemperature(options *AIOptions) (*float64, error) {
+	if options != nil && options.Temperature != nil {
+		return options.Temperature, validateAITemperature(*options.Temperature)
+	}
+
+	value := strings.TrimSpace(os.Getenv("SYNAPSEQ_AI_TEMPERATURE"))
+	if value == "" {
+		return nil, nil
+	}
+
+	temperature, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid SYNAPSEQ_AI_TEMPERATURE %q: %w", value, err)
+	}
+
+	return &temperature, validateAITemperature(temperature)
+}
+
+func validateAITemperature(temperature float64) error {
+	if math.IsNaN(temperature) || math.IsInf(temperature, 0) || temperature < 0 || temperature > 2 {
+		return fmt.Errorf("AI temperature must be between 0 and 2")
+	}
+
+	return nil
 }
