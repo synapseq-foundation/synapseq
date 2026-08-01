@@ -25,16 +25,9 @@ const (
 
 // AI generates and validates an SPSQ sequence from prompt using an
 // OpenAI-compatible chat completion API. The API key is read from
-// SYNAPSEQ_AI_API_KEY.
-func (ac *AppContext) AI(prompt string, options *AIOptions) (*LoadedContext, error) {
-	return ac.AIContext(context.Background(), prompt, options)
-}
-
-// AIContext generates and validates an SPSQ sequence from prompt using an
-// OpenAI-compatible chat completion API. The API key is read from
 // SYNAPSEQ_AI_API_KEY. The request stops when ctx is canceled or its configured
 // timeout expires.
-func (ac *AppContext) AIContext(ctx context.Context, prompt string, options *AIOptions) (*LoadedContext, error) {
+func (ac *AppContext) AI(ctx context.Context, prompt string, options *AIOptions) (*LoadedContext, error) {
 	if ac == nil {
 		return nil, fmt.Errorf("app context is nil")
 	}
@@ -71,7 +64,10 @@ func (ac *AppContext) AIContext(ctx context.Context, prompt string, options *AIO
 	for attempt := 0; attempt <= aiRepairAttempts; attempt++ {
 		loaded, validationErr := ac.LoadContent(content)
 		if validationErr == nil {
-			return loaded, nil
+			validationErr = validateAISequenceSemantics(loaded, prompt)
+			if validationErr == nil {
+				return loaded, nil
+			}
 		}
 		if attempt == aiRepairAttempts {
 			return nil, fmt.Errorf("AI did not understand the prompt after %d repair attempts: generated content is not valid SPSQ: %w", aiRepairAttempts, validationErr)

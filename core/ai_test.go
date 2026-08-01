@@ -22,7 +22,7 @@ func TestAIValidatesGeneratedSPSQ(ts *testing.T) {
 	defer server.Close()
 	ts.Setenv("SYNAPSEQ_AI_API_KEY", "test-key")
 
-	loaded, err := NewAppContext().AI("make relaxation", &AIOptions{BaseURL: server.URL})
+	loaded, err := NewAppContext().AI(context.Background(), "make sequence", &AIOptions{BaseURL: server.URL})
 	if err != nil {
 		ts.Fatalf("AI error: %v", err)
 	}
@@ -38,7 +38,7 @@ func TestAIRejectsInvalidSPSQ(ts *testing.T) {
 	defer server.Close()
 	ts.Setenv("SYNAPSEQ_AI_API_KEY", "test-key")
 
-	_, err := NewAppContext().AI("make relaxation", &AIOptions{BaseURL: server.URL})
+	_, err := NewAppContext().AI(context.Background(), "make sequence", &AIOptions{BaseURL: server.URL})
 	if err == nil || !strings.Contains(err.Error(), "AI did not understand the prompt") {
 		ts.Fatalf("unexpected error: %v", err)
 	}
@@ -90,7 +90,7 @@ func TestAITemperatureRejectsInvalidValue(ts *testing.T) {
 	}
 }
 
-func TestAIContextRepairsInvalidSPSQ(ts *testing.T) {
+func TestAIRepairsInvalidSPSQ(ts *testing.T) {
 	requests := 0
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		requests++
@@ -115,16 +115,50 @@ func TestAIContextRepairsInvalidSPSQ(ts *testing.T) {
 	defer server.Close()
 	ts.Setenv("SYNAPSEQ_AI_API_KEY", "test-key")
 
-	loaded, err := NewAppContext().AIContext(context.Background(), "make relaxation", &AIOptions{BaseURL: server.URL})
+	loaded, err := NewAppContext().AI(context.Background(), "make sequence", &AIOptions{BaseURL: server.URL})
 	if err != nil {
-		ts.Fatalf("AIContext error: %v", err)
+		ts.Fatalf("AI error: %v", err)
 	}
 	if requests != 2 || !strings.Contains(string(loaded.RawContent()), "relax") {
 		ts.Fatalf("unexpected repair result: requests=%d content=%q", requests, loaded.RawContent())
 	}
 }
 
-func TestAIContextStopsAfterTwoRepairs(ts *testing.T) {
+func TestAIRepairsInvalidSemantics(ts *testing.T) {
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		requests++
+		if requests == 2 {
+			var body struct {
+				Messages []struct {
+					Content string `json:"content"`
+				} `json:"messages"`
+			}
+			if err := json.NewDecoder(request.Body).Decode(&body); err != nil {
+				ts.Errorf("decode repair request: %v", err)
+			}
+			if !strings.Contains(body.Messages[1].Content, "audible carrier between 100 and 600 Hz") {
+				ts.Errorf("unexpected semantic repair request: %#v", body.Messages)
+			}
+			_, _ = writer.Write([]byte(`{"choices":[{"message":{"content":"gamma\n  tone 220 binaural 40 amplitude 10\n00:00:00 gamma\n00:05:00 gamma"}}]}`))
+			return
+		}
+
+		_, _ = writer.Write([]byte(`{"choices":[{"message":{"content":"gamma\n  tone 40 binaural 40 amplitude 10\n00:00:00 gamma\n00:05:00 gamma"}}]}`))
+	}))
+	defer server.Close()
+	ts.Setenv("SYNAPSEQ_AI_API_KEY", "test-key")
+
+	loaded, err := NewAppContext().AI(context.Background(), "Create a gamma session", &AIOptions{BaseURL: server.URL})
+	if err != nil {
+		ts.Fatalf("AI error: %v", err)
+	}
+	if requests != 2 || !strings.Contains(string(loaded.RawContent()), "tone 220 binaural 40") {
+		ts.Fatalf("unexpected semantic repair result: requests=%d content=%q", requests, loaded.RawContent())
+	}
+}
+
+func TestAIStopsAfterTwoRepairs(ts *testing.T) {
 	requests := 0
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		requests++
@@ -133,7 +167,7 @@ func TestAIContextStopsAfterTwoRepairs(ts *testing.T) {
 	defer server.Close()
 	ts.Setenv("SYNAPSEQ_AI_API_KEY", "test-key")
 
-	_, err := NewAppContext().AIContext(context.Background(), "make relaxation", &AIOptions{BaseURL: server.URL})
+	_, err := NewAppContext().AI(context.Background(), "make sequence", &AIOptions{BaseURL: server.URL})
 	if err == nil || !strings.Contains(err.Error(), "after 2 repair attempts") {
 		ts.Fatalf("unexpected error: %v", err)
 	}
@@ -142,7 +176,7 @@ func TestAIContextStopsAfterTwoRepairs(ts *testing.T) {
 	}
 }
 
-func TestAIContextDoesNotRepairAPIErrors(ts *testing.T) {
+func TestAIDoesNotRepairAPIErrors(ts *testing.T) {
 	requests := 0
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		requests++
@@ -152,7 +186,7 @@ func TestAIContextDoesNotRepairAPIErrors(ts *testing.T) {
 	defer server.Close()
 	ts.Setenv("SYNAPSEQ_AI_API_KEY", "test-key")
 
-	_, err := NewAppContext().AIContext(context.Background(), "make relaxation", &AIOptions{BaseURL: server.URL})
+	_, err := NewAppContext().AI(context.Background(), "make sequence", &AIOptions{BaseURL: server.URL})
 	if err == nil || !strings.Contains(err.Error(), "HTTP 500") {
 		ts.Fatalf("unexpected error: %v", err)
 	}
@@ -161,18 +195,18 @@ func TestAIContextDoesNotRepairAPIErrors(ts *testing.T) {
 	}
 }
 
-func TestAIContextReportsCancellation(ts *testing.T) {
+func TestAIReportsCancellation(ts *testing.T) {
 	ts.Setenv("SYNAPSEQ_AI_API_KEY", "test-key")
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	_, err := NewAppContext().AIContext(ctx, "make relaxation", &AIOptions{BaseURL: "http://127.0.0.1:1"})
+	_, err := NewAppContext().AI(ctx, "make sequence", &AIOptions{BaseURL: "http://127.0.0.1:1"})
 	if err == nil || err.Error() != "AI generation canceled" {
 		ts.Fatalf("unexpected error: %v", err)
 	}
 }
 
-func TestAIContextReportsTimeout(ts *testing.T) {
+func TestAIReportsTimeout(ts *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		time.Sleep(50 * time.Millisecond)
 	}))
@@ -180,7 +214,7 @@ func TestAIContextReportsTimeout(ts *testing.T) {
 	ts.Setenv("SYNAPSEQ_AI_API_KEY", "test-key")
 	timeout := 10 * time.Millisecond
 
-	_, err := NewAppContext().AIContext(context.Background(), "make relaxation", &AIOptions{
+	_, err := NewAppContext().AI(context.Background(), "make sequence", &AIOptions{
 		BaseURL: server.URL,
 		Timeout: &timeout,
 	})

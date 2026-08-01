@@ -66,7 +66,7 @@ func ExampleAppContext_AI() {
 	}
 
 	ctx := synapseq.NewAppContext()
-	loaded, err := ctx.AI("Generate a 10 minute relaxation sequence", &synapseq.AIOptions{
+	loaded, err := ctx.AI(context.Background(), "Generate a 10 minute relaxation sequence", &synapseq.AIOptions{
 		Model:   "local-model",
 		BaseURL: "http://localhost:1234",
 	})
@@ -75,22 +75,6 @@ func ExampleAppContext_AI() {
 	}
 
 	// AI validates the response before returning it.
-	fmt.Print(string(loaded.RawContent()))
-}
-
-func ExampleAppContext_AIContext() {
-	if os.Getenv("SYNAPSEQ_AI_API_KEY") == "" {
-		return
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	loaded, err := synapseq.NewAppContext().AIContext(ctx, "Generate a 10 minute relaxation sequence", nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	fmt.Print(string(loaded.RawContent()))
 }
 
