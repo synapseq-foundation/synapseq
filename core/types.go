@@ -18,6 +18,14 @@ type AppContext struct {
 	statusColors bool
 }
 
+// AIOptions configures an OpenAI-compatible model used to generate SPSQ text.
+// Empty Model and BaseURL values use SYNAPSEQ_AI_MODEL and SYNAPSEQ_AI_BASE_URL,
+// then SynapSeq defaults.
+type AIOptions struct {
+	Model   string
+	BaseURL string
+}
+
 // LoadedContext holds a loaded sequence and execution settings.
 type LoadedContext struct {
 	appCtx   *AppContext

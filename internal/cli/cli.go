@@ -24,6 +24,7 @@ const (
 	SpecialCommandUninstallFileAssociation SpecialCommandKind = "uninstall-file-association"
 	SpecialCommandDoctor                   SpecialCommandKind = "doctor"
 	SpecialCommandSBG                      SpecialCommandKind = "sbg"
+	SpecialCommandAI                       SpecialCommandKind = "ai"
 )
 
 type SpecialCommand struct {
@@ -83,6 +84,14 @@ type CLIOptions struct {
 	CompletionZsh bool
 	// Print completion args (param:desc format)
 	CompletionArgs bool
+	// Generate an SPSQ sequence with an AI prompt
+	AI string
+	// Whether the -ai flag was provided, including with an empty prompt
+	AIRequested bool
+	// OpenAI-compatible model name for AI generation
+	AIModel string
+	// OpenAI-compatible API host for AI generation
+	AIBaseURL string
 }
 
 func init() {

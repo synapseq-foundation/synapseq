@@ -47,6 +47,11 @@ func ParseFlags() (*CLIOptions, []string, error) {
 	if err != nil {
 		return nil, nil, formatFlagParseError(fs, err)
 	}
+	fs.Visit(func(current *flag.Flag) {
+		if current.Name == "ai" {
+			opts.AIRequested = true
+		}
+	})
 
 	SetColorEnabled(!opts.NoColor)
 
@@ -78,7 +83,8 @@ func ResolveSpecialCommand(opts *CLIOptions, args []string) SpecialCommand {
 				return SpecialCommand{Kind: binding.SpecialCommand, OptionalArg: optionalArg}
 			}
 		case flagValueString:
-			if *binding.BindString(opts) != "" {
+			isEmptyAIPrompt := binding.Name == "ai" && opts.AIRequested
+			if *binding.BindString(opts) != "" || isEmptyAIPrompt {
 				return SpecialCommand{Kind: binding.SpecialCommand, OptionalArg: optionalArg}
 			}
 		}
@@ -134,6 +140,9 @@ func flagBindings() []flagBinding {
 	return []flagBinding{
 		{Name: "version", Usage: "Show version information", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.ShowVersion }, SpecialCommand: SpecialCommandShowVersion},
 		{Name: "sbg", Usage: "Convert an SBaGen file to SPSQ", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.ConvertSBG }, SpecialCommand: SpecialCommandSBG},
+		{Name: "ai", Usage: "Generate an SPSQ sequence from a prompt", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.AI }, SpecialCommand: SpecialCommandAI},
+		{Name: "ai-model", Usage: "OpenAI-compatible model for -ai", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.AIModel }},
+		{Name: "ai-base-url", Usage: "OpenAI-compatible API host for -ai", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.AIBaseURL }},
 		{Name: "dump", Usage: "Render JSON sequence data", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.Dump }},
 		{Name: "quiet", Usage: "Enable quiet mode", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.Quiet }},
 		{Name: "no-color", Usage: "Disable ANSI colors in CLI output", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.NoColor }},
