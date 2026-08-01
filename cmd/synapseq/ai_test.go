@@ -99,6 +99,20 @@ func TestAIOutputPathUsesIntentAndDuration(ts *testing.T) {
 	}
 }
 
+func TestCLIAITemperature(ts *testing.T) {
+	temperature, err := cliAITemperature("0.2")
+	if err != nil {
+		ts.Fatalf("cliAITemperature error: %v", err)
+	}
+	if temperature == nil || *temperature != 0.2 {
+		ts.Fatalf("unexpected temperature: %#v", temperature)
+	}
+
+	if _, err := cliAITemperature("not-a-number"); err == nil {
+		ts.Fatal("expected invalid temperature error")
+	}
+}
+
 func TestStartAIProgressDoesNotAnimateNonTerminal(ts *testing.T) {
 	var output bytes.Buffer
 	progress := startAIProgress(&output, false)

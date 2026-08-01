@@ -19,9 +19,10 @@ import (
 const defaultBaseURL = "https://api.openai.com/v1"
 
 type Config struct {
-	APIKey  string
-	BaseURL string
-	Model   string
+	APIKey      string
+	BaseURL     string
+	Model       string
+	Temperature *float64
 }
 
 type Client struct {
@@ -32,7 +33,7 @@ type Client struct {
 type chatCompletionRequest struct {
 	Model       string    `json:"model"`
 	Messages    []message `json:"messages"`
-	Temperature float64   `json:"temperature"`
+	Temperature *float64  `json:"temperature,omitempty"`
 }
 
 type message struct {
@@ -85,7 +86,7 @@ func (c *Client) Generate(ctx context.Context, prompt string) (string, error) {
 			{Role: "system", Content: systemPrompt},
 			{Role: "user", Content: prompt},
 		},
-		Temperature: 0.2,
+		Temperature: c.config.Temperature,
 	})
 	if err != nil {
 		return "", fmt.Errorf("encode AI request: %w", err)

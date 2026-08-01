@@ -304,13 +304,14 @@ func TestParseFlagsAI(ts *testing.T) {
 		"-ai", "generate relaxation",
 		"-ai-model", "local-model",
 		"-ai-base-url", "http://localhost:1234",
+		"-ai-temperature", "0.2",
 		"output.spsq",
 	}
 	opts, args, err := ParseFlags()
 	if err != nil {
 		ts.Fatalf("ParseFlags error: %v", err)
 	}
-	if opts.AI != "generate relaxation" || opts.AIModel != "local-model" || opts.AIBaseURL != "http://localhost:1234" {
+	if opts.AI != "generate relaxation" || opts.AIModel != "local-model" || opts.AIBaseURL != "http://localhost:1234" || opts.AITemperature != "0.2" {
 		ts.Fatalf("unexpected AI options: %#v", opts)
 	}
 	if len(args) != 1 || args[0] != "output.spsq" {

@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
@@ -42,11 +43,17 @@ func runAI(prompt string, args []string, opts *cli.CLIOptions, statusWriter, out
 		}
 	}
 
+	temperature, err := cliAITemperature(opts.AITemperature)
+	if err != nil {
+		return err
+	}
+
 	progress := startAIProgress(statusWriter, opts.Quiet)
 
 	loaded, err := synapseq.NewAppContext().AI(prompt, &synapseq.AIOptions{
-		Model:   opts.AIModel,
-		BaseURL: opts.AIBaseURL,
+		Model:       opts.AIModel,
+		BaseURL:     opts.AIBaseURL,
+		Temperature: temperature,
 	})
 	progress.Stop()
 	if err != nil {
@@ -70,6 +77,19 @@ func runAI(prompt string, args []string, opts *cli.CLIOptions, statusWriter, out
 	}
 
 	return nil
+}
+
+func cliAITemperature(value string) (*float64, error) {
+	if strings.TrimSpace(value) == "" {
+		return nil, nil
+	}
+
+	temperature, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid -ai-temperature %q: %w", value, err)
+	}
+
+	return &temperature, nil
 }
 
 func aiOutputPath(prompt string) string {

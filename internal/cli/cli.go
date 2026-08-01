@@ -92,6 +92,8 @@ type CLIOptions struct {
 	AIModel string
 	// OpenAI-compatible API host for AI generation
 	AIBaseURL string
+	// Sampling temperature for AI generation
+	AITemperature string
 }
 
 func init() {
