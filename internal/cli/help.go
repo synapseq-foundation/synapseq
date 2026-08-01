@@ -34,9 +34,7 @@ func Help() {
 	writeInputSection(writer)
 	writeOutputSection(writer)
 	writeOptionsSection(writer, "Most common options:", commonHelpOptions())
-	writeMutedLeadSection(writer, "AI:", "Requires SYNAPSEQ_AI_API_KEY. Model and API host can also be configured with environment variables.")
-	writeOptionsList(writer, aiHelpOptions())
-	fmt.Fprintln(writer)
+	writeAISection(writer)
 	writeMutedLeadSection(writer, "Remote:", "Run -sync first to initialize the local Remote index.")
 	writeOptionsList(writer, remoteHelpOptions())
 	fmt.Fprintln(writer)
@@ -115,9 +113,28 @@ func writeMutedLeadSection(writer io.Writer, title, lead string) {
 }
 
 func writeOptionsList(writer io.Writer, options []helpOption) {
+	writeIndentedOptionsList(writer, "  ", options)
+}
+
+func writeIndentedOptionsList(writer io.Writer, indent string, options []helpOption) {
 	for _, option := range options {
-		fmt.Fprintf(writer, "  %s%s\n", FlagColumn(option.FlagText, option.ColumnWidth), option.Description)
+		fmt.Fprintf(writer, "%s%s%s\n", indent, FlagColumn(option.FlagText, option.ColumnWidth), option.Description)
 	}
+}
+
+func writeAISection(writer io.Writer) {
+	fmt.Fprintf(writer, "%s\n", Section("AI:"))
+	fmt.Fprintf(writer, "  %s\n\n", Muted("Requires SYNAPSEQ_AI_API_KEY."))
+	writeAISubsection(writer, "Command:", aiCommandHelpOptions())
+	writeAISubsection(writer, "Options:", aiConfigurationHelpOptions())
+	writeAISubsection(writer, "Environment:", aiEnvironmentHelpOptions())
+	fmt.Fprintf(writer, "  %s %s\n\n", Label("Priority:"), Muted("-ai-* option > SYNAPSEQ_AI_* environment variable > CLI default"))
+}
+
+func writeAISubsection(writer io.Writer, label string, options []helpOption) {
+	fmt.Fprintf(writer, "  %s\n", Label(label))
+	writeIndentedOptionsList(writer, "    ", options)
+	fmt.Fprintln(writer)
 }
 
 func quickStartExamples() []helpExample {
@@ -147,18 +164,28 @@ func commonHelpOptions() []helpOption {
 	}
 }
 
-func aiHelpOptions() []helpOption {
+func aiCommandHelpOptions() []helpOption {
 	return []helpOption{
 		{FlagText: "-ai PROMPT [OUTPUT]", ColumnWidth: 28, Description: "Generate an SPSQ sequence; use - for standard output"},
-		{FlagText: "-ai-model MODEL", ColumnWidth: 28, Description: "Overrides SYNAPSEQ_AI_MODEL"},
-		{FlagText: "-ai-base-url URL", ColumnWidth: 28, Description: "Overrides SYNAPSEQ_AI_BASE_URL"},
-		{FlagText: "-ai-temperature VALUE", ColumnWidth: 28, Description: "Overrides SYNAPSEQ_AI_TEMPERATURE"},
-		{FlagText: "-ai-timeout DURATION", ColumnWidth: 28, Description: "Overrides SYNAPSEQ_AI_TIMEOUT"},
-		{FlagText: "SYNAPSEQ_AI_API_KEY", ColumnWidth: 28, Description: "Required API key"},
-		{FlagText: "SYNAPSEQ_AI_MODEL", ColumnWidth: 28, Description: "Model name; defaults to gpt-4.1-mini"},
-		{FlagText: "SYNAPSEQ_AI_BASE_URL", ColumnWidth: 28, Description: "OpenAI-compatible API host"},
-		{FlagText: "SYNAPSEQ_AI_TEMPERATURE", ColumnWidth: 28, Description: "Optional sampling temperature from 0 to 2"},
-		{FlagText: "SYNAPSEQ_AI_TIMEOUT", ColumnWidth: 28, Description: "Request timeout; defaults to 5m"},
+	}
+}
+
+func aiConfigurationHelpOptions() []helpOption {
+	return []helpOption{
+		{FlagText: "-ai-model MODEL", ColumnWidth: 28, Description: "Model name"},
+		{FlagText: "-ai-base-url URL", ColumnWidth: 28, Description: "OpenAI-compatible API host"},
+		{FlagText: "-ai-temperature VALUE", ColumnWidth: 28, Description: "Sampling temperature from 0 to 2"},
+		{FlagText: "-ai-timeout DURATION", ColumnWidth: 28, Description: "Request timeout"},
+	}
+}
+
+func aiEnvironmentHelpOptions() []helpOption {
+	return []helpOption{
+		{FlagText: "SYNAPSEQ_AI_API_KEY", ColumnWidth: 30, Description: "Required API key"},
+		{FlagText: "SYNAPSEQ_AI_MODEL", ColumnWidth: 30, Description: "Model name; default gpt-4.1-mini"},
+		{FlagText: "SYNAPSEQ_AI_BASE_URL", ColumnWidth: 30, Description: "OpenAI-compatible API host"},
+		{FlagText: "SYNAPSEQ_AI_TEMPERATURE", ColumnWidth: 30, Description: "Sampling temperature; default 1"},
+		{FlagText: "SYNAPSEQ_AI_TIMEOUT", ColumnWidth: 30, Description: "Request timeout; default 5m"},
 	}
 }
 
