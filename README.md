@@ -111,10 +111,11 @@ Install with [Winget](https://learn.microsoft.com/en-us/windows/package-manager/
 
 ```powershell
 winget update
+winget install ffmpeg
 winget install synapseq
 ```
 
-After installation, you can run `synapseq -install-file-association` to associate `.spsq` files with SynapSeq, enable additional Explorer context menu actions, and add a `.sbg` action that converts SBaGen sequences to `.spsq`.
+After installation, you can run `synapseq -install-file-association` to associate `.spsq` files with SynapSeq.
 
 ### Manual Downloads
 
@@ -439,9 +440,9 @@ content := loaded.RawContent()
 Use `converter.LoadContent(sbgContent)` when the SBaGen source text is already available in memory.
 
 Docs:
-- [core](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4@v4.40.3-foundation/core)
-- [spsq](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4@v4.40.3-foundation/spsq)
-- [sbg](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4@v4.40.3-foundation/sbg)
+- [core](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4/core)
+- [spsq](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4/spsq)
+- [sbg](https://pkg.go.dev/github.com/synapseq-foundation/synapseq/v4/sbg)
 
 ## Contributing
 
