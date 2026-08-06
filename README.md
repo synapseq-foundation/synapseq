@@ -58,7 +58,7 @@ SynapSeq is best understood as a **creative and experimental audio tool**. It gi
 - gradual or stepped changes in pitch, rhythm, amplitude, and other parameters;
 - spatial movement and modulation through effects;
 - repeatable sessions rendered as WAV, streamed as PCM, played directly, or converted to MP3;
-- reusable presets and sequences extended from other `.spsq` files.
+- reusable presets and sequences extended from other `.spsc` files.
 
 ## What It Looks Like
 
@@ -119,7 +119,7 @@ After installation, you can run `synapseq -install-file-association` to associat
 
 ### Manual Downloads
 
-If you prefer to install manually, download the appropriate archive from the latest GitHub release: [4.41.0](https://github.com/synapseq-foundation/synapseq/releases/tag/v4.41.0-foundation).
+If you prefer to install manually, download the appropriate archive from the latest GitHub release: [4.41.0](https://github.com/synapseq-foundation/synapseq/releases/tag/v4.41.0).
 
 If you want to build SynapSeq from source, see the [Compilation Guide](docs/COMPILE.md).
 
