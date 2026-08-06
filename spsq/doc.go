@@ -29,17 +29,21 @@ audio packages.
 	)
 
 	func main() {
-	    builder := spsq.New().SampleRate(44100).Volume(100)
+	    ctx := synapseq.NewAppContext()
+	    builder, err := spsq.New(ctx)
+	    if err != nil {
+	        log.Fatal(err)
+	    }
+	    builder.SampleRate(44100).Volume(100)
 	    alpha := builder.NewPreset("alpha")
 	    alpha.Pink(0).Amplitude(30)
 	    alpha.Tone(300).Binaural(10).Amplitude(15)
 
-	    ctx := synapseq.NewAppContext()
 	    loaded, err := builder.
 	        SilenceAt(0).
 	        PresetAt(15*time.Second, alpha).
 	        SilenceAt(time.Minute).
-	        Load(ctx)
+	        Load()
 	    if err != nil {
 	        log.Fatal(err)
 	    }
@@ -51,11 +55,21 @@ audio packages.
 
 # Verbose Output
 
-Load receives a core AppContext. Configure that context with WithVerbose when
+New receives a core AppContext. Configure that context with WithVerbose when
 you want progress output from later operations such as WAV, MP3, or Stream:
 
 	ctx := synapseq.NewAppContext().WithVerbose(os.Stderr, true)
-	loaded, err := builder.Load(ctx)
+	builder, err := spsq.New(ctx)
+	if err != nil {
+	    log.Fatal(err)
+	}
+	alpha := builder.NewPreset("alpha")
+	alpha.Pink(0).Amplitude(30)
+	loaded, err := builder.
+		SilenceAt(0).
+		PresetAt(15*time.Second, alpha).
+		SilenceAt(time.Minute).
+		Load()
 	if err != nil {
 	    log.Fatal(err)
 	}
@@ -69,7 +83,7 @@ Typical builder usage follows the .spsq document shape:
   - add sequence options such as sample rate, volume, ambiance, or music;
   - create presets and add tracks with track modifiers;
   - add timeline entries that select presets or silence at specific times;
-  - call Load with a core AppContext to validate and load the generated .spsq content.
+  - call Load to validate and load the generated .spsq content.
 
 Noise tracks are added with White, Pink, or Brown. Each method receives the
 noise smoothness percentage and returns the preset so modifiers such as
@@ -81,7 +95,7 @@ Amplitude can be chained:
 
 Builder methods return the same Builder so calls can be chained. Methods that
 modify the last track or timeline entry are no-ops when there is no matching
-target. Load requires a non-nil core AppContext and returns a core
+target. New requires a non-nil core AppContext. Load returns a core
 LoadedContext or parser and validation errors produced by core.
 
 # More Information

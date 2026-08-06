@@ -15,6 +15,7 @@ import (
 
 // Builder is responsible for building a sequence from a string sequence content
 type Builder struct {
+	ctx      *synapseq.AppContext
 	timeline []timelineEntry
 	ambiance []ambianceOption
 	music    []musicOption
@@ -48,23 +49,25 @@ type timelineEntry struct {
 	steps      int
 }
 
-// New creates a new Builder
-func New() *Builder {
+// New creates a new Builder using ctx to load generated content.
+func New(ctx *synapseq.AppContext) (*Builder, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("context is nil")
+	}
+
 	return &Builder{
+		ctx:      ctx,
 		timeline: make([]timelineEntry, 0),
 		ambiance: make([]ambianceOption, 0),
 		music:    make([]musicOption, 0),
 		options:  make(map[string]string),
 		presets:  make([]presetEntry, 0),
-	}
+	}, nil
 }
 
-// Load renders and loads the generated .spsq content through ctx.
-func (b *Builder) Load(ctx *synapseq.AppContext) (*synapseq.LoadedContext, error) {
-	if ctx == nil {
-		return nil, fmt.Errorf("context is nil")
-	}
-	return ctx.LoadContent(b.content())
+// Load renders and loads the generated .spsq content.
+func (b *Builder) Load() (*synapseq.LoadedContext, error) {
+	return b.ctx.LoadContent(b.content())
 }
 
 // content returns the generated .spsq content as a string.

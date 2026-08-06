@@ -51,19 +51,23 @@ func (c *Converter) load(source string, reader io.Reader) (*synapseq.LoadedConte
 	if err != nil {
 		return nil, err
 	}
-	builder, err := build(parsed)
+	builder, err := build(c.ctx, parsed)
 	if err != nil {
 		return nil, err
 	}
-	loaded, err := builder.Load(c.ctx)
+	loaded, err := builder.Load()
 	if err != nil {
 		return nil, fmt.Errorf("validate converted sequence: %w", err)
 	}
 	return loaded, nil
 }
 
-func build(parsed *sequence) (*spsq.Builder, error) {
-	builder := spsq.New().SampleRate(parsed.sampleRate)
+func build(ctx *synapseq.AppContext, parsed *sequence) (*spsq.Builder, error) {
+	builder, err := spsq.New(ctx)
+	if err != nil {
+		return nil, err
+	}
+	builder.SampleRate(parsed.sampleRate)
 	var musicName string
 	if parsed.musicPath != "" {
 		musicPath, err := currentRelativeMusicPath(parsed.musicPath)

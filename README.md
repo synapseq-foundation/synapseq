@@ -382,7 +382,11 @@ func main() {
 	// Create a new app context with colorized verbose logging
 	ctx := synapseq.NewAppContext().WithVerbose(os.Stderr, true)
 	// Create a new spsq builder with a sample rate of 44100 Hz and volume of 80%
-	builder := spsq.New().SampleRate(44100).Volume(80)
+	builder, err := spsq.New(ctx)
+	if err != nil {
+		panic(err)
+	}
+	builder.SampleRate(44100).Volume(80)
 
 	// Create a new preset for focus mode
 	focus := builder.NewPreset("focus")
@@ -403,7 +407,7 @@ func main() {
 		SilenceAt(5 * time.Minute)
 
 	// Load the sequence into memory
-	loaded, err := timeline.Load(ctx)
+	loaded, err := timeline.Load()
 	if err != nil {
 		panic(err)
 	}
