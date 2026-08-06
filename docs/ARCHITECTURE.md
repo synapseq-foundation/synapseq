@@ -49,7 +49,7 @@ There are two main paths:
 - a local sequence path, where the CLI loads a user-provided `.spsq` file;
 - a Remote path, where the CLI resolves a remote entry first, downloads it, and then reuses the same loading and rendering pipeline.
 
-Programmatic Go callers can also construct `.spsq` content with `spsq.Builder` and load it through `Builder.Load(ctx)`. From that point on, the content uses the same sequence loading, validation, dumping, and audio rendering pipeline as hand-written text.
+Programmatic Go callers can also construct `.spsq` content with `spsq.New(ctx)` and load it through `Builder.Load()`. From that point on, the content uses the same sequence loading, validation, dumping, and audio rendering pipeline as hand-written text.
 
 ## Package Map
 
@@ -235,7 +235,7 @@ flowchart LR
 
 The most important part of this graph is that `internal/types` stays at the bottom as a shared model package.
 
-At the user-flow level, `spsq.Builder.Load(ctx)` validates generated text through the provided `core.AppContext` and returns the resulting loaded context to the caller.
+At the user-flow level, `spsq.New(ctx)` associates generated text with a `core.AppContext`; `spsq.Builder.Load()` validates it and returns the resulting loaded context to the caller.
 
 ## CLI and Command Dispatch Flow
 
@@ -385,7 +385,7 @@ The public Go API should continue to revolve around the following mental model:
 
 1. Create an `AppContext`.
 2. Optionally configure it with `WithVerbose()`.
-3. Load an `.spsq` file with `LoadFile()` or `LoadContent()` for string sequence content. If the sequence is constructed programmatically, use `spsq.New()` and `Builder.Load(ctx)` to get a `LoadedContext`.
+3. Load an `.spsq` file with `LoadFile()` or `LoadContent()` for string sequence content. If the sequence is constructed programmatically, use `spsq.New(ctx)` and `Builder.Load()` to get a `LoadedContext`.
 4. Use the resulting `LoadedContext` to:
    - inspect comments, sample rate, volume, ambiance, extends, and raw content;
    - render WAV;

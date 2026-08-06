@@ -14,17 +14,21 @@ import (
 )
 
 func ExampleNew() {
-	builder := spsq.New().SampleRate(44100).Volume(100)
+	ctx := synapseq.NewAppContext()
+	builder, err := spsq.New(ctx)
+	if err != nil {
+		panic(err)
+	}
+	builder.SampleRate(44100).Volume(100)
 	alpha := builder.NewPreset("alpha")
 	alpha.Pink(0).Amplitude(30)
 	alpha.Tone(300).Binaural(10).Amplitude(15)
 
-	ctx := synapseq.NewAppContext()
 	loaded, err := builder.
 		SilenceAt(0).
 		PresetAt(15*time.Second, alpha).
 		SilenceAt(time.Minute).
-		Load(ctx)
+		Load()
 	if err != nil {
 		panic(err)
 	}
@@ -36,16 +40,19 @@ func ExampleNew() {
 }
 
 func ExampleBuilder_Load_verbose() {
-	builder := spsq.New()
+	ctx := synapseq.NewAppContext().WithVerbose(io.Discard, false)
+	builder, err := spsq.New(ctx)
+	if err != nil {
+		panic(err)
+	}
 	alpha := builder.NewPreset("alpha")
 	alpha.Pink(0).Amplitude(30)
 
-	ctx := synapseq.NewAppContext().WithVerbose(io.Discard, false)
 	loaded, err := builder.
 		SilenceAt(0).
 		PresetAt(15*time.Second, alpha).
 		SilenceAt(time.Minute).
-		Load(ctx)
+		Load()
 	if err != nil {
 		panic(err)
 	}
