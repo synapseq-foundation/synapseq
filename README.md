@@ -111,7 +111,6 @@ Install with [Winget](https://learn.microsoft.com/en-us/windows/package-manager/
 
 ```powershell
 winget update
-winget install ffmpeg
 winget install synapseq
 ```
 
