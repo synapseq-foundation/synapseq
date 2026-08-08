@@ -117,6 +117,26 @@ winget install synapseq
 
 After installation, you can run `synapseq -install-file-association` to associate `.spsq` files with SynapSeq.
 
+### Debian and Ubuntu
+
+Download the `.deb` file for your architecture from the latest release, then install it with `apt`:
+
+```bash
+sudo apt install ./synapseq_<version>_amd64.deb
+```
+
+The package declares `ffmpeg` as a required dependency, so `apt` installs it when necessary.
+
+### Fedora (RPM Fusion)
+
+RPM packages are supported on Fedora systems with [RPM Fusion](https://rpmfusion.org/Configuration) enabled. Download the `.rpm` file for your architecture from the latest release, then install it with `dnf`:
+
+```bash
+sudo dnf install ./synapseq-<version>-1.x86_64.rpm
+```
+
+The package requires `ffmpeg`, which is resolved through RPM Fusion. Other RPM-based distributions are not supported.
+
 ### Manual Downloads
 
 If you prefer to install manually, download the appropriate archive from the latest GitHub release: [4.41.0](https://github.com/synapseq-foundation/synapseq/releases/tag/v4.41.0).

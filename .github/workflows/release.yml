@@ -26,11 +26,16 @@ jobs:
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "package_version=${VERSION#v}" >> $GITHUB_OUTPUT
           echo "Extracted version: ${VERSION}"
 
       - name: Install dependencies
         run: |
-          apk add --no-cache make zip tar bash gzip
+          apk add --no-cache make zip tar bash gzip dpkg rpm
+
+      - name: Install nFPM
+        run: |
+          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.47.0
 
       - name: Test build
         run: |
@@ -115,6 +120,61 @@ jobs:
           # Package macOS binaries (TAR.GZ format)
           package_binary "macos" "arm64" "" "tar.gz"
 
+      - name: Package Linux distributions
+        env:
+          PACKAGE_VERSION: ${{ steps.get_version.outputs.package_version }}
+        run: |
+          export PATH="/go/bin:${PATH}"
+
+          package_linux() {
+            local arch=$1
+            local rpm_arch=$2
+
+            PACKAGE_ARCH="${arch}" PACKAGE_BINARY="bin/synapseq-linux-${arch}" nfpm package \
+              --config packaging/nfpm.yaml \
+              --packager deb \
+              --target "packages/synapseq_${PACKAGE_VERSION}_${arch}.deb"
+
+            PACKAGE_ARCH="${arch}" PACKAGE_BINARY="bin/synapseq-linux-${arch}" nfpm package \
+              --config packaging/nfpm.yaml \
+              --packager rpm \
+              --target "packages/synapseq-${PACKAGE_VERSION}-1.${rpm_arch}.rpm"
+          }
+
+          package_linux amd64 x86_64
+          package_linux arm64 aarch64
+
+      - name: Verify Linux packages
+        env:
+          PACKAGE_VERSION: ${{ steps.get_version.outputs.package_version }}
+        run: |
+          verify_deb() {
+            local arch=$1
+            local package="packages/synapseq_${PACKAGE_VERSION}_${arch}.deb"
+
+            test "$(dpkg-deb --field "${package}" Package)" = "synapseq"
+            test "$(dpkg-deb --field "${package}" Version)" = "${PACKAGE_VERSION}-1"
+            test "$(dpkg-deb --field "${package}" Architecture)" = "${arch}"
+            test "$(dpkg-deb --field "${package}" Depends)" = "ffmpeg"
+            dpkg-deb --contents "${package}" | grep -q ' ./usr/bin/synapseq$'
+          }
+
+          verify_rpm() {
+            local arch=$1
+            local package="packages/synapseq-${PACKAGE_VERSION}-1.${arch}.rpm"
+
+            test "$(rpm -qp --qf '%{NAME}' "${package}")" = "synapseq"
+            test "$(rpm -qp --qf '%{VERSION}' "${package}")" = "${PACKAGE_VERSION}"
+            test "$(rpm -qp --qf '%{ARCH}' "${package}")" = "${arch}"
+            rpm -qp --requires "${package}" | grep -qx 'ffmpeg'
+            rpm -qpl "${package}" | grep -qx '/usr/bin/synapseq'
+          }
+
+          verify_deb amd64
+          verify_deb arm64
+          verify_rpm x86_64
+          verify_rpm aarch64
+
       # WASM release artifacts are deprecated. The browser runtime is kept only
       # for historical reference and is no longer built or published in releases.
       #
@@ -152,7 +212,7 @@ jobs:
       - name: Generate checksums
         run: |
           cd packages
-          sha256sum *.zip *.tar.gz > checksums.txt
+          sha256sum *.zip *.tar.gz *.deb *.rpm > checksums.txt
           cat checksums.txt
 
       - name: Create Release
@@ -162,6 +222,8 @@ jobs:
           files: |
             packages/*.zip
             packages/*.tar.gz
+            packages/*.deb
+            packages/*.rpm
             packages/checksums.txt
           draft: true
           prerelease: false
