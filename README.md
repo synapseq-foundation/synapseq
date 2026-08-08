@@ -139,7 +139,7 @@ The package requires `ffmpeg`, which is resolved through RPM Fusion. Other RPM-b
 
 ### Manual Downloads
 
-If you prefer to install manually, download the appropriate archive from the latest GitHub release: [4.41.0](https://github.com/synapseq-foundation/synapseq/releases/tag/v4.41.0).
+If you prefer to install manually, download the appropriate archive from the latest GitHub release: [4.41.1](https://github.com/synapseq-foundation/synapseq/releases/tag/v4.41.1).
 
 If you want to build SynapSeq from source, see the [Compilation Guide](docs/COMPILE.md).
 
