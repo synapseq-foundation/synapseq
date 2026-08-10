@@ -95,7 +95,7 @@ jobs:
           mkdir -m 700 "$GNUPGHOME"
           printf '%s' "$GPG_PACKAGE_SIGNING_KEY_BASE64" | base64 --decode | gpg --batch --import
           gpg --batch --with-colons --list-keys > "$RUNNER_TEMP/public-keys.txt"
-          gpg_signing_key="$(awk -F: '$1 == "fpr" && !key { key = $10 } END { print key }' "$RUNNER_TEMP/public-keys.txt")"
+          gpg_signing_key="$(awk -F: '$1 == "fpr" { key = $10 } END { print key }' "$RUNNER_TEMP/public-keys.txt")"
           if [ -z "$gpg_signing_key" ]; then
             echo "No OpenPGP key was available after import." >&2
             exit 1
