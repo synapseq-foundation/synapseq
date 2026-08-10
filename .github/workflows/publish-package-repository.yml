@@ -94,7 +94,8 @@ jobs:
           export GNUPGHOME="$RUNNER_TEMP/gnupg"
           mkdir -m 700 "$GNUPGHOME"
           printf '%s' "$GPG_PACKAGE_SIGNING_KEY_BASE64" | base64 --decode | gpg --batch --import
-          gpg_signing_key="$(gpg --batch --with-colons --list-secret-keys | awk -F: '$1 == "sec" && !key { key = $5 } END { print key }')"
+          gpg --batch --with-colons --list-secret-keys > "$RUNNER_TEMP/secret-keys.txt"
+          gpg_signing_key="$(awk -F: '$1 == "fpr" && !key { key = $10 } END { print key }' "$RUNNER_TEMP/secret-keys.txt")"
           test -n "$gpg_signing_key"
 
           # RPM's GPG command reads this protected file instead of opening an interactive pinentry.
