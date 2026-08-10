@@ -1,0 +1,174 @@
+name: Publish Package Repository
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: Release tag to publish, for example v4.1.0
+        required: true
+        type: string
+
+concurrency:
+  group: publish-package-repository-${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.event.release.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.release.draft == false && github.event.release.prerelease == false) }}
+    runs-on: ubuntu-latest
+    environment: production
+
+    permissions:
+      contents: read
+
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      PACKAGES_S3_BUCKET: ${{ vars.PACKAGES_S3_BUCKET }}
+      GPG_PACKAGE_SIGNING_KEY_BASE64: ${{ secrets.GPG_PACKAGE_SIGNING_KEY_BASE64 }}
+      GPG_PACKAGE_SIGNING_PASSPHRASE: ${{ secrets.GPG_PACKAGE_SIGNING_PASSPHRASE }}
+
+    steps:
+      - name: Resolve target release
+        id: meta
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            tag_name="${{ inputs.tag_name }}"
+          else
+            tag_name="${{ github.event.release.tag_name }}"
+          fi
+
+          echo "tag_name=${tag_name}" >> "$GITHUB_OUTPUT"
+
+      - name: Download and verify release packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ steps.meta.outputs.tag_name }}
+        run: |
+          mkdir incoming
+          gh release download "$TAG_NAME" \
+            --repo "${{ github.repository }}" \
+            --dir incoming \
+            --pattern '*.deb' \
+            --pattern '*.rpm' \
+            --pattern checksums.txt
+
+          cd incoming
+          test -s checksums.txt
+
+          awk '$2 ~ /\.(deb|rpm)$/ { sub(/^\*/, "", $2); print $1 "  " $2 }' checksums.txt > package-checksums.txt
+          test -s package-checksums.txt
+          sha256sum --check package-checksums.txt
+
+          deb_count="$(find . -maxdepth 1 -name '*.deb' -type f | wc -l)"
+          rpm_count="$(find . -maxdepth 1 -name '*.rpm' -type f | wc -l)"
+          test "$deb_count" -gt 0
+          test "$rpm_count" -gt 0
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_ACCESS_SECRET_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Install repository tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes apt-utils createrepo-c gnupg rpm
+
+      - name: Build and publish signed repositories
+        env:
+          CLOUDFRONT_ID_DISTRIBUTION: ${{ secrets.CLOUDFRONT_ID_DISTRIBUTION }}
+        run: |
+          set -euo pipefail
+
+          test -n "$AWS_REGION"
+          test -n "$PACKAGES_S3_BUCKET"
+          test -n "$GPG_PACKAGE_SIGNING_KEY_BASE64"
+          test -n "$GPG_PACKAGE_SIGNING_PASSPHRASE"
+          test -n "$CLOUDFRONT_ID_DISTRIBUTION"
+
+          export GNUPGHOME="$RUNNER_TEMP/gnupg"
+          mkdir -m 700 "$GNUPGHOME"
+          printf '%s' "$GPG_PACKAGE_SIGNING_KEY_BASE64" | base64 --decode | gpg --batch --import
+          gpg_signing_key="$(gpg --batch --with-colons --list-secret-keys | awk -F: '$1 == "sec" { print $5; exit }')"
+          test -n "$gpg_signing_key"
+
+          # RPM's GPG command reads this protected file instead of opening an interactive pinentry.
+          passphrase_file="$RUNNER_TEMP/package-signing-passphrase"
+          umask 077
+          printf '%s' "$GPG_PACKAGE_SIGNING_PASSPHRASE" > "$passphrase_file"
+          printf '%s\n' \
+            '%_signature gpg' \
+            "%_gpg_name $gpg_signing_key" \
+            "%_gpg_path $GNUPGHOME" \
+            "%__gpg $(command -v gpg)" \
+            "%__gpg_sign_cmd %{__gpg} --batch --no-verbose --no-armor --pinentry-mode loopback --passphrase-file $passphrase_file --local-user \"%{_gpg_name}\" --detach-sign --output %{__signature_filename} %{__plaintext_filename}" \
+            > "$HOME/.rpmmacros"
+
+          mkdir -p repository/apt repository/rpm
+          aws s3 sync "s3://${PACKAGES_S3_BUCKET}/apt/" repository/apt/ --only-show-errors
+          aws s3 sync "s3://${PACKAGES_S3_BUCKET}/rpm/" repository/rpm/ --only-show-errors
+
+          mkdir -p repository/apt/pool/main/s/synapseq
+          cp incoming/*.deb repository/apt/pool/main/s/synapseq/
+          mkdir -p repository/rpm/x86_64 repository/rpm/aarch64
+
+          for package in incoming/*.rpm; do
+            arch="$(rpm --queryformat '%{ARCH}' --query --package "$package")"
+            case "$arch" in
+              x86_64|aarch64)
+                rpmsign --addsign "$package"
+                cp "$package" "repository/rpm/${arch}/"
+                ;;
+              *)
+                echo "Unsupported RPM architecture: ${arch}" >&2
+                exit 1
+                ;;
+            esac
+          done
+
+          mkdir -p repository/apt/keyrings repository/apt/dists/stable/main
+          gpg --batch --export "$gpg_signing_key" > repository/apt/keyrings/synapseq-archive-keyring.gpg
+          gpg --batch --armor --export "$gpg_signing_key" > repository/rpm/RPM-GPG-KEY-synapseq
+
+          for arch in amd64 arm64; do
+            package_directory="repository/apt/dists/stable/main/binary-${arch}"
+            mkdir -p "$package_directory"
+            (
+              cd repository/apt
+              dpkg-scanpackages --arch "$arch" pool /dev/null > "dists/stable/main/binary-${arch}/Packages"
+            )
+            gzip --best --no-name --stdout "$package_directory/Packages" > "$package_directory/Packages.gz"
+          done
+
+          apt_ftparchive_config="$RUNNER_TEMP/apt-ftparchive.conf"
+          printf '%s\n' \
+            'APT::FTPArchive::Release::Origin "SynapSeq";' \
+            'APT::FTPArchive::Release::Label "SynapSeq";' \
+            'APT::FTPArchive::Release::Suite "stable";' \
+            'APT::FTPArchive::Release::Codename "stable";' \
+            'APT::FTPArchive::Release::Architectures "amd64 arm64";' \
+            'APT::FTPArchive::Release::Components "main";' \
+            'APT::FTPArchive::Release::Description "SynapSeq package repository";' \
+            > "$apt_ftparchive_config"
+          (
+            cd repository/apt
+            apt-ftparchive -c "$apt_ftparchive_config" release dists/stable > dists/stable/Release
+            gpg --batch --yes --pinentry-mode loopback --passphrase-file "$passphrase_file" --local-user "$gpg_signing_key" --armor --detach-sign --output dists/stable/Release.gpg dists/stable/Release
+            gpg --batch --yes --pinentry-mode loopback --passphrase-file "$passphrase_file" --local-user "$gpg_signing_key" --clearsign --output dists/stable/InRelease dists/stable/Release
+          )
+
+          for arch in x86_64 aarch64; do
+            createrepo_c --update "repository/rpm/${arch}"
+            gpg --batch --yes --pinentry-mode loopback --passphrase-file "$passphrase_file" --local-user "$gpg_signing_key" --armor --detach-sign --output "repository/rpm/${arch}/repodata/repomd.xml.asc" "repository/rpm/${arch}/repodata/repomd.xml"
+          done
+
+          aws s3 sync --delete repository/apt/ "s3://${PACKAGES_S3_BUCKET}/apt/" --only-show-errors
+          aws s3 sync --delete repository/rpm/ "s3://${PACKAGES_S3_BUCKET}/rpm/" --only-show-errors
+          aws cloudfront create-invalidation \
+            --distribution-id "$CLOUDFRONT_ID_DISTRIBUTION" \
+            --paths '/apt/dists/*' '/rpm/*/repodata/*'
