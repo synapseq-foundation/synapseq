@@ -95,17 +95,7 @@ The result is a repeatable audio session generated from the text definition. See
 
 The recommended way to install SynapSeq is through the platform package manager.
 
-### Homebrew (macOS & Linux)
-
-Install with [Homebrew](https://brew.sh):
-
-```bash
-brew tap synapseq-foundation/synapseq
-brew trust synapseq-foundation/synapseq # For homebrew >= 6.x
-brew install synapseq
-```
-
-### Winget (Windows)
+### Windows
 
 Install with [Winget](https://learn.microsoft.com/en-us/windows/package-manager/winget):
 
@@ -116,25 +106,25 @@ winget install synapseq
 
 After installation, you can run `synapseq -install-file-association` to associate `.spsq` files with SynapSeq.
 
-### Debian and Ubuntu
+### macOS
 
-Download the `.deb` file for your architecture from the latest release, then install it with `apt`:
-
-```bash
-sudo apt install ./synapseq_<version>_amd64.deb
-```
-
-The package declares `ffmpeg` as a required dependency, so `apt` installs it when necessary.
-
-### Fedora (RPM Fusion)
-
-RPM packages are supported on Fedora systems with [RPM Fusion](https://rpmfusion.org/Configuration) enabled. Download the `.rpm` file for your architecture from the latest release, then install it with `dnf`:
+Install with [Homebrew](https://brew.sh):
 
 ```bash
-sudo dnf install ./synapseq-<version>-1.x86_64.rpm
+brew tap synapseq-foundation/synapseq
+brew trust synapseq-foundation/synapseq # For homebrew >= 6.x
+brew install synapseq
 ```
 
-The package requires `ffmpeg`, which is resolved through RPM Fusion. Other RPM-based distributions are not supported.
+### Linux
+
+Install SynapSeq on Debian, Ubuntu, their derivatives, or Fedora with:
+
+```bash
+curl -fsSL https://synapseq.org/install.sh | sudo bash
+```
+
+The official installer identifies the supported distribution, configures the package repository, and installs SynapSeq automatically.
 
 ### Manual Downloads
 
