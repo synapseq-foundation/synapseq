@@ -98,7 +98,7 @@ make --version
 If you have not cloned the project yet:
 
 ```bash
-git clone https://github.com/ruanklein/synapseq.git
+git clone https://github.com/synapseq-foundation/synapseq.git
 cd synapseq
 ```
 
