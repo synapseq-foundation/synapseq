@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
+	nr "github.com/synapseq-foundation/synapseq/v4/internal/nameref"
 	p "github.com/synapseq-foundation/synapseq/v4/internal/preset"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
@@ -120,32 +121,15 @@ func (ctx *TextParser) ParseTrackOverrideDeclaration() (*p.TrackOverrideSpec, er
 		decl.ValueSpan, _ = ctx.Line.LastTokenSpan()
 		decl.Relative = decl.RawValue != "" && (decl.RawValue[0] == '+' || decl.RawValue[0] == '-')
 	case t.KeywordWaveform:
-		waveform, err := ctx.Line.NextExpectOneOf(
-			t.KeywordSine,
-			t.KeywordSquare,
-			t.KeywordTriangle,
-			t.KeywordSawtooth)
-
-		if err != nil {
-			return nil, err
+		waveform, ok := ctx.Line.NextToken()
+		if !ok {
+			return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "waveform name")
 		}
-
-		var waveformType t.WaveformType
-		switch waveform {
-		case t.KeywordSine:
-			waveformType = t.WaveformSine
-		case t.KeywordSquare:
-			waveformType = t.WaveformSquare
-		case t.KeywordTriangle:
-			waveformType = t.WaveformTriangle
-		case t.KeywordSawtooth:
-			waveformType = t.WaveformSawtooth
-		default:
-			return nil, diag.Parse("unexpected waveform type").WithSpan(kindSpan).WithFound(waveform)
-		}
-
-		decl.Waveform = waveformType
 		decl.ValueSpan, _ = ctx.Line.LastTokenSpan()
+		if err := nr.IsValid(waveform); err != nil {
+			return nil, diag.Validation(err.Error()).WithSpan(decl.ValueSpan).WithFound(waveform).WithCause(err)
+		}
+		decl.Waveform = t.WaveformName(waveform)
 	}
 
 	unknown, ok := ctx.Line.Peek()

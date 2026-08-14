@@ -174,3 +174,67 @@ alpha
 		ts.Fatalf("unexpected error: %v", err)
 	}
 }
+
+func TestExtendsCarriesCustomWaveform(ts *testing.T) {
+	path := writeExtendsFile(ts, "custom.spsc", `
+@waveform pulse 0 100
+
+base
+  waveform pulse tone 200 amplitude 10
+`)
+
+	got, err := extends(path)
+	if err != nil {
+		ts.Fatalf("extends error: %v", err)
+	}
+	if len(got.Options.Waveforms) != 1 || got.Options.Waveforms[0].Name != "pulse" {
+		ts.Fatalf("unexpected extended waveforms: %+v", got.Options.Waveforms)
+	}
+	if got.Presets[0].Track[0].Waveform != "pulse" {
+		ts.Fatalf("expected extended preset to reference pulse, got %q", got.Presets[0].Track[0].Waveform)
+	}
+}
+
+func TestLoadTextSequenceUsesExtendedCustomWaveform(ts *testing.T) {
+	extendsPath := writeExtendsFile(ts, "custom.spsc", `
+@waveform pulse 0 100
+
+base
+  waveform pulse tone 200 amplitude 10
+`)
+	sequencePath := filepath.Join(filepath.Dir(extendsPath), "sequence.spsq")
+	content := "@extends custom\n\n00:00:00 base\n00:00:01 base\n"
+	if err := os.WriteFile(sequencePath, []byte(content), 0o600); err != nil {
+		ts.Fatalf("write sequence: %v", err)
+	}
+
+	sequence, err := loadTextSequenceFile(ts, sequencePath)
+	if err != nil {
+		ts.Fatalf("load sequence: %v", err)
+	}
+	if len(sequence.Waveforms) != 1 || sequence.Waveforms[0].Name != "pulse" {
+		ts.Fatalf("unexpected merged waveforms: %+v", sequence.Waveforms)
+	}
+	if sequence.Periods[0].TrackStart[0].Waveform != "pulse" {
+		ts.Fatalf("expected extended custom waveform reference, got %q", sequence.Periods[0].TrackStart[0].Waveform)
+	}
+}
+
+func TestLoadTextSequenceRejectsWaveformCollisionWithExtends(ts *testing.T) {
+	extendsPath := writeExtendsFile(ts, "custom.spsc", `
+@waveform pulse 0 100
+
+base
+  waveform pulse tone 200 amplitude 10
+`)
+	sequencePath := filepath.Join(filepath.Dir(extendsPath), "sequence.spsq")
+	content := "@extends custom\n@waveform pulse 0 50 100\n\n00:00:00 base\n00:00:01 base\n"
+	if err := os.WriteFile(sequencePath, []byte(content), 0o600); err != nil {
+		ts.Fatalf("write sequence: %v", err)
+	}
+
+	_, err := loadTextSequenceFile(ts, sequencePath)
+	if err == nil || !strings.Contains(err.Error(), "duplicate waveform definition: pulse") {
+		ts.Fatalf("expected extended waveform collision, got %v", err)
+	}
+}

@@ -54,6 +54,7 @@ Review:
 - carrier movement combined with doppler movement;
 - high contrast between consecutive beat rates;
 - square and sawtooth waveforms, which contain stronger harmonics than sine;
+- custom waveforms with steep segments, sharp corners, asymmetric phase origins, or abrupt shape changes, which may emphasize harmonics, aliasing, or awkward morphs;
 - long exposure to prominent pulsing or bright carriers.
 
 Do not claim a carrier is universally unsafe or uncomfortable from its number alone. Use cautious language such as “potentially prominent,” “may feel bright,” or “worth auditioning at low level.”

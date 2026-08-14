@@ -27,8 +27,9 @@ func (b *Builder) NewPreset(name string) *Preset {
 // Tone adds a pure tone track.
 func (p *Preset) Tone(carrier float64) *Preset {
 	return p.addTrack(t.Track{
-		Type:    t.TrackPureTone,
-		Carrier: carrier,
+		Type:     t.TrackPureTone,
+		Carrier:  carrier,
+		Waveform: t.WaveformSine,
 	})
 }
 
@@ -92,6 +93,11 @@ func (p *Preset) Triangle() *Preset {
 // Sawtooth sets the waveform of the last track to sawtooth.
 func (p *Preset) Sawtooth() *Preset {
 	return p.setWaveform(t.WaveformSawtooth)
+}
+
+// Waveform sets the waveform of the last track by name.
+func (p *Preset) Waveform(name string) *Preset {
+	return p.setWaveform(t.WaveformName(name))
 }
 
 // Binaural converts the last tone track to a binaural beat.
@@ -178,7 +184,7 @@ func (p *Preset) addTrack(track t.Track) *Preset {
 }
 
 // setWaveform sets the waveform of the last track.
-func (p *Preset) setWaveform(waveform t.WaveformType) *Preset {
+func (p *Preset) setWaveform(waveform t.WaveformName) *Preset {
 	track := p.lastTrack()
 	if track == nil {
 		return p

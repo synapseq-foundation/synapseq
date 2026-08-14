@@ -107,6 +107,7 @@ The currently supported `.spsq` options are:
 - `@ambiance <name>` as shorthand, where the path defaults to the same name
 - `@music <name> <path-or-url>`
 - `@music <name>` as shorthand, where the path defaults to the same name
+- `@waveform <name> <point1> <point2> ... <pointN>`
 - `@extends <path-or-url>`
 
 Options must appear before presets or timeline entries. Once the builder has seen a preset, track, override, or timeline line, options are locked.
@@ -127,6 +128,35 @@ Local option paths are normalized and validated before use:
 - music does not loop automatically, so MP3 is the preferred local fallback order for this use case;
 - remote music URLs follow the same WAV/MP3 extension or MIME type rules as ambiance URLs;
 - local extends paths resolve to `.spsc`.
+
+### Custom Waveforms
+
+A custom waveform defines one periodic cycle as evenly spaced amplitude points and gives it a reusable name:
+
+```spsq
+@waveform softpulse 0 0 20 60 100 60 20 0
+
+focus
+  waveform softpulse tone 200 isochronic 10 amplitude 20
+
+00:00:00 focus
+00:00:30 focus
+```
+
+Rules:
+
+- names follow the normal SPSQ name rules and are case-sensitive when referenced;
+- `sine`, `square`, `triangle`, and `sawtooth` are reserved built-in names, including case variants;
+- a definition requires between 2 and 16384 points;
+- each point is an ordinary decimal from `0` through `100`;
+- `0` maps to the internal minimum (`-1`), `50` to the centerline (`0`), and `100` to the maximum (`+1`);
+- points are evenly spaced over one cycle and joined with linear interpolation;
+- interpolation is circular: the final point connects linearly back to the first;
+- duplicate definitions are rejected, including collisions across `.spsq` and extended `.spsc` files;
+- custom waveforms may be declared in `.spsc` files and are available to their presets after extension;
+- an unknown `waveform <name>` reference is an error.
+
+The four built-ins retain their existing formulas and rendering behavior. Custom waveforms use the same track-level `waveform <name>` syntax and the same runtime wavetable path after name resolution. Sharp corners and steep segments can produce strong harmonics and aliasing; custom tables are not band-limited.
 
 ## Presets
 
@@ -245,6 +275,8 @@ Noise lines can describe white, pink, or brown noise, optionally with `smooth`, 
 
 Ambiance lines reference a named ambiance option and then define amplitude, with optional supported effects. The current parser also accepts a leading `waveform` token before ambiance declarations, even though waveform selection is primarily a tone-oriented concept.
 
+For tones, the selected waveform shapes pure, binaural, and monaural oscillators. On an isochronic track, the same waveform shapes both the carrier and the rhythmic gate. For ambiance and music, it does not reshape the external PCM; it affects waveform-driven `pan` or `modulation`. Doppler always uses its built-in sine motion.
+
 Music lines reference a named music option and use the same amplitude/effect forms as ambiance. Music is finite: when the file ends, that channel becomes silent and rendering continues until the sequence timeline ends.
 
 Track declarations are rejected when:
@@ -337,12 +369,12 @@ This is why a file can be syntactically parseable line by line and still fail fi
 
 Those files are parsed through the same line parser but with a different builder mode:
 
-- they may define options and presets;
+- they may define options, custom waveforms, and presets;
 - they may define tracks and track overrides under presets;
 - they may not define timeline entries;
 - they may not use `@extends` themselves.
 
-The purpose of `.spsc` is to contribute reusable options, templates, and presets into a main `.spsq` sequence.
+The purpose of `.spsc` is to contribute reusable options, waveform definitions, templates, and presets into a main `.spsq` sequence.
 
 ## Minimal Mental Model
 
@@ -596,6 +628,7 @@ option-line          = "@samplerate" integer
                      | "@volume" integer
                      | "@ambiance" name [path-or-url]
                      | "@music" name [path-or-url]
+                     | "@waveform" name waveform-point waveform-point { waveform-point }
                      | "@extends" path-or-url ;
 
 preset-line          = name
@@ -628,7 +661,8 @@ music-tail           = "amplitude" float
                      | "effect" music-effect float "intensity" float "amplitude" float ;
 
 waveform-prefix      = "waveform" waveform ;
-waveform             = "sine" | "square" | "triangle" | "sawtooth" ;
+waveform             = name ;
+waveform-point       = float ;  (* 0 through 100; 2 through 16384 points *)
 beat-kind            = "binaural" | "monaural" | "isochronic" ;
 noise-kind           = "white" | "pink" | "brown" ;
 tone-effect          = "pan" | "modulation" | "doppler" ;

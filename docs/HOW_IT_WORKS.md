@@ -131,6 +131,29 @@ Monaural:   tone + tone    -> beat exists in the mixed signal
 Isochronic: tone * gate    -> beat exists as direct pulsing
 ```
 
+## Waveforms
+
+Every generated tone uses one periodic waveform. The built-ins are `sine`, `square`, `triangle`, and `sawtooth`; omitting `waveform` selects sine. Advanced sequences can define a named cycle with `@waveform` and reuse it wherever a built-in name is accepted.
+
+```spsq
+@waveform softpulse 0 0 20 60 100 60 20 0
+
+focus
+  waveform softpulse tone 200 isochronic 10 amplitude 20
+```
+
+Custom points use the friendly range `0..100`, mapped to the bipolar audio range `-1..1`: `0` is the negative extreme, `50` is the centerline, and `100` is the positive extreme. Points are equally spaced around one cycle. SynapSeq joins adjacent points with straight lines and also joins the final point back to the first, then compiles the result into the same 16,384-sample wavetable format used by the built-ins.
+
+The waveform has several roles:
+
+- pure, binaural, and monaural tones use it as their oscillator shape;
+- isochronic tracks use the same shape for both the audible carrier and the pulse gate;
+- pan and modulation use it as their motion shape, including on ambiance and music;
+- doppler motion remains sine-based;
+- compatible timeline changes morph linearly between the old and new waveform while preserving oscillator phase.
+
+The engine performs this compilation before rendering and uses integer table IDs in the sample loop. Custom waveforms are not band-limited. Steep segments, sharp corners, and high carrier frequencies can therefore emphasize harmonics or aliasing, much like square and sawtooth waves. Phase alignment also matters when morphing between differently oriented shapes.
+
 ## Transitions
 
 Transitions define the shape of change between one timeline entry and the next.

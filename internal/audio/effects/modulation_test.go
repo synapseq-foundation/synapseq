@@ -8,12 +8,13 @@ import (
 	"math"
 	"testing"
 
+	wt "github.com/synapseq-foundation/synapseq/v4/internal/audio/wavetable"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 func TestCalcModulationFactorForSquareUsesSoftEdges(ts *testing.T) {
 	processor := newTestProcessor()
-	waveform := WaveformMorph{Start: t.WaveformSquare, End: t.WaveformSquare, Alpha: 0}
+	waveform := WaveformMorph{Start: wt.SquareID, End: wt.SquareID, Alpha: 0}
 
 	if got := processor.CalcModulationFactorForMorph(waveform, phaseOffset(0)); !nearlyEqual(got, 0.5) {
 		ts.Fatalf("expected square modulation to start on soft edge, got %f", got)
@@ -31,7 +32,7 @@ func TestCalcModulationFactorForSquareUsesSoftEdges(ts *testing.T) {
 
 func TestCalcModulationFactorForMorphWithSquareKeepsSoftEdges(ts *testing.T) {
 	processor := newTestProcessor()
-	waveform := WaveformMorph{Start: t.WaveformSquare, End: t.WaveformSine, Alpha: 0.5}
+	waveform := WaveformMorph{Start: wt.SquareID, End: wt.SineID, Alpha: 0.5}
 
 	before := processor.CalcModulationFactorForMorph(waveform, phaseOffset(0.5)-1)
 	at := processor.CalcModulationFactorForMorph(waveform, phaseOffset(0.5))
@@ -48,10 +49,10 @@ func TestCalcModulationFactorForMorphWithSquareKeepsSoftEdges(ts *testing.T) {
 func TestCalcModulationFactorForMorphInterpolatesFactors(ts *testing.T) {
 	processor := newTestProcessor()
 	offset := phaseOffset(0.25)
-	waveform := WaveformMorph{Start: t.WaveformSquare, End: t.WaveformTriangle, Alpha: 0.25}
+	waveform := WaveformMorph{Start: wt.SquareID, End: wt.TriangleID, Alpha: 0.25}
 
-	start := processor.modulationFactorForWaveform(t.WaveformSquare, offset)
-	end := processor.modulationFactorForWaveform(t.WaveformTriangle, offset)
+	start := processor.modulationFactorForWaveform(wt.SquareID, offset)
+	end := processor.modulationFactorForWaveform(wt.TriangleID, offset)
 	want := start + (end-start)*0.25
 
 	got := processor.CalcModulationFactorForMorph(waveform, offset)

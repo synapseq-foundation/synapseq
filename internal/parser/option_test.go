@@ -41,23 +41,41 @@ func TestParseOption(ts *testing.T) {
 	}{
 		{
 			fmt.Sprintf("%svolume 50", t.KeywordOption),
-			&t.ParseOptions{Values: map[string]string{t.KeywordOptionVolume: "50"}, Ambiance: map[string]string{}, Music: map[string]string{}, Extends: []string{}},
+			&t.ParseOptions{Values: map[string]string{t.KeywordOptionVolume: "50"}, Ambiance: map[string]string{}, Music: map[string]string{}, Extends: []string{}, Waveforms: []t.WaveformDefinition{}},
 		},
 		{
 			fmt.Sprintf("%ssamplerate 48000", t.KeywordOption),
-			&t.ParseOptions{Values: map[string]string{t.KeywordOptionSampleRate: "48000"}, Ambiance: map[string]string{}, Music: map[string]string{}, Extends: []string{}},
+			&t.ParseOptions{Values: map[string]string{t.KeywordOptionSampleRate: "48000"}, Ambiance: map[string]string{}, Music: map[string]string{}, Extends: []string{}, Waveforms: []t.WaveformDefinition{}},
 		},
 		{
 			fmt.Sprintf("%s%s rain testdata/noise", t.KeywordOption, t.KeywordOptionAmbiance),
-			&t.ParseOptions{Values: map[string]string{}, Ambiance: map[string]string{"rain": "testdata/noise"}, Music: map[string]string{}, Extends: []string{}},
+			&t.ParseOptions{Values: map[string]string{}, Ambiance: map[string]string{"rain": "testdata/noise"}, Music: map[string]string{}, Extends: []string{}, Waveforms: []t.WaveformDefinition{}},
 		},
 		{
 			fmt.Sprintf("%s%s meditation audio/meditation", t.KeywordOption, t.KeywordOptionMusic),
-			&t.ParseOptions{Values: map[string]string{}, Ambiance: map[string]string{}, Music: map[string]string{"meditation": "audio/meditation"}, Extends: []string{}},
+			&t.ParseOptions{Values: map[string]string{}, Ambiance: map[string]string{}, Music: map[string]string{"meditation": "audio/meditation"}, Extends: []string{}, Waveforms: []t.WaveformDefinition{}},
 		},
 		{
 			fmt.Sprintf("%s%s shared/base", t.KeywordOption, t.KeywordOptionExtends),
-			&t.ParseOptions{Values: map[string]string{}, Ambiance: map[string]string{}, Music: map[string]string{}, Extends: []string{"shared/base"}},
+			&t.ParseOptions{Values: map[string]string{}, Ambiance: map[string]string{}, Music: map[string]string{}, Extends: []string{"shared/base"}, Waveforms: []t.WaveformDefinition{}},
+		},
+		{
+			"@waveform softpulse 0 20 50 100",
+			&t.ParseOptions{
+				Values:   map[string]string{},
+				Ambiance: map[string]string{},
+				Music:    map[string]string{},
+				Extends:  []string{},
+				Waveforms: []t.WaveformDefinition{{
+					Name: "softpulse",
+					Points: []float64{
+						t.NormalizeWaveformPoint(0),
+						t.NormalizeWaveformPoint(20),
+						t.NormalizeWaveformPoint(50),
+						t.NormalizeWaveformPoint(100),
+					},
+				}},
+			},
 		},
 	}
 
@@ -88,6 +106,14 @@ func TestParseOptionErrors(ts *testing.T) {
 			line:        fmt.Sprintf("%svolume 50 extra", t.KeywordOption),
 			wantErrText: "unexpected token after option definition",
 		},
+		{name: "missing waveform name", line: "@waveform", wantErrText: "waveform name"},
+		{name: "empty waveform", line: "@waveform pulse", wantErrText: "at least 2 points"},
+		{name: "one waveform point", line: "@waveform pulse 50", wantErrText: "at least 2 points"},
+		{name: "non-numeric waveform point", line: "@waveform pulse 0 nope", wantErrText: "invalid float"},
+		{name: "negative waveform point", line: "@waveform pulse -1 100", wantErrText: "between 0 and 100"},
+		{name: "high waveform point", line: "@waveform pulse 0 101", wantErrText: "between 0 and 100"},
+		{name: "built-in waveform name", line: "@waveform sine 0 100", wantErrText: "reserved for a built-in waveform"},
+		{name: "case-insensitive built-in name", line: "@waveform SQUARE 0 100", wantErrText: "reserved for a built-in waveform"},
 	}
 
 	for _, test := range tests {
@@ -103,6 +129,14 @@ func TestParseOptionErrors(ts *testing.T) {
 				ts.Fatalf("expected error containing %q, got %v", test.wantErrText, err)
 			}
 		})
+	}
+}
+
+func TestParseOptionRejectsTooManyWaveformPoints(ts *testing.T) {
+	line := "@waveform pulse " + strings.TrimSpace(strings.Repeat("0 ", t.MaxWaveformPoints+1))
+	_, err := NewTextParser(line).ParseOption("")
+	if err == nil || !strings.Contains(err.Error(), "cannot contain more than") {
+		ts.Fatalf("expected maximum waveform point error, got %v", err)
 	}
 }
 

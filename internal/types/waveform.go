@@ -4,45 +4,64 @@
 
 package types
 
-// WaveformType represents the waveform shape
-type WaveformType int
+import "strings"
 
-// Waveform types
+// WaveformName identifies a built-in or document-defined waveform.
+type WaveformName string
+
+// Built-in waveform names.
 const (
-	WaveformSine     WaveformType = iota // Sine
-	WaveformSquare                       // Square
-	WaveformTriangle                     // Triangle
-	WaveformSawtooth                     // Sawtooth
+	WaveformSine     WaveformName = KeywordSine
+	WaveformSquare   WaveformName = KeywordSquare
+	WaveformTriangle WaveformName = KeywordTriangle
+	WaveformSawtooth WaveformName = KeywordSawtooth
 )
 
-// String returns the string representation of WaveformType
-func (wt WaveformType) String() string {
-	switch wt {
-	case WaveformSine:
-		return KeywordSine
-	case WaveformSquare:
-		return KeywordSquare
-	case WaveformTriangle:
-		return KeywordTriangle
-	case WaveformSawtooth:
-		return KeywordSawtooth
+const (
+	MinWaveformPoints = 2
+	MaxWaveformPoints = SineTableSize
+)
+
+// WaveformDefinition contains one normalized periodic waveform cycle.
+type WaveformDefinition struct {
+	Name   WaveformName
+	Points []float64
+}
+
+// Effective returns sine for an omitted waveform, preserving the historical default.
+func (name WaveformName) Effective() WaveformName {
+	if name == "" {
+		return WaveformSine
+	}
+	return name
+}
+
+// String returns the waveform name.
+func (name WaveformName) String() string {
+	return string(name.Effective())
+}
+
+// IsBuiltinWaveformName reports whether name conflicts with a built-in waveform.
+func IsBuiltinWaveformName(name string) bool {
+	switch strings.ToLower(name) {
+	case KeywordSine, KeywordSquare, KeywordTriangle, KeywordSawtooth:
+		return true
 	default:
-		return ""
+		return false
 	}
 }
 
-// WaveformString returns the WaveformType from a string representation
-func WaveformString(s string) WaveformType {
-	switch s {
-	case KeywordSine:
-		return WaveformSine
-	case KeywordSquare:
-		return WaveformSquare
-	case KeywordTriangle:
-		return WaveformTriangle
-	case KeywordSawtooth:
-		return WaveformSawtooth
-	default:
-		return WaveformSine
-	}
+// BuiltinWaveformNames returns the names accepted without a custom definition.
+func BuiltinWaveformNames() []string {
+	return []string{KeywordSine, KeywordSquare, KeywordTriangle, KeywordSawtooth}
+}
+
+// NormalizeWaveformPoint maps the source-language range 0..100 to -1..1.
+func NormalizeWaveformPoint(value float64) float64 {
+	return value/50.0 - 1.0
+}
+
+// DenormalizeWaveformPoint maps the internal range -1..1 back to 0..100.
+func DenormalizeWaveformPoint(value float64) float64 {
+	return (value + 1.0) * 50.0
 }

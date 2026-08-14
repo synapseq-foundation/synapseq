@@ -113,6 +113,9 @@ func (b *sequenceBuilder) handleTrack(lineNumber int, lineText string, ctx *pars
 	if err != nil {
 		return withSource(err, b.sourceFile, lineNumber, lineText)
 	}
+	if err := validateWaveformReference(decl.Waveform, decl.WaveformSpan, b.rawOptions.Waveforms); err != nil {
+		return withSource(err, b.sourceFile, lineNumber, lineText)
+	}
 
 	track, err := buildTrackFromDeclaration(b.sourceFile, lineNumber, lineText, decl)
 	if err != nil {
@@ -140,6 +143,11 @@ func (b *sequenceBuilder) handleTrackOverride(lineNumber int, lineText string, c
 	decl, err := ctx.ParseTrackOverrideDeclaration()
 	if err != nil {
 		return withSource(err, b.sourceFile, lineNumber, lineText)
+	}
+	if decl.Kind == t.KeywordWaveform {
+		if err := validateWaveformReference(decl.Waveform, decl.ValueSpan, b.rawOptions.Waveforms); err != nil {
+			return withSource(err, b.sourceFile, lineNumber, lineText)
+		}
 	}
 
 	if err := p.ApplyTrackOverride(lastPreset, decl); err != nil {

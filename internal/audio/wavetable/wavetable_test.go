@@ -28,7 +28,7 @@ func TestInit_LengthAndBounds(ts *testing.T) {
 
 func TestInit_Sine(ts *testing.T) {
 	wts := Init()
-	tab := wts[int(t.WaveformSine)]
+	tab := wts[int(SineID)]
 	amp := int(t.WaveTableAmplitude)
 
 	j0 := 0
@@ -52,7 +52,7 @@ func TestInit_Sine(ts *testing.T) {
 
 func TestInit_Square(ts *testing.T) {
 	wts := Init()
-	tab := wts[int(t.WaveformSquare)]
+	tab := wts[int(SquareID)]
 	amp := int(t.WaveTableAmplitude)
 
 	j0 := 0
@@ -82,7 +82,7 @@ func TestInit_Square(ts *testing.T) {
 
 func TestInit_Triangle(ts *testing.T) {
 	wts := Init()
-	tab := wts[int(t.WaveformTriangle)]
+	tab := wts[int(TriangleID)]
 	amp := int(t.WaveTableAmplitude)
 
 	j0 := 0
@@ -106,12 +106,12 @@ func TestInit_Triangle(ts *testing.T) {
 
 func TestInit_Sawtooth(ts *testing.T) {
 	wts := Init()
-	tab := wts[int(t.WaveformSawtooth)]
+	tab := wts[int(SawtoothID)]
 	amp := int(t.WaveTableAmplitude)
 
 	exp := func(j int) int {
 		phase := float64(j) * 2.0 * math.Pi / float64(t.SineTableSize)
-		val := 2.0*(phase/(2.0*math.Pi)-math.Floor(phase/(2.0*math.Pi)+0.5))
+		val := 2.0 * (phase/(2.0*math.Pi) - math.Floor(phase/(2.0*math.Pi)+0.5))
 		return int(float64(amp) * val)
 	}
 
@@ -131,5 +131,50 @@ func TestInit_Sawtooth(ts *testing.T) {
 	}
 	if tab[j3] != exp(j3) {
 		ts.Fatalf("sawtooth j=3pi/2: want %d, got %d", exp(j3), tab[j3])
+	}
+}
+
+func TestCompileCustomWaveformNormalizesCycleAndWraps(ts *testing.T) {
+	registry, err := Compile([]t.WaveformDefinition{{
+		Name:   "pulse",
+		Points: []float64{-1, 1},
+	}})
+	if err != nil {
+		ts.Fatalf("Compile error: %v", err)
+	}
+
+	id, ok := registry.Lookup("pulse")
+	if !ok {
+		ts.Fatal("expected custom waveform ID")
+	}
+	if id != 4 {
+		ts.Fatalf("expected first custom waveform ID 4, got %d", id)
+	}
+
+	table := registry.Tables[id]
+	amp := int(t.WaveTableAmplitude)
+	if table[0] != -amp || table[t.SineTableSize/2] != amp {
+		ts.Fatalf("unexpected normalized extrema: got %d and %d", table[0], table[t.SineTableSize/2])
+	}
+	if table[t.SineTableSize/4] != 0 || table[3*t.SineTableSize/4] != 0 {
+		ts.Fatalf("expected linear midpoint crossings, got %d and %d", table[t.SineTableSize/4], table[3*t.SineTableSize/4])
+	}
+	if table[len(table)-1] >= table[len(table)-2] || table[len(table)-1] <= -amp {
+		ts.Fatalf("expected final segment to approach the first point continuously, got %d", table[len(table)-1])
+	}
+}
+
+func TestCompilePreservesBuiltInTables(ts *testing.T) {
+	want := Init()
+	registry, err := Compile([]t.WaveformDefinition{{Name: "custom", Points: []float64{-1, 1}}})
+	if err != nil {
+		ts.Fatalf("Compile error: %v", err)
+	}
+	for waveform := range want {
+		for index := range want[waveform] {
+			if registry.Tables[waveform][index] != want[waveform][index] {
+				ts.Fatalf("built-in waveform %d changed at sample %d", waveform, index)
+			}
+		}
 	}
 }

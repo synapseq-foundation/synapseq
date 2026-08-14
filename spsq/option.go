@@ -33,3 +33,16 @@ func (b *Builder) Music(name, path string) *Builder {
 	b.music = append(b.music, musicOption{name: name, path: path})
 	return b
 }
+
+// Waveform registers a custom waveform for the sequence.
+func (b *Builder) Waveform(name string, points ...float64) *Builder {
+	b.waveforms = append(b.waveforms, waveformOption{
+		name:   name,
+		points: append([]float64{}, points...),
+	})
+	return b
+}
+
+func formatWaveformPoint(point float64) string {
+	return strconv.FormatFloat(point, 'f', -1, 64)
+}

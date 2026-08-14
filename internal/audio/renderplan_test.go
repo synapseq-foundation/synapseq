@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	audiosync "github.com/synapseq-foundation/synapseq/v4/internal/audio/sync"
+	wt "github.com/synapseq-foundation/synapseq/v4/internal/audio/wavetable"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -109,8 +110,71 @@ func TestRenderPlanCueResolvesInterpolatedTrackState(ts *testing.T) {
 	if channel.EffectStep != frequencyToIncrement(44100, 3) {
 		ts.Fatalf("unexpected effect step: got %d", channel.EffectStep)
 	}
-	if channel.WaveformStart != t.WaveformSine || channel.WaveformEnd != t.WaveformTriangle {
+	if channel.WaveformStart != wt.SineID || channel.WaveformEnd != wt.TriangleID {
 		ts.Fatalf("unexpected waveform state: got %v -> %v", channel.WaveformStart, channel.WaveformEnd)
+	}
+}
+
+func TestRenderPlanPreResolvesCustomWaveforms(ts *testing.T) {
+	registry, err := wt.Compile([]t.WaveformDefinition{{Name: "pulse", Points: []float64{-1, 1}}})
+	if err != nil {
+		ts.Fatalf("Compile error: %v", err)
+	}
+	customID, _ := registry.Lookup("pulse")
+
+	var period, end t.Period
+	period.Time = 0
+	end.Time = 1000
+	period.TrackStart[0] = t.Track{Type: t.TrackPureTone, Waveform: "pulse", Carrier: 200, Amplitude: t.AmplitudePercentToRaw(10)}
+	period.TrackEnd[0] = period.TrackStart[0]
+
+	plan := compileRenderPlanWithWaveforms([]t.Period{period, end}, 44100, registry)
+	cue := plan.cue(0, 500)
+	if cue.Channels[0].WaveformStart != customID || cue.Channels[0].WaveformEnd != customID {
+		ts.Fatalf("custom waveform was not pre-resolved: %+v", cue.Channels[0])
+	}
+}
+
+func TestRenderPlanMorphsBetweenCustomAndBuiltInWaveforms(ts *testing.T) {
+	registry, err := wt.Compile([]t.WaveformDefinition{
+		{Name: "pulse", Points: []float64{-1, 1}},
+		{Name: "soft", Points: []float64{-0.5, 0.5}},
+	})
+	if err != nil {
+		ts.Fatalf("Compile error: %v", err)
+	}
+	pulseID, _ := registry.Lookup("pulse")
+	softID, _ := registry.Lookup("soft")
+	tests := []struct {
+		name      string
+		start     t.WaveformName
+		end       t.WaveformName
+		wantStart wt.ID
+		wantEnd   wt.ID
+	}{
+		{name: "custom to built-in", start: "pulse", end: t.WaveformSine, wantStart: pulseID, wantEnd: wt.SineID},
+		{name: "built-in to custom", start: t.WaveformTriangle, end: "pulse", wantStart: wt.TriangleID, wantEnd: pulseID},
+		{name: "custom to custom", start: "pulse", end: "soft", wantStart: pulseID, wantEnd: softID},
+	}
+
+	for _, test := range tests {
+		ts.Run(test.name, func(ts *testing.T) {
+			var period, end t.Period
+			period.Time = 0
+			end.Time = 1000
+			period.TrackStart[0] = t.Track{Type: t.TrackPureTone, Waveform: test.start, Carrier: 200, Amplitude: t.AmplitudePercentToRaw(10)}
+			period.TrackEnd[0] = period.TrackStart[0]
+			period.TrackEnd[0].Waveform = test.end
+
+			plan := compileRenderPlanWithWaveforms([]t.Period{period, end}, 44100, registry)
+			channel := plan.cue(0, 500).Channels[0]
+			if channel.WaveformStart != test.wantStart || channel.WaveformEnd != test.wantEnd {
+				ts.Fatalf("unexpected waveform morph: %d -> %d", channel.WaveformStart, channel.WaveformEnd)
+			}
+			if channel.WaveformAlpha != 0.5 {
+				ts.Fatalf("unexpected waveform morph alpha: got %f, want 0.5", channel.WaveformAlpha)
+			}
+		})
 	}
 }
 

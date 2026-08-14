@@ -8,6 +8,7 @@ import (
 	"math"
 
 	audiosync "github.com/synapseq-foundation/synapseq/v4/internal/audio/sync"
+	wt "github.com/synapseq-foundation/synapseq/v4/internal/audio/wavetable"
 	tl "github.com/synapseq-foundation/synapseq/v4/internal/timeline"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
@@ -21,6 +22,14 @@ type renderPlan struct {
 	windows     []renderWindow
 	sampleRate  int
 	totalFrames int64
+	waveforms   []periodWaveforms
+}
+
+type periodWaveforms struct {
+	Start        [t.NumberOfChannels]wt.ID
+	End          [t.NumberOfChannels]wt.ID
+	CrossfadeOut [t.NumberOfChannels]wt.ID
+	CrossfadeIn  [t.NumberOfChannels]wt.ID
 }
 
 type renderWindow struct {
@@ -30,11 +39,17 @@ type renderWindow struct {
 }
 
 func compileRenderPlan(periods []t.Period, sampleRate int) renderPlan {
+	waveforms, _ := wt.Compile(nil)
+	return compileRenderPlanWithWaveforms(periods, sampleRate, waveforms)
+}
+
+func compileRenderPlanWithWaveforms(periods []t.Period, sampleRate int, registry *wt.Registry) renderPlan {
 	plan := renderPlan{
 		periods:     periods,
 		windows:     make([]renderWindow, len(periods)),
 		sampleRate:  sampleRate,
 		totalFrames: totalFramesFromDuration(durationMs(periods), sampleRate),
+		waveforms:   make([]periodWaveforms, len(periods)),
 	}
 
 	for index := range periods {
@@ -47,6 +62,12 @@ func compileRenderPlan(periods []t.Period, sampleRate int) renderPlan {
 			PeriodIndex: index,
 			StartMs:     periods[index].Time,
 			EndMs:       endMs,
+		}
+		for channel := range t.NumberOfChannels {
+			plan.waveforms[index].Start[channel], _ = registry.Lookup(periods[index].TrackStart[channel].Waveform)
+			plan.waveforms[index].End[channel], _ = registry.Lookup(periods[index].TrackEnd[channel].Waveform)
+			plan.waveforms[index].CrossfadeOut[channel], _ = registry.Lookup(periods[index].CrossfadeOut[channel].Track.Waveform)
+			plan.waveforms[index].CrossfadeIn[channel], _ = registry.Lookup(periods[index].CrossfadeIn[channel].Track.Waveform)
 		}
 	}
 
@@ -91,16 +112,17 @@ func (rp renderPlan) cue(periodIdx int, currentTimeMs int) audiosync.Cue {
 	return cue
 }
 
-func (rp renderPlan) trackStateAt(window renderWindow, period t.Period, ch int, alpha float64, currentTimeMs int) (t.Track, t.WaveformType, t.WaveformType, float64, audiosync.CrossfadeCue) {
+func (rp renderPlan) trackStateAt(window renderWindow, period t.Period, ch int, alpha float64, currentTimeMs int) (t.Track, wt.ID, wt.ID, float64, audiosync.CrossfadeCue) {
+	waveforms := rp.waveforms[window.PeriodIndex]
 	if crossfade := period.CrossfadeOut[ch]; crossfade.Active {
 		duration := tl.CrossfadeDuration(window.EndMs - window.StartMs)
 		if duration > 0 && currentTimeMs >= window.EndMs-duration {
 			progress := clampUnit(float64(currentTimeMs-(window.EndMs-duration)) / float64(duration))
 			track := scaleTrackAmplitude(crossfade.Track, 1-progress)
-			return track, track.Waveform, track.Waveform, 0, audiosync.CrossfadeCue{Active: true, Direction: audiosync.CrossfadeOut, Alpha: progress}
+			return track, waveforms.CrossfadeOut[ch], waveforms.CrossfadeOut[ch], 0, audiosync.CrossfadeCue{Active: true, Direction: audiosync.CrossfadeOut, Alpha: progress}
 		}
 		track := crossfade.Track
-		return track, track.Waveform, track.Waveform, 0, audiosync.CrossfadeCue{}
+		return track, waveforms.CrossfadeOut[ch], waveforms.CrossfadeOut[ch], 0, audiosync.CrossfadeCue{}
 	}
 
 	if crossfade := period.CrossfadeIn[ch]; crossfade.Active {
@@ -108,14 +130,14 @@ func (rp renderPlan) trackStateAt(window renderWindow, period t.Period, ch int, 
 		if duration > 0 && currentTimeMs <= window.StartMs+duration {
 			progress := clampUnit(float64(currentTimeMs-window.StartMs) / float64(duration))
 			track := scaleTrackAmplitude(crossfade.Track, progress)
-			return track, track.Waveform, track.Waveform, 0, audiosync.CrossfadeCue{Active: true, Direction: audiosync.CrossfadeIn, Alpha: progress}
+			return track, waveforms.CrossfadeIn[ch], waveforms.CrossfadeIn[ch], 0, audiosync.CrossfadeCue{Active: true, Direction: audiosync.CrossfadeIn, Alpha: progress}
 		}
 		track := crossfade.Track
-		return track, track.Waveform, track.Waveform, 0, audiosync.CrossfadeCue{}
+		return track, waveforms.CrossfadeIn[ch], waveforms.CrossfadeIn[ch], 0, audiosync.CrossfadeCue{}
 	}
 
 	track := interpolateTrack(period.TrackStart[ch], period.TrackEnd[ch], alpha)
-	return track, period.TrackStart[ch].Waveform, period.TrackEnd[ch].Waveform, alpha, audiosync.CrossfadeCue{}
+	return track, waveforms.Start[ch], waveforms.End[ch], alpha, audiosync.CrossfadeCue{}
 }
 
 func scaleTrackAmplitude(track t.Track, scale float64) t.Track {

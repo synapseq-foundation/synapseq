@@ -8,6 +8,7 @@ import (
 	"math"
 	"testing"
 
+	wt "github.com/synapseq-foundation/synapseq/v4/internal/audio/wavetable"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -57,7 +58,7 @@ func TestEngine_Sync_InterpolatesTrackAndSignal(ts *testing.T) {
 	if channel.Track.Type != t.TrackBinauralBeat {
 		ts.Fatalf("unexpected track type: got %v", channel.Track.Type)
 	}
-	if channel.WaveformStart != t.WaveformSine || channel.WaveformEnd != t.WaveformTriangle {
+	if channel.WaveformStart != int(wt.SineID) || channel.WaveformEnd != int(wt.TriangleID) {
 		ts.Fatalf("unexpected waveform morph state: got %v -> %v", channel.WaveformStart, channel.WaveformEnd)
 	}
 	assertAlmostEqual(ts, channel.WaveformAlpha, 0.5, 0.0001)
@@ -241,10 +242,12 @@ func testCue(periodIdx int, period t.Period, next t.Period, timeMs int) Cue {
 	for index := 0; index < t.NumberOfChannels; index++ {
 		track := interpolateTrackForTest(period.TrackStart[index], period.TrackEnd[index], alpha)
 		amplitude, increment, effectStep := compileSignalStateForTest(track)
+		waveformStart, _ := wt.BuiltinID(period.TrackStart[index].Waveform)
+		waveformEnd, _ := wt.BuiltinID(period.TrackEnd[index].Waveform)
 		cue.Channels[index] = ChannelCue{
 			Track:         track,
-			WaveformStart: period.TrackStart[index].Waveform,
-			WaveformEnd:   period.TrackEnd[index].Waveform,
+			WaveformStart: waveformStart,
+			WaveformEnd:   waveformEnd,
 			WaveformAlpha: alpha,
 			Amplitude:     amplitude,
 			Increment:     increment,

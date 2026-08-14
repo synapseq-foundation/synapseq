@@ -11,6 +11,7 @@ type Sequence struct {
 	Periods    []Period
 	Presets    []Preset
 	Options    *SequenceOptions
+	Waveforms  []WaveformDefinition
 	Comments   []string
 	RawContent []byte
 }

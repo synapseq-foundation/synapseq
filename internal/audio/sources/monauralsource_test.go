@@ -15,7 +15,7 @@ import (
 func TestMonauralSampleAveragesDistinctPhases(ts *testing.T) {
 	processor := efx.NewProcessor(44100, wt.Init())
 	source := NewMonaural(Signal{
-		Waveform:  efx.WaveformMorph{Start: t.WaveformSquare, End: t.WaveformSquare, Alpha: 0},
+		Waveform:  efx.WaveformMorph{Start: wt.SquareID, End: wt.SquareID, Alpha: 0},
 		Amplitude: [2]int{7, 0},
 	})
 

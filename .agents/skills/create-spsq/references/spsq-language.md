@@ -43,6 +43,7 @@ Supported top-level forms:
 @ambiance ocean
 @music bed audio/meditation
 @music theme
+@waveform softpulse 0 0 20 60 100 60 20 0
 @extends presets/base
 ```
 
@@ -51,6 +52,7 @@ Supported top-level forms:
 - The one-argument ambiance/music form uses the resource name as its path.
 - A local `@extends` path resolves to `.spsc`, not `.spsq`.
 - `.spsc` files use the same options and preset syntax but cannot contain timeline entries or another `@extends`.
+- Custom waveform definitions require 2 through 16384 decimal points in the range `0..100`. Their names are case-sensitive, unique across the merged sequence, and cannot be `sine`, `square`, `triangle`, or `sawtooth` in any letter case.
 
 Local paths:
 
@@ -61,7 +63,9 @@ Local paths:
 
 Local ambiance resolves `.wav` first, then `.mp3`; WAV is preferable for seamless loops. Local music resolves `.mp3` first, then `.wav`; music is finite and does not loop automatically. Remote URLs must resolve to WAV or MP3 by extension or MIME type.
 
-Declare every ambiance or music name before referencing it in a track.
+Declare every ambiance, music, or custom waveform name before referencing it in a track.
+
+Custom waveform points are equally spaced around one cycle and linearly interpolated, including the segment from the final point back to the first. Values map as `0 -> -1`, `50 -> 0`, and `100 -> +1`. Use a custom waveform only when the requested shape cannot be expressed clearly with a built-in; do not add one merely for novelty.
 
 ## Presets and inheritance
 
@@ -100,7 +104,7 @@ Override syntax is:
 
 The current parser accepts `INDEX` values `1` through `15`. Override kinds are `tone`, `binaural`, `monaural`, `isochronic`, `waveform`, `pan`, `modulation`, `doppler`, `smooth`, `amplitude`, and `intensity`.
 
-Numeric overrides beginning with `+` or `-` are relative to the template value; unsigned values replace it. The override must match the inherited track: for example, `smooth` requires noise, `binaural` requires a binaural track, and `pan` requires an existing pan effect. Waveform values are absolute keywords, not numeric.
+Numeric overrides beginning with `+` or `-` are relative to the template value; unsigned values replace it. The override must match the inherited track: for example, `smooth` requires noise, `binaural` requires a binaural track, and `pan` requires an existing pan effect. Waveform values are absolute built-in or declared custom names, not numeric.
 
 ## Track forms
 
@@ -118,7 +122,9 @@ Indent every track with exactly two ASCII spaces.
   tone 220 binaural 10 effect doppler 0.8 intensity 40 amplitude 15
 ```
 
-Waveforms are `sine` (default), `square`, `triangle`, and `sawtooth`. Tone effects are `pan`, `modulation`, and `doppler`. When present, tokens must occur in the shown order: optional beat, optional effect, `intensity`, then `amplitude`.
+Built-in waveforms are `sine` (default), `square`, `triangle`, and `sawtooth`; a declared custom waveform name is accepted in the same position. Tone effects are `pan`, `modulation`, and `doppler`. When present, tokens must occur in the shown order: optional beat, optional effect, `intensity`, then `amplitude`.
+
+The waveform shapes pure, binaural, and monaural oscillators. On isochronic tracks, the same waveform shapes both the carrier and gate. Compatible timeline changes morph between custom and built-in tables while retaining phase. Sharp custom segments can add harmonics and aliasing because tables are not band-limited.
 
 ### Noise
 
@@ -140,7 +146,7 @@ Noise colors are `white`, `pink`, and `brown`. Noise effects are `pan` and `modu
   music bed effect modulation 0.1 intensity 25 amplitude 15
 ```
 
-Ambiance and music support `pan` and `modulation`, not `doppler`. Their source name must match an `@ambiance` or `@music` declaration. Although the current parser permits a waveform prefix for these sources, avoid it unless retaining that behavior from a read-only reference in a new derived sequence because waveform is primarily meaningful for generated tones.
+Ambiance and music support `pan` and `modulation`, not `doppler`. Their source name must match an `@ambiance` or `@music` declaration. A waveform prefix does not reshape external PCM, but it does shape waveform-driven pan or modulation. Use it only when that motion is intentional.
 
 ## Values and limits
 
@@ -259,6 +265,18 @@ focus-high from base-focus
 00:10:00 silence
 ```
 
+### Custom waveform
+
+```spsq
+@waveform softpulse 0 0 20 60 100 60 20 0
+
+focus
+  waveform softpulse tone 200 isochronic 10 amplitude 20
+
+00:00:00 focus
+00:05:00 focus
+```
+
 ## Common failures
 
 - A top-level `tone`, `noise`, `ambiance`, `music`, or `track` line: indent it with exactly two spaces under a preset.
@@ -272,4 +290,5 @@ focus-high from base-focus
 - An intermediate `silence`: transition directly between active presets; SynapSeq handles incompatible channels with automatic boundary crossfades.
 - Excessive steps: reduce them or lengthen the following interval.
 - Unexpected extra tokens: restore the exact token order; arbitrary inline comments are not supported.
+- An unknown, duplicate, or built-in custom waveform name: declare one unique non-built-in name at the top and reference its exact spelling.
 - Spaces in paths: use a path without spaces because quoting does not exist.

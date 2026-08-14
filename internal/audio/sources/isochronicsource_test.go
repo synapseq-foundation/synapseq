@@ -15,7 +15,7 @@ import (
 func TestIsochronicSampleReturnsSilenceWhenModulationFactorIsZero(ts *testing.T) {
 	processor := efx.NewProcessor(44100, wt.Init())
 	source := NewIsochronic(Signal{
-		Waveform:  efx.WaveformMorph{Start: t.WaveformSawtooth, End: t.WaveformSawtooth, Alpha: 0},
+		Waveform:  efx.WaveformMorph{Start: wt.SawtoothID, End: wt.SawtoothID, Alpha: 0},
 		Amplitude: [2]int{4096, 0},
 	})
 

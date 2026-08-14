@@ -54,7 +54,7 @@ Run only one applicable command. Validation is evidence for the explanation, not
 
 4. Explain the sequence in this order:
    - a plain-language overview of the sound and total duration;
-   - top-level options, comments, declared resources, and extends;
+   - top-level options, comments, declared resources, custom waveform definitions, and extends;
    - each playable preset and template, including inherited overrides and effective track order;
    - what each track contributes: source, rhythm or beat, waveform, amplitude, smoothness, and effects;
    - a chronological phase table with interval duration, active preset, transition, steps, and the change toward the next entry;
@@ -87,7 +87,7 @@ Start with the four-part mental model: options, presets, indented tracks or over
 For a general syntax lesson, cover:
 
 1. line orientation, whitespace tokenization, comments, and two-space indentation;
-2. options and resource declarations;
+2. options, resource declarations, and optional named custom waveforms;
 3. normal presets, templates, inheritance, and overrides;
 4. tone, noise, ambiance, and music tracks;
 5. timeline timestamps, transitions, steps, `silence`, fades, and crossfades;

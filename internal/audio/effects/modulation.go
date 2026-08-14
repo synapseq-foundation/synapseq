@@ -5,6 +5,7 @@
 package effects
 
 import (
+	wt "github.com/synapseq-foundation/synapseq/v4/internal/audio/wavetable"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -42,8 +43,8 @@ func (p *Processor) CalcModulationFactorForMorph(waveform WaveformMorph, offset 
 	return lerpFloat64(start, end, alpha)
 }
 
-func (p *Processor) modulationFactorForWaveform(waveform t.WaveformType, offset int) float64 {
-	if waveform == t.WaveformSquare {
+func (p *Processor) modulationFactorForWaveform(waveform wt.ID, offset int) float64 {
+	if waveform == wt.SquareID {
 		return softSquareModulationFactor(offset)
 	}
 

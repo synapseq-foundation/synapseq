@@ -29,6 +29,8 @@ const (
 	KeywordOptionMusic = "music"
 	// Represents an extends option
 	KeywordOptionExtends = "extends"
+	// Represents a custom waveform option
+	KeywordOptionWaveform = "waveform"
 	// Represents a waveform option
 	KeywordWaveform = "waveform"
 	// Represents a sine wave
@@ -95,19 +97,21 @@ const (
 
 // ParseOptions stores raw option values parsed from text input
 type ParseOptions struct {
-	Values   map[string]string
-	Ambiance map[string]string
-	Music    map[string]string
-	Extends  []string
+	Values    map[string]string
+	Ambiance  map[string]string
+	Music     map[string]string
+	Extends   []string
+	Waveforms []WaveformDefinition
 }
 
 // NewParseOptions creates an empty ParseOptions instance
 func NewParseOptions() *ParseOptions {
 	return &ParseOptions{
-		Values:   make(map[string]string),
-		Ambiance: make(map[string]string),
-		Music:    make(map[string]string),
-		Extends:  []string{},
+		Values:    make(map[string]string),
+		Ambiance:  make(map[string]string),
+		Music:     make(map[string]string),
+		Extends:   []string{},
+		Waveforms: []WaveformDefinition{},
 	}
 }
 
@@ -129,11 +133,15 @@ func (po *ParseOptions) Merge(other *ParseOptions) {
 	if po.Extends == nil {
 		po.Extends = []string{}
 	}
+	if po.Waveforms == nil {
+		po.Waveforms = []WaveformDefinition{}
+	}
 
 	maps.Copy(po.Values, other.Values)
 	maps.Copy(po.Ambiance, other.Ambiance)
 	maps.Copy(po.Music, other.Music)
 	po.Extends = append(po.Extends, other.Extends...)
+	po.Waveforms = append(po.Waveforms, other.Waveforms...)
 }
 
 // Build converts parsed raw options into validated SequenceOptions

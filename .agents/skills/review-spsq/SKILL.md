@@ -93,7 +93,7 @@ Review all five dimensions:
 4. temporal composition;
 5. responsible positioning.
 
-Use the checklist to find objective failures and likely unexpected behavior. Build the effective track layout of inherited presets before comparing consecutive timeline states. Explain when compatible tracks interpolate, incompatible channels crossfade, and active/off channels use boundary fades.
+Use the checklist to find objective failures and likely unexpected behavior. Build the effective track layout of inherited presets before comparing consecutive timeline states. Resolve custom waveform definitions and references, then explain when compatible tracks and waveform tables interpolate, incompatible channels crossfade, and active/off channels use boundary fades.
 
 Calculate the total duration and each timeline interval. Remember that the transition and steps written on one entry govern the interval toward the next entry. A repeated identical preset creates a static hold unless it intentionally marks a later fade or another target follows.
 
