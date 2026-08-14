@@ -44,6 +44,7 @@ Supported top-level forms include:
 @volume 80
 @ambiance rain audio/rain
 @music bed audio/meditation
+@waveform softpulse 0 0 20 60 100 60 20 0
 @extends presets/base
 ```
 
@@ -55,6 +56,7 @@ Supported top-level forms include:
 - Local music tries `.mp3` before `.wav` and does not loop automatically.
 - Local `@extends` resolves to an `.spsc` file.
 - Remote resources must resolve as WAV or MP3 by extension or MIME type.
+- `@waveform` defines one reusable cycle with 2 through 16384 decimal points from `0` through `100`. Names are case-sensitive, unique across extensions, and cannot conflict case-insensitively with a built-in waveform.
 
 Options lock when preset, track, override, or timeline content begins. Resource declarations must precede tracks that reference them.
 
@@ -85,7 +87,7 @@ focus-high from focus-base
   track 2 amplitude +2
 ```
 
-Inherited presets cannot add new tracks. An unsigned numeric override replaces the template value; a value beginning with `+` or `-` changes it relatively. Waveform overrides use an absolute keyword.
+Inherited presets cannot add new tracks. An unsigned numeric override replaces the template value; a value beginning with `+` or `-` changes it relatively. Waveform overrides use an absolute built-in or declared custom name.
 
 Explain both the written override and the effective result. Track order matters because corresponding channels interpolate when consecutive presets have compatible sources and effects. Incompatible channels crossfade at their boundary.
 
@@ -107,7 +109,10 @@ Normal presets must contain tracks, directly or through inheritance. Preset name
 - `binaural` sends nearby frequencies to opposite stereo channels; the stated beat is their difference and stereo headphones are the meaningful listening setup.
 - `monaural` mixes nearby frequencies into both channels, producing a physical amplitude beat.
 - `isochronic` gates a tone on and off at the stated rate, creating a pronounced pulse.
-- Waveforms are `sine` (default), `square`, `triangle`, and `sawtooth`. Compared with sine, the others add progressively different harmonic color; avoid claiming an exact subjective effect.
+- Built-in waveforms are `sine` (default), `square`, `triangle`, and `sawtooth`. A custom name may be used after a valid `@waveform` definition.
+- Custom values map `0 -> -1`, `50 -> 0`, and `100 -> +1`. Points are equally spaced and linearly joined around the cycle, including final-to-first interpolation.
+- The waveform shapes pure, binaural, and monaural oscillators. Isochronic tracks use it for both carrier and gate. Pan and modulation can also use it; doppler remains sine-based.
+- Compatible transitions morph normally between any custom or built-in pair while preserving phase. Sharp segments may add harmonics or aliasing; avoid claiming an exact subjective effect.
 
 Carrier and beat values must be non-negative. Binaural and monaural values must remain below twice the carrier so their lower component stays positive.
 

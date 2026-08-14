@@ -6,6 +6,8 @@ package sync
 
 import t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 
+import wt "github.com/synapseq-foundation/synapseq/v4/internal/audio/wavetable"
+
 type Engine struct {
 	SampleRate          int
 	UpdateAmbianceIndex func(ch int, periodIdx int, trackType t.TrackType)
@@ -18,8 +20,8 @@ type Cue struct {
 
 type ChannelCue struct {
 	Track         t.Track
-	WaveformStart t.WaveformType
-	WaveformEnd   t.WaveformType
+	WaveformStart wt.ID
+	WaveformEnd   wt.ID
 	WaveformAlpha float64
 	Amplitude     [2]int
 	Increment     [2]int
@@ -64,8 +66,8 @@ func (e *Engine) syncChannel(ch int, channels []t.Channel, periodIdx int, cue Ch
 	previousEffectType := channel.Track.Effect.Type
 
 	channel.Track = cue.Track
-	channel.WaveformStart = cue.WaveformStart
-	channel.WaveformEnd = cue.WaveformEnd
+	channel.WaveformStart = int(cue.WaveformStart)
+	channel.WaveformEnd = int(cue.WaveformEnd)
 	channel.WaveformAlpha = cue.WaveformAlpha
 	channel.Amplitude = cue.Amplitude
 	channel.Increment = cue.Increment

@@ -16,7 +16,8 @@ type ParsedTrackDeclaration struct {
 	Resonance              float64
 	AmplitudePercent       float64
 	NoiseSmooth            float64
-	Waveform               t.WaveformType
+	Waveform               t.WaveformName
+	WaveformSpan           diag.Span
 	SourceName             string
 	EffectType             t.EffectType
 	EffectValue            float64
@@ -44,25 +45,21 @@ func (ctx *TextParser) HasTrack() bool {
 
 func (ctx *TextParser) ParseTrackDeclaration() (*ParsedTrackDeclaration, error) {
 	waveform := t.WaveformSine
+	var waveformSpan diag.Span
 
 	if tok, ok := ctx.Line.Peek(); ok && tok == t.KeywordWaveform {
 		ctx.Line.NextToken() // skip "waveform"
 
-		wfTok, err := ctx.Line.NextExpectOneOf(t.KeywordSine, t.KeywordSquare, t.KeywordTriangle, t.KeywordSawtooth)
-		if err != nil {
-			return nil, err
+		wfTok, ok := ctx.Line.NextToken()
+		if !ok {
+			return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "waveform name")
 		}
-
-		switch wfTok {
-		case t.KeywordSine:
-			waveform = t.WaveformSine
-		case t.KeywordSquare:
-			waveform = t.WaveformSquare
-		case t.KeywordTriangle:
-			waveform = t.WaveformTriangle
-		case t.KeywordSawtooth:
-			waveform = t.WaveformSawtooth
+		wfSpan, _ := ctx.Line.LastTokenSpan()
+		if err := nr.IsValid(wfTok); err != nil {
+			return nil, diag.Validation(err.Error()).WithSpan(wfSpan).WithFound(wfTok).WithCause(err)
 		}
+		waveform = t.WaveformName(wfTok)
+		waveformSpan = wfSpan
 
 		if _, err := ctx.Line.NextExpectOneOf(t.KeywordTone, t.KeywordAmbiance, t.KeywordMusic); err != nil {
 			return nil, err
@@ -80,7 +77,9 @@ func (ctx *TextParser) ParseTrackDeclaration() (*ParsedTrackDeclaration, error) 
 		Waveform:   waveform,
 		EffectType: t.EffectOff,
 	}
-
+	if waveformSpan.HasLocation() {
+		decl.WaveformSpan = waveformSpan
+	}
 	switch first {
 	case t.KeywordTone:
 		var err error

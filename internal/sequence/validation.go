@@ -6,7 +6,9 @@ package sequence
 
 import (
 	"fmt"
+	"slices"
 
+	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
 	p "github.com/synapseq-foundation/synapseq/v4/internal/preset"
 	tl "github.com/synapseq-foundation/synapseq/v4/internal/timeline"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
@@ -21,6 +23,9 @@ func validateSequenceOptionPlacement(sourceFile string, lineNumber int, lineText
 }
 
 func mergeSequenceExtends(sourceFile string, lineNumber int, lineText string, parsedOptions *t.ParseOptions, rawOptions *t.ParseOptions, presets *[]t.Preset, loadedExtends map[string]struct{}) error {
+	if err := validateWaveformDefinitions(sourceFile, lineNumber, lineText, rawOptions.Waveforms, parsedOptions.Waveforms); err != nil {
+		return err
+	}
 	rawOptions.Merge(parsedOptions)
 
 	for _, extFile := range parsedOptions.Extends {
@@ -34,6 +39,9 @@ func mergeSequenceExtends(sourceFile string, lineNumber int, lineText string, pa
 		}
 
 		loadedExtends[extFile] = struct{}{}
+		if err := validateWaveformDefinitions(sourceFile, lineNumber, lineText, rawOptions.Waveforms, extendsConfig.Options.Waveforms); err != nil {
+			return err
+		}
 		*presets = append(*presets, extendsConfig.Presets...)
 		rawOptions.Merge(extendsConfig.Options)
 	}
@@ -189,6 +197,7 @@ func finalizeSequence(rawContent []byte, presets []t.Preset, periods []t.Period,
 		Periods:    periods,
 		Presets:    presets,
 		Options:    options,
+		Waveforms:  append([]t.WaveformDefinition{}, rawOptions.Waveforms...),
 		Comments:   comments,
 		RawContent: rawContent,
 	}, nil
@@ -207,12 +216,61 @@ func validateExtendsOptionContent(sourceFile string, lineNumber int, lineText st
 		return lineDiagnostic(sourceFile, lineNumber, lineText, "extends option is not supported in extended files")
 	}
 
+	if err := validateWaveformDefinitions(sourceFile, lineNumber, lineText, rawOptions.Waveforms, parsedOptions.Waveforms); err != nil {
+		return err
+	}
 	rawOptions.Merge(parsedOptions)
 	if _, err := rawOptions.Build(); err != nil {
 		return withSource(err, sourceFile, lineNumber, lineText)
 	}
 
 	return nil
+}
+
+func validateWaveformDefinitions(
+	sourceFile string,
+	lineNumber int,
+	lineText string,
+	existing []t.WaveformDefinition,
+	incoming []t.WaveformDefinition,
+) error {
+	names := make([]t.WaveformName, 0, len(existing)+len(incoming))
+	for _, definition := range existing {
+		names = append(names, definition.Name)
+	}
+	for _, definition := range incoming {
+		if slices.Contains(names, definition.Name) {
+			return lineDiagnostic(
+				sourceFile,
+				lineNumber,
+				lineText,
+				fmt.Sprintf("duplicate waveform definition: %s", definition.Name),
+			)
+		}
+		names = append(names, definition.Name)
+	}
+	return nil
+}
+
+func validateWaveformReference(name t.WaveformName, span diag.Span, definitions []t.WaveformDefinition) error {
+	name = name.Effective()
+	if slices.Contains([]t.WaveformName{t.WaveformSine, t.WaveformSquare, t.WaveformTriangle, t.WaveformSawtooth}, name) {
+		return nil
+	}
+
+	candidates := t.BuiltinWaveformNames()
+	for _, definition := range definitions {
+		if definition.Name == name {
+			return nil
+		}
+		candidates = append(candidates, definition.Name.String())
+	}
+
+	diagnostic := diag.Validation(fmt.Sprintf("unknown waveform %q", name)).WithSpan(span).WithFound(name.String()).WithExpected(candidates...)
+	if suggestion, ok := diag.ClosestMatch(name.String(), candidates, diag.DefaultSuggestionDistance(name.String())); ok {
+		diagnostic.WithSuggestion(fmt.Sprintf("did you mean %q?", suggestion))
+	}
+	return diagnostic
 }
 
 func validateExtendsPresetPlacement(sourceFile string, lineNumber int, lineText string, presetCount int) error {

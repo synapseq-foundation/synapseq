@@ -47,7 +47,7 @@ func TestParseTrackOverrideDeclaration(ts *testing.T) {
 		expectedValue float64
 		expectedRaw   string
 		expectedRel   bool
-		expectedWave  t.WaveformType
+		expectedWave  t.WaveformName
 		expectedError bool
 	}{
 		{name: "tone absolute", line: "  track 1 tone 350", expectedKind: t.KeywordTone, expectedIndex: 1, expectedValue: 350, expectedRaw: "350"},
@@ -60,7 +60,7 @@ func TestParseTrackOverrideDeclaration(ts *testing.T) {
 		{name: "track index out of range", line: "  track 20 amplitude 10", expectedError: true},
 		{name: "missing value", line: "  track 1 amplitude", expectedError: true},
 		{name: "invalid value", line: "  track 1 amplitude abc", expectedError: true},
-		{name: "invalid waveform value", line: "  track 1 waveform pulse", expectedError: true},
+		{name: "custom waveform value", line: "  track 1 waveform pulse", expectedKind: t.KeywordWaveform, expectedIndex: 1, expectedWave: "pulse"},
 		{name: "extra tokens", line: "  track 1 amplitude 10 extra", expectedError: true},
 	}
 

@@ -48,6 +48,7 @@ Accepted options are:
 - `@volume INTEGER`;
 - `@ambiance NAME [PATH-OR-URL]`;
 - `@music NAME [PATH-OR-URL]`;
+- `@waveform NAME POINT POINT [POINT ...]`;
 - `@extends PATH-OR-URL`.
 
 Check:
@@ -63,6 +64,9 @@ Check:
 - local extends resolves to `.spsc`;
 - remote resources identify or serve WAV/MP3 where validation can verify them;
 - dependencies exist and are readable.
+- custom waveform names are valid, unique across the merged sequence, and do not conflict case-insensitively with `sine`, `square`, `triangle`, or `sawtooth`;
+- each custom waveform has 2 through 16384 ordinary decimal points, all in `0..100`;
+- every custom waveform reference resolves with exact case.
 
 An `.spsc` may contain options and presets but no timeline or nested `@extends`. Do not report a declared-but-unused ambiance or music resource as invalid; classify it as an efficiency warning.
 
@@ -80,7 +84,7 @@ Check:
 - override indexes exist in the inherited layout;
 - override kinds match the inherited track and effect;
 - relative numeric overrides use a leading `+` or `-`;
-- waveform overrides use an absolute waveform keyword;
+- waveform overrides use an absolute built-in or declared custom waveform name;
 - user presets remain within the engine limit;
 - direct presets remain within 16 channels;
 - current override indexes remain within `1` through `15`.
@@ -107,7 +111,7 @@ Supported source families:
 - `ambiance`;
 - `music`.
 
-Tone may be pure, binaural, monaural, or isochronic. Waveforms are `sine`, `square`, `triangle`, and `sawtooth`.
+Tone may be pure, binaural, monaural, or isochronic. Built-in waveforms are `sine`, `square`, `triangle`, and `sawtooth`; declared custom names are accepted in the same waveform position.
 
 Effects:
 
@@ -125,6 +129,9 @@ Check:
 - `smooth` appears only on noise and before any effect;
 - effect is followed by its value, `intensity`, then amplitude;
 - external resource names match declarations.
+- custom points are interpreted as evenly spaced bipolar values (`0 -> -1`, `50 -> 0`, `100 -> +1`) with circular linear interpolation;
+- an isochronic custom waveform intentionally shapes both its carrier and gate, not only the pulse envelope;
+- waveform prefixes on ambiance/music affect pan or modulation motion, not the external PCM itself.
 
 Do not invent unsupported codecs, effects, source types, or implied parameters.
 
@@ -187,4 +194,5 @@ Check:
 - Ambiance loops and may expose MP3 padding at loop points.
 - A source/effect mismatch crossfades instead of interpolating parameters.
 - Amplitude is a control percentage, not dB SPL.
+- Compatible waveform changes, including custom-to-built-in changes, morph by phase-aligned table interpolation rather than boundary crossfade.
 - A syntactically valid combination can still be dense, masked, abrupt, or artistically incoherent.

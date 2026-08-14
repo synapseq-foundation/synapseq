@@ -57,7 +57,8 @@ func TestJSONSerializesLoadedSequence(ts *testing.T) {
 	}
 
 	seq := &t.Sequence{
-		Comments: []string{},
+		Comments:  []string{},
+		Waveforms: []t.WaveformDefinition{{Name: "pulse", Points: []float64{-1, 0, 1}}},
 		Options: &t.SequenceOptions{
 			SampleRate: 44100,
 			Volume:     100,
@@ -93,6 +94,15 @@ func TestJSONSerializesLoadedSequence(ts *testing.T) {
 	}
 	if _, ok := options["sources"]; ok {
 		ts.Fatalf("did not expect legacy sources object: %#v", options["sources"])
+	}
+	waveforms := got["waveforms"].([]any)
+	if len(waveforms) != 1 {
+		ts.Fatalf("expected one custom waveform, got %d", len(waveforms))
+	}
+	waveform := waveforms[0].(map[string]any)
+	points := waveform["points"].([]any)
+	if waveform["name"] != "pulse" || points[0] != float64(0) || points[1] != float64(50) || points[2] != float64(100) {
+		ts.Fatalf("unexpected custom waveform JSON: %#v", waveform)
 	}
 
 	presets := got["presets"].([]any)

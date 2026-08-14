@@ -47,6 +47,7 @@ func (ctx *TextParser) ParseOption(_ string) (*t.ParseOptions, error) {
 		t.KeywordOptionAmbiance,
 		t.KeywordOptionMusic,
 		t.KeywordOptionExtends,
+		t.KeywordOptionWaveform,
 	}
 
 	switch option {
@@ -105,6 +106,45 @@ func (ctx *TextParser) ParseOption(_ string) (*t.ParseOptions, error) {
 		}
 
 		parsed.Extends = append(parsed.Extends, content)
+	case t.KeywordOptionWaveform:
+		name, ok := ctx.Line.NextToken()
+		if !ok {
+			return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "waveform name")
+		}
+		nameSpan, _ := ctx.Line.LastTokenSpan()
+		if err := nr.IsValid(name); err != nil {
+			return nil, diag.Validation(err.Error()).WithSpan(nameSpan).WithFound(name).WithCause(err)
+		}
+		if t.IsBuiltinWaveformName(name) {
+			return nil, diag.Validation(fmt.Sprintf("waveform name %q is reserved for a built-in waveform", name)).WithSpan(nameSpan).WithFound(name)
+		}
+
+		points := make([]float64, 0)
+		for {
+			_, ok := ctx.Line.Peek()
+			if !ok {
+				break
+			}
+			value, err := ctx.Line.NextFloat64Strict()
+			if err != nil {
+				return nil, err
+			}
+			valueSpan, _ := ctx.Line.LastTokenSpan()
+			if value < 0 || value > 100 {
+				return nil, diag.Validation("waveform points must be between 0 and 100").WithSpan(valueSpan).WithFound(fmt.Sprintf("%g", value))
+			}
+			if len(points) == t.MaxWaveformPoints {
+				return nil, diag.Validation(fmt.Sprintf("waveform cannot contain more than %d points", t.MaxWaveformPoints)).WithSpan(valueSpan)
+			}
+			points = append(points, t.NormalizeWaveformPoint(value))
+		}
+		if len(points) < t.MinWaveformPoints {
+			return nil, diag.Validation(fmt.Sprintf("waveform must contain at least %d points", t.MinWaveformPoints)).WithSpan(nameSpan).WithFound(name)
+		}
+		parsed.Waveforms = append(parsed.Waveforms, t.WaveformDefinition{
+			Name:   t.WaveformName(name),
+			Points: points,
+		})
 	default:
 		diagnostic := diag.Parse("invalid option").WithSpan(span).WithFound(option).WithExpected(validOptions...)
 		if suggestion, ok := diag.ClosestMatch(option, validOptions, diag.DefaultSuggestionDistance(option)); ok {

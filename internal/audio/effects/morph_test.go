@@ -7,6 +7,7 @@ package effects
 import (
 	"testing"
 
+	wt "github.com/synapseq-foundation/synapseq/v4/internal/audio/wavetable"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -14,7 +15,7 @@ func TestWaveformMorphFromChannelFallsBackToTrackWaveform(ts *testing.T) {
 	channel := &t.Channel{Track: t.Track{Waveform: t.WaveformTriangle}}
 
 	morph := WaveformMorphFromChannel(channel)
-	if morph.Start != t.WaveformTriangle || morph.End != t.WaveformTriangle || morph.Alpha != 0 {
+	if morph.Start != wt.TriangleID || morph.End != wt.TriangleID || morph.Alpha != 0 {
 		ts.Fatalf("unexpected fallback morph: %+v", morph)
 	}
 }

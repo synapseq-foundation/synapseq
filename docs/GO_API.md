@@ -73,10 +73,13 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	builder.SampleRate(44100).Volume(80)
+	builder.
+		SampleRate(44100).
+		Volume(80).
+		Waveform("softpulse", 0, 0, 20, 60, 100, 60, 20, 0)
 
 	focus := builder.NewPreset("focus")
-	focus.Tone(220).Binaural(12).Amplitude(25)
+	focus.Tone(220).Waveform("softpulse").Binaural(12).Amplitude(25)
 	focus.Pink(15).Amplitude(12)
 
 	timeline := builder.
@@ -96,6 +99,8 @@ func main() {
 	}
 }
 ```
+
+`Builder.Waveform(name, points...)` emits a top-level `@waveform` definition with 2 through 16384 points in the range `0..100`. `Preset.Waveform(name)` selects that named waveform for the most recently added track. The regular SPSQ loading pipeline validates names, point counts, ranges, duplicates, built-in conflicts, and references when `Load` is called.
 
 ## Convert SBaGen Sequences
 

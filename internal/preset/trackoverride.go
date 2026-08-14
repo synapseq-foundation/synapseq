@@ -20,7 +20,7 @@ type TrackOverrideSpec struct {
 	RawValue   string
 	ValueSpan  diag.Span
 	Relative   bool
-	Waveform   t.WaveformType
+	Waveform   t.WaveformName
 }
 
 func ApplyTrackOverride(preset *t.Preset, spec *TrackOverrideSpec) error {

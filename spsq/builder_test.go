@@ -94,6 +94,105 @@ func TestBuilderLoadReturnsValidationError(t *testing.T) {
 	}
 }
 
+func TestBuilderCustomWaveform(t *testing.T) {
+	builder, err := New(synapseq.NewAppContext())
+	if err != nil {
+		t.Fatalf("New error: %v", err)
+	}
+	builder.Waveform("softpulse", 0, 0, 20.5, 60, 100, 60, 20, 0)
+
+	focus := builder.NewPreset("focus")
+	focus.Tone(200).Waveform("softpulse").Isochronic(10).Amplitude(20)
+
+	loaded, err := builder.
+		PresetAt(0, focus).
+		PresetAt(time.Second, focus).
+		Load()
+	if err != nil {
+		t.Fatalf("Load error: %v", err)
+	}
+
+	content := string(loaded.RawContent())
+	if !strings.Contains(content, "@waveform softpulse 0 0 20.5 60 100 60 20 0") {
+		t.Fatalf("missing custom waveform declaration:\n%s", content)
+	}
+	if !strings.Contains(content, "waveform softpulse tone 200.00 isochronic 10.00 amplitude 20.00") {
+		t.Fatalf("missing custom waveform reference:\n%s", content)
+	}
+	if got := loaded.Presets()[0].Tracks[0].Waveform; got != "softpulse" {
+		t.Fatalf("expected public preset waveform softpulse, got %q", got)
+	}
+}
+
+func TestBuilderCustomWaveformValidationErrors(t *testing.T) {
+	tests := []struct {
+		name        string
+		waveform    string
+		points      []float64
+		wantErrText string
+	}{
+		{name: "built-in", waveform: "sine", points: []float64{0, 100}, wantErrText: "reserved for a built-in waveform"},
+		{name: "too few points", waveform: "pulse", points: []float64{0}, wantErrText: "at least 2 points"},
+		{name: "point out of range", waveform: "pulse", points: []float64{0, 101}, wantErrText: "between 0 and 100"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			builder, err := New(synapseq.NewAppContext())
+			if err != nil {
+				t.Fatalf("New error: %v", err)
+			}
+			builder.Waveform(test.waveform, test.points...)
+			preset := builder.NewPreset("focus")
+			preset.Tone(200).Amplitude(20)
+			_, err = builder.PresetAt(0, preset).PresetAt(time.Second, preset).Load()
+			if err == nil || !strings.Contains(err.Error(), test.wantErrText) {
+				t.Fatalf("expected error containing %q, got %v", test.wantErrText, err)
+			}
+		})
+	}
+}
+
+func TestBuilderRejectsDuplicateAndUnknownCustomWaveforms(t *testing.T) {
+	tests := []struct {
+		name        string
+		configure   func(*Builder, *Preset)
+		wantErrText string
+	}{
+		{
+			name: "duplicate definition",
+			configure: func(builder *Builder, _ *Preset) {
+				builder.Waveform("pulse", 0, 100).Waveform("pulse", 0, 50, 100)
+			},
+			wantErrText: "duplicate waveform definition: pulse",
+		},
+		{
+			name: "unknown reference",
+			configure: func(_ *Builder, preset *Preset) {
+				preset.Waveform("missing")
+			},
+			wantErrText: `unknown waveform "missing"`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			builder, err := New(synapseq.NewAppContext())
+			if err != nil {
+				t.Fatalf("New error: %v", err)
+			}
+			preset := builder.NewPreset("focus")
+			preset.Tone(200).Amplitude(20)
+			test.configure(builder, preset)
+
+			_, err = builder.PresetAt(0, preset).PresetAt(time.Second, preset).Load()
+			if err == nil || !strings.Contains(err.Error(), test.wantErrText) {
+				t.Fatalf("expected error containing %q, got %v", test.wantErrText, err)
+			}
+		})
+	}
+}
+
 func TestNewRequiresContext(t *testing.T) {
 	_, err := New(nil)
 	if err == nil {

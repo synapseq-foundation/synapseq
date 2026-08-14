@@ -11,9 +11,9 @@ const (
 
 type Processor struct {
 	sampleRate int
-	waveTables [4][]int
+	waveTables [][]int
 }
 
-func NewProcessor(sampleRate int, waveTables [4][]int) *Processor {
+func NewProcessor(sampleRate int, waveTables [][]int) *Processor {
 	return &Processor{sampleRate: sampleRate, waveTables: waveTables}
 }

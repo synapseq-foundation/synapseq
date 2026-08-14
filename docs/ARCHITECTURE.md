@@ -94,7 +94,7 @@ This package defines the domain model used throughout the system.
 It includes:
 
 - `Sequence`, `SequenceOptions`, `Period`, `Track`, `Channel`, `Preset`;
-- domain enums such as waveform, track type, transition type, and effect type;
+- domain values such as symbolic waveform names and definitions, track type, transition type, and effect type;
 - Remote metadata types such as `RemoteEntry` and `RemoteIndex`;
 - parser-side option accumulation types such as `ParseOptions`.
 
@@ -133,7 +133,7 @@ The root package owns `AudioRenderer` and the main rendering loop. Supporting re
 - `audio/effects` for panning, modulation, doppler, waveform morph, and effect runtime helpers;
 - `audio/sources` for compiled source evaluators such as pure tone, binaural, monaural, isochronic, noise, ambiance, and music;
 - `audio/sync` for temporal synchronization and per-period updates;
-- `audio/wavetable` for waveform lookup tables;
+- `audio/wavetable` for built-in table generation, custom point interpolation, and dense rendering IDs;
 - `audio/output` and `audio/pcm` for output encoding;
 - `audio/status` for rendering progress and status output.
 
@@ -143,7 +143,7 @@ Inside the root package, the engine is currently being decomposed into three exp
 - a compiled signal layer (`channelSignalState`) that carries already-resolved waveform, effect, amplitude, and increment data for the active channel state;
 - a mutable runtime layer (`types.Channel`) that now trends toward phase, offsets, and smoothing state rather than full semantic ownership of the signal.
 
-This refactor is intentionally incremental. The parser and `.spsq` syntax remain unchanged while the audio engine boundary is being pushed away from `types.Period` and toward explicit compiled artifacts.
+Waveform names remain symbolic through parsing, preset inheritance, extends merging, inspection, and timeline construction. Renderer creation compiles custom definitions once, assigns stable built-in IDs followed by dense custom IDs, and pre-resolves period cues. No name lookup or custom-point interpolation occurs per sample.
 
 ### `internal/remote`
 

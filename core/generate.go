@@ -46,6 +46,7 @@ func (lc *LoadedContext) buildAudioRendererOptions(sequence *t.Sequence) *audio.
 		Music:        sequence.Options.Music,
 		StatusOutput: lc.appCtx.statusOutput,
 		Colors:       lc.appCtx.statusColors,
+		Waveforms:    sequence.Waveforms,
 	}
 }
 

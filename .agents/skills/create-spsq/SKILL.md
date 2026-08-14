@@ -45,7 +45,7 @@ Treat focus, sleep, relaxation, meditation, and similar terms as creative listen
 ## Design the sequence
 
 1. Outline a small number of phases that fit the requested duration: usually an entrance, one or more active phases, and an exit.
-2. Define options first. Add only options the sequence needs; the defaults are sample rate `44100` and volume `100`.
+2. Define options and any explicitly requested custom waveforms first. Add only declarations the sequence needs; the defaults are sample rate `44100` and volume `100`.
 3. Define presets before the timeline. Keep corresponding track purposes in the same declaration order across presets so compatible channels interpolate instead of crossfading.
 4. Use `silence` only as the first and/or final timeline entry to mediate a fade-compatible entrance or exit. Never emit consecutive `silence` entries. To begin a fade-out before the end, repeat the active preset at the fade start and place one `silence` entry at the final timestamp.
 5. Use `smooth` for rounded changes, `steady` for linear changes, and `ease-in` or `ease-out` only when their directional behavior is intentional.
@@ -116,6 +116,7 @@ If validation cannot run because the CLI or referenced media is unavailable, per
 - a planned fade-out repeats the active preset at the fade start and reaches one final `silence` entry;
 - numeric ranges and step limits match the reference;
 - local resource paths have no extensions, backslashes, absolute roots, or `..` segments.
+- custom waveform definitions use unique non-built-in names, contain 2 through 16384 points in `0..100`, and every reference resolves exactly.
 
 ## Deliver the result
 

@@ -9,8 +9,8 @@ const NumberOfChannels = 16
 // Channel represents a channel state
 type Channel struct {
 	Track         Track
-	WaveformStart WaveformType
-	WaveformEnd   WaveformType
+	WaveformStart int
+	WaveformEnd   int
 	WaveformAlpha float64
 	Type          TrackType
 	Amplitude     [2]int

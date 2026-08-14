@@ -30,7 +30,7 @@ type AudioRenderer struct {
 	signals         [t.NumberOfChannels]channelSignalState
 	plan            renderPlan
 	periods         []t.Period
-	waveTables      [4][]int
+	waveTables      [][]int
 	noiseGenerator  *NoiseGenerator
 	syncEngine      *audiosync.Engine
 	effectProcessor *efx.Processor
@@ -49,6 +49,7 @@ type AudioRendererOptions struct {
 	Music        map[string]string
 	StatusOutput io.Writer
 	Colors       bool
+	Waveforms    []t.WaveformDefinition
 }
 
 // NewAudioRenderer creates a new AudioRenderer instance
@@ -69,6 +70,14 @@ func NewAudioRenderer(p []t.Period, ar *AudioRendererOptions) (*AudioRenderer, e
 		return nil, fmt.Errorf("no periods defined in the sequence")
 	}
 
+	waveforms, err := wt.Compile(ar.Waveforms)
+	if err != nil {
+		return nil, err
+	}
+	if err := validateRendererWaveforms(p, waveforms); err != nil {
+		return nil, err
+	}
+
 	ambianceState, err := amb.NewRuntime(p, ar.Ambiance, ar.SampleRate, func(paths []string, sampleRate int) (amb.SampleAudio, error) {
 		return amb.NewAudio(paths, sampleRate)
 	})
@@ -79,13 +88,16 @@ func NewAudioRenderer(p []t.Period, ar *AudioRendererOptions) (*AudioRenderer, e
 		return mus.NewAudio(paths, sampleRate)
 	})
 	if err != nil {
+		if ambianceState != nil {
+			ambianceState.Close()
+		}
 		return nil, err
 	}
 
 	renderer := &AudioRenderer{
-		plan:                 compileRenderPlan(p, ar.SampleRate),
+		plan:                 compileRenderPlanWithWaveforms(p, ar.SampleRate, waveforms),
 		periods:              p,
-		waveTables:           wt.Init(),
+		waveTables:           waveforms.Tables,
 		noiseGenerator:       NewNoiseGenerator(),
 		ambianceState:        ambianceState,
 		musicState:           musicState,
@@ -102,6 +114,25 @@ func NewAudioRenderer(p []t.Period, ar *AudioRendererOptions) (*AudioRenderer, e
 	renderer.effectProcessor = efx.NewProcessor(renderer.SampleRate, renderer.waveTables)
 
 	return renderer, nil
+}
+
+func validateRendererWaveforms(periods []t.Period, registry *wt.Registry) error {
+	for periodIndex := range periods {
+		for channel := range t.NumberOfChannels {
+			tracks := []t.Track{
+				periods[periodIndex].TrackStart[channel],
+				periods[periodIndex].TrackEnd[channel],
+				periods[periodIndex].CrossfadeOut[channel].Track,
+				periods[periodIndex].CrossfadeIn[channel].Track,
+			}
+			for _, track := range tracks {
+				if _, ok := registry.Lookup(track.Waveform); !ok {
+					return fmt.Errorf("unknown waveform %q in rendering period %d channel %d", track.Waveform, periodIndex, channel+1)
+				}
+			}
+		}
+	}
+	return nil
 }
 
 // Render generates the audio and passes buffers to the consume function

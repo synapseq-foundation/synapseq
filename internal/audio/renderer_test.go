@@ -481,3 +481,69 @@ func TestRenderRaw_PropagatesWriteError(ts *testing.T) {
 		ts.Fatalf("expected error from writer, got nil")
 	}
 }
+
+func TestNewAudioRendererCompilesCustomWaveform(ts *testing.T) {
+	var start, end t.Period
+	start.Time = 0
+	end.Time = 1000
+	track := t.Track{
+		Type:      t.TrackPureTone,
+		Waveform:  "pulse",
+		Carrier:   200,
+		Amplitude: t.AmplitudePercentToRaw(10),
+	}
+	start.TrackStart[0] = track
+	start.TrackEnd[0] = track
+
+	renderer, err := NewAudioRenderer([]t.Period{start, end}, &AudioRendererOptions{
+		SampleRate: 44100,
+		Volume:     100,
+		Ambiance:   map[string]string{},
+		Music:      map[string]string{},
+		Waveforms: []t.WaveformDefinition{{
+			Name:   "pulse",
+			Points: []float64{-1, 1},
+		}},
+	})
+	if err != nil {
+		ts.Fatalf("NewAudioRenderer error: %v", err)
+	}
+	if len(renderer.waveTables) != 5 {
+		ts.Fatalf("expected four built-ins and one custom table, got %d", len(renderer.waveTables))
+	}
+	if got := renderer.plan.cue(0, 0).Channels[0].WaveformStart; got != 4 {
+		ts.Fatalf("expected custom waveform ID 4, got %d", got)
+	}
+	nonzero := false
+	if err := renderer.Render(func(samples []int) error {
+		for _, sample := range samples {
+			if sample != 0 {
+				nonzero = true
+				break
+			}
+		}
+		return nil
+	}); err != nil {
+		ts.Fatalf("Render error: %v", err)
+	}
+	if !nonzero {
+		ts.Fatal("expected rendered custom waveform samples")
+	}
+}
+
+func TestNewAudioRendererRejectsUnknownWaveform(ts *testing.T) {
+	var start, end t.Period
+	start.TrackStart[0] = t.Track{Type: t.TrackPureTone, Waveform: "missing"}
+	start.TrackEnd[0] = start.TrackStart[0]
+	end.Time = 1000
+
+	_, err := NewAudioRenderer([]t.Period{start, end}, &AudioRendererOptions{
+		SampleRate: 44100,
+		Volume:     100,
+		Ambiance:   map[string]string{},
+		Music:      map[string]string{},
+	})
+	if err == nil || !strings.Contains(err.Error(), `unknown waveform "missing"`) {
+		ts.Fatalf("expected unknown waveform error, got %v", err)
+	}
+}

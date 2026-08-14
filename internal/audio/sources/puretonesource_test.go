@@ -15,12 +15,12 @@ import (
 func TestPureToneSampleUsesCompiledWaveformMorph(ts *testing.T) {
 	processor := efx.NewProcessor(44100, wt.Init())
 	source := NewPureTone(Signal{
-		Waveform: efx.WaveformMorph{Start: t.WaveformSine, End: t.WaveformSquare, Alpha: 0.25},
+		Waveform:  efx.WaveformMorph{Start: wt.SineID, End: wt.SquareID, Alpha: 0.25},
 		Amplitude: [2]int{4096, 0},
 	})
 
 	got := source.Sample(processor, t.PhasePrecision)
-	want := 4096 * processor.WaveformSampleForMorph(efx.WaveformMorph{Start: t.WaveformSine, End: t.WaveformSquare, Alpha: 0.25}, t.PhasePrecision)
+	want := 4096 * processor.WaveformSampleForMorph(efx.WaveformMorph{Start: wt.SineID, End: wt.SquareID, Alpha: 0.25}, t.PhasePrecision)
 	if got != want {
 		ts.Fatalf("unexpected pure tone sample: got %d, want %d", got, want)
 	}

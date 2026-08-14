@@ -13,10 +13,16 @@ import (
 )
 
 type document struct {
-	Comments []string        `json:"comments"`
-	Options  options         `json:"options"`
-	Presets  []preset        `json:"presets"`
-	Timeline []timelineEntry `json:"timeline"`
+	Comments  []string        `json:"comments"`
+	Options   options         `json:"options"`
+	Waveforms []waveform      `json:"waveforms"`
+	Presets   []preset        `json:"presets"`
+	Timeline  []timelineEntry `json:"timeline"`
+}
+
+type waveform struct {
+	Name   string    `json:"name"`
+	Points []float64 `json:"points"`
 }
 
 type options struct {
@@ -69,13 +75,26 @@ func JSON(sequence *t.Sequence) ([]byte, error) {
 	}
 
 	doc := document{
-		Comments: sequenceComments(sequence),
-		Options:  sequenceOptions(sequence.Options),
-		Presets:  sequencePresets(sequence.Presets),
-		Timeline: sequenceTimeline(sequence.Periods),
+		Comments:  sequenceComments(sequence),
+		Options:   sequenceOptions(sequence.Options),
+		Waveforms: sequenceWaveforms(sequence.Waveforms),
+		Presets:   sequencePresets(sequence.Presets),
+		Timeline:  sequenceTimeline(sequence.Periods),
 	}
 
 	return json.MarshalIndent(doc, "", "  ")
+}
+
+func sequenceWaveforms(definitions []t.WaveformDefinition) []waveform {
+	result := make([]waveform, 0, len(definitions))
+	for _, definition := range definitions {
+		points := make([]float64, len(definition.Points))
+		for index, point := range definition.Points {
+			points[index] = t.DenormalizeWaveformPoint(point)
+		}
+		result = append(result, waveform{Name: definition.Name.String(), Points: points})
+	}
+	return result
 }
 
 func sequenceComments(sequence *t.Sequence) []string {

@@ -75,7 +75,7 @@ type Track struct {
 	// Resonance frequency
 	Resonance float64
 	// Waveform shape
-	Waveform WaveformType
+	Waveform WaveformName
 	// Named audio source
 	SourceName string
 	// Noise smooth (0-100, for 0-100%)
@@ -149,12 +149,12 @@ func (tr *Track) String() string {
 	case TrackAmbiance, TrackMusic:
 		keyword := tr.Type.String()
 		if tr.Effect.Type == EffectOff {
-			if tr.Waveform == WaveformSine {
+			if tr.Waveform.Effective() == WaveformSine {
 				return fmt.Sprintf("%s %s %s %.2f", keyword, tr.SourceName, KeywordAmplitude, tr.Amplitude.ToPercent())
 			}
 			return fmt.Sprintf("%s %s %s %s %s %.2f", KeywordWaveform, tr.Waveform.String(), keyword, tr.SourceName, KeywordAmplitude, tr.Amplitude.ToPercent())
 		}
-		if tr.Waveform == WaveformSine {
+		if tr.Waveform.Effective() == WaveformSine {
 			return fmt.Sprintf("%s %s %s %s %.2f %s %.2f %s %.2f", keyword, tr.SourceName, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
 		}
 		return fmt.Sprintf("%s %s %s %s %s %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), keyword, tr.SourceName, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())

@@ -103,6 +103,7 @@ func TestParseTrack_Tones(ts *testing.T) {
 			ts.Errorf("For line '%s', unexpected error: %v", tt.line, err)
 			continue
 		}
+		tr.WaveformSpan = diag.Span{}
 		if *tr != tt.wantTrack {
 			ts.Errorf("Test %d: For line '%s', expected track %+v but got %+v", i, tt.line, tt.wantTrack, *tr)
 		}
@@ -135,6 +136,7 @@ func TestParseTrack_Noise(ts *testing.T) {
 			ts.Errorf("For line '%s', unexpected error: %v", tt.line, err)
 			continue
 		}
+		tr.WaveformSpan = diag.Span{}
 		if *tr != tt.wantTrack {
 			ts.Errorf("For line '%s', expected track %+v but got %+v", tt.line, tt.wantTrack, *tr)
 		}
@@ -209,6 +211,7 @@ func TestParseTrack_Ambiance(ts *testing.T) {
 			ts.Errorf("For line '%s', unexpected error: %v", tt.line, err)
 			continue
 		}
+		tr.WaveformSpan = diag.Span{}
 		if *tr != tt.wantTrack {
 			ts.Errorf("For line '%s', expected track %+v but got %+v", tt.line, tt.wantTrack, *tr)
 		}
@@ -274,6 +277,7 @@ func TestParseTrack_Music(ts *testing.T) {
 			ts.Errorf("For line '%s', unexpected error: %v", tt.line, err)
 			continue
 		}
+		tr.WaveformSpan = diag.Span{}
 		if *tr != tt.wantTrack {
 			ts.Errorf("For line '%s', expected track %+v but got %+v", tt.line, tt.wantTrack, *tr)
 		}

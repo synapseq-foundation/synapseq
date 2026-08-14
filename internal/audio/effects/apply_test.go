@@ -8,13 +8,14 @@ import (
 	"math"
 	"testing"
 
+	wt "github.com/synapseq-foundation/synapseq/v4/internal/audio/wavetable"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 func TestApplyEffectToStereoUsesSharedModulationPhase(ts *testing.T) {
 	processor := newTestProcessor()
 	channel := &t.Channel{Effect: t.EffectState{Offset: 0, Increment: 0}}
-	waveform := WaveformMorph{Start: t.WaveformSine, End: t.WaveformSine, Alpha: 0}
+	waveform := WaveformMorph{Start: wt.SineID, End: wt.SineID, Alpha: 0}
 
 	left, right := processor.ApplyEffectToStereo(channel, t.Effect{Type: t.EffectModulation, Intensity: 1}, waveform, 1000, 2000)
 	if left != 300 || right != 600 {
@@ -29,7 +30,7 @@ func TestApplyEffectToMonoPanRoutesSignal(ts *testing.T) {
 	processor := newTestProcessor()
 	step := int(t.SineTableSize/4) * t.PhasePrecision
 	channel := &t.Channel{Effect: t.EffectState{Offset: 0, Increment: step}}
-	waveform := WaveformMorph{Start: t.WaveformSine, End: t.WaveformSine, Alpha: 0}
+	waveform := WaveformMorph{Start: wt.SineID, End: wt.SineID, Alpha: 0}
 
 	left, right := processor.ApplyEffectToMono(channel, t.Effect{Type: t.EffectPan, Intensity: 1}, waveform, 1000)
 	if left != 0 || right != 1000 {

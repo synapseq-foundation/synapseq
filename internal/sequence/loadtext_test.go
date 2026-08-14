@@ -152,18 +152,21 @@ beta
 	wantNoise := t.Track{
 		Type:      t.TrackBrownNoise,
 		Amplitude: t.AmplitudePercentToRaw(40),
+		Waveform:  t.WaveformSine,
 	}
 	wantToneAlpha := t.Track{
 		Type:      t.TrackBinauralBeat,
 		Carrier:   300,
 		Resonance: 10,
 		Amplitude: t.AmplitudePercentToRaw(20),
+		Waveform:  t.WaveformSine,
 	}
 	wantToneBeta := t.Track{
 		Type:      t.TrackBinauralBeat,
 		Carrier:   300,
 		Resonance: 14,
 		Amplitude: t.AmplitudePercentToRaw(15),
+		Waveform:  t.WaveformSine,
 	}
 
 	if !hasTrack(periods[0].TrackStart, wantNoise) || !hasTrack(periods[0].TrackStart, wantToneAlpha) {
@@ -401,6 +404,136 @@ alpha from base
 	}
 	if result.Periods[0].TrackEnd[0] != track {
 		ts.Fatalf("expected track end to match track start after override")
+	}
+}
+
+func TestLoadTextSequence_CustomWaveformAcrossSupportedTracks(ts *testing.T) {
+	seq := `
+@waveform softpulse 0 0 20 60 100 60 20 0
+@ambiance rain https://example.com/rain.wav
+@music meditation https://example.com/meditation.mp3
+
+alpha
+  waveform softpulse tone 200 amplitude 10
+  waveform softpulse tone 210 binaural 8 amplitude 10
+  waveform softpulse tone 220 monaural 8 amplitude 10
+  waveform softpulse tone 230 isochronic 8 effect modulation 2 intensity 50 amplitude 10
+  waveform softpulse ambiance rain effect pan 1 intensity 50 amplitude 10
+  waveform softpulse music meditation effect modulation 2 intensity 50 amplitude 10
+
+beta
+  waveform softpulse tone 240 amplitude 10
+
+00:00:00 alpha
+00:00:01 beta
+`
+	path := writeSeqFile(ts, seq)
+
+	result, err := loadTextSequenceFile(ts, path)
+	if err != nil {
+		ts.Fatalf("LoadTextSequence error: %v", err)
+	}
+	if len(result.Waveforms) != 1 || result.Waveforms[0].Name != "softpulse" {
+		ts.Fatalf("unexpected waveform definitions: %+v", result.Waveforms)
+	}
+	if result.Waveforms[0].Points[0] != -1 || result.Waveforms[0].Points[4] != 1 {
+		ts.Fatalf("unexpected normalized points: %v", result.Waveforms[0].Points)
+	}
+
+	wantTypes := []t.TrackType{
+		t.TrackPureTone,
+		t.TrackBinauralBeat,
+		t.TrackMonauralBeat,
+		t.TrackIsochronicBeat,
+		t.TrackAmbiance,
+		t.TrackMusic,
+	}
+	for index, wantType := range wantTypes {
+		track := result.Presets[1].Track[index]
+		if track.Type != wantType || track.Waveform != "softpulse" {
+			ts.Fatalf("track %d did not preserve custom waveform: %+v", index+1, track)
+		}
+	}
+	if result.Presets[2].Track[0].Waveform != "softpulse" {
+		ts.Fatal("expected custom waveform reuse in second preset")
+	}
+}
+
+func TestLoadTextSequence_CustomWaveformOverride(ts *testing.T) {
+	seq := `
+@waveform pulse 0 100
+
+base as template
+  tone 200 binaural 8 amplitude 10
+
+alpha from base
+  track 1 waveform pulse
+
+00:00:00 alpha
+00:00:01 alpha
+`
+	path := writeSeqFile(ts, seq)
+
+	result, err := loadTextSequenceFile(ts, path)
+	if err != nil {
+		ts.Fatalf("LoadTextSequence error: %v", err)
+	}
+	if result.Presets[2].Track[0].Waveform != "pulse" {
+		ts.Fatalf("expected custom waveform override, got %q", result.Presets[2].Track[0].Waveform)
+	}
+}
+
+func TestLoadTextSequence_RejectsUnknownWaveform(ts *testing.T) {
+	seq := `
+alpha
+  waveform missing tone 200 amplitude 10
+
+00:00:00 alpha
+00:00:01 alpha
+`
+	path := writeSeqFile(ts, seq)
+	_, err := loadTextSequenceFile(ts, path)
+	if err == nil || !strings.Contains(err.Error(), `unknown waveform "missing"`) {
+		ts.Fatalf("expected unknown waveform error, got %v", err)
+	}
+	diagnostic, ok := diag.As(err)
+	if !ok || diagnostic.Span.Column != 12 || diagnostic.Span.EndColumn != 19 {
+		ts.Fatalf("expected missing waveform span 12..19, got %#v", diagnostic)
+	}
+}
+
+func TestLoadTextSequence_RejectsDuplicateWaveform(ts *testing.T) {
+	seq := `
+@waveform pulse 0 100
+@waveform pulse 0 50 100
+
+alpha
+  tone 200 amplitude 10
+
+00:00:00 alpha
+00:00:01 alpha
+`
+	path := writeSeqFile(ts, seq)
+	_, err := loadTextSequenceFile(ts, path)
+	if err == nil || !strings.Contains(err.Error(), "duplicate waveform definition: pulse") {
+		ts.Fatalf("expected duplicate waveform error, got %v", err)
+	}
+}
+
+func TestLoadTextSequence_RejectsBuiltInWaveformDefinition(ts *testing.T) {
+	seq := `
+@waveform Triangle 0 100
+
+alpha
+  tone 200 amplitude 10
+
+00:00:00 alpha
+00:00:01 alpha
+`
+	path := writeSeqFile(ts, seq)
+	_, err := loadTextSequenceFile(ts, path)
+	if err == nil || !strings.Contains(err.Error(), "reserved for a built-in waveform") {
+		ts.Fatalf("expected built-in waveform error, got %v", err)
 	}
 }
 
@@ -831,12 +964,14 @@ preparation
 	wantNoise := t.Track{
 		Type:      t.TrackPinkNoise,
 		Amplitude: t.AmplitudePercentToRaw(50),
+		Waveform:  t.WaveformSine,
 	}
 	wantTone := t.Track{
 		Type:      t.TrackBinauralBeat,
 		Carrier:   300,
 		Resonance: 10,
 		Amplitude: t.AmplitudePercentToRaw(10),
+		Waveform:  t.WaveformSine,
 	}
 
 	if !hasTrack(result.Periods[0].TrackStart, wantNoise) || !hasTrack(result.Periods[0].TrackStart, wantTone) {

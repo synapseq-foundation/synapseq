@@ -21,8 +21,8 @@ func TestAudioRendererMix_PureToneFirstSampleAndPhaseAdvance(ts *testing.T) {
 			Type:     t.TrackPureTone,
 			Waveform: t.WaveformSquare,
 		},
-		WaveformStart: t.WaveformSquare,
-		WaveformEnd:   t.WaveformSquare,
+		WaveformStart: int(wt.SquareID),
+		WaveformEnd:   int(wt.SquareID),
 		Type:          t.TrackPureTone,
 		Amplitude:     [2]int{4096, 0},
 		Increment:     [2]int{t.PhasePrecision, 0},
@@ -30,7 +30,7 @@ func TestAudioRendererMix_PureToneFirstSampleAndPhaseAdvance(ts *testing.T) {
 
 	samples := renderer.mix(make([]int, t.BufferSize*audioChannels))
 
-	expectedRaw := renderer.channels[0].Amplitude[0] * renderer.waveTables[int(t.WaveformSquare)][1]
+	expectedRaw := renderer.channels[0].Amplitude[0] * renderer.waveTables[int(wt.SquareID)][1]
 	expected := clampPCM16(expectedRaw >> audioBitShift)
 
 	if samples[0] != expected || samples[1] != expected {
@@ -54,8 +54,8 @@ func TestAudioRendererMix_PanEffectRoutesMonoSignal(ts *testing.T) {
 				Intensity: t.IntensityPercentToRaw(100),
 			},
 		},
-		WaveformStart: t.WaveformSquare,
-		WaveformEnd:   t.WaveformSquare,
+		WaveformStart: int(wt.SquareID),
+		WaveformEnd:   int(wt.SquareID),
 		Type:          t.TrackPureTone,
 		Amplitude:     [2]int{4096, 0},
 		Increment:     [2]int{t.PhasePrecision, 0},
@@ -66,7 +66,7 @@ func TestAudioRendererMix_PanEffectRoutesMonoSignal(ts *testing.T) {
 
 	samples := renderer.mix(make([]int, t.BufferSize*audioChannels))
 
-	expectedRaw := renderer.channels[0].Amplitude[0] * renderer.waveTables[int(t.WaveformSquare)][1]
+	expectedRaw := renderer.channels[0].Amplitude[0] * renderer.waveTables[int(wt.SquareID)][1]
 	expectedRight := clampPCM16(expectedRaw >> audioBitShift)
 
 	if samples[0] != 0 || samples[1] != expectedRight {
@@ -90,8 +90,8 @@ func TestAudioRendererMix_ModulationAffectsStereoWithSharedPhase(ts *testing.T) 
 				Intensity: t.IntensityPercentToRaw(100),
 			},
 		},
-		WaveformStart: t.WaveformSawtooth,
-		WaveformEnd:   t.WaveformSawtooth,
+		WaveformStart: int(wt.SawtoothID),
+		WaveformEnd:   int(wt.SawtoothID),
 		Type:          t.TrackBinauralBeat,
 		Amplitude:     [2]int{4096, 4096},
 		Increment:     [2]int{t.PhasePrecision, t.PhasePrecision},
@@ -102,7 +102,7 @@ func TestAudioRendererMix_ModulationAffectsStereoWithSharedPhase(ts *testing.T) 
 
 	samples := renderer.mix(make([]int, t.BufferSize*audioChannels))
 
-	baseSample := renderer.channels[0].Amplitude[0] * renderer.waveTables[int(t.WaveformSawtooth)][1]
+	baseSample := renderer.channels[0].Amplitude[0] * renderer.waveTables[int(wt.SawtoothID)][1]
 	modOffset := renderer.channels[0].Effect.Increment
 	modFactor := renderer.effectProcessor.CalcModulationFactor(&renderer.channels[0], modOffset)
 	gain := 0.3 + 0.7*modFactor
@@ -129,8 +129,8 @@ func TestAudioRendererMix_SawtoothModulationUsesThresholdedCurve(ts *testing.T) 
 			Intensity: t.IntensityPercentToRaw(100),
 		},
 	}
-	channel.WaveformStart = t.WaveformSawtooth
-	channel.WaveformEnd = t.WaveformSawtooth
+	channel.WaveformStart = int(wt.SawtoothID)
+	channel.WaveformEnd = int(wt.SawtoothID)
 	channel.Effect.Offset = int(t.SineTableSize/2) * t.PhasePrecision
 
 	got := renderer.effectProcessor.ApplyModulationToCurrentPhase(channel, channel.Track.Effect, efx.WaveformMorphFromChannel(channel), 1000)
@@ -148,8 +148,8 @@ func TestAudioRendererMix_PureToneMorphsBetweenWaveforms(ts *testing.T) {
 			Type:     t.TrackPureTone,
 			Waveform: t.WaveformSine,
 		},
-		WaveformStart: t.WaveformSine,
-		WaveformEnd:   t.WaveformSquare,
+		WaveformStart: int(wt.SineID),
+		WaveformEnd:   int(wt.SquareID),
 		WaveformAlpha: 0.25,
 		Type:          t.TrackPureTone,
 		Amplitude:     [2]int{4096, 0},
@@ -158,8 +158,8 @@ func TestAudioRendererMix_PureToneMorphsBetweenWaveforms(ts *testing.T) {
 
 	samples := renderer.mix(make([]int, t.BufferSize*audioChannels))
 
-	sine := float64(renderer.waveTables[int(t.WaveformSine)][1])
-	square := float64(renderer.waveTables[int(t.WaveformSquare)][1])
+	sine := float64(renderer.waveTables[int(wt.SineID)][1])
+	square := float64(renderer.waveTables[int(wt.SquareID)][1])
 	blended := sine + (square-sine)*0.25
 	expectedRaw := int(math.Round(float64(renderer.channels[0].Amplitude[0]) * blended))
 	expected := clampPCM16(expectedRaw >> audioBitShift)
@@ -208,8 +208,8 @@ func TestAudioRendererMix_ModulationSlewsAbruptSquareGainChanges(ts *testing.T) 
 			Intensity: t.IntensityPercentToRaw(100),
 		},
 	}
-	channel.WaveformStart = t.WaveformSquare
-	channel.WaveformEnd = t.WaveformSquare
+	channel.WaveformStart = int(wt.SquareID)
+	channel.WaveformEnd = int(wt.SquareID)
 	channel.Effect.ModulationGain = 1
 	channel.Effect.ModulationInitialized = true
 
@@ -234,8 +234,8 @@ func TestAudioRendererMix_PanUsesWaveformAndSlewsSquareSwitches(ts *testing.T) {
 			Intensity: t.IntensityPercentToRaw(100),
 		},
 	}
-	channel.WaveformStart = t.WaveformSquare
-	channel.WaveformEnd = t.WaveformSquare
+	channel.WaveformStart = int(wt.SquareID)
+	channel.WaveformEnd = int(wt.SquareID)
 	channel.Effect.PanPosition = -1
 	channel.Effect.PanInitialized = true
 	channel.Effect.Offset = int(t.SineTableSize/4) * t.PhasePrecision

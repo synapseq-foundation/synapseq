@@ -7,6 +7,7 @@ package effects
 import (
 	"math"
 
+	wt "github.com/synapseq-foundation/synapseq/v4/internal/audio/wavetable"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -39,7 +40,7 @@ func (p *Processor) calcDopplerFactor(offset int, intensity t.IntensityType) flo
 		inten = 1
 	}
 
-	lfo := p.waveTables[int(t.WaveformSine)][offset>>16]
+	lfo := p.waveTables[int(wt.SineID)][offset>>16]
 	lfoNorm := float64(lfo) / float64(t.WaveTableAmplitude)
 
 	depth := 0.05 * inten
