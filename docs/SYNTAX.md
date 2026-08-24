@@ -277,7 +277,7 @@ Noise lines can describe white, pink, or brown noise, optionally with `smooth`, 
 
 Ambiance lines reference a named ambiance option and then define amplitude, with optional supported effects. The current parser also accepts a leading `waveform` token before ambiance declarations, even though waveform selection is primarily a tone-oriented concept.
 
-For tones, the selected waveform shapes pure, binaural, and monaural oscillators. On an isochronic track, the same waveform shapes both the carrier and the rhythmic gate. For ambiance and music, it does not reshape the external PCM; it affects waveform-driven `pan` or `modulation`. Doppler always uses its built-in sine motion.
+For tones, the selected waveform shapes pure, binaural, and monaural oscillators. On an isochronic track, the same waveform shapes both the carrier and the rhythmic gate. It also shapes waveform-driven `pan`, `modulation`, and `doppler` motion. For ambiance and music, it does not reshape the external PCM; it affects waveform-driven `pan` or `modulation`.
 
 Music lines reference a named music option and use the same amplitude/effect forms as ambiance. Music is finite: when the file ends, that channel becomes silent and rendering continues until the sequence timeline ends.
 

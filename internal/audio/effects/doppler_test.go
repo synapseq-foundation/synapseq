@@ -8,6 +8,7 @@ import (
 	"math"
 	"testing"
 
+	wt "github.com/synapseq-foundation/synapseq/v4/internal/audio/wavetable"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -33,8 +34,49 @@ func TestApplyDopplerPairAdvancesPhaseAndScalesBothChannels(ts *testing.T) {
 	if channel.Effect.Offset != step {
 		ts.Fatalf("unexpected doppler phase advance: got %d, want %d", channel.Effect.Offset, step)
 	}
-	factor := processor.calcDopplerFactor(step, 1)
+	factor := processor.calcDopplerFactor(WaveformMorph{}, step, 1)
 	if left != int(math.Round(100*factor)) || right != int(math.Round(200*factor)) {
 		ts.Fatalf("unexpected doppler pair output: got [%d %d], want [%d %d]", left, right, int(math.Round(100*factor)), int(math.Round(200*factor)))
+	}
+}
+
+func TestApplyDopplerUsesTrackWaveform(ts *testing.T) {
+	processor := newTestProcessor()
+	channel := &t.Channel{
+		Track:  t.Track{Waveform: t.WaveformSquare},
+		Effect: t.EffectState{Increment: t.PhasePrecision},
+	}
+
+	got := processor.ApplyDoppler(channel, t.Effect{Type: t.EffectDoppler, Intensity: 1}, 100)
+	if got != 105 {
+		ts.Fatalf("unexpected square-wave doppler increment: got %d, want 105", got)
+	}
+
+	sineFactor := processor.calcDopplerFactor(
+		WaveformMorph{Start: wt.SineID, End: wt.SineID},
+		t.PhasePrecision,
+		1,
+	)
+	if got == int(math.Round(100*sineFactor)) {
+		ts.Fatalf("doppler ignored the track waveform: got %d", got)
+	}
+}
+
+func TestApplyDopplerMorphsTrackWaveforms(ts *testing.T) {
+	processor := newTestProcessor()
+	channel := &t.Channel{
+		WaveformStart: int(wt.SineID),
+		WaveformEnd:   int(wt.SquareID),
+		WaveformAlpha: 0.5,
+		Effect:        t.EffectState{Increment: t.PhasePrecision},
+	}
+
+	got := processor.ApplyDoppler(channel, t.Effect{Type: t.EffectDoppler, Intensity: 1}, 100)
+	sine := float64(processor.waveTables[int(wt.SineID)][1])
+	square := float64(processor.waveTables[int(wt.SquareID)][1])
+	waveformValue := sine + (square-sine)*0.5
+	want := int(math.Round(100 * (1 + 0.05*waveformValue/float64(t.WaveTableAmplitude))))
+	if got != want {
+		ts.Fatalf("unexpected morphed doppler increment: got %d, want %d", got, want)
 	}
 }

@@ -149,7 +149,7 @@ The waveform has several roles:
 - pure, binaural, and monaural tones use it as their oscillator shape;
 - isochronic tracks use the same shape for both the audible carrier and the pulse gate;
 - pan and modulation use it as their motion shape, including on ambiance and music;
-- doppler motion remains sine-based;
+- pan, modulation, and doppler motion use the selected waveform;
 - compatible timeline changes morph linearly between the old and new waveform while preserving oscillator phase.
 
 The engine performs this compilation before rendering and uses integer table IDs in the sample loop. Custom waveforms are not band-limited. Steep segments, sharp corners, and high carrier frequencies can therefore emphasize harmonics or aliasing, much like square and sawtooth waves. Phase alignment also matters when morphing between differently oriented shapes.

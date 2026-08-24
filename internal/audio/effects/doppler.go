@@ -7,7 +7,6 @@ package effects
 import (
 	"math"
 
-	wt "github.com/synapseq-foundation/synapseq/v4/internal/audio/wavetable"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -17,7 +16,7 @@ func (p *Processor) ApplyDoppler(channel *t.Channel, effect t.Effect, increment 
 	}
 
 	p.advanceEffectPhase(channel)
-	factor := p.calcDopplerFactor(channel.Effect.Offset, effect.Intensity)
+	factor := p.calcDopplerFactor(WaveformMorphFromChannel(channel), channel.Effect.Offset, effect.Intensity)
 	return int(math.Round(float64(increment) * factor))
 }
 
@@ -27,11 +26,11 @@ func (p *Processor) ApplyDopplerPair(channel *t.Channel, effect t.Effect, inc0, 
 	}
 
 	p.advanceEffectPhase(channel)
-	factor := p.calcDopplerFactor(channel.Effect.Offset, effect.Intensity)
+	factor := p.calcDopplerFactor(WaveformMorphFromChannel(channel), channel.Effect.Offset, effect.Intensity)
 	return int(math.Round(float64(inc0) * factor)), int(math.Round(float64(inc1) * factor))
 }
 
-func (p *Processor) calcDopplerFactor(offset int, intensity t.IntensityType) float64 {
+func (p *Processor) calcDopplerFactor(waveform WaveformMorph, offset int, intensity t.IntensityType) float64 {
 	inten := float64(intensity)
 	if inten < 0 {
 		inten = 0
@@ -40,8 +39,7 @@ func (p *Processor) calcDopplerFactor(offset int, intensity t.IntensityType) flo
 		inten = 1
 	}
 
-	lfo := p.waveTables[int(wt.SineID)][offset>>16]
-	lfoNorm := float64(lfo) / float64(t.WaveTableAmplitude)
+	lfoNorm := p.WaveformValueForMorph(waveform, offset) / float64(t.WaveTableAmplitude)
 
 	depth := 0.05 * inten
 	return 1.0 + (depth * lfoNorm)

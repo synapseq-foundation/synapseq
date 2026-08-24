@@ -112,7 +112,7 @@ Normal presets must contain tracks, directly or through inheritance. Preset name
 - `isochronic` gates a tone on and off at the stated rate, creating a pronounced pulse.
 - Built-in waveforms are `sine` (default), `square`, `triangle`, and `sawtooth`. A custom name may be used after a valid `@waveform` definition.
 - Custom values map `0 -> -1`, `50 -> 0`, and `100 -> +1`. Points are equally spaced and linearly joined around the cycle, including final-to-first interpolation.
-- The waveform shapes pure, binaural, and monaural oscillators. Isochronic tracks use it for both carrier and gate. Pan and modulation can also use it; doppler remains sine-based.
+- The waveform shapes pure, binaural, and monaural oscillators. Isochronic tracks use it for both carrier and gate. Pan, modulation, and doppler also use it for their motion.
 - Compatible transitions morph normally between any custom or built-in pair while preserving phase. Sharp segments may add harmonics or aliasing; avoid claiming an exact subjective effect.
 
 Carrier and beat values must be non-negative. Binaural and monaural values must remain below twice the carrier so their lower component stays positive.

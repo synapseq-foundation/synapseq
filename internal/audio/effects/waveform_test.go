@@ -31,7 +31,7 @@ func TestWaveformValueForMorphInterpolatesBetweenTables(ts *testing.T) {
 	}
 }
 
-func TestCustomWaveformDrivesSamplingModulationAndPan(ts *testing.T) {
+func TestCustomWaveformDrivesSamplingAndEffects(ts *testing.T) {
 	registry, err := wt.Compile([]t.WaveformDefinition{{Name: "pulse", Points: []float64{-1, 1}}})
 	if err != nil {
 		ts.Fatalf("Compile error: %v", err)
@@ -67,5 +67,12 @@ func TestCustomWaveformDrivesSamplingModulationAndPan(ts *testing.T) {
 	)
 	if left != 0 || right != 1000 {
 		ts.Fatalf("unexpected custom waveform pan output: got [%d %d]", left, right)
+	}
+
+	channel.WaveformStart = int(id)
+	channel.WaveformEnd = int(id)
+	channel.Effect = t.EffectState{Increment: highPhase}
+	if got := processor.ApplyDoppler(channel, t.Effect{Type: t.EffectDoppler, Intensity: 1}, 100); got != 105 {
+		ts.Fatalf("unexpected custom waveform doppler increment: got %d, want 105", got)
 	}
 }
