@@ -37,7 +37,7 @@ func buildPresetFromDeclaration(sourceFile string, lineNumber int, lineText stri
 	return preset, nil
 }
 
-func buildPeriodFromDeclaration(sourceFile string, lineNumber int, lineText string, decl *parser.ParsedTimelineDeclaration, presets []t.Preset) (*t.Period, error) {
+func buildPeriodFromDeclaration(sourceFile string, lineNumber int, lineText string, decl *parser.ParsedTimelineDeclaration, presets []t.Preset, transitions []t.TransitionDefinition) (*t.Period, error) {
 	selectedPreset := p.FindPreset(strings.ToLower(decl.PresetName), presets)
 	if selectedPreset == nil {
 		return nil, lineDiagnostic(sourceFile, lineNumber, lineText, fmt.Sprintf("preset %q not found", decl.PresetName))
@@ -45,13 +45,17 @@ func buildPeriodFromDeclaration(sourceFile string, lineNumber int, lineText stri
 	if selectedPreset.IsTemplate {
 		return nil, lineDiagnostic(sourceFile, lineNumber, lineText, fmt.Sprintf("cannot use template preset %q in timeline", selectedPreset.String()))
 	}
+	if err := validateTransitionReference(decl.TransitionName, transitions); err != nil {
+		return nil, lineDiagnostic(sourceFile, lineNumber, lineText, err.Error())
+	}
 
 	return &t.Period{
-		Time:       decl.Time,
-		PresetName: selectedPreset.String(),
-		TrackStart: selectedPreset.Track,
-		TrackEnd:   selectedPreset.Track,
-		Transition: decl.Transition,
-		Steps:      decl.Steps,
+		Time:           decl.Time,
+		PresetName:     selectedPreset.String(),
+		TrackStart:     selectedPreset.Track,
+		TrackEnd:       selectedPreset.Track,
+		Transition:     decl.Transition,
+		TransitionName: decl.TransitionName,
+		Steps:          decl.Steps,
 	}, nil
 }

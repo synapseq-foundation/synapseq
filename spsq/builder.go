@@ -15,13 +15,14 @@ import (
 
 // Builder is responsible for building a sequence from a string sequence content
 type Builder struct {
-	ctx       *synapseq.AppContext
-	timeline  []timelineEntry
-	ambiance  []ambianceOption
-	music     []musicOption
-	waveforms []waveformOption
-	options   map[string]string
-	presets   []presetEntry
+	ctx         *synapseq.AppContext
+	timeline    []timelineEntry
+	ambiance    []ambianceOption
+	music       []musicOption
+	waveforms   []waveformOption
+	transitions []transitionOption
+	options     map[string]string
+	presets     []presetEntry
 }
 
 // ambianceOption holds the name and path of an ambiance source
@@ -38,6 +39,11 @@ type musicOption struct {
 
 // waveformOption holds one custom waveform definition.
 type waveformOption struct {
+	name   string
+	points []float64
+}
+
+type transitionOption struct {
 	name   string
 	points []float64
 }
@@ -63,13 +69,14 @@ func New(ctx *synapseq.AppContext) (*Builder, error) {
 	}
 
 	return &Builder{
-		ctx:       ctx,
-		timeline:  make([]timelineEntry, 0),
-		ambiance:  make([]ambianceOption, 0),
-		music:     make([]musicOption, 0),
-		waveforms: make([]waveformOption, 0),
-		options:   make(map[string]string),
-		presets:   make([]presetEntry, 0),
+		ctx:         ctx,
+		timeline:    make([]timelineEntry, 0),
+		ambiance:    make([]ambianceOption, 0),
+		music:       make([]musicOption, 0),
+		waveforms:   make([]waveformOption, 0),
+		transitions: make([]transitionOption, 0),
+		options:     make(map[string]string),
+		presets:     make([]presetEntry, 0),
 	}, nil
 }
 
@@ -97,6 +104,13 @@ func (b *Builder) content() string {
 	for _, waveform := range b.waveforms {
 		fmt.Fprintf(&content, "%s%s %s", opt, t.KeywordOptionWaveform, waveform.name)
 		for _, point := range waveform.points {
+			fmt.Fprintf(&content, " %s", formatWaveformPoint(point))
+		}
+		content.WriteByte('\n')
+	}
+	for _, transition := range b.transitions {
+		fmt.Fprintf(&content, "%s%s %s", opt, t.KeywordOptionTransition, transition.name)
+		for _, point := range transition.points {
 			fmt.Fprintf(&content, " %s", formatWaveformPoint(point))
 		}
 		content.WriteByte('\n')

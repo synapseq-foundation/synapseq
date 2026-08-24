@@ -8,12 +8,13 @@ import "fmt"
 
 // Sequence represents a brainwave sequence
 type Sequence struct {
-	Periods    []Period
-	Presets    []Preset
-	Options    *SequenceOptions
-	Waveforms  []WaveformDefinition
-	Comments   []string
-	RawContent []byte
+	Periods     []Period
+	Presets     []Preset
+	Options     *SequenceOptions
+	Waveforms   []WaveformDefinition
+	Transitions []TransitionDefinition
+	Comments    []string
+	RawContent  []byte
 }
 
 // SequenceOptions represents configuration options for a sequence

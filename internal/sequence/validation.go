@@ -26,6 +26,9 @@ func mergeSequenceExtends(sourceFile string, lineNumber int, lineText string, pa
 	if err := validateWaveformDefinitions(sourceFile, lineNumber, lineText, rawOptions.Waveforms, parsedOptions.Waveforms); err != nil {
 		return err
 	}
+	if err := validateTransitionDefinitions(sourceFile, lineNumber, lineText, rawOptions.Transitions, parsedOptions.Transitions); err != nil {
+		return err
+	}
 	rawOptions.Merge(parsedOptions)
 
 	for _, extFile := range parsedOptions.Extends {
@@ -40,6 +43,9 @@ func mergeSequenceExtends(sourceFile string, lineNumber int, lineText string, pa
 
 		loadedExtends[extFile] = struct{}{}
 		if err := validateWaveformDefinitions(sourceFile, lineNumber, lineText, rawOptions.Waveforms, extendsConfig.Options.Waveforms); err != nil {
+			return err
+		}
+		if err := validateTransitionDefinitions(sourceFile, lineNumber, lineText, rawOptions.Transitions, extendsConfig.Options.Transitions); err != nil {
 			return err
 		}
 		*presets = append(*presets, extendsConfig.Presets...)
@@ -194,12 +200,13 @@ func finalizeSequence(rawContent []byte, presets []t.Preset, periods []t.Period,
 	}
 
 	return &t.Sequence{
-		Periods:    periods,
-		Presets:    presets,
-		Options:    options,
-		Waveforms:  append([]t.WaveformDefinition{}, rawOptions.Waveforms...),
-		Comments:   comments,
-		RawContent: rawContent,
+		Periods:     periods,
+		Presets:     presets,
+		Options:     options,
+		Waveforms:   append([]t.WaveformDefinition{}, rawOptions.Waveforms...),
+		Transitions: append([]t.TransitionDefinition{}, rawOptions.Transitions...),
+		Comments:    comments,
+		RawContent:  rawContent,
 	}, nil
 }
 
@@ -219,12 +226,41 @@ func validateExtendsOptionContent(sourceFile string, lineNumber int, lineText st
 	if err := validateWaveformDefinitions(sourceFile, lineNumber, lineText, rawOptions.Waveforms, parsedOptions.Waveforms); err != nil {
 		return err
 	}
+	if err := validateTransitionDefinitions(sourceFile, lineNumber, lineText, rawOptions.Transitions, parsedOptions.Transitions); err != nil {
+		return err
+	}
 	rawOptions.Merge(parsedOptions)
 	if _, err := rawOptions.Build(); err != nil {
 		return withSource(err, sourceFile, lineNumber, lineText)
 	}
 
 	return nil
+}
+
+func validateTransitionDefinitions(sourceFile string, lineNumber int, lineText string, existing []t.TransitionDefinition, incoming []t.TransitionDefinition) error {
+	names := make([]string, 0, len(existing)+len(incoming))
+	for _, definition := range existing {
+		names = append(names, definition.Name)
+	}
+	for _, definition := range incoming {
+		if slices.Contains(names, definition.Name) {
+			return lineDiagnostic(sourceFile, lineNumber, lineText, fmt.Sprintf("duplicate transition definition: %s", definition.Name))
+		}
+		names = append(names, definition.Name)
+	}
+	return nil
+}
+
+func validateTransitionReference(name string, definitions []t.TransitionDefinition) error {
+	if name == "" {
+		return nil
+	}
+	for _, definition := range definitions {
+		if definition.Name == name {
+			return nil
+		}
+	}
+	return fmt.Errorf("unknown transition %q", name)
 }
 
 func validateWaveformDefinitions(

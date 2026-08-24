@@ -59,6 +59,7 @@ SynapSeq is best understood as a **creative and experimental audio tool**. It gi
 - optional independent left/right track amplitudes;
 - spatial movement and modulation through effects;
 - reusable custom periodic waveforms defined as amplitude points;
+- reusable custom timeline-transition curves defined as interpolation points;
 - repeatable sessions rendered as WAV, streamed as PCM, played directly, or converted to MP3;
 - reusable presets and sequences extended from other `.spsc` files.
 

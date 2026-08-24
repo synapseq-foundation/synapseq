@@ -199,6 +199,8 @@ So:
 - `ease-out` moves early and settles gently near the end;
 - `smooth` is gentle at both ends and more active around the middle.
 
+Custom transitions use `@transition name 0 ... 100` to provide an evenly sampled curve instead of a built-in shape. They apply to compatible parameter interpolation and fades involving `silence`. Automatic boundary crossfades for incompatible track types, effects, or sources remain linear. When a transition has steps, the custom curve is reapplied to every alternating leg.
+
 ### `steady`
 
 `steady` is the most neutral curve.

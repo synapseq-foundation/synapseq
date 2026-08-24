@@ -10,14 +10,16 @@ import (
 	"strings"
 
 	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
+	nr "github.com/synapseq-foundation/synapseq/v4/internal/nameref"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 type ParsedTimelineDeclaration struct {
-	Time       int
-	PresetName string
-	Transition t.TransitionType
-	Steps      int
+	Time           int
+	PresetName     string
+	Transition     t.TransitionType
+	TransitionName string
+	Steps          int
 }
 
 // parseTime parses a time string in HH:MM:SS format to milliseconds
@@ -107,7 +109,10 @@ func (ctx *TextParser) ParseTimelineDeclaration() (*ParsedTimelineDeclaration, e
 		case t.KeywordTransitionSmooth:
 			decl.Transition = t.TransitionSmooth
 		default:
-			return nil, diag.UnexpectedToken(transitionSpan, transition, t.KeywordTransitionSteady, t.KeywordTransitionEaseOut, t.KeywordTransitionEaseIn, t.KeywordTransitionSmooth)
+			if err := nr.IsValid(transition); err != nil {
+				return nil, diag.Validation(err.Error()).WithSpan(transitionSpan).WithFound(transition).WithCause(err)
+			}
+			decl.TransitionName = transition
 		}
 
 		if stepToken, ok := ctx.Line.Peek(); ok {

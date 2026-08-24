@@ -58,8 +58,9 @@ func TestJSONSerializesLoadedSequence(ts *testing.T) {
 	}
 
 	seq := &t.Sequence{
-		Comments:  []string{},
-		Waveforms: []t.WaveformDefinition{{Name: "pulse", Points: []float64{-1, 0, 1}}},
+		Comments:    []string{},
+		Waveforms:   []t.WaveformDefinition{{Name: "pulse", Points: []float64{-1, 0, 1}}},
+		Transitions: []t.TransitionDefinition{{Name: "soft-land", Points: []float64{0, 0.2, 1}}},
 		Options: &t.SequenceOptions{
 			SampleRate: 44100,
 			Volume:     100,
@@ -69,7 +70,7 @@ func TestJSONSerializesLoadedSequence(ts *testing.T) {
 		},
 		Presets: []t.Preset{*t.NewBuiltinSilencePreset(), *alpha},
 		Periods: []t.Period{
-			{Time: 0, PresetName: "alpha", Transition: t.TransitionSteady},
+			{Time: 0, PresetName: "alpha", Transition: t.TransitionSteady, TransitionName: "soft-land"},
 		},
 	}
 
@@ -105,6 +106,14 @@ func TestJSONSerializesLoadedSequence(ts *testing.T) {
 	if waveform["name"] != "pulse" || points[0] != float64(0) || points[1] != float64(50) || points[2] != float64(100) {
 		ts.Fatalf("unexpected custom waveform JSON: %#v", waveform)
 	}
+	transitions := got["transitions"].([]any)
+	if len(transitions) != 1 {
+		ts.Fatalf("expected one custom transition, got %d", len(transitions))
+	}
+	transition := transitions[0].(map[string]any)
+	if transition["name"] != "soft-land" || !slices.Equal(transition["points"].([]any), []any{float64(0), float64(20), float64(100)}) {
+		ts.Fatalf("unexpected custom transition JSON: %#v", transition)
+	}
 
 	presets := got["presets"].([]any)
 	if len(presets) != 1 {
@@ -138,7 +147,7 @@ func TestJSONSerializesLoadedSequence(ts *testing.T) {
 
 	timeline := got["timeline"].([]any)
 	entry := timeline[0].(map[string]any)
-	if entry["presetName"] != "alpha" || entry["timestamp"] != "00:00:00" {
+	if entry["presetName"] != "alpha" || entry["timestamp"] != "00:00:00" || entry["transition"] != "soft-land" {
 		ts.Fatalf("unexpected timeline entry: %#v", entry)
 	}
 

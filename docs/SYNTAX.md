@@ -108,6 +108,7 @@ The currently supported `.spsq` options are:
 - `@music <name> <path-or-url>`
 - `@music <name>` as shorthand, where the path defaults to the same name
 - `@waveform <name> <point1> <point2> ... <pointN>`
+- `@transition <name> <point1> <point2> ... <pointN>`
 - `@extends <path-or-url>`
 
 Options must appear before presets or timeline entries. Once the builder has seen a preset, track, override, or timeline line, options are locked.
@@ -157,6 +158,27 @@ Rules:
 - an unknown `waveform <name>` reference is an error.
 
 The four built-ins retain their existing formulas and rendering behavior. Custom waveforms use the same track-level `waveform <name>` syntax and the same runtime wavetable path after name resolution. Sharp corners and steep segments can produce strong harmonics and aliasing; custom tables are not band-limited.
+
+### Custom Transitions
+
+A custom transition defines an evenly spaced interpolation curve for timeline changes:
+
+```spsq
+@transition soft-land 0 2 12 42 78 96 100
+
+00:00:00 silence soft-land
+00:00:30 focus
+```
+
+Rules:
+
+- names follow normal SPSQ name rules, are case-sensitive when referenced, and must not be `steady`, `ease-in`, `ease-out`, or `smooth`, including case variants;
+- a definition requires 2 through 256 decimal points from `0` through `100` in non-decreasing order;
+- the first point must be `0` and the last `100`;
+- definitions must be unique across the `.spsq` and all extended `.spsc` files;
+- a timeline transition name must be built-in or have a matching definition.
+
+Points are normalized to `0..1`, evenly distributed over the period, and linearly interpolated between adjacent points. The same curve is reapplied to each forward or backward leg created by `steps`. Custom curves govern compatible interpolation and fades to or from `silence`; automatic crossfades for incompatible channels remain linear.
 
 ## Presets
 
@@ -631,8 +653,9 @@ comment-line         = [indent] "#" text
 option-line          = "@samplerate" integer
                      | "@volume" integer
                      | "@ambiance" name [path-or-url]
-                     | "@music" name [path-or-url]
-                     | "@waveform" name waveform-point waveform-point { waveform-point }
+                      | "@music" name [path-or-url]
+                      | "@waveform" name waveform-point waveform-point { waveform-point }
+		      | "@transition" name transition-point transition-point { transition-point }
                      | "@extends" path-or-url ;
 
 preset-line          = name
@@ -667,6 +690,7 @@ music-tail           = "amplitude" amplitude-value
 waveform-prefix      = "waveform" waveform ;
 waveform             = name ;
 waveform-point       = float ;  (* 0 through 100; 2 through 16384 points *)
+transition-point     = float ;  (* non-decreasing 0 through 100; 2 through 256 points; first 0, last 100 *)
 amplitude-value      = float | "left" float "right" float ;  (* each 0 through 100 *)
 beat-kind            = "binaural" | "monaural" | "isochronic" ;
 noise-kind           = "white" | "pink" | "brown" ;
@@ -694,7 +718,8 @@ override-value       = signed-float | waveform ;
 
 timeline-line        = time name [transition [steps]] ;
 time                 = HH ":" MM ":" SS ;
-transition           = "steady" | "ease-in" | "ease-out" | "smooth" ;
+transition           = builtin-transition | name ;
+builtin-transition   = "steady" | "ease-in" | "ease-out" | "smooth" ;
 steps                = integer ;
 
 indent2              = exactly two leading spaces ;

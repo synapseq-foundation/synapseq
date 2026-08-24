@@ -50,6 +50,7 @@ type AudioRendererOptions struct {
 	StatusOutput io.Writer
 	Colors       bool
 	Waveforms    []t.WaveformDefinition
+	Transitions  []t.TransitionDefinition
 }
 
 // NewAudioRenderer creates a new AudioRenderer instance
@@ -95,7 +96,7 @@ func NewAudioRenderer(p []t.Period, ar *AudioRendererOptions) (*AudioRenderer, e
 	}
 
 	renderer := &AudioRenderer{
-		plan:                 compileRenderPlanWithWaveforms(p, ar.SampleRate, waveforms),
+		plan:                 compileRenderPlanWithWaveformsAndTransitions(p, ar.SampleRate, waveforms, ar.Transitions),
 		periods:              p,
 		waveTables:           waveforms.Tables,
 		noiseGenerator:       NewNoiseGenerator(),

@@ -459,6 +459,49 @@ beta
 	}
 }
 
+func TestLoadTextSequence_CustomTransition(ts *testing.T) {
+	seq := `
+@transition soft-land 0 20 50 100
+
+alpha
+  tone 200 amplitude 10
+
+beta
+  tone 210 amplitude 10
+
+00:00:00 alpha
+00:00:01 beta soft-land 3
+`
+	result, err := loadTextSequenceFile(ts, writeSeqFile(ts, seq))
+	if err != nil {
+		ts.Fatalf("LoadTextSequence error: %v", err)
+	}
+	if len(result.Transitions) != 1 || result.Transitions[0].Name != "soft-land" {
+		ts.Fatalf("unexpected transition definitions: %+v", result.Transitions)
+	}
+	period := result.Periods[1]
+	if period.TransitionName != "soft-land" || period.Steps != 3 {
+		ts.Fatalf("unexpected custom transition period: %+v", period)
+	}
+}
+
+func TestLoadTextSequence_RejectsUnknownTransition(ts *testing.T) {
+	seq := `
+alpha
+  tone 200 amplitude 10
+
+beta
+  tone 210 amplitude 10
+
+00:00:00 alpha
+00:00:01 beta missing
+`
+	_, err := loadTextSequenceFile(ts, writeSeqFile(ts, seq))
+	if err == nil || !strings.Contains(err.Error(), `unknown transition "missing"`) {
+		ts.Fatalf("expected unknown transition error, got %v", err)
+	}
+}
+
 func TestLoadTextSequence_CustomWaveformOverride(ts *testing.T) {
 	seq := `
 @waveform pulse 0 100

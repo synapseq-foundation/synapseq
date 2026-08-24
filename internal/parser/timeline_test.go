@@ -37,32 +37,31 @@ func TestHasTimeline(ts *testing.T) {
 
 func TestParseTimelineDeclaration(ts *testing.T) {
 	tests := []struct {
-		line               string
-		expectError        bool
-		expectedMs         int
-		expectedPreset     string
-		expectedTransition t.TransitionType
-		expectedSteps      int
+		line                   string
+		expectError            bool
+		expectedMs             int
+		expectedPreset         string
+		expectedTransition     t.TransitionType
+		expectedTransitionName string
+		expectedSteps          int
 	}{
-		{"00:00:00 alpha", false, 0, "alpha", t.TransitionSteady, 0},
-		{"00:00:15 alpha", false, 15_000, "alpha", t.TransitionSteady, 0},
-		{"12:34:56 alpha", false, (12*3600 + 34*60 + 56) * 1000, "alpha", t.TransitionSteady, 0},
-		{"00:01:00 alpha ease-out", false, 60_000, "alpha", t.TransitionEaseOut, 0},
-		{"00:02:00 alpha ease-in", false, 120_000, "alpha", t.TransitionEaseIn, 0},
-		{"00:03:00 alpha smooth", false, 180_000, "alpha", t.TransitionSmooth, 0},
-		{"00:03:00 alpha smooth 3", false, 180_000, "alpha", t.TransitionSmooth, 3},
-		{"00:03:00 alpha steady 0", false, 180_000, "alpha", t.TransitionSteady, 0},
-		{"24:00:00 alpha", true, 0, "", t.TransitionSteady, 0},
-		{"00:60:00 alpha", true, 0, "", t.TransitionSteady, 0},
-		{"00:00:60 alpha", true, 0, "", t.TransitionSteady, 0},
-		{"00:00:05 alpha extra", true, 0, "", t.TransitionSteady, 0},
-		{"00:00:05", true, 0, "", t.TransitionSteady, 0},
-		{"00:00 alpha", true, 0, "", t.TransitionSteady, 0},
-		{"00:00:05 alpha invalid-transition", true, 0, "", t.TransitionSteady, 0},
-		{"00:00:05 alpha steady -1", true, 0, "", t.TransitionSteady, 0},
-		{"00:00:05 alpha 4", true, 0, "", t.TransitionSteady, 0},
-		{"00:00:05 alpha steady extra", true, 0, "", t.TransitionSteady, 0},
-		{"00:00:05 alpha steady 3 extra", true, 0, "", t.TransitionSteady, 0},
+		{"00:00:00 alpha", false, 0, "alpha", t.TransitionSteady, "", 0},
+		{"00:00:15 alpha", false, 15_000, "alpha", t.TransitionSteady, "", 0},
+		{"12:34:56 alpha", false, (12*3600 + 34*60 + 56) * 1000, "alpha", t.TransitionSteady, "", 0},
+		{"00:01:00 alpha ease-out", false, 60_000, "alpha", t.TransitionEaseOut, "", 0},
+		{"00:02:00 alpha ease-in", false, 120_000, "alpha", t.TransitionEaseIn, "", 0},
+		{"00:03:00 alpha smooth", false, 180_000, "alpha", t.TransitionSmooth, "", 0},
+		{"00:03:00 alpha soft-land 3", false, 180_000, "alpha", t.TransitionSteady, "soft-land", 3},
+		{"00:03:00 alpha steady 0", false, 180_000, "alpha", t.TransitionSteady, "", 0},
+		{"24:00:00 alpha", true, 0, "", t.TransitionSteady, "", 0},
+		{"00:60:00 alpha", true, 0, "", t.TransitionSteady, "", 0},
+		{"00:00:60 alpha", true, 0, "", t.TransitionSteady, "", 0},
+		{"00:00:05", true, 0, "", t.TransitionSteady, "", 0},
+		{"00:00 alpha", true, 0, "", t.TransitionSteady, "", 0},
+		{"00:00:05 alpha steady -1", true, 0, "", t.TransitionSteady, "", 0},
+		{"00:00:05 alpha 4", true, 0, "", t.TransitionSteady, "", 0},
+		{"00:00:05 alpha steady extra", true, 0, "", t.TransitionSteady, "", 0},
+		{"00:00:05 alpha steady 3 extra", true, 0, "", t.TransitionSteady, "", 0},
 	}
 
 	for _, test := range tests {
@@ -86,6 +85,9 @@ func TestParseTimelineDeclaration(ts *testing.T) {
 		}
 		if decl.Transition != test.expectedTransition {
 			ts.Errorf("For line '%s', expected transition %v but got %v", test.line, test.expectedTransition, decl.Transition)
+		}
+		if decl.TransitionName != test.expectedTransitionName {
+			ts.Errorf("For line '%s', expected transition name %q but got %q", test.line, test.expectedTransitionName, decl.TransitionName)
 		}
 		if decl.Steps != test.expectedSteps {
 			ts.Errorf("For line '%s', expected steps %d but got %d", test.line, test.expectedSteps, decl.Steps)
@@ -140,7 +142,7 @@ func TestParseTime(ts *testing.T) {
 }
 
 func TestParseTimelineTransitionDiagnostic(ts *testing.T) {
-	ctx := NewTextParser("00:00:05 alpha smooh")
+	ctx := NewTextParser("00:00:05 alpha invalid.transition")
 	_, err := ctx.ParseTimelineDeclaration()
 	if err == nil {
 		ts.Fatal("expected transition diagnostic")
@@ -150,14 +152,11 @@ func TestParseTimelineTransitionDiagnostic(ts *testing.T) {
 	if !ok {
 		ts.Fatalf("expected diag.Diagnostic, got %T", err)
 	}
-	if diagnostic.Found != "smooh" {
-		ts.Fatalf("expected found transition smooh, got %q", diagnostic.Found)
+	if diagnostic.Found != "invalid.transition" {
+		ts.Fatalf("expected found transition invalid.transition, got %q", diagnostic.Found)
 	}
-	if diagnostic.Suggestion != "did you mean \"smooth\"?" {
-		ts.Fatalf("expected smooth suggestion, got %q", diagnostic.Suggestion)
-	}
-	if diagnostic.Span.Column != 16 || diagnostic.Span.EndColumn != 21 {
-		ts.Fatalf("expected transition span 17..22, got %d..%d", diagnostic.Span.Column, diagnostic.Span.EndColumn)
+	if diagnostic.Span.Column != 16 || diagnostic.Span.EndColumn != 34 {
+		ts.Fatalf("expected transition span 16..34, got %d..%d", diagnostic.Span.Column, diagnostic.Span.EndColumn)
 	}
 }
 
