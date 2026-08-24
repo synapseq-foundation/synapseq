@@ -221,18 +221,19 @@ func ExampleLoadedContext_Presets() {
 	fmt.Printf("Presets: %d\n", len(presets))
 	fmt.Printf("Preset: %s\n", presets[0].Name)
 	fmt.Printf("Tracks: %d\n", len(presets[0].Tracks))
-	fmt.Printf("Track 1: %s %.2f %.2f %.2f\n",
+	fmt.Printf("Track 1: %s %.2f %.2f %.2f %.2f\n",
 		presets[0].Tracks[0].Type,
 		presets[0].Tracks[0].Carrier,
 		presets[0].Tracks[0].Resonance,
-		presets[0].Tracks[0].Amplitude,
+		presets[0].Tracks[0].Amplitude[0],
+		presets[0].Tracks[0].Amplitude[1],
 	)
 
 	// Output:
 	// Presets: 1
 	// Preset: alpha
 	// Tracks: 2
-	// Track 1: binaural 300.00 10.00 20.00
+	// Track 1: binaural 300.00 10.00 20.00 20.00
 }
 
 func ExampleLoadedContext_Timeline() {

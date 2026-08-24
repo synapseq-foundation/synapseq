@@ -162,14 +162,17 @@ func (p *Preset) Intensity(value float64) *Preset {
 	return p
 }
 
-// Amplitude sets the amplitude of the last track.
-func (p *Preset) Amplitude(amplitude float64) *Preset {
+// Amplitude sets the left and optional right amplitude of the last track.
+func (p *Preset) Amplitude(left float64, right ...float64) *Preset {
 	track := p.lastTrack()
 	if track == nil {
 		return p
 	}
 
-	track.Amplitude = t.AmplitudePercentToRaw(amplitude)
+	track.Amplitude = t.AmplitudePercentToRaw(left)
+	if len(right) > 0 {
+		track.Amplitude[1] = t.AmplitudePercentToRawChannel(right[0])
+	}
 	return p
 }
 

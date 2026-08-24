@@ -68,8 +68,8 @@ func (tr TrackType) String() string {
 type Track struct {
 	// Track type
 	Type TrackType
-	// Amplitude level (0-4096 for 0-100%)
-	Amplitude AmplitudeType
+	// Amplitude levels for the left and right channels (0-4096 for 0-100%).
+	Amplitude [2]AmplitudeType
 	// Carrier frequency
 	Carrier float64
 	// Resonance frequency
@@ -88,8 +88,10 @@ type Track struct {
 func (tr *Track) Validate() error {
 	effect := &tr.Effect
 
-	if tr.Amplitude < 0 || tr.Amplitude > 4096 {
-		return fmt.Errorf("amplitude must be between 0 and 100. Received: %.2f", tr.Amplitude.ToPercent())
+	for channel, amplitude := range tr.Amplitude {
+		if amplitude < 0 || amplitude > 4096 {
+			return fmt.Errorf("%s amplitude must be between 0 and 100. Received: %.2f", channelName(channel), amplitude.ToPercent())
+		}
 	}
 	if tr.Carrier < 0 {
 		return fmt.Errorf("carrier frequency must be a positive number. Received: %.2f", tr.Carrier)
@@ -123,6 +125,13 @@ func (tr *Track) Validate() error {
 	return nil
 }
 
+func channelName(channel int) string {
+	if channel == 0 {
+		return "left"
+	}
+	return "right"
+}
+
 // String returns the string representation of the Track configuration
 func (tr *Track) String() string {
 	switch tr.Type {
@@ -130,34 +139,34 @@ func (tr *Track) String() string {
 		return "--"
 	case TrackPureTone:
 		if tr.Effect.Type == EffectOff {
-			return fmt.Sprintf("%s %s %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, KeywordAmplitude, tr.Amplitude.ToPercent())
+			return fmt.Sprintf("%s %s %s %.2f %s %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, KeywordAmplitude, KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent())
 		} else {
-			return fmt.Sprintf("%s %s %s %.2f %s %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+			return fmt.Sprintf("%s %s %s %.2f %s %s %.2f %s %.2f %s %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent())
 		}
 	case TrackBinauralBeat, TrackMonauralBeat, TrackIsochronicBeat:
 		if tr.Effect.Type == EffectOff {
-			return fmt.Sprintf("%s %s %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordAmplitude, tr.Amplitude.ToPercent())
+			return fmt.Sprintf("%s %s %s %.2f %s %.2f %s %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordAmplitude, KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent())
 		} else {
-			return fmt.Sprintf("%s %s %s %.2f %s %.2f %s %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+			return fmt.Sprintf("%s %s %s %.2f %s %.2f %s %s %.2f %s %.2f %s %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent())
 		}
 	case TrackWhiteNoise, TrackPinkNoise, TrackBrownNoise:
 		if tr.Effect.Type == EffectOff {
-			return fmt.Sprintf("%s %s %s %.2f %s %.2f", KeywordNoise, tr.Type.String(), KeywordSmooth, tr.NoiseSmooth, KeywordAmplitude, tr.Amplitude.ToPercent())
+			return fmt.Sprintf("%s %s %s %.2f %s %s %.2f %s %.2f", KeywordNoise, tr.Type.String(), KeywordSmooth, tr.NoiseSmooth, KeywordAmplitude, KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent())
 		} else {
-			return fmt.Sprintf("%s %s %s %.2f %s %s %.2f %s %.2f %s %.2f", KeywordNoise, tr.Type.String(), KeywordSmooth, tr.NoiseSmooth, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+			return fmt.Sprintf("%s %s %s %.2f %s %s %.2f %s %.2f %s %s %.2f %s %.2f", KeywordNoise, tr.Type.String(), KeywordSmooth, tr.NoiseSmooth, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent())
 		}
 	case TrackAmbiance, TrackMusic:
 		keyword := tr.Type.String()
 		if tr.Effect.Type == EffectOff {
 			if tr.Waveform.Effective() == WaveformSine {
-				return fmt.Sprintf("%s %s %s %.2f", keyword, tr.SourceName, KeywordAmplitude, tr.Amplitude.ToPercent())
+				return fmt.Sprintf("%s %s %s %s %.2f %s %.2f", keyword, tr.SourceName, KeywordAmplitude, KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent())
 			}
-			return fmt.Sprintf("%s %s %s %s %s %.2f", KeywordWaveform, tr.Waveform.String(), keyword, tr.SourceName, KeywordAmplitude, tr.Amplitude.ToPercent())
+			return fmt.Sprintf("%s %s %s %s %s %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), keyword, tr.SourceName, KeywordAmplitude, KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent())
 		}
 		if tr.Waveform.Effective() == WaveformSine {
-			return fmt.Sprintf("%s %s %s %s %.2f %s %.2f %s %.2f", keyword, tr.SourceName, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+			return fmt.Sprintf("%s %s %s %s %.2f %s %.2f %s %s %.2f %s %.2f", keyword, tr.SourceName, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent())
 		}
-		return fmt.Sprintf("%s %s %s %s %s %s %.2f %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), keyword, tr.SourceName, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+		return fmt.Sprintf("%s %s %s %s %s %s %.2f %s %.2f %s %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), keyword, tr.SourceName, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent())
 	default:
 		return " ???"
 	}
@@ -170,27 +179,27 @@ func (tr *Track) ShortString() string {
 		return " -"
 	case TrackPureTone:
 		if tr.Effect.Type == EffectOff {
-			return fmt.Sprintf(" (%s:%.2f %s:%.2f)", KeywordTone, tr.Carrier, KeywordAmplitude, tr.Amplitude.ToPercent())
+			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f)", KeywordTone, tr.Carrier, KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent())
 		} else {
-			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f %s:%.2f)", KeywordTone, tr.Carrier, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f %s:%.2f %s:%.2f)", KeywordTone, tr.Carrier, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent())
 		}
 	case TrackBinauralBeat, TrackMonauralBeat, TrackIsochronicBeat:
 		if tr.Effect.Type == EffectOff {
-			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f)", KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordAmplitude, tr.Amplitude.ToPercent())
+			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f %s:%.2f)", KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent())
 		} else {
-			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f %s:%.2f %s:%.2f)", KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, tr.Amplitude.ToPercent())
+			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f %s:%.2f %s:%.2f %s:%.2f)", KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent())
 		}
 	case TrackWhiteNoise, TrackPinkNoise, TrackBrownNoise:
 		if tr.Effect.Type == EffectOff {
-			return fmt.Sprintf(" (%s:%.2f %s:%.2f)", tr.Type.String(), tr.Amplitude.ToPercent(), KeywordSmooth, tr.NoiseSmooth)
+			return fmt.Sprintf(" (%s %s:%.2f %s:%.2f %s:%.2f)", tr.Type.String(), KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent(), KeywordSmooth, tr.NoiseSmooth)
 		} else {
-			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f %s:%.2f)", tr.Type.String(), tr.Amplitude.ToPercent(), KeywordSmooth, tr.NoiseSmooth, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent())
+			return fmt.Sprintf(" (%s %s:%.2f %s:%.2f %s:%.2f %s:%.2f %s:%.2f)", tr.Type.String(), KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent(), KeywordSmooth, tr.NoiseSmooth, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent())
 		}
 	case TrackAmbiance, TrackMusic:
 		if tr.Effect.Type == EffectOff {
-			return fmt.Sprintf(" (%s:%.2f)", tr.SourceName, tr.Amplitude.ToPercent())
+			return fmt.Sprintf(" (%s %s:%.2f %s:%.2f)", tr.SourceName, KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent())
 		} else {
-			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f)", tr.SourceName, tr.Amplitude.ToPercent(), tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent())
+			return fmt.Sprintf(" (%s %s:%.2f %s:%.2f %s:%.2f %s:%.2f)", tr.SourceName, KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent(), tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent())
 		}
 	default:
 		return " ???"

@@ -74,7 +74,7 @@ func TestAdjustPeriods_FadeInFromSilence(ts *testing.T) {
 	var last, next t.Period
 
 	last.TrackStart[0] = t.Track{Type: t.TrackSilence, Waveform: t.WaveformSquare}
-	last.TrackEnd[0] = t.Track{Type: t.TrackSilence, Amplitude: 0}
+	last.TrackEnd[0] = t.Track{Type: t.TrackSilence}
 	next.TrackStart[0] = t.Track{Type: t.TrackMonauralBeat, Carrier: 200, Resonance: 6, Amplitude: t.AmplitudePercentToRaw(25), Waveform: t.WaveformTriangle}
 
 	if err := AdjustPeriods(&last, &next); err != nil {
@@ -82,7 +82,7 @@ func TestAdjustPeriods_FadeInFromSilence(ts *testing.T) {
 	}
 
 	got := last.TrackStart[0]
-	if got.Type != t.TrackMonauralBeat || got.Amplitude != 0 || got.Carrier != 200 || got.Resonance != 6 || got.Waveform != t.WaveformTriangle {
+	if got.Type != t.TrackMonauralBeat || got.Amplitude != [2]t.AmplitudeType{} || got.Carrier != 200 || got.Resonance != 6 || got.Waveform != t.WaveformTriangle {
 		ts.Fatalf("fade-in not applied as expected: %+v", got)
 	}
 	if last.TrackEnd[0] != next.TrackStart[0] {
@@ -95,7 +95,7 @@ func TestAdjustPeriods_FadeOutToSilence(ts *testing.T) {
 
 	last.TrackStart[0] = t.Track{Type: t.TrackAmbiance, Carrier: 200, Resonance: 5, Amplitude: t.AmplitudePercentToRaw(50), Waveform: t.WaveformSquare, Effect: t.Effect{Type: t.EffectPan, Intensity: t.IntensityPercentToRaw(70)}}
 	last.TrackEnd[0] = last.TrackStart[0]
-	next.TrackStart[0] = t.Track{Type: t.TrackSilence, Amplitude: 0}
+	next.TrackStart[0] = t.Track{Type: t.TrackSilence}
 
 	if err := AdjustPeriods(&last, &next); err != nil {
 		ts.Fatalf("unexpected error: %v", err)

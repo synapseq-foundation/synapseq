@@ -114,7 +114,7 @@ A commented line resembling an option, such as `# @volume 60`, is not automatica
 
 ## Review sound and timeline responsibly
 
-Assess simultaneous tracks, nearby carriers, multiple beat methods, amplitudes, noise density, competing movement effects, waveform character, masking, contrast, abrupt changes, long static phases, entrances, development, landing, and final fade.
+Assess simultaneous tracks, nearby carriers, multiple beat methods, left/right amplitudes and their post-pan balance, noise density, competing movement effects, waveform character, masking, contrast, abrupt changes, long static phases, entrances, development, landing, and final fade.
 
 Do not:
 

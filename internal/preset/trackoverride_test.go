@@ -52,16 +52,70 @@ func TestApplyTrackOverride_Success(ts *testing.T) {
 		line      string
 		checkFunc func(*testing.T, *t.Preset)
 	}{
-		{name: "override tone carrier", line: "  track 1 tone 350", checkFunc: func(tst *testing.T, p *t.Preset) { if p.Track[0].Carrier != 350 { tst.Errorf("expected carrier 350, got %v", p.Track[0].Carrier) } }},
-		{name: "override tone relative", line: "  track 1 tone +50", checkFunc: func(tst *testing.T, p *t.Preset) { if p.Track[0].Carrier != 350 { tst.Errorf("expected carrier 350, got %v", p.Track[0].Carrier) } }},
-		{name: "override resonance", line: "  track 1 binaural -3", checkFunc: func(tst *testing.T, p *t.Preset) { if p.Track[0].Resonance != 7 { tst.Errorf("expected resonance 7, got %v", p.Track[0].Resonance) } }},
-		{name: "override amplitude", line: "  track 1 amplitude 30", checkFunc: func(tst *testing.T, p *t.Preset) { expected := t.AmplitudePercentToRaw(30); if p.Track[0].Amplitude != expected { tst.Errorf("expected amplitude %v, got %v", expected, p.Track[0].Amplitude) } }},
-		{name: "override waveform", line: "  track 1 waveform triangle", checkFunc: func(tst *testing.T, p *t.Preset) { if p.Track[0].Waveform != t.WaveformTriangle { tst.Errorf("expected waveform %v, got %v", t.WaveformTriangle, p.Track[0].Waveform) } }},
-		{name: "override pan", line: "  track 2 pan +3", checkFunc: func(tst *testing.T, p *t.Preset) { if p.Track[1].Effect.Value != 8 { tst.Errorf("expected pan value 8, got %v", p.Track[1].Effect.Value) } }},
-		{name: "override intensity", line: "  track 2 intensity -15", checkFunc: func(tst *testing.T, p *t.Preset) { expected := t.IntensityPercentToRaw(60); if p.Track[1].Effect.Intensity != expected { tst.Errorf("expected intensity %v, got %v", expected, p.Track[1].Effect.Intensity) } }},
-		{name: "override ambiance waveform", line: "  track 2 waveform sawtooth", checkFunc: func(tst *testing.T, p *t.Preset) { if p.Track[1].Waveform != t.WaveformSawtooth { tst.Errorf("expected waveform %v, got %v", t.WaveformSawtooth, p.Track[1].Waveform) } }},
-		{name: "override monaural resonance", line: "  track 3 monaural +2", checkFunc: func(tst *testing.T, p *t.Preset) { if p.Track[2].Resonance != 10 { tst.Errorf("expected resonance 10, got %v", p.Track[2].Resonance) } }},
-		{name: "override smooth", line: "  track 4 smooth -5", checkFunc: func(tst *testing.T, p *t.Preset) { if p.Track[3].NoiseSmooth != 15 { tst.Errorf("expected smooth 15, got %v", p.Track[3].NoiseSmooth) } }},
+		{name: "override tone carrier", line: "  track 1 tone 350", checkFunc: func(tst *testing.T, p *t.Preset) {
+			if p.Track[0].Carrier != 350 {
+				tst.Errorf("expected carrier 350, got %v", p.Track[0].Carrier)
+			}
+		}},
+		{name: "override tone relative", line: "  track 1 tone +50", checkFunc: func(tst *testing.T, p *t.Preset) {
+			if p.Track[0].Carrier != 350 {
+				tst.Errorf("expected carrier 350, got %v", p.Track[0].Carrier)
+			}
+		}},
+		{name: "override resonance", line: "  track 1 binaural -3", checkFunc: func(tst *testing.T, p *t.Preset) {
+			if p.Track[0].Resonance != 7 {
+				tst.Errorf("expected resonance 7, got %v", p.Track[0].Resonance)
+			}
+		}},
+		{name: "override amplitude", line: "  track 1 amplitude 30", checkFunc: func(tst *testing.T, p *t.Preset) {
+			expected := t.AmplitudePercentToRaw(30)
+			if p.Track[0].Amplitude != expected {
+				tst.Errorf("expected amplitude %v, got %v", expected, p.Track[0].Amplitude)
+			}
+		}},
+		{name: "override left amplitude", line: "  track 1 left 30", checkFunc: func(tst *testing.T, p *t.Preset) {
+			expected := [2]t.AmplitudeType{t.AmplitudePercentToRawChannel(30), t.AmplitudePercentToRawChannel(20)}
+			if p.Track[0].Amplitude != expected {
+				tst.Errorf("expected amplitude %v, got %v", expected, p.Track[0].Amplitude)
+			}
+		}},
+		{name: "override relative right amplitude", line: "  track 1 right -5", checkFunc: func(tst *testing.T, p *t.Preset) {
+			expected := [2]t.AmplitudeType{t.AmplitudePercentToRawChannel(20), t.AmplitudePercentToRawChannel(15)}
+			if p.Track[0].Amplitude != expected {
+				tst.Errorf("expected amplitude %v, got %v", expected, p.Track[0].Amplitude)
+			}
+		}},
+		{name: "override waveform", line: "  track 1 waveform triangle", checkFunc: func(tst *testing.T, p *t.Preset) {
+			if p.Track[0].Waveform != t.WaveformTriangle {
+				tst.Errorf("expected waveform %v, got %v", t.WaveformTriangle, p.Track[0].Waveform)
+			}
+		}},
+		{name: "override pan", line: "  track 2 pan +3", checkFunc: func(tst *testing.T, p *t.Preset) {
+			if p.Track[1].Effect.Value != 8 {
+				tst.Errorf("expected pan value 8, got %v", p.Track[1].Effect.Value)
+			}
+		}},
+		{name: "override intensity", line: "  track 2 intensity -15", checkFunc: func(tst *testing.T, p *t.Preset) {
+			expected := t.IntensityPercentToRaw(60)
+			if p.Track[1].Effect.Intensity != expected {
+				tst.Errorf("expected intensity %v, got %v", expected, p.Track[1].Effect.Intensity)
+			}
+		}},
+		{name: "override ambiance waveform", line: "  track 2 waveform sawtooth", checkFunc: func(tst *testing.T, p *t.Preset) {
+			if p.Track[1].Waveform != t.WaveformSawtooth {
+				tst.Errorf("expected waveform %v, got %v", t.WaveformSawtooth, p.Track[1].Waveform)
+			}
+		}},
+		{name: "override monaural resonance", line: "  track 3 monaural +2", checkFunc: func(tst *testing.T, p *t.Preset) {
+			if p.Track[2].Resonance != 10 {
+				tst.Errorf("expected resonance 10, got %v", p.Track[2].Resonance)
+			}
+		}},
+		{name: "override smooth", line: "  track 4 smooth -5", checkFunc: func(tst *testing.T, p *t.Preset) {
+			if p.Track[3].NoiseSmooth != 15 {
+				tst.Errorf("expected smooth 15, got %v", p.Track[3].NoiseSmooth)
+			}
+		}},
 	}
 
 	for _, tt := range tests {

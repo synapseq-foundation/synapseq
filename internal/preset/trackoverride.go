@@ -12,15 +12,19 @@ import (
 )
 
 type TrackOverrideSpec struct {
-	TrackIndex int
-	TrackSpan  diag.Span
-	Kind       string
-	KindSpan   diag.Span
-	Value      float64
-	RawValue   string
-	ValueSpan  diag.Span
-	Relative   bool
-	Waveform   t.WaveformName
+	TrackIndex        int
+	TrackSpan         diag.Span
+	Kind              string
+	KindSpan          diag.Span
+	Value             float64
+	RawValue          string
+	ValueSpan         diag.Span
+	Relative          bool
+	Amplitude         [2]float64
+	RawAmplitude      [2]string
+	AmplitudeSpan     [2]diag.Span
+	RelativeAmplitude [2]bool
+	Waveform          t.WaveformName
 }
 
 func ApplyTrackOverride(preset *t.Preset, spec *TrackOverrideSpec) error {
@@ -97,11 +101,23 @@ func ApplyTrackOverride(preset *t.Preset, spec *TrackOverrideSpec) error {
 		preset.Track[idx].NoiseSmooth = smooth
 
 	case t.KeywordAmplitude:
+		for channel, amplitude := range spec.Amplitude {
+			if spec.RelativeAmplitude[channel] {
+				amplitude = from.Track[idx].Amplitude[channel].ToPercent() + amplitude
+			}
+			preset.Track[idx].Amplitude[channel] = t.AmplitudePercentToRawChannel(amplitude)
+		}
+	case t.KeywordLeft, t.KeywordRight:
+		channel := 0
+		if spec.Kind == t.KeywordRight {
+			channel = 1
+		}
+
 		amplitude := spec.Value
 		if spec.Relative {
-			amplitude = from.Track[idx].Amplitude.ToPercent() + amplitude
+			amplitude = from.Track[idx].Amplitude[channel].ToPercent() + amplitude
 		}
-		preset.Track[idx].Amplitude = t.AmplitudePercentToRaw(amplitude)
+		preset.Track[idx].Amplitude[channel] = t.AmplitudePercentToRawChannel(amplitude)
 
 	case t.KeywordIntensity:
 		intensity := spec.Value
@@ -124,6 +140,9 @@ func ApplyTrackOverride(preset *t.Preset, spec *TrackOverrideSpec) error {
 	}
 
 	span := spec.ValueSpan
+	if spec.Kind == t.KeywordAmplitude {
+		span = spec.AmplitudeSpan[0]
+	}
 	if !span.HasLocation() {
 		span = spec.KindSpan
 	}

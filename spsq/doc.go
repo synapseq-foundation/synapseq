@@ -92,6 +92,10 @@ Amplitude can be chained:
 	preset.White(0).Amplitude(20)
 	preset.Pink(10).Amplitude(20)
 	preset.Brown(15).Amplitude(20)
+	preset.Pink(10).Amplitude(20, 12)
+
+Amplitude accepts one percentage for matching channels or explicit left/right
+percentages with `.Amplitude(left, right)`.
 
 Builder methods return the same Builder so calls can be chained. Methods that
 modify the last track or timeline entry are no-ops when there is no matching

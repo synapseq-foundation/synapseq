@@ -19,8 +19,14 @@ func (a AmplitudeType) ToPercent() float64 {
 	return float64(a / 40.96)
 }
 
-// AmplitudePercentToRaw converts a float64 value to a raw amplitude value
-func AmplitudePercentToRaw(v float64) AmplitudeType {
+// AmplitudePercentToRaw converts a percentage into matching left and right raw amplitudes.
+func AmplitudePercentToRaw(v float64) [2]AmplitudeType {
+	amplitude := AmplitudePercentToRawChannel(v)
+	return [2]AmplitudeType{amplitude, amplitude}
+}
+
+// AmplitudePercentToRawChannel converts a percentage into one raw channel amplitude.
+func AmplitudePercentToRawChannel(v float64) AmplitudeType {
 	return AmplitudeType(v * 40.96)
 }
 

@@ -253,6 +253,8 @@ alpha
   ambiance rain effect pan 0.5 intensity 60 amplitude 30
   music meditation amplitude 50
   music meditation effect pan 0.5 intensity 60 amplitude 30
+  tone 300 binaural 10 amplitude left 10 right 5
+  noise pink amplitude left 30 right 25
 ```
 
 Supported track families are:
@@ -278,6 +280,8 @@ Ambiance lines reference a named ambiance option and then define amplitude, with
 For tones, the selected waveform shapes pure, binaural, and monaural oscillators. On an isochronic track, the same waveform shapes both the carrier and the rhythmic gate. For ambiance and music, it does not reshape the external PCM; it affects waveform-driven `pan` or `modulation`. Doppler always uses its built-in sine motion.
 
 Music lines reference a named music option and use the same amplitude/effect forms as ambiance. Music is finite: when the file ends, that channel becomes silent and rendering continues until the sequence timeline ends.
+
+`amplitude` accepts either one percentage, `amplitude <value>`, or explicit channels, `amplitude left <value> right <value>`. The one-value form applies to both channels. `left` always requires a following `right` value. Each value must be between `0` and `100`. The gains are applied after `pan`, so the declared values control the final left and right channel levels.
 
 Track declarations are rejected when:
 
@@ -317,7 +321,7 @@ The parser accepts override kinds such as:
 - `amplitude`
 - `intensity`
 
-Numeric overrides may be absolute or relative. Relative overrides are recognized by a leading `+` or `-` in the raw token.
+Numeric overrides may be absolute or relative. Relative overrides are recognized by a leading `+` or `-` in the raw token. `track N amplitude <value>` changes both channels, while `track N left <value>` and `track N right <value>` change one channel independently.
 
 ## Timeline Entries
 
@@ -641,28 +645,29 @@ track-line           = indent2 tone-track
                      | indent2 music-track ;
 
 tone-track           = [waveform-prefix] "tone" float tone-tail ;
-tone-tail            = "amplitude" float
-                     | beat-kind float "amplitude" float
-                     | "effect" tone-effect float "intensity" float "amplitude" float
-                     | beat-kind float "effect" tone-effect float "intensity" float "amplitude" float ;
+tone-tail            = "amplitude" amplitude-value
+                     | beat-kind float "amplitude" amplitude-value
+                     | "effect" tone-effect float "intensity" float "amplitude" amplitude-value
+                     | beat-kind float "effect" tone-effect float "intensity" float "amplitude" amplitude-value ;
 
 noise-track          = "noise" noise-kind noise-tail ;
-noise-tail           = "amplitude" float
-                     | "smooth" float "amplitude" float
-                     | "effect" noise-effect float "intensity" float "amplitude" float
-                     | "smooth" float "effect" noise-effect float "intensity" float "amplitude" float ;
+noise-tail           = "amplitude" amplitude-value
+                     | "smooth" float "amplitude" amplitude-value
+                     | "effect" noise-effect float "intensity" float "amplitude" amplitude-value
+                     | "smooth" float "effect" noise-effect float "intensity" float "amplitude" amplitude-value ;
 
 ambiance-track       = [waveform-prefix] "ambiance" name ambiance-tail ;
-ambiance-tail        = "amplitude" float
-                     | "effect" ambiance-effect float "intensity" float "amplitude" float ;
+ambiance-tail        = "amplitude" amplitude-value
+                     | "effect" ambiance-effect float "intensity" float "amplitude" amplitude-value ;
 
 music-track          = [waveform-prefix] "music" name music-tail ;
-music-tail           = "amplitude" float
-                     | "effect" music-effect float "intensity" float "amplitude" float ;
+music-tail           = "amplitude" amplitude-value
+                     | "effect" music-effect float "intensity" float "amplitude" amplitude-value ;
 
 waveform-prefix      = "waveform" waveform ;
 waveform             = name ;
 waveform-point       = float ;  (* 0 through 100; 2 through 16384 points *)
+amplitude-value      = float | "left" float "right" float ;  (* each 0 through 100 *)
 beat-kind            = "binaural" | "monaural" | "isochronic" ;
 noise-kind           = "white" | "pink" | "brown" ;
 tone-effect          = "pan" | "modulation" | "doppler" ;
@@ -680,9 +685,11 @@ override-kind        = "tone"
                      | "pan"
                      | "modulation"
                      | "doppler"
-                     | "smooth"
-                     | "amplitude"
-                     | "intensity" ;
+                      | "smooth"
+                      | "amplitude"
+		      | "left"
+		      | "right"
+                      | "intensity" ;
 override-value       = signed-float | waveform ;
 
 timeline-line        = time name [transition [steps]] ;

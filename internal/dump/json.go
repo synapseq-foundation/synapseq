@@ -39,16 +39,16 @@ type preset struct {
 }
 
 type track struct {
-	Index       int     `json:"index"`
-	Waveform    string  `json:"waveform"`
-	Type        string  `json:"type"`
-	Carrier     float64 `json:"carrier"`
-	Resonance   float64 `json:"resonance"`
-	Amplitude   float64 `json:"amplitude"`
-	SourceName  string  `json:"sourceName"`
-	NoiseSmooth float64 `json:"noiseSmooth"`
-	Effect      effect  `json:"effect"`
-	Line        string  `json:"line"`
+	Index       int        `json:"index"`
+	Waveform    string     `json:"waveform"`
+	Type        string     `json:"type"`
+	Carrier     float64    `json:"carrier"`
+	Resonance   float64    `json:"resonance"`
+	Amplitude   [2]float64 `json:"amplitude"`
+	SourceName  string     `json:"sourceName"`
+	NoiseSmooth float64    `json:"noiseSmooth"`
+	Effect      effect     `json:"effect"`
+	Line        string     `json:"line"`
 }
 
 type effect struct {
@@ -172,12 +172,15 @@ func presetTracks(preset *t.Preset) []track {
 
 func convertTrack(index int, src *t.Track) track {
 	return track{
-		Index:       index,
-		Waveform:    src.Waveform.String(),
-		Type:        src.Type.String(),
-		Carrier:     src.Carrier,
-		Resonance:   src.Resonance,
-		Amplitude:   src.Amplitude.ToPercent(),
+		Index:     index,
+		Waveform:  src.Waveform.String(),
+		Type:      src.Type.String(),
+		Carrier:   src.Carrier,
+		Resonance: src.Resonance,
+		Amplitude: [2]float64{
+			src.Amplitude[0].ToPercent(),
+			src.Amplitude[1].ToPercent(),
+		},
 		SourceName:  src.SourceName,
 		NoiseSmooth: src.NoiseSmooth,
 		Effect:      convertEffect(src.Effect),

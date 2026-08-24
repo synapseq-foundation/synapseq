@@ -58,6 +58,8 @@ func (ctx *TextParser) ParseTrackOverrideDeclaration() (*p.TrackOverrideSpec, er
 		t.KeywordDoppler,
 		t.KeywordSmooth,
 		t.KeywordAmplitude,
+		t.KeywordLeft,
+		t.KeywordRight,
 		t.KeywordIntensity)
 	if err != nil {
 		return nil, err
@@ -105,13 +107,29 @@ func (ctx *TextParser) ParseTrackOverrideDeclaration() (*p.TrackOverrideSpec, er
 		decl.ValueSpan, _ = ctx.Line.LastTokenSpan()
 		decl.Relative = decl.RawValue != "" && (decl.RawValue[0] == '+' || decl.RawValue[0] == '-')
 	case t.KeywordAmplitude:
+		decl.RawAmplitude[0], _ = ctx.Line.Peek()
+		decl.Amplitude[0], err = ctx.Line.NextFloat64Strict()
+		if err != nil {
+			return nil, err
+		}
+		decl.AmplitudeSpan[0], _ = ctx.Line.LastTokenSpan()
+		decl.RelativeAmplitude[0] = isRelative(decl.RawAmplitude[0])
+		decl.Amplitude[1] = decl.Amplitude[0]
+		decl.RawAmplitude[1] = decl.RawAmplitude[0]
+		decl.AmplitudeSpan[1] = decl.AmplitudeSpan[0]
+		decl.RelativeAmplitude[1] = decl.RelativeAmplitude[0]
+		decl.Value = decl.Amplitude[0]
+		decl.RawValue = decl.RawAmplitude[0]
+		decl.Relative = decl.RelativeAmplitude[0]
+		decl.ValueSpan = decl.AmplitudeSpan[0]
+	case t.KeywordLeft, t.KeywordRight:
 		decl.RawValue, _ = ctx.Line.Peek()
 		decl.Value, err = ctx.Line.NextFloat64Strict()
 		if err != nil {
 			return nil, err
 		}
 		decl.ValueSpan, _ = ctx.Line.LastTokenSpan()
-		decl.Relative = decl.RawValue != "" && (decl.RawValue[0] == '+' || decl.RawValue[0] == '-')
+		decl.Relative = isRelative(decl.RawValue)
 	case t.KeywordIntensity:
 		decl.RawValue, _ = ctx.Line.Peek()
 		decl.Value, err = ctx.Line.NextFloat64Strict()
@@ -139,4 +157,8 @@ func (ctx *TextParser) ParseTrackOverrideDeclaration() (*p.TrackOverrideSpec, er
 	}
 
 	return decl, nil
+}
+
+func isRelative(value string) bool {
+	return value != "" && (value[0] == '+' || value[0] == '-')
 }

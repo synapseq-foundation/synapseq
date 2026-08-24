@@ -101,7 +101,7 @@ func TestRenderPlanCueResolvesInterpolatedTrackState(ts *testing.T) {
 	assertAlmostEqual(ts, channel.Track.Effect.Value, 3, 0.0001)
 	assertAlmostEqual(ts, float64(channel.Track.Effect.Intensity), float64(t.IntensityPercentToRaw(40)), 0.0001)
 	assertAlmostEqual(ts, channel.WaveformAlpha, 0.5, 0.0001)
-	if channel.Amplitude[0] != int(channel.Track.Amplitude) || channel.Amplitude[1] != int(channel.Track.Amplitude) {
+	if channel.Amplitude[0] != int(channel.Track.Amplitude[0]) || channel.Amplitude[1] != int(channel.Track.Amplitude[1]) {
 		ts.Fatalf("unexpected amplitude state: got %v", channel.Amplitude)
 	}
 	if channel.Increment[0] != frequencyToIncrement(44100, 255) || channel.Increment[1] != frequencyToIncrement(44100, 245) {
@@ -244,7 +244,8 @@ func TestRenderPlanCueAppliesFullBoundaryCrossfadeDuration(ts *testing.T) {
 	plan := compileRenderPlan([]t.Period{p0, p1, p2}, 44100)
 
 	outCue := plan.cue(0, 45_000).Channels[0]
-	assertAlmostEqual(ts, float64(outCue.Track.Amplitude), float64(outTrack.Amplitude)*0.5, 0.0001)
+	assertAlmostEqual(ts, float64(outCue.Track.Amplitude[0]), float64(outTrack.Amplitude[0])*0.5, 0.0001)
+	assertAlmostEqual(ts, float64(outCue.Track.Amplitude[1]), float64(outTrack.Amplitude[1])*0.5, 0.0001)
 	if !outCue.Crossfade.Active || outCue.Crossfade.Direction != audiosync.CrossfadeOut {
 		ts.Fatalf("expected active fade-out cue, got %+v", outCue.Crossfade)
 	}
@@ -253,7 +254,8 @@ func TestRenderPlanCueAppliesFullBoundaryCrossfadeDuration(ts *testing.T) {
 	}
 
 	inCue := plan.cue(1, 75_000).Channels[0]
-	assertAlmostEqual(ts, float64(inCue.Track.Amplitude), float64(inTrack.Amplitude)*0.5, 0.0001)
+	assertAlmostEqual(ts, float64(inCue.Track.Amplitude[0]), float64(inTrack.Amplitude[0])*0.5, 0.0001)
+	assertAlmostEqual(ts, float64(inCue.Track.Amplitude[1]), float64(inTrack.Amplitude[1])*0.5, 0.0001)
 	if !inCue.Crossfade.Active || inCue.Crossfade.Direction != audiosync.CrossfadeIn {
 		ts.Fatalf("expected active fade-in cue, got %+v", inCue.Crossfade)
 	}
@@ -262,7 +264,8 @@ func TestRenderPlanCueAppliesFullBoundaryCrossfadeDuration(ts *testing.T) {
 	}
 
 	fullCue := plan.cue(1, 90_000).Channels[0]
-	assertAlmostEqual(ts, float64(fullCue.Track.Amplitude), float64(inTrack.Amplitude), 0.0001)
+	assertAlmostEqual(ts, float64(fullCue.Track.Amplitude[0]), float64(inTrack.Amplitude[0]), 0.0001)
+	assertAlmostEqual(ts, float64(fullCue.Track.Amplitude[1]), float64(inTrack.Amplitude[1]), 0.0001)
 }
 
 func TestRenderPlanCueClampsBoundaryCrossfadeToShortPeriod(ts *testing.T) {
@@ -283,10 +286,10 @@ func TestRenderPlanCueClampsBoundaryCrossfadeToShortPeriod(ts *testing.T) {
 	plan := compileRenderPlan([]t.Period{p0, p1, p2}, 44100)
 
 	outCue := plan.cue(0, 5_000).Channels[0]
-	assertAlmostEqual(ts, float64(outCue.Track.Amplitude), float64(outTrack.Amplitude)*0.5, 0.0001)
+	assertAlmostEqual(ts, float64(outCue.Track.Amplitude[0]), float64(outTrack.Amplitude[0])*0.5, 0.0001)
 
 	inCue := plan.cue(1, 15_000).Channels[0]
-	assertAlmostEqual(ts, float64(inCue.Track.Amplitude), float64(inTrack.Amplitude)*0.5, 0.0001)
+	assertAlmostEqual(ts, float64(inCue.Track.Amplitude[0]), float64(inTrack.Amplitude[0])*0.5, 0.0001)
 }
 
 func TestRenderPlanCueCrossfadesDifferentSourceNames(ts *testing.T) {
@@ -310,13 +313,13 @@ func TestRenderPlanCueCrossfadesDifferentSourceNames(ts *testing.T) {
 	if outCue.Track.SourceName != "rain" {
 		ts.Fatalf("expected outgoing ambiance rain, got %q", outCue.Track.SourceName)
 	}
-	assertAlmostEqual(ts, float64(outCue.Track.Amplitude), float64(rain.Amplitude)*0.5, 0.0001)
+	assertAlmostEqual(ts, float64(outCue.Track.Amplitude[0]), float64(rain.Amplitude[0])*0.5, 0.0001)
 
 	inCue := plan.cue(1, 75_000).Channels[0]
 	if inCue.Track.SourceName != "river" {
 		ts.Fatalf("expected incoming ambiance river, got %q", inCue.Track.SourceName)
 	}
-	assertAlmostEqual(ts, float64(inCue.Track.Amplitude), float64(river.Amplitude)*0.5, 0.0001)
+	assertAlmostEqual(ts, float64(inCue.Track.Amplitude[0]), float64(river.Amplitude[0])*0.5, 0.0001)
 }
 
 func assertAlmostEqual(ts *testing.T, got, want, tolerance float64) {

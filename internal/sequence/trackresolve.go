@@ -10,11 +10,19 @@ import (
 )
 
 func buildTrackFromDeclaration(sourceFile string, lineNumber int, lineText string, decl *parser.ParsedTrackDeclaration) (*t.Track, error) {
+	rightAmplitude := decl.AmplitudePercent
+	if decl.HasRightAmplitude {
+		rightAmplitude = decl.RightAmplitudePercent
+	}
+
 	track := &t.Track{
-		Type:        decl.Type,
-		Carrier:     decl.Carrier,
-		Resonance:   decl.Resonance,
-		Amplitude:   t.AmplitudePercentToRaw(decl.AmplitudePercent),
+		Type:      decl.Type,
+		Carrier:   decl.Carrier,
+		Resonance: decl.Resonance,
+		Amplitude: [2]t.AmplitudeType{
+			t.AmplitudePercentToRawChannel(decl.AmplitudePercent),
+			t.AmplitudePercentToRawChannel(rightAmplitude),
+		},
 		SourceName:  decl.SourceName,
 		NoiseSmooth: decl.NoiseSmooth,
 		Waveform:    decl.Waveform,

@@ -37,10 +37,17 @@ func (r *AudioRenderer) mixChannelSample(ch, frame int) stereoSample {
 
 func (r *AudioRenderer) applyEffectToMono(channel *t.Channel, signal channelSignalState, sample int) stereoSample {
 	left, right := r.effectProcessor.ApplyEffectToMono(channel, signal.effect, signal.waveform, sample)
-	return stereoSample{left: left, right: right}
+	return applyAmplitude(signal.amplitude, left, right)
 }
 
 func (r *AudioRenderer) applyEffectToStereo(channel *t.Channel, signal channelSignalState, left, right int) stereoSample {
 	left, right = r.effectProcessor.ApplyEffectToStereo(channel, signal.effect, signal.waveform, left, right)
-	return stereoSample{left: left, right: right}
+	return applyAmplitude(signal.amplitude, left, right)
+}
+
+func applyAmplitude(amplitude [2]int, left, right int) stereoSample {
+	return stereoSample{
+		left:  int(int64(left) * int64(amplitude[0])),
+		right: int(int64(right) * int64(amplitude[1])),
+	}
 }

@@ -22,11 +22,11 @@ func TestBinauralSampleUsesCompiledWaveformMorph(ts *testing.T) {
 
 	left, right := source.Sample(processor, t.PhasePrecision, t.PhasePrecision)
 	wave := wt.Init()[int(wt.SawtoothID)][1]
-	if left != 4096*wave {
-		ts.Fatalf("unexpected binaural left sample: got %d, want %d", left, 4096*wave)
+	if left != wave {
+		ts.Fatalf("unexpected binaural left sample: got %d, want %d", left, wave)
 	}
-	if right != 2048*wave {
-		ts.Fatalf("unexpected binaural right sample: got %d, want %d", right, 2048*wave)
+	if right != wave {
+		ts.Fatalf("unexpected binaural right sample: got %d, want %d", right, wave)
 	}
 }
 
@@ -42,7 +42,7 @@ func TestMonauralSampleUsesCompiledWaveformMorph(ts *testing.T) {
 	square := float64(wt.Init()[int(wt.SquareID)][1])
 	blended := sine + (square-sine)*0.25
 	wave := int(math.Round(blended))
-	want := (4096 * (wave + wave)) >> 1
+	want := (wave + wave) >> 1
 	if got != want {
 		ts.Fatalf("unexpected monaural sample: got %d, want %d", got, want)
 	}
@@ -56,7 +56,7 @@ func TestIsochronicSampleUsesCompiledWaveformMorph(ts *testing.T) {
 	})
 
 	got := source.Sample(processor, t.PhasePrecision, 0.5)
-	want := int(float64(4096*processor.WaveformSampleForMorph(efx.WaveformMorph{Start: wt.SineID, End: wt.SquareID, Alpha: 0.25}, t.PhasePrecision)) * 0.5)
+	want := int(float64(processor.WaveformSampleForMorph(efx.WaveformMorph{Start: wt.SineID, End: wt.SquareID, Alpha: 0.25}, t.PhasePrecision)) * 0.5)
 	if got != want {
 		ts.Fatalf("unexpected isochronic sample: got %d, want %d", got, want)
 	}

@@ -142,7 +142,9 @@ func (rp renderPlan) trackStateAt(window renderWindow, period t.Period, ch int, 
 
 func scaleTrackAmplitude(track t.Track, scale float64) t.Track {
 	scale = clampUnit(scale)
-	track.Amplitude = t.AmplitudeType(float64(track.Amplitude) * scale)
+	for channel, amplitude := range track.Amplitude {
+		track.Amplitude[channel] = t.AmplitudeType(float64(amplitude) * scale)
+	}
 	return track
 }
 
@@ -157,8 +159,11 @@ func (rp renderPlan) interpolationProgress(window renderWindow, currentTimeMs in
 
 func interpolateTrack(start, end t.Track, alpha float64) t.Track {
 	return t.Track{
-		Type:        start.Type,
-		Amplitude:   t.AmplitudeType(lerpFloat64(float64(start.Amplitude), float64(end.Amplitude), alpha)),
+		Type: start.Type,
+		Amplitude: [2]t.AmplitudeType{
+			t.AmplitudeType(lerpFloat64(float64(start.Amplitude[0]), float64(end.Amplitude[0]), alpha)),
+			t.AmplitudeType(lerpFloat64(float64(start.Amplitude[1]), float64(end.Amplitude[1]), alpha)),
+		},
 		Carrier:     lerpFloat64(start.Carrier, end.Carrier, alpha),
 		Resonance:   lerpFloat64(start.Resonance, end.Resonance, alpha),
 		NoiseSmooth: lerpFloat64(start.NoiseSmooth, end.NoiseSmooth, alpha),
@@ -205,30 +210,29 @@ func compileSignalState(state planTrackState) compiledSignalState {
 		compiled.EffectStep = frequencyToIncrement(state.sampleRate, state.track.Effect.Value)
 	}
 
-	amplitude := int(state.track.Amplitude)
+	amplitude := [2]int{int(state.track.Amplitude[0]), int(state.track.Amplitude[1])}
 	switch state.track.Type {
 	case t.TrackPureTone:
-		compiled.Amplitude[0] = amplitude
+		compiled.Amplitude = amplitude
 		compiled.Increment[0] = frequencyToIncrement(state.sampleRate, state.track.Carrier)
 	case t.TrackBinauralBeat:
 		freq1 := state.track.Carrier + state.track.Resonance/2
 		freq2 := state.track.Carrier - state.track.Resonance/2
-		compiled.Amplitude[0] = amplitude
-		compiled.Amplitude[1] = amplitude
+		compiled.Amplitude = amplitude
 		compiled.Increment[0] = frequencyToIncrement(state.sampleRate, freq1)
 		compiled.Increment[1] = frequencyToIncrement(state.sampleRate, freq2)
 	case t.TrackMonauralBeat:
 		freqHigh := state.track.Carrier + state.track.Resonance/2
 		freqLow := state.track.Carrier - state.track.Resonance/2
-		compiled.Amplitude[0] = amplitude
+		compiled.Amplitude = amplitude
 		compiled.Increment[0] = frequencyToIncrement(state.sampleRate, freqHigh)
 		compiled.Increment[1] = frequencyToIncrement(state.sampleRate, freqLow)
 	case t.TrackIsochronicBeat:
-		compiled.Amplitude[0] = amplitude
+		compiled.Amplitude = amplitude
 		compiled.Increment[0] = frequencyToIncrement(state.sampleRate, state.track.Carrier)
 		compiled.Increment[1] = frequencyToIncrement(state.sampleRate, state.track.Resonance)
 	case t.TrackWhiteNoise, t.TrackPinkNoise, t.TrackBrownNoise, t.TrackAmbiance, t.TrackMusic:
-		compiled.Amplitude[0] = amplitude
+		compiled.Amplitude = amplitude
 	}
 
 	return compiled
