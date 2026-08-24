@@ -56,7 +56,7 @@ Run only one applicable command. Validation is evidence for the explanation, not
    - a plain-language overview of the sound and total duration;
    - top-level options, comments, declared resources, custom waveform definitions, and extends;
    - each playable preset and template, including inherited overrides and effective track order;
-   - what each track contributes: source, rhythm or beat, waveform, left/right amplitude when asymmetric, smoothness, and effects;
+   - what each track contributes: source, rhythm or beat, waveform, left/right amplitude when asymmetric, smoothness, and effects, including waveform-shaped doppler motion;
    - a chronological phase table with interval duration, active preset, transition, steps, and the change toward the next entry;
    - fades, incompatible-channel crossfades, repeated presets, and the role of `silence`;
    - the expected perceptual progression and practical listening notes relevant to the question.

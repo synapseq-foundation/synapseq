@@ -51,7 +51,7 @@ Treat focus, sleep, relaxation, meditation, and similar terms as creative listen
 5. Use `smooth` for rounded changes, `steady` for linear changes, and `ease-in` or `ease-out` only when their directional behavior is intentional.
 6. Add steps only for a deliberate back-and-forth trajectory. Ensure the interval is long enough for every leg.
 7. Use a template only when two or more playable presets share a base containing multiple tracks and each variant changes only a small subset of parameters. Define presets directly when there is only one variant, only one simple track, most parameters change, or the source/effect types or channel layout differ.
-8. Keep amplitudes conservative unless the user supplied exact values. When setting distinct left/right amplitudes, use them deliberately as final post-pan channel balance; avoid stacking many high-amplitude tracks merely to make a sequence sound stronger.
+8. Keep amplitudes conservative unless the user supplied exact values. When setting distinct left/right amplitudes, use them deliberately as final post-pan channel balance; avoid stacking many high-amplitude tracks merely to make a sequence sound stronger. Select non-sine waveforms for `doppler` deliberately because they also shape its pitch movement.
 
 Do not invent ambiance or music assets. Use only paths, URLs, or named resources supplied by the user or already present in the sequence and its `.spsc` dependencies. If a requested external layer has no source, ask for it or omit that layer and say so.
 
