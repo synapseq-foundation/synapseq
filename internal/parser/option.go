@@ -48,6 +48,7 @@ func (ctx *TextParser) ParseOption(_ string) (*t.ParseOptions, error) {
 		t.KeywordOptionMusic,
 		t.KeywordOptionExtends,
 		t.KeywordOptionWaveform,
+		t.KeywordOptionTransition,
 	}
 
 	switch option {
@@ -145,6 +146,48 @@ func (ctx *TextParser) ParseOption(_ string) (*t.ParseOptions, error) {
 			Name:   t.WaveformName(name),
 			Points: points,
 		})
+	case t.KeywordOptionTransition:
+		name, ok := ctx.Line.NextToken()
+		if !ok {
+			return nil, diag.UnexpectedEOF(ctx.Line.EOFSpan(), "transition name")
+		}
+		nameSpan, _ := ctx.Line.LastTokenSpan()
+		if err := nr.IsValid(name); err != nil {
+			return nil, diag.Validation(err.Error()).WithSpan(nameSpan).WithFound(name).WithCause(err)
+		}
+		if t.IsBuiltinTransitionName(name) {
+			return nil, diag.Validation(fmt.Sprintf("transition name %q is reserved for a built-in transition", name)).WithSpan(nameSpan).WithFound(name)
+		}
+
+		points := make([]float64, 0)
+		for {
+			_, ok := ctx.Line.Peek()
+			if !ok {
+				break
+			}
+			value, err := ctx.Line.NextFloat64Strict()
+			if err != nil {
+				return nil, err
+			}
+			valueSpan, _ := ctx.Line.LastTokenSpan()
+			if value < 0 || value > 100 {
+				return nil, diag.Validation("transition points must be between 0 and 100").WithSpan(valueSpan).WithFound(fmt.Sprintf("%g", value))
+			}
+			if len(points) == t.MaxTransitionPoints {
+				return nil, diag.Validation(fmt.Sprintf("transition cannot contain more than %d points", t.MaxTransitionPoints)).WithSpan(valueSpan)
+			}
+			if len(points) > 0 && value < points[len(points)-1]*100 {
+				return nil, diag.Validation("transition points must be monotonic").WithSpan(valueSpan).WithFound(fmt.Sprintf("%g", value))
+			}
+			points = append(points, value/100)
+		}
+		if len(points) < t.MinTransitionPoints {
+			return nil, diag.Validation(fmt.Sprintf("transition must contain at least %d points", t.MinTransitionPoints)).WithSpan(nameSpan).WithFound(name)
+		}
+		if points[0] != 0 || points[len(points)-1] != 1 {
+			return nil, diag.Validation("transition must start at 0 and end at 100").WithSpan(nameSpan).WithFound(name)
+		}
+		parsed.Transitions = append(parsed.Transitions, t.TransitionDefinition{Name: name, Points: points})
 	default:
 		diagnostic := diag.Parse("invalid option").WithSpan(span).WithFound(option).WithExpected(validOptions...)
 		if suggestion, ok := diag.ClosestMatch(option, validOptions, diag.DefaultSuggestionDistance(option)); ok {

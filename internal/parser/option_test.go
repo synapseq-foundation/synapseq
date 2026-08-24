@@ -77,6 +77,20 @@ func TestParseOption(ts *testing.T) {
 				}},
 			},
 		},
+		{
+			"@transition soft-land 0 20 50 100",
+			&t.ParseOptions{
+				Values:    map[string]string{},
+				Ambiance:  map[string]string{},
+				Music:     map[string]string{},
+				Extends:   []string{},
+				Waveforms: []t.WaveformDefinition{},
+				Transitions: []t.TransitionDefinition{{
+					Name:   "soft-land",
+					Points: []float64{0, 0.2, 0.5, 1},
+				}},
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -107,6 +121,9 @@ func TestParseOptionErrors(ts *testing.T) {
 			wantErrText: "unexpected token after option definition",
 		},
 		{name: "missing waveform name", line: "@waveform", wantErrText: "waveform name"},
+		{name: "transition requires endpoints", line: "@transition soft 0 80", wantErrText: "transition must start at 0 and end at 100"},
+		{name: "transition points are monotonic", line: "@transition soft 0 80 70 100", wantErrText: "transition points must be monotonic"},
+		{name: "transition name is reserved", line: "@transition smooth 0 100", wantErrText: "reserved for a built-in transition"},
 		{name: "empty waveform", line: "@waveform pulse", wantErrText: "at least 2 points"},
 		{name: "one waveform point", line: "@waveform pulse 50", wantErrText: "at least 2 points"},
 		{name: "non-numeric waveform point", line: "@waveform pulse 0 nope", wantErrText: "invalid float"},

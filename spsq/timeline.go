@@ -81,6 +81,16 @@ func (b *Builder) Smooth() *Builder {
 	return b
 }
 
+// UseTransition sets the transition of the last timeline entry by custom name.
+func (b *Builder) UseTransition(name string) *Builder {
+	if len(b.timeline) == 0 {
+		return b
+	}
+
+	b.timeline[len(b.timeline)-1].transition = name
+	return b
+}
+
 // Step sets the step count of the last timeline entry.
 func (b *Builder) Step(s int) *Builder {
 	if len(b.timeline) == 0 {

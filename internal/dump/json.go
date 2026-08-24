@@ -13,14 +13,20 @@ import (
 )
 
 type document struct {
-	Comments  []string        `json:"comments"`
-	Options   options         `json:"options"`
-	Waveforms []waveform      `json:"waveforms"`
-	Presets   []preset        `json:"presets"`
-	Timeline  []timelineEntry `json:"timeline"`
+	Comments    []string        `json:"comments"`
+	Options     options         `json:"options"`
+	Waveforms   []waveform      `json:"waveforms"`
+	Transitions []transition    `json:"transitions"`
+	Presets     []preset        `json:"presets"`
+	Timeline    []timelineEntry `json:"timeline"`
 }
 
 type waveform struct {
+	Name   string    `json:"name"`
+	Points []float64 `json:"points"`
+}
+
+type transition struct {
 	Name   string    `json:"name"`
 	Points []float64 `json:"points"`
 }
@@ -75,14 +81,27 @@ func JSON(sequence *t.Sequence) ([]byte, error) {
 	}
 
 	doc := document{
-		Comments:  sequenceComments(sequence),
-		Options:   sequenceOptions(sequence.Options),
-		Waveforms: sequenceWaveforms(sequence.Waveforms),
-		Presets:   sequencePresets(sequence.Presets),
-		Timeline:  sequenceTimeline(sequence.Periods),
+		Comments:    sequenceComments(sequence),
+		Options:     sequenceOptions(sequence.Options),
+		Waveforms:   sequenceWaveforms(sequence.Waveforms),
+		Transitions: sequenceTransitions(sequence.Transitions),
+		Presets:     sequencePresets(sequence.Presets),
+		Timeline:    sequenceTimeline(sequence.Periods),
 	}
 
 	return json.MarshalIndent(doc, "", "  ")
+}
+
+func sequenceTransitions(definitions []t.TransitionDefinition) []transition {
+	result := make([]transition, 0, len(definitions))
+	for _, definition := range definitions {
+		points := make([]float64, len(definition.Points))
+		for index, point := range definition.Points {
+			points[index] = point * 100
+		}
+		result = append(result, transition{Name: definition.Name, Points: points})
+	}
+	return result
 }
 
 func sequenceWaveforms(definitions []t.WaveformDefinition) []waveform {
@@ -207,14 +226,14 @@ func sequenceTimeline(periods []t.Period) []timelineEntry {
 			"%s %s %s %d",
 			periods[i].TimeString(),
 			periods[i].PresetName,
-			periods[i].Transition.String(),
+			periods[i].TransitionString(),
 			periods[i].Steps,
 		)
 
 		result = append(result, timelineEntry{
 			Timestamp:  periods[i].TimeString(),
 			PresetName: periods[i].PresetName,
-			Transition: periods[i].Transition.String(),
+			Transition: periods[i].TransitionString(),
 			Steps:      periods[i].Steps,
 			Line:       line,
 		})

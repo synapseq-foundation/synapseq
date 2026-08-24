@@ -53,14 +53,23 @@ func TransitionTypeString(t string) TransitionType {
 
 // Period represents a time period with track configurations
 type Period struct {
-	Time         int
-	PresetName   string
-	TrackStart   [NumberOfChannels]Track
-	TrackEnd     [NumberOfChannels]Track
-	CrossfadeIn  [NumberOfChannels]TrackCrossfade
-	CrossfadeOut [NumberOfChannels]TrackCrossfade
-	Transition   TransitionType
-	Steps        int
+	Time           int
+	PresetName     string
+	TrackStart     [NumberOfChannels]Track
+	TrackEnd       [NumberOfChannels]Track
+	CrossfadeIn    [NumberOfChannels]TrackCrossfade
+	CrossfadeOut   [NumberOfChannels]TrackCrossfade
+	Transition     TransitionType
+	TransitionName string
+	Steps          int
+}
+
+// TransitionString returns the built-in or custom transition name.
+func (p *Period) TransitionString() string {
+	if p.TransitionName != "" {
+		return p.TransitionName
+	}
+	return p.Transition.String()
 }
 
 // TrackCrossfade describes an automatic boundary fade for a channel.

@@ -181,14 +181,14 @@ func (lc *LoadedContext) Timeline() []TimelineEntry {
 			"%s %s %s %d",
 			p.TimeString(),
 			p.PresetName,
-			p.Transition.String(),
+			p.TransitionString(),
 			p.Steps,
 		)
 
 		timeline = append(timeline, TimelineEntry{
 			Timestamp:  p.TimeString(),
 			PresetName: p.PresetName,
-			Transition: p.Transition.String(),
+			Transition: p.TransitionString(),
 			Steps:      p.Steps,
 			Line:       line,
 		})

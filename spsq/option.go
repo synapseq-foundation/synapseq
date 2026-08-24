@@ -43,6 +43,15 @@ func (b *Builder) Waveform(name string, points ...float64) *Builder {
 	return b
 }
 
+// Transition registers a custom timeline transition for the sequence.
+func (b *Builder) Transition(name string, points ...float64) *Builder {
+	b.transitions = append(b.transitions, transitionOption{
+		name:   name,
+		points: append([]float64{}, points...),
+	})
+	return b
+}
+
 func formatWaveformPoint(point float64) string {
 	return strconv.FormatFloat(point, 'f', -1, 64)
 }

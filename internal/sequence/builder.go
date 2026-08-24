@@ -169,7 +169,7 @@ func (b *sequenceBuilder) handleTimeline(lineNumber int, lineText string, ctx *p
 		return withSource(err, b.sourceFile, lineNumber, lineText)
 	}
 
-	period, err := buildPeriodFromDeclaration(b.sourceFile, lineNumber, lineText, decl, b.presets)
+	period, err := buildPeriodFromDeclaration(b.sourceFile, lineNumber, lineText, decl, b.presets, b.rawOptions.Transitions)
 	if err != nil {
 		return err
 	}

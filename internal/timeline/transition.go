@@ -64,14 +64,43 @@ func ApplyTransitionAlpha(progress float64, transition t.TransitionType) float64
 	return alpha
 }
 
+// ApplyTransitionPoints maps progress through uniformly distributed custom curve points.
+func ApplyTransitionPoints(progress float64, points []float64) float64 {
+	if len(points) == 0 {
+		return clampUnit(progress)
+	}
+
+	progress = clampUnit(progress)
+	if progress >= 1 {
+		return points[len(points)-1]
+	}
+
+	span := 1.0 / float64(len(points)-1)
+	index := int(math.Floor(progress / span))
+	if index >= len(points)-1 {
+		return points[len(points)-1]
+	}
+
+	local := (progress - float64(index)*span) / span
+	return points[index] + (points[index+1]-points[index])*local
+}
+
 // StepAlpha computes the effective interpolation alpha for a period.
 //
 // Steps=0 preserves the current monotonic transition. Steps>0 creates an
 // alternating trajectory with 2*steps+1 legs so the period always starts at
 // TrackStart and ends exactly at TrackEnd.
 func StepAlpha(progress float64, transition t.TransitionType, steps int) float64 {
+	return StepAlphaWithPoints(progress, transition, nil, steps)
+}
+
+// StepAlphaWithPoints computes alpha using either a built-in transition or custom curve points.
+func StepAlphaWithPoints(progress float64, transition t.TransitionType, points []float64, steps int) float64 {
 	progress = clampUnit(progress)
 	if steps <= 0 {
+		if len(points) > 0 {
+			return ApplyTransitionPoints(progress, points)
+		}
 		return ApplyTransitionAlpha(progress, transition)
 	}
 	if progress >= 1 {
@@ -88,6 +117,9 @@ func StepAlpha(progress float64, transition t.TransitionType, steps int) float64
 	legStart := float64(legIndex) * legSpan
 	legProgress := clampUnit((progress - legStart) / legSpan)
 	curved := ApplyTransitionAlpha(legProgress, transition)
+	if len(points) > 0 {
+		curved = ApplyTransitionPoints(legProgress, points)
+	}
 	if legIndex%2 == 0 {
 		return curved
 	}

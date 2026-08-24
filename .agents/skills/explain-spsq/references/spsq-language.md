@@ -45,6 +45,7 @@ Supported top-level forms include:
 @ambiance rain audio/rain
 @music bed audio/meditation
 @waveform softpulse 0 0 20 60 100 60 20 0
+@transition soft-land 0 2 12 42 78 96 100
 @extends presets/base
 ```
 
@@ -57,6 +58,7 @@ Supported top-level forms include:
 - Local `@extends` resolves to an `.spsc` file.
 - Remote resources must resolve as WAV or MP3 by extension or MIME type.
 - `@waveform` defines one reusable cycle with 2 through 16384 decimal points from `0` through `100`. Names are case-sensitive, unique across extensions, and cannot conflict case-insensitively with a built-in waveform.
+- `@transition` defines a reusable interpolation curve with 2 through 256 non-decreasing decimal points from `0` through `100`; its first and last points must be `0` and `100`. Names are case-sensitive, unique across extensions, and cannot conflict case-insensitively with a built-in transition.
 
 Options lock when preset, track, override, or timeline content begins. Resource declarations must precede tracks that reference them.
 
@@ -178,8 +180,9 @@ Transitions:
 - `ease-in` starts gently and accelerates.
 - `ease-out` starts more quickly and settles gently.
 - `smooth` eases at both ends.
+- A declared custom transition name follows its evenly spaced points; it applies to compatible changes and silence fades, while automatic incompatible-channel crossfades stay linear.
 
-Steps create an alternating forward/backward trajectory before finally arriving at the next state. There are `2 × steps + 1` legs, each needing at least five seconds, with a hard cap of 12 steps. Explain steps as repeated oscillation between endpoint tendencies, not as additional timeline entries.
+Steps create an alternating forward/backward trajectory before finally arriving at the next state. There are `2 × steps + 1` legs, each needing at least five seconds, with a hard cap of 12 steps. A custom transition curve is reapplied on every leg. Explain steps as repeated oscillation between endpoint tendencies, not as additional timeline entries.
 
 ### Silence and fades
 

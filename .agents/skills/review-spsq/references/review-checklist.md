@@ -49,6 +49,7 @@ Accepted options are:
 - `@ambiance NAME [PATH-OR-URL]`;
 - `@music NAME [PATH-OR-URL]`;
 - `@waveform NAME POINT POINT [POINT ...]`;
+- `@transition NAME POINT POINT [POINT ...]`;
 - `@extends PATH-OR-URL`.
 
 Check:
@@ -58,6 +59,7 @@ Check:
 - resource names are valid and unique where required;
 - every ambiance/music track references a declaration;
 - every declaration that appears intended for playback is actually referenced;
+- each custom transition has 2 through 256 non-decreasing `0..100` points, starts at `0`, ends at `100`, and does not use a built-in transition name;
 - local paths are relative, use `/`, contain no `..`, spaces, backslashes, roots, drive prefixes, or extensions;
 - local ambiance resolves `.wav` before `.mp3`;
 - local music resolves `.mp3` before `.wav`;
@@ -152,11 +154,11 @@ Check:
 - timestamps strictly increase;
 - at least two entries exist;
 - every referenced preset exists and is playable;
-- transitions are `steady`, `ease-in`, `ease-out`, or `smooth`;
+- transitions are `steady`, `ease-in`, `ease-out`, `smooth`, or a declared custom transition;
 - steps are non-negative, at most 12, and fit the interval;
 - total duration equals the final timestamp.
 
-The transition and steps on an entry control the interval toward the next entry. Steps create `2 × steps + 1` alternating legs, each requiring at least five seconds.
+The transition and steps on an entry control the interval toward the next entry. Steps create `2 × steps + 1` alternating legs, each requiring at least five seconds. A custom curve repeats on each leg; automatic incompatible-channel crossfades remain linear.
 
 Review:
 

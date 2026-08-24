@@ -124,6 +124,33 @@ func TestBuilderCustomWaveform(t *testing.T) {
 	}
 }
 
+func TestBuilderCustomTransition(t *testing.T) {
+	builder, err := New(synapseq.NewAppContext())
+	if err != nil {
+		t.Fatalf("New error: %v", err)
+	}
+	builder.Transition("soft-land", 0, 20, 50, 100)
+
+	focus := builder.NewPreset("focus")
+	focus.Tone(200).Amplitude(20)
+
+	loaded, err := builder.
+		PresetAt(0, focus).UseTransition("soft-land").
+		PresetAt(time.Second, focus).
+		Load()
+	if err != nil {
+		t.Fatalf("Load error: %v", err)
+	}
+
+	content := string(loaded.RawContent())
+	if !strings.Contains(content, "@transition soft-land 0 20 50 100") {
+		t.Fatalf("missing custom transition declaration:\n%s", content)
+	}
+	if !strings.Contains(content, "00:00:00 focus soft-land 0") {
+		t.Fatalf("missing custom transition reference:\n%s", content)
+	}
+}
+
 func TestBuilderCustomWaveformValidationErrors(t *testing.T) {
 	tests := []struct {
 		name        string

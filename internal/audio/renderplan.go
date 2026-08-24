@@ -23,6 +23,7 @@ type renderPlan struct {
 	sampleRate  int
 	totalFrames int64
 	waveforms   []periodWaveforms
+	transitions map[string][]float64
 }
 
 type periodWaveforms struct {
@@ -40,16 +41,25 @@ type renderWindow struct {
 
 func compileRenderPlan(periods []t.Period, sampleRate int) renderPlan {
 	waveforms, _ := wt.Compile(nil)
-	return compileRenderPlanWithWaveforms(periods, sampleRate, waveforms)
+	return compileRenderPlanWithWaveformsAndTransitions(periods, sampleRate, waveforms, nil)
 }
 
 func compileRenderPlanWithWaveforms(periods []t.Period, sampleRate int, registry *wt.Registry) renderPlan {
+	return compileRenderPlanWithWaveformsAndTransitions(periods, sampleRate, registry, nil)
+}
+
+func compileRenderPlanWithWaveformsAndTransitions(periods []t.Period, sampleRate int, registry *wt.Registry, definitions []t.TransitionDefinition) renderPlan {
+	transitions := make(map[string][]float64, len(definitions))
+	for _, definition := range definitions {
+		transitions[definition.Name] = definition.Points
+	}
 	plan := renderPlan{
 		periods:     periods,
 		windows:     make([]renderWindow, len(periods)),
 		sampleRate:  sampleRate,
 		totalFrames: totalFramesFromDuration(durationMs(periods), sampleRate),
 		waveforms:   make([]periodWaveforms, len(periods)),
+		transitions: transitions,
 	}
 
 	for index := range periods {
@@ -85,7 +95,7 @@ func (rp renderPlan) periodIndexAt(currentTimeMs int, currentPeriodIdx int) int 
 func (rp renderPlan) cue(periodIdx int, currentTimeMs int) audiosync.Cue {
 	window := rp.windows[periodIdx]
 	period := rp.periods[periodIdx]
-	alpha := tl.StepAlpha(rp.interpolationProgress(window, currentTimeMs), period.Transition, period.Steps)
+	alpha := tl.StepAlphaWithPoints(rp.interpolationProgress(window, currentTimeMs), period.Transition, rp.transitions[period.TransitionName], period.Steps)
 	cue := audiosync.Cue{
 		PeriodIndex: window.PeriodIndex,
 		Channels:    [t.NumberOfChannels]audiosync.ChannelCue{},

@@ -44,6 +44,7 @@ Supported top-level forms:
 @music bed audio/meditation
 @music theme
 @waveform softpulse 0 0 20 60 100 60 20 0
+@transition soft-land 0 2 12 42 78 96 100
 @extends presets/base
 ```
 
@@ -53,6 +54,7 @@ Supported top-level forms:
 - A local `@extends` path resolves to `.spsc`, not `.spsq`.
 - `.spsc` files use the same options and preset syntax but cannot contain timeline entries or another `@extends`.
 - Custom waveform definitions require 2 through 16384 decimal points in the range `0..100`. Their names are case-sensitive, unique across the merged sequence, and cannot be `sine`, `square`, `triangle`, or `sawtooth` in any letter case.
+- Custom transition definitions require 2 through 256 non-decreasing decimal points in `0..100`, beginning at `0` and ending at `100`. Names are case-sensitive, unique across the merged sequence, and cannot be `steady`, `ease-in`, `ease-out`, or `smooth` in any letter case.
 
 Local paths:
 
@@ -184,7 +186,7 @@ Example:
 - The first entry must be `00:00:00`; every later timestamp must strictly increase.
 - A valid sequence needs at least two timeline entries.
 - Timeline entries must reference existing, non-template presets. Built-in `silence` is always available.
-- Transitions are `steady` (default), `ease-in`, `ease-out`, and `smooth`.
+- Transitions are `steady` (default), `ease-in`, `ease-out`, `smooth`, or a declared custom transition name.
 
 The transition and steps on one timeline entry control the interval from that entry toward the next entry. Values interpolate across compatible tracks aligned by channel/declaration order.
 
@@ -197,6 +199,8 @@ max steps = min(12, max(0, floor((floor(D / 5) - 1) / 2)))
 Examples: 10 seconds permits `0`, 15 seconds permits `1`, 25 seconds permits `2`, and 55 seconds permits `5`.
 
 `silence -> active` and `active -> silence` become fade-compatible boundaries. Incompatible source types, effects, ambiance names, or music names on the same channel use automatic per-channel crossfades of up to 30 seconds on each available side. `active -> off` and `off -> active` use equivalent boundary fades. No timeline entries are inserted.
+
+A custom transition linearly interpolates between its equally spaced points for compatible changes and silence fades. It is reapplied to every `steps` leg. Automatic incompatible-channel crossfades remain linear.
 
 For generated sessions, use built-in `silence` only at the timeline boundaries:
 
