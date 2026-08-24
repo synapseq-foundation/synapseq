@@ -1,6 +1,6 @@
 module github.com/synapseq-foundation/synapseq/v4
 
-go 1.26.0
+go 1.27.0
 
 require (
 	github.com/fatih/color v1.18.0
