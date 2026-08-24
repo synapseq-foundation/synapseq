@@ -158,7 +158,7 @@ The engine performs this compilation before rendering and uses integer table IDs
 
 Transitions define the shape of change between one timeline entry and the next.
 
-They are not limited to volume fades. They shape the interpolation across compatible parameters in the period, including amplitude and other evolving values.
+They are not limited to volume fades. They shape the interpolation across compatible parameters in the period, including amplitude and other evolving values. Stereo amplitudes interpolate independently for the left and right channels; silence fades and boundary crossfades scale both channels while retaining their balance.
 
 If you imagine a transition as a path from `start` to `target`, the transition type controls the curve of that path.
 

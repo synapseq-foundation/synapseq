@@ -35,7 +35,7 @@ func TestBuilderLoadPreservesOrder(t *testing.T) {
 		Music("meditation", "meditation")
 
 	alpha := builder.NewPreset("alpha")
-	alpha.Pink(0).Amplitude(30)
+	alpha.Pink(0).Amplitude(30, 15)
 	alpha.Music("meditation").Amplitude(20)
 
 	beta := builder.NewPreset("beta")
@@ -63,10 +63,10 @@ func TestBuilderLoadPreservesOrder(t *testing.T) {
 		"",
 		"# Presets",
 		"alpha",
-		"  noise pink smooth 0.00 amplitude 30.00",
-		"  music meditation amplitude 20.00",
+		"  noise pink smooth 0.00 amplitude left 30.00 right 15.00",
+		"  music meditation amplitude left 20.00 right 20.00",
 		"beta",
-		"  noise pink smooth 10.00 amplitude 15.00",
+		"  noise pink smooth 10.00 amplitude left 15.00 right 15.00",
 		"",
 		"# Timeline",
 		"00:00:00 silence steady 0",
@@ -116,7 +116,7 @@ func TestBuilderCustomWaveform(t *testing.T) {
 	if !strings.Contains(content, "@waveform softpulse 0 0 20.5 60 100 60 20 0") {
 		t.Fatalf("missing custom waveform declaration:\n%s", content)
 	}
-	if !strings.Contains(content, "waveform softpulse tone 200.00 isochronic 10.00 amplitude 20.00") {
+	if !strings.Contains(content, "waveform softpulse tone 200.00 isochronic 10.00 amplitude left 20.00 right 20.00") {
 		t.Fatalf("missing custom waveform reference:\n%s", content)
 	}
 	if got := loaded.Presets()[0].Tracks[0].Waveform; got != "softpulse" {

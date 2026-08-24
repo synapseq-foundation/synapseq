@@ -51,6 +51,10 @@ const (
 	KeywordIsochronic = "isochronic"
 	// Represents an amplitude
 	KeywordAmplitude = "amplitude"
+	// Represents the left channel
+	KeywordLeft = "left"
+	// Represents the right channel
+	KeywordRight = "right"
 	// Represents a noise
 	KeywordNoise = "noise"
 	// Represents a white noise

@@ -30,6 +30,10 @@ func TestBuildTrackFromDeclaration_Success(ts *testing.T) {
 		{line: "noise pink amplitude 40", want: t.Track{Type: t.TrackPinkNoise, Amplitude: t.AmplitudePercentToRaw(40), Waveform: t.WaveformSine}},
 		{line: "ambiance beach effect pan 10 intensity 75 amplitude 50", want: t.Track{Type: t.TrackAmbiance, SourceName: "beach", Amplitude: t.AmplitudePercentToRaw(50), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectPan, Value: 10, Intensity: t.IntensityPercentToRaw(75)}}},
 		{line: "music meditation effect modulation 2.5 intensity 60 amplitude 40", want: t.Track{Type: t.TrackMusic, SourceName: "meditation", Amplitude: t.AmplitudePercentToRaw(40), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectModulation, Value: 2.5, Intensity: t.IntensityPercentToRaw(60)}}},
+		{line: "tone 300 binaural 10 amplitude left 10 right 5", want: t.Track{Type: t.TrackBinauralBeat, Carrier: 300, Resonance: 10, Amplitude: [2]t.AmplitudeType{t.AmplitudePercentToRawChannel(10), t.AmplitudePercentToRawChannel(5)}, Waveform: t.WaveformSine}},
+		{line: "noise pink amplitude left 30 right 25", want: t.Track{Type: t.TrackPinkNoise, Amplitude: [2]t.AmplitudeType{t.AmplitudePercentToRawChannel(30), t.AmplitudePercentToRawChannel(25)}, Waveform: t.WaveformSine}},
+		{line: "ambiance beach amplitude left 10 right 15", want: t.Track{Type: t.TrackAmbiance, SourceName: "beach", Amplitude: [2]t.AmplitudeType{t.AmplitudePercentToRawChannel(10), t.AmplitudePercentToRawChannel(15)}, Waveform: t.WaveformSine}},
+		{line: "music meditation amplitude left 5 right 10", want: t.Track{Type: t.TrackMusic, SourceName: "meditation", Amplitude: [2]t.AmplitudeType{t.AmplitudePercentToRawChannel(5), t.AmplitudePercentToRawChannel(10)}, Waveform: t.WaveformSine}},
 	}
 
 	for _, tt := range tests {
@@ -49,6 +53,7 @@ func TestBuildTrackFromDeclaration_Errors(ts *testing.T) {
 		"tone 300 binaural 10 amplitude 120",
 		"ambiance pulse effect modulation 2.5 intensity 150 amplitude 40",
 		"noise brown smooth 150 amplitude 30",
+		"tone 300 amplitude left 10 right 120",
 	}
 
 	for _, line := range tests {

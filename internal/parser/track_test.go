@@ -289,6 +289,8 @@ func TestParseTrack_Errors(ts *testing.T) {
 		"  tone 300 binaural amplitude 10",
 		"  tone 300 unknown 10 amplitude 10",
 		"  noise white amplitude",
+		"  tone 300 amplitude left 10",
+		"  tone 300 amplitude left 10 right",
 		"  ambiance spin 200 rate five intensity 75 amplitude 50",
 		"  ambiance pulse effect modulation 2.5 intensity sixty amplitude 40",
 		"  ambiance amplitude 50 extra",

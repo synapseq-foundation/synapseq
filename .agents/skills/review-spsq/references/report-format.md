@@ -56,6 +56,8 @@ Direct summary of validity, major risks, and overall structure.
 | Preset | Tracks | Beat rates | Amplitudes | Effects |
 |---|---:|---|---|---|
 
+Use `left/right` for asymmetric amplitudes and a single value only when both channels match.
+
 ## Timeline analysis
 
 | Start | Preset | Approx. duration | Transition | Observation |

@@ -135,12 +135,15 @@ func (lc *LoadedContext) Presets() []Preset {
 			}
 
 			tracks = append(tracks, Track{
-				Index:       i + 1,
-				Waveform:    tr.Waveform.String(),
-				Type:        tr.Type.String(),
-				Carrier:     tr.Carrier,
-				Resonance:   tr.Resonance,
-				Amplitude:   tr.Amplitude.ToPercent(),
+				Index:     i + 1,
+				Waveform:  tr.Waveform.String(),
+				Type:      tr.Type.String(),
+				Carrier:   tr.Carrier,
+				Resonance: tr.Resonance,
+				Amplitude: [2]float64{
+					tr.Amplitude[0].ToPercent(),
+					tr.Amplitude[1].ToPercent(),
+				},
 				SourceName:  tr.SourceName,
 				NoiseSmooth: tr.NoiseSmooth,
 				Effect: Effect{

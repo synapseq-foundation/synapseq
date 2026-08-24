@@ -15,6 +15,8 @@ type ParsedTrackDeclaration struct {
 	Carrier                float64
 	Resonance              float64
 	AmplitudePercent       float64
+	RightAmplitudePercent  float64
+	HasRightAmplitude      bool
 	NoiseSmooth            float64
 	Waveform               t.WaveformName
 	WaveformSpan           diag.Span
@@ -283,9 +285,33 @@ func (ctx *TextParser) ParseTrackDeclaration() (*ParsedTrackDeclaration, error) 
 		return nil, diag.UnexpectedToken(span, first, t.KeywordTone, t.KeywordNoise, t.KeywordAmbiance, t.KeywordMusic, t.KeywordTrack)
 	}
 
-	var err error
-	if decl.AmplitudePercent, err = ctx.Line.NextFloat64Strict(); err != nil {
-		return nil, err
+	if token, ok := ctx.Line.Peek(); ok && token == t.KeywordLeft {
+		ctx.Line.NextToken()
+
+		left, err := ctx.Line.NextFloat64Strict()
+		if err != nil {
+			return nil, err
+		}
+		decl.AmplitudePercent = left
+
+		if _, err := ctx.Line.NextExpectOneOf(t.KeywordRight); err != nil {
+			return nil, err
+		}
+
+		right, err := ctx.Line.NextFloat64Strict()
+		if err != nil {
+			return nil, err
+		}
+		if left != right {
+			decl.RightAmplitudePercent = right
+			decl.HasRightAmplitude = true
+		}
+	} else {
+		left, err := ctx.Line.NextFloat64Strict()
+		if err != nil {
+			return nil, err
+		}
+		decl.AmplitudePercent = left
 	}
 
 	unknown, ok := ctx.Line.Peek()

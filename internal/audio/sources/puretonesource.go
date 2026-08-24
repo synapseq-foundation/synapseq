@@ -7,14 +7,13 @@ package sources
 import efx "github.com/synapseq-foundation/synapseq/v4/internal/audio/effects"
 
 type PureTone struct {
-	waveform  efx.WaveformMorph
-	amplitude int
+	waveform efx.WaveformMorph
 }
 
 func NewPureTone(signal Signal) PureTone {
-	return PureTone{waveform: signal.Waveform, amplitude: signal.Amplitude[0]}
+	return PureTone{waveform: signal.Waveform}
 }
 
 func (source PureTone) Sample(processor *efx.Processor, phase int) int {
-	return source.amplitude * processor.WaveformSampleForMorph(source.waveform, phase)
+	return processor.WaveformSampleForMorph(source.waveform, phase)
 }

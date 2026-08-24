@@ -123,7 +123,8 @@ Check:
 
 - carrier and beat/resonance values are non-negative;
 - binaural and monaural beats remain below twice the carrier;
-- amplitude and effect intensity are `0` through `100`;
+- left and optional right amplitude values, and effect intensity, are `0` through `100`;
+- a one-value amplitude is interpreted as matching left/right levels; explicit stereo amplitude must use `left VALUE right VALUE`; review asymmetric levels as intentional channel balance after `pan`;
 - noise smoothness is `0` through `100`;
 - effect values are non-negative;
 - `smooth` appears only on noise and before any effect;

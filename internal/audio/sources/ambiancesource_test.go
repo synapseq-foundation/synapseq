@@ -21,8 +21,8 @@ func TestAmbianceSampleUsesPreparedStereoBuffer(ts *testing.T) {
 		ts.Fatalf("expected ambiance sample to be available")
 	}
 
-	wantLeft := 20000 * 16 * 3
-	wantRight := -10000 * 16 * 3
+	wantLeft := 20000 * 16
+	wantRight := -10000 * 16
 	if left != wantLeft || right != wantRight {
 		ts.Fatalf("unexpected ambiance sample: got [%d %d], want [%d %d]", left, right, wantLeft, wantRight)
 	}

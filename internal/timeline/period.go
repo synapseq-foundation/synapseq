@@ -26,7 +26,7 @@ func AdjustPeriods(last, next *t.Period) error {
 			tr0.Type = tr2.Type
 			tr0.Carrier = tr2.Carrier
 			tr0.Resonance = tr2.Resonance
-			tr0.Amplitude = 0
+			tr0.Amplitude = [2]t.AmplitudeType{}
 			tr0.NoiseSmooth = tr2.NoiseSmooth
 			tr0.Waveform = tr2.Waveform
 			tr0.Effect.Type = tr2.Effect.Type

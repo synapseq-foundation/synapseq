@@ -41,7 +41,7 @@ func NewPreset(name string, template bool, from *Preset) (*Preset, error) {
 		preset.Track[i].Type = TrackOff
 		preset.Track[i].Carrier = 0.0
 		preset.Track[i].Resonance = 0.0
-		preset.Track[i].Amplitude = 0.0
+		preset.Track[i].Amplitude = [2]AmplitudeType{}
 		preset.Track[i].NoiseSmooth = 0.0
 		preset.Track[i].Waveform = WaveformSine
 		preset.Track[i].Effect = Effect{Type: EffectOff, Value: 0.0, Intensity: 0.0}
@@ -56,7 +56,7 @@ func NewBuiltinSilencePreset() *Preset {
 		preset.Track[i].Type = TrackSilence
 		preset.Track[i].Carrier = 0.0
 		preset.Track[i].Resonance = 0.0
-		preset.Track[i].Amplitude = 0.0
+		preset.Track[i].Amplitude = [2]AmplitudeType{}
 		preset.Track[i].NoiseSmooth = 0.0
 		preset.Track[i].Waveform = WaveformSine
 		preset.Track[i].Effect = Effect{Type: EffectOff, Value: 0.0, Intensity: 0.0}

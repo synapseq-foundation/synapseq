@@ -6,6 +6,7 @@ package dump
 
 import (
 	"encoding/json"
+	"slices"
 	"strings"
 	"testing"
 
@@ -121,7 +122,7 @@ func TestJSONSerializesLoadedSequence(ts *testing.T) {
 	}
 
 	musicTrack := alphaTracks[2].(map[string]any)
-	if musicTrack["type"] != "music" || musicTrack["sourceName"] != "meditation_song" || musicTrack["amplitude"] != float64(50) {
+	if musicTrack["type"] != "music" || musicTrack["sourceName"] != "meditation_song" || !slices.Equal(musicTrack["amplitude"].([]any), []any{float64(50), float64(50)}) {
 		ts.Fatalf("unexpected music track: %#v", musicTrack)
 	}
 

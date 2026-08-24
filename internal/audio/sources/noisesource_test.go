@@ -27,7 +27,7 @@ func TestNoiseSampleUsesCompiledSignalState(ts *testing.T) {
 	source := NewNoise(Signal{Kind: t.TrackPinkNoise, NoiseSmooth: 50, Amplitude: [2]int{3, 0}})
 
 	got := source.Sample(generator)
-	want := 21
+	want := 7
 	if got != want {
 		ts.Fatalf("unexpected noise sample: got %d, want %d", got, want)
 	}

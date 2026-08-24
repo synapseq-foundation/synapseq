@@ -53,6 +53,8 @@ func TestParseTrackOverrideDeclaration(ts *testing.T) {
 		{name: "tone absolute", line: "  track 1 tone 350", expectedKind: t.KeywordTone, expectedIndex: 1, expectedValue: 350, expectedRaw: "350"},
 		{name: "tone relative", line: "  track 1 tone +50", expectedKind: t.KeywordTone, expectedIndex: 1, expectedValue: 50, expectedRaw: "+50", expectedRel: true},
 		{name: "amplitude", line: "  track 1 amplitude -5", expectedKind: t.KeywordAmplitude, expectedIndex: 1, expectedValue: -5, expectedRaw: "-5", expectedRel: true},
+		{name: "left amplitude", line: "  track 1 left 25", expectedKind: t.KeywordLeft, expectedIndex: 1, expectedValue: 25, expectedRaw: "25"},
+		{name: "right amplitude relative", line: "  track 1 right -5", expectedKind: t.KeywordRight, expectedIndex: 1, expectedValue: -5, expectedRaw: "-5", expectedRel: true},
 		{name: "waveform", line: "  track 2 waveform sawtooth", expectedKind: t.KeywordWaveform, expectedIndex: 2, expectedWave: t.WaveformSawtooth},
 		{name: "smooth", line: "  track 4 smooth 45", expectedKind: t.KeywordSmooth, expectedIndex: 4, expectedValue: 45, expectedRaw: "45"},
 		{name: "missing track index", line: "  track amplitude 10", expectedError: true},
@@ -62,6 +64,7 @@ func TestParseTrackOverrideDeclaration(ts *testing.T) {
 		{name: "invalid value", line: "  track 1 amplitude abc", expectedError: true},
 		{name: "custom waveform value", line: "  track 1 waveform pulse", expectedKind: t.KeywordWaveform, expectedIndex: 1, expectedWave: "pulse"},
 		{name: "extra tokens", line: "  track 1 amplitude 10 extra", expectedError: true},
+		{name: "legacy amplitude cannot have two values", line: "  track 1 amplitude 10 20", expectedError: true},
 	}
 
 	for _, tt := range tests {

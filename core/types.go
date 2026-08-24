@@ -51,7 +51,7 @@ type Track struct {
 	Type        string
 	Carrier     float64
 	Resonance   float64
-	Amplitude   float64
+	Amplitude   [2]float64
 	SourceName  string
 	NoiseSmooth float64
 	Effect      Effect

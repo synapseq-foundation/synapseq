@@ -104,7 +104,7 @@ Override syntax is:
 
 The current parser accepts `INDEX` values `1` through `15`. Override kinds are `tone`, `binaural`, `monaural`, `isochronic`, `waveform`, `pan`, `modulation`, `doppler`, `smooth`, `amplitude`, and `intensity`.
 
-Numeric overrides beginning with `+` or `-` are relative to the template value; unsigned values replace it. The override must match the inherited track: for example, `smooth` requires noise, `binaural` requires a binaural track, and `pan` requires an existing pan effect. Waveform values are absolute built-in or declared custom names, not numeric.
+Numeric overrides beginning with `+` or `-` are relative to the template value; unsigned values replace it. `track N amplitude VALUE` updates both channels, while `track N left VALUE` and `track N right VALUE` update one channel. The override must match the inherited track: for example, `smooth` requires noise, `binaural` requires a binaural track, and `pan` requires an existing pan effect. Waveform values are absolute built-in or declared custom names, not numeric.
 
 ## Track forms
 
@@ -114,6 +114,7 @@ Indent every track with exactly two ASCII spaces.
 
 ```spsq
   tone 220 amplitude 15
+  tone 220 amplitude left 15 right 10
   tone 220 binaural 10 amplitude 15
   tone 220 monaural 10 amplitude 15
   tone 220 isochronic 10 amplitude 15
@@ -125,6 +126,8 @@ Indent every track with exactly two ASCII spaces.
 Built-in waveforms are `sine` (default), `square`, `triangle`, and `sawtooth`; a declared custom waveform name is accepted in the same position. Tone effects are `pan`, `modulation`, and `doppler`. When present, tokens must occur in the shown order: optional beat, optional effect, `intensity`, then `amplitude`.
 
 The waveform shapes pure, binaural, and monaural oscillators. On isochronic tracks, the same waveform shapes both the carrier and gate. Compatible timeline changes morph between custom and built-in tables while retaining phase. Sharp custom segments can add harmonics and aliasing because tables are not band-limited.
+
+`amplitude VALUE` sets both channels. `amplitude left LEFT right RIGHT` sets final channel percentages independently; `left` always requires `right`. Both values range from `0` through `100` and are applied after `pan`.
 
 ### Noise
 

@@ -99,6 +99,7 @@ Normal presets must contain tracks, directly or through inheritance. Preset name
 
 ```spsq
   tone 220 amplitude 15
+  tone 220 amplitude left 15 right 10
   tone 220 binaural 10 amplitude 15
   tone 220 monaural 10 amplitude 15
   tone 220 isochronic 10 amplitude 15
@@ -144,9 +145,9 @@ These tracks play declared external resources. Ambiance loops; music is finite. 
 - `modulation` varies amplitude.
 - `doppler` adds pitch motion and is supported only for tones.
 - `intensity` controls effect strength.
-- `amplitude` controls a track's level.
+- `amplitude VALUE` controls matching left/right levels. `amplitude left LEFT right RIGHT` controls final channel levels independently; `left` always requires `right`. The per-channel gains apply after `pan`.
 
-Noise, ambiance, and music support `pan` and `modulation`. Numeric amplitude, intensity, smoothness, and volume values are percentages from `0` through `100`. Multiple tracks combine, so a value is not a guarantee of final perceived loudness.
+Noise, ambiance, and music support `pan` and `modulation`. Numeric amplitude values for each channel, intensity, smoothness, and volume values are percentages from `0` through `100`. Multiple tracks combine, so a value is not a guarantee of final perceived loudness.
 
 ## Timeline and transitions
 

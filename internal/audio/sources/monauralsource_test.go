@@ -22,7 +22,7 @@ func TestMonauralSampleAveragesDistinctPhases(ts *testing.T) {
 	highPhase := t.PhasePrecision
 	lowPhase := int(t.SineTableSize/2) * t.PhasePrecision
 	got := source.Sample(processor, highPhase, lowPhase)
-	want := (7 * (processor.WaveformSampleForMorph(source.waveform, highPhase) + processor.WaveformSampleForMorph(source.waveform, lowPhase))) >> 1
+	want := (processor.WaveformSampleForMorph(source.waveform, highPhase) + processor.WaveformSampleForMorph(source.waveform, lowPhase)) >> 1
 	if got != want {
 		ts.Fatalf("unexpected monaural sample: got %d, want %d", got, want)
 	}

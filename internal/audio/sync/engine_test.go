@@ -49,7 +49,8 @@ func TestEngine_Sync_InterpolatesTrackAndSignal(ts *testing.T) {
 
 	channel := channels[0]
 
-	assertAlmostEqual(ts, float64(channel.Track.Amplitude), float64(t.AmplitudePercentToRaw(20)), 0.0001)
+	assertAlmostEqual(ts, float64(channel.Track.Amplitude[0]), float64(t.AmplitudePercentToRaw(20)[0]), 0.0001)
+	assertAlmostEqual(ts, float64(channel.Track.Amplitude[1]), float64(t.AmplitudePercentToRaw(20)[1]), 0.0001)
 	assertAlmostEqual(ts, channel.Track.Carrier, 250, 0.0001)
 	assertAlmostEqual(ts, channel.Track.Resonance, 10, 0.0001)
 	assertAlmostEqual(ts, channel.Track.Effect.Value, 3, 0.0001)
@@ -69,7 +70,7 @@ func TestEngine_Sync_InterpolatesTrackAndSignal(ts *testing.T) {
 		ts.Fatalf("unexpected effect type: got %v", channel.Track.Effect.Type)
 	}
 
-	if channel.Amplitude[0] != int(channel.Track.Amplitude) || channel.Amplitude[1] != int(channel.Track.Amplitude) {
+	if channel.Amplitude[0] != int(channel.Track.Amplitude[0]) || channel.Amplitude[1] != int(channel.Track.Amplitude[1]) {
 		ts.Fatalf("unexpected amplitudes: got %v", channel.Amplitude)
 	}
 	if channel.Increment[0] != FrequencyToIncrement(testSampleRate, 255) {
@@ -117,7 +118,7 @@ func TestEngine_Sync_ResetsOffsetsAndClearsResidualState(ts *testing.T) {
 	if channel.Offset != [2]int{} {
 		ts.Fatalf("offsets were not reset: got %v", channel.Offset)
 	}
-	if channel.Amplitude[0] != int(channel.Track.Amplitude) || channel.Amplitude[1] != 0 {
+	if channel.Amplitude[0] != int(channel.Track.Amplitude[0]) || channel.Amplitude[1] != int(channel.Track.Amplitude[1]) {
 		ts.Fatalf("unexpected amplitudes after cleanup: got %v", channel.Amplitude)
 	}
 	if channel.Increment != [2]int{} {
@@ -271,8 +272,11 @@ func clampUnitForTest(value float64) float64 {
 
 func interpolateTrackForTest(start, end t.Track, alpha float64) t.Track {
 	return t.Track{
-		Type:        start.Type,
-		Amplitude:   t.AmplitudeType(start.Amplitude + t.AmplitudeType((float64(end.Amplitude)-float64(start.Amplitude))*alpha)),
+		Type: start.Type,
+		Amplitude: [2]t.AmplitudeType{
+			t.AmplitudeType(float64(start.Amplitude[0]) + (float64(end.Amplitude[0])-float64(start.Amplitude[0]))*alpha),
+			t.AmplitudeType(float64(start.Amplitude[1]) + (float64(end.Amplitude[1])-float64(start.Amplitude[1]))*alpha),
+		},
 		Carrier:     start.Carrier + (end.Carrier-start.Carrier)*alpha,
 		Resonance:   start.Resonance + (end.Resonance-start.Resonance)*alpha,
 		NoiseSmooth: start.NoiseSmooth + (end.NoiseSmooth-start.NoiseSmooth)*alpha,
@@ -331,26 +335,25 @@ func compileSignalStateForTest(track t.Track) ([2]int, [2]int, int) {
 		effectStep = FrequencyToIncrement(testSampleRate, track.Effect.Value)
 	}
 
-	rawAmplitude := int(track.Amplitude)
+	rawAmplitude := [2]int{int(track.Amplitude[0]), int(track.Amplitude[1])}
 	switch track.Type {
 	case t.TrackPureTone:
-		amplitude[0] = rawAmplitude
+		amplitude = rawAmplitude
 		increment[0] = FrequencyToIncrement(testSampleRate, track.Carrier)
 	case t.TrackBinauralBeat:
-		amplitude[0] = rawAmplitude
-		amplitude[1] = rawAmplitude
+		amplitude = rawAmplitude
 		increment[0] = FrequencyToIncrement(testSampleRate, track.Carrier+track.Resonance/2)
 		increment[1] = FrequencyToIncrement(testSampleRate, track.Carrier-track.Resonance/2)
 	case t.TrackMonauralBeat:
-		amplitude[0] = rawAmplitude
+		amplitude = rawAmplitude
 		increment[0] = FrequencyToIncrement(testSampleRate, track.Carrier+track.Resonance/2)
 		increment[1] = FrequencyToIncrement(testSampleRate, track.Carrier-track.Resonance/2)
 	case t.TrackIsochronicBeat:
-		amplitude[0] = rawAmplitude
+		amplitude = rawAmplitude
 		increment[0] = FrequencyToIncrement(testSampleRate, track.Carrier)
 		increment[1] = FrequencyToIncrement(testSampleRate, track.Resonance)
 	case t.TrackWhiteNoise, t.TrackPinkNoise, t.TrackBrownNoise, t.TrackAmbiance, t.TrackMusic:
-		amplitude[0] = rawAmplitude
+		amplitude = rawAmplitude
 	}
 
 	return amplitude, increment, effectStep

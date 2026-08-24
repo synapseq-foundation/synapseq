@@ -24,7 +24,7 @@ func TestAudioRendererMix_PureToneFirstSampleAndPhaseAdvance(ts *testing.T) {
 		WaveformStart: int(wt.SquareID),
 		WaveformEnd:   int(wt.SquareID),
 		Type:          t.TrackPureTone,
-		Amplitude:     [2]int{4096, 0},
+		Amplitude:     [2]int{4096, 4096},
 		Increment:     [2]int{t.PhasePrecision, 0},
 	}
 
@@ -57,7 +57,7 @@ func TestAudioRendererMix_PanEffectRoutesMonoSignal(ts *testing.T) {
 		WaveformStart: int(wt.SquareID),
 		WaveformEnd:   int(wt.SquareID),
 		Type:          t.TrackPureTone,
-		Amplitude:     [2]int{4096, 0},
+		Amplitude:     [2]int{4096, 4096},
 		Increment:     [2]int{t.PhasePrecision, 0},
 		Effect: t.EffectState{
 			Increment: int(t.SineTableSize/4) * t.PhasePrecision,
@@ -152,7 +152,7 @@ func TestAudioRendererMix_PureToneMorphsBetweenWaveforms(ts *testing.T) {
 		WaveformEnd:   int(wt.SquareID),
 		WaveformAlpha: 0.25,
 		Type:          t.TrackPureTone,
-		Amplitude:     [2]int{4096, 0},
+		Amplitude:     [2]int{4096, 4096},
 		Increment:     [2]int{t.PhasePrecision, 0},
 	}
 
@@ -166,6 +166,26 @@ func TestAudioRendererMix_PureToneMorphsBetweenWaveforms(ts *testing.T) {
 
 	if samples[0] != expected || samples[1] != expected {
 		ts.Fatalf("unexpected morphed sample: got [%d %d], want [%d %d]", samples[0], samples[1], expected, expected)
+	}
+}
+
+func TestAudioRendererMix_AppliesStereoAmplitudeAfterPan(ts *testing.T) {
+	renderer := newMixTestRenderer()
+	renderer.channels[0] = t.Channel{
+		Track: t.Track{
+			Type:     t.TrackPureTone,
+			Waveform: t.WaveformSquare,
+		},
+		WaveformStart: int(wt.SquareID),
+		WaveformEnd:   int(wt.SquareID),
+		Type:          t.TrackPureTone,
+		Amplitude:     [2]int{4096, 2048},
+		Increment:     [2]int{t.PhasePrecision, 0},
+	}
+
+	samples := renderer.mix(make([]int, t.BufferSize*audioChannels))
+	if samples[0] != 32767 || samples[1] != 16383 {
+		ts.Fatalf("unexpected stereo amplitude output: got [%d %d]", samples[0], samples[1])
 	}
 }
 
@@ -265,7 +285,7 @@ func TestAudioRendererMix_AmbianceUsesPreparedStereoBuffer(ts *testing.T) {
 			Type: t.TrackAmbiance,
 		},
 		Type:      t.TrackAmbiance,
-		Amplitude: [2]int{3, 0},
+		Amplitude: [2]int{3, 3},
 	}
 
 	samples := renderer.mix(make([]int, t.BufferSize*audioChannels))
