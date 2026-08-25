@@ -13,7 +13,11 @@ type stereoSample struct {
 
 func (r *AudioRenderer) mixChannelSample(ch, frame int) stereoSample {
 	channel := &r.channels[ch]
-	signal := r.signalStateFor(ch, channel)
+	signal := &r.signals[ch]
+	if !signal.resolved {
+		fallback := r.signalStateFor(ch, channel)
+		signal = &fallback
+	}
 
 	switch signal.kind {
 	case t.TrackPureTone:
@@ -35,12 +39,12 @@ func (r *AudioRenderer) mixChannelSample(ch, frame int) stereoSample {
 	}
 }
 
-func (r *AudioRenderer) applyEffectToMono(channel *t.Channel, signal channelSignalState, sample int) stereoSample {
+func (r *AudioRenderer) applyEffectToMono(channel *t.Channel, signal *channelSignalState, sample int) stereoSample {
 	left, right := r.effectProcessor.ApplyEffectToMono(channel, signal.effect, signal.waveform, sample)
 	return applyAmplitude(signal.amplitude, left, right)
 }
 
-func (r *AudioRenderer) applyEffectToStereo(channel *t.Channel, signal channelSignalState, left, right int) stereoSample {
+func (r *AudioRenderer) applyEffectToStereo(channel *t.Channel, signal *channelSignalState, left, right int) stereoSample {
 	left, right = r.effectProcessor.ApplyEffectToStereo(channel, signal.effect, signal.waveform, left, right)
 	return applyAmplitude(signal.amplitude, left, right)
 }

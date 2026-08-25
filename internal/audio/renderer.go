@@ -28,6 +28,9 @@ const (
 type AudioRenderer struct {
 	channels        [t.NumberOfChannels]t.Channel
 	signals         [t.NumberOfChannels]channelSignalState
+	activeChannels  [t.NumberOfChannels]int
+	activeCount     int
+	hasChannelPlan  bool
 	plan            renderPlan
 	periods         []t.Period
 	waveTables      [][]int
@@ -80,13 +83,13 @@ func NewAudioRenderer(p []t.Period, ar *AudioRendererOptions) (*AudioRenderer, e
 	}
 
 	ambianceState, err := amb.NewRuntime(p, ar.Ambiance, ar.SampleRate, func(paths []string, sampleRate int) (amb.SampleAudio, error) {
-		return amb.NewAudio(paths, sampleRate)
+		return amb.NewLazyAudio(paths, sampleRate)
 	})
 	if err != nil {
 		return nil, err
 	}
 	musicState, err := mus.NewRuntime(p, ar.Music, ar.SampleRate, func(paths []string, sampleRate int) (mus.SampleAudio, error) {
-		return mus.NewAudio(paths, sampleRate)
+		return mus.NewLazyAudio(paths, sampleRate)
 	})
 	if err != nil {
 		if ambianceState != nil {

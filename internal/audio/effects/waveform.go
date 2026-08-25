@@ -19,7 +19,19 @@ func (p *Processor) WaveformValue(channel *t.Channel, offset int) float64 {
 }
 
 func (p *Processor) WaveformSampleForMorph(waveform WaveformMorph, offset int) int {
-	return int(math.Round(p.WaveformValueForMorph(waveform, offset)))
+	startWaveform, endWaveform, alpha := normalizedWaveformMorph(waveform)
+	idx := offset >> 16
+	start := p.waveTables[int(startWaveform)][idx]
+	if alpha <= 0 || startWaveform == endWaveform {
+		return start
+	}
+
+	end := p.waveTables[int(endWaveform)][idx]
+	if alpha >= 1 {
+		return end
+	}
+
+	return int(math.Round(float64(start) + float64(end-start)*alpha))
 }
 
 func (p *Processor) WaveformValueForMorph(waveform WaveformMorph, offset int) float64 {

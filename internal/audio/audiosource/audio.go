@@ -32,6 +32,7 @@ type Options struct {
 	PlaybackMode PlaybackMode
 	LoadFile     FileLoader
 	SourceKind   string
+	LazyLoad     bool
 }
 
 type Audio struct {
@@ -39,6 +40,8 @@ type Audio struct {
 	currentIndex int
 	playbackMode PlaybackMode
 	sourceKind   string
+	loadFile     FileLoader
+	expectedRate int
 
 	decoder       beep.StreamSeekCloser
 	sampleRate    int
@@ -49,13 +52,24 @@ type Audio struct {
 
 	cachedData [][]byte
 	formats    []t.AmbianceAudioFormat
+	validated  []bool
 	decoders   []beep.StreamSeekCloser
 
-	buffer     []int
-	bufferSize int
+	decodeBuffer [][2]float64
+	bufferSize   int
 }
 
 func New(filePaths []string, expectedSampleRate int, opts Options) (*Audio, error) {
+	return newAudio(filePaths, expectedSampleRate, opts)
+}
+
+// NewLazy defers file reads and format validation until a source is first played.
+func NewLazy(filePaths []string, expectedSampleRate int, opts Options) (*Audio, error) {
+	opts.LazyLoad = true
+	return newAudio(filePaths, expectedSampleRate, opts)
+}
+
+func newAudio(filePaths []string, expectedSampleRate int, opts Options) (*Audio, error) {
 	sourceKind := opts.SourceKind
 	if sourceKind == "" {
 		sourceKind = "external audio"
@@ -66,28 +80,38 @@ func New(filePaths []string, expectedSampleRate int, opts Options) (*Audio, erro
 	if opts.LoadFile == nil {
 		return nil, fmt.Errorf("%s file loader cannot be nil", sourceKind)
 	}
+	if expectedSampleRate <= 0 {
+		return nil, fmt.Errorf("invalid expected sample rate: %d", expectedSampleRate)
+	}
 
 	aa := &Audio{
 		filePaths:    filePaths,
 		currentIndex: 0,
 		playbackMode: opts.PlaybackMode,
 		sourceKind:   sourceKind,
+		loadFile:     opts.LoadFile,
+		expectedRate: expectedSampleRate,
+		sampleRate:   expectedSampleRate,
+		channels:     stereoChannels,
 		bufferSize:   t.BufferSize * stereoChannels,
 		cachedData:   make([][]byte, len(filePaths)),
 		formats:      make([]t.AmbianceAudioFormat, len(filePaths)),
+		validated:    make([]bool, len(filePaths)),
 		decoders:     make([]beep.StreamSeekCloser, len(filePaths)),
 	}
 
-	if err := aa.loadAndCacheAll(opts.LoadFile); err != nil {
-		return nil, err
+	if !opts.LazyLoad {
+		if err := aa.loadAndCacheAll(); err != nil {
+			return nil, err
+		}
+		if err := aa.validateTracks(); err != nil {
+			return nil, err
+		}
+		if err := aa.openFromCache(aa.currentIndex); err != nil {
+			return nil, fmt.Errorf("failed to open %s file: %w", aa.sourceKind, err)
+		}
 	}
-	if err := aa.validateTracks(expectedSampleRate); err != nil {
-		return nil, err
-	}
-	if err := aa.openFromCache(aa.currentIndex); err != nil {
-		return nil, fmt.Errorf("failed to open %s file: %w", aa.sourceKind, err)
-	}
-	aa.buffer = make([]int, aa.bufferSize)
+	aa.decodeBuffer = make([][2]float64, aa.bufferSize/stereoChannels)
 	return aa, nil
 }
 
@@ -111,80 +135,135 @@ func (aa *Audio) CachedData() [][]byte {
 	return aa.cachedData
 }
 
-func (aa *Audio) loadAndCacheAll(getFile FileLoader) error {
-	for i, path := range aa.filePaths {
-		if aa.cachedData[i] != nil {
-			continue
-		}
+// CloneAudio creates an independent playback cursor over the immutable cached assets.
+func (aa *Audio) CloneAudio() (SampleAudio, error) {
+	if aa == nil {
+		return nil, fmt.Errorf("audio is nil")
+	}
 
-		data, format, err := getFile(path)
-		if err != nil {
-			return fmt.Errorf("failed to load %s file [%d] (%s): %w", aa.sourceKind, i, path, err)
+	return &Audio{
+		filePaths:    aa.filePaths,
+		playbackMode: aa.playbackMode,
+		sourceKind:   aa.sourceKind,
+		loadFile:     aa.loadFile,
+		expectedRate: aa.expectedRate,
+		sampleRate:   aa.sampleRate,
+		channels:     aa.channels,
+		bitDepth:     aa.bitDepth,
+		cachedData:   aa.cachedData,
+		formats:      aa.formats,
+		validated:    aa.validated,
+		decoders:     make([]beep.StreamSeekCloser, len(aa.decoders)),
+		decodeBuffer: make([][2]float64, aa.bufferSize/stereoChannels),
+		bufferSize:   aa.bufferSize,
+	}, nil
+}
+
+// SelectAudio resets playback at index while retaining its decoder when possible.
+func (aa *Audio) SelectAudio(index int) error {
+	if aa == nil {
+		return fmt.Errorf("audio is nil")
+	}
+	if index < 0 || index >= len(aa.filePaths) {
+		return fmt.Errorf("invalid %s index: %d", aa.sourceKind, index)
+	}
+	if aa.decoders[index] == nil {
+		return aa.openFromCache(index)
+	}
+	if err := aa.decoders[index].Seek(0); err != nil {
+		return aa.restartAt(index)
+	}
+
+	aa.decoder = aa.decoders[index]
+	aa.currentIndex = index
+	aa.hasReachedEOF = false
+	return nil
+}
+
+func (aa *Audio) loadAndCacheAll() error {
+	for i, path := range aa.filePaths {
+		if err := aa.loadAndCache(i, path); err != nil {
+			return err
 		}
-		aa.cachedData[i] = data
-		aa.formats[i] = format
 	}
 	return nil
 }
 
-func (aa *Audio) validateTracks(expectedSampleRate int) error {
+func (aa *Audio) loadAndCache(index int, path string) error {
+	if aa.cachedData[index] != nil {
+		return nil
+	}
+
+	data, format, err := aa.loadFile(path)
+	if err != nil {
+		return fmt.Errorf("failed to load %s file [%d] (%s): %w", aa.sourceKind, index, path, err)
+	}
+	aa.cachedData[index] = data
+	aa.formats[index] = format
+	return nil
+}
+
+func (aa *Audio) validateTracks() error {
 	if len(aa.cachedData) == 0 {
 		return fmt.Errorf("no %s tracks loaded", aa.sourceKind)
 	}
-	if expectedSampleRate <= 0 {
-		return fmt.Errorf("invalid expected sample rate: %d", expectedSampleRate)
+
+	for i := range aa.cachedData {
+		if err := aa.validateTrack(i); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (aa *Audio) validateTrack(i int) error {
+	data := aa.cachedData[i]
+	stream, format, err := decodeAudioData(data, aa.formats[i])
+	if err != nil {
+		return fmt.Errorf("failed to decode %s file [%d] (%s): %w", aa.sourceKind, i, aa.filePaths[i], err)
 	}
 
-	for i, data := range aa.cachedData {
-		stream, format, err := decodeAudioData(data, aa.formats[i])
+	sr := int(format.SampleRate)
+	ch := format.NumChannels
+
+	if err := stream.Close(); err != nil {
+		return fmt.Errorf("failed to close %s file [%d] (%s): %w", aa.sourceKind, i, aa.filePaths[i], err)
+	}
+
+	if ch != stereoChannels {
+		return fmt.Errorf("%s track [%d] (%s) has %d channel(s), expected %d", aa.sourceKind, i, aa.filePaths[i], ch, stereoChannels)
+	}
+
+	if sr != aa.expectedRate {
+		resampled, err := resampleAudioData(data, aa.formats[i], aa.expectedRate)
 		if err != nil {
-			return fmt.Errorf("failed to decode %s file [%d] (%s): %w", aa.sourceKind, i, aa.filePaths[i], err)
+			return fmt.Errorf("failed to resample %s file [%d] (%s) from %d Hz to %d Hz: %w", aa.sourceKind, i, aa.filePaths[i], sr, aa.expectedRate, err)
 		}
 
-		sr := int(format.SampleRate)
-		ch := format.NumChannels
+		aa.cachedData[i] = resampled
+		aa.formats[i] = t.AmbianceAudioWAV
+
+		stream, format, err = decodeAudioData(resampled, aa.formats[i])
+		if err != nil {
+			return fmt.Errorf("failed to decode resampled %s file [%d] (%s): %w", aa.sourceKind, i, aa.filePaths[i], err)
+		}
+
+		sr = int(format.SampleRate)
+		ch = format.NumChannels
 
 		if err := stream.Close(); err != nil {
-			return fmt.Errorf("failed to close %s file [%d] (%s): %w", aa.sourceKind, i, aa.filePaths[i], err)
+			return fmt.Errorf("failed to close resampled %s file [%d] (%s): %w", aa.sourceKind, i, aa.filePaths[i], err)
+		}
+
+		if sr != aa.expectedRate {
+			return fmt.Errorf("%s track [%d] (%s) has sample rate %d Hz after resample, expected %d Hz", aa.sourceKind, i, aa.filePaths[i], sr, aa.expectedRate)
 		}
 
 		if ch != stereoChannels {
-			return fmt.Errorf("%s track [%d] (%s) has %d channel(s), expected %d", aa.sourceKind, i, aa.filePaths[i], ch, stereoChannels)
-		}
-
-		if sr != expectedSampleRate {
-			resampled, err := resampleAudioData(data, aa.formats[i], expectedSampleRate)
-			if err != nil {
-				return fmt.Errorf("failed to resample %s file [%d] (%s) from %d Hz to %d Hz: %w", aa.sourceKind, i, aa.filePaths[i], sr, expectedSampleRate, err)
-			}
-
-			aa.cachedData[i] = resampled
-			aa.formats[i] = t.AmbianceAudioWAV
-
-			stream, format, err = decodeAudioData(resampled, aa.formats[i])
-			if err != nil {
-				return fmt.Errorf("failed to decode resampled %s file [%d] (%s): %w", aa.sourceKind, i, aa.filePaths[i], err)
-			}
-
-			sr = int(format.SampleRate)
-			ch = format.NumChannels
-
-			if err := stream.Close(); err != nil {
-				return fmt.Errorf("failed to close resampled %s file [%d] (%s): %w", aa.sourceKind, i, aa.filePaths[i], err)
-			}
-
-			if sr != expectedSampleRate {
-				return fmt.Errorf("%s track [%d] (%s) has sample rate %d Hz after resample, expected %d Hz", aa.sourceKind, i, aa.filePaths[i], sr, expectedSampleRate)
-			}
-
-			if ch != stereoChannels {
-				return fmt.Errorf("%s track [%d] (%s) has %d channel(s) after resample, expected %d", aa.sourceKind, i, aa.filePaths[i], ch, stereoChannels)
-			}
+			return fmt.Errorf("%s track [%d] (%s) has %d channel(s) after resample, expected %d", aa.sourceKind, i, aa.filePaths[i], ch, stereoChannels)
 		}
 	}
-
-	aa.sampleRate = expectedSampleRate
-	aa.channels = stereoChannels
+	aa.validated[i] = true
 	return nil
 }
 
@@ -244,11 +323,25 @@ type memoryWriteSeeker struct {
 }
 
 func (m *memoryWriteSeeker) Write(p []byte) (int, error) {
+	oldLen := len(m.data)
 	end := m.pos + len(p)
-	if end > len(m.data) {
-		grown := make([]byte, end)
+	if end > cap(m.data) {
+		capacity := cap(m.data)
+		if capacity == 0 {
+			capacity = 4096
+		}
+		for capacity < end {
+			capacity *= 2
+		}
+		grown := make([]byte, len(m.data), capacity)
 		copy(grown, m.data)
 		m.data = grown
+	}
+	if end > len(m.data) {
+		m.data = m.data[:end]
+	}
+	if m.pos > oldLen {
+		clear(m.data[oldLen:m.pos])
 	}
 	copy(m.data[m.pos:end], p)
 	m.pos = end
@@ -275,7 +368,7 @@ func (m *memoryWriteSeeker) Seek(offset int64, whence int) (int64, error) {
 }
 
 func (m *memoryWriteSeeker) Bytes() []byte {
-	return append([]byte(nil), m.data...)
+	return m.data
 }
 
 func (aa *Audio) openFromCache(index int) error {
@@ -283,7 +376,14 @@ func (aa *Audio) openFromCache(index int) error {
 		return fmt.Errorf("invalid %s index: %d", aa.sourceKind, index)
 	}
 	if aa.cachedData[index] == nil {
-		return fmt.Errorf("no cached data available for index: %d", index)
+		if err := aa.loadAndCache(index, aa.filePaths[index]); err != nil {
+			return err
+		}
+	}
+	if !aa.validated[index] {
+		if err := aa.validateTrack(index); err != nil {
+			return err
+		}
 	}
 
 	if aa.decoders[index] != nil {
@@ -382,7 +482,10 @@ func (aa *Audio) readFromDecoderAt(index int, samples []int, maxSamples int) (in
 		framesToRead = 1
 	}
 
-	buf := make([][2]float64, framesToRead)
+	if cap(aa.decodeBuffer) < framesToRead {
+		aa.decodeBuffer = make([][2]float64, framesToRead)
+	}
+	buf := aa.decodeBuffer[:framesToRead]
 	nFrames, ok := decoder.Stream(buf)
 	if !ok || nFrames == 0 {
 		if err := decoder.Err(); err != nil {

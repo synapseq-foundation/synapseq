@@ -13,7 +13,7 @@ func (p *Processor) smoothedModulationGain(channel *t.Channel, targetGain float6
 		return targetGain
 	}
 
-	maxDelta := p.effectSlewMaxDelta(modulationSlewTimeMs)
+	maxDelta := p.modulationMaxDelta
 	delta := targetGain - channel.Effect.ModulationGain
 	if delta > maxDelta {
 		delta = maxDelta
@@ -45,7 +45,7 @@ func (p *Processor) smoothedPanPosition(channel *t.Channel, targetX float64) flo
 		return targetX
 	}
 
-	maxDelta := 2 * p.effectSlewMaxDelta(panSlewTimeMs)
+	maxDelta := p.panMaxDelta
 	delta := targetX - channel.Effect.PanPosition
 	if delta > maxDelta {
 		delta = maxDelta

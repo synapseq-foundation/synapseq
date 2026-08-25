@@ -18,6 +18,14 @@ type SampleAudio interface {
 	Close() error
 }
 
+type cloneableSampleAudio interface {
+	CloneAudio() (SampleAudio, error)
+}
+
+type selectableSampleAudio interface {
+	SelectAudio(index int) error
+}
+
 type NewAudioFunc func(paths []string, sampleRate int) (SampleAudio, error)
 
 type BufferScope int
@@ -59,7 +67,8 @@ func NewRuntime(periods []t.Period, sources map[string]string, sampleRate int, o
 		sourceKind = "external audio"
 	}
 
-	paths, nameToIndex, err := BuildIndex(sources, sourceKind)
+	reachable := ReachableSources(periods, sources, opts.TrackType)
+	paths, nameToIndex, err := buildIndex(reachable, sourceKind, opts.Scope == BufferScopeChannel)
 	if err != nil {
 		return nil, err
 	}
@@ -114,6 +123,10 @@ func NewTestRuntime(sampleCount int) *Runtime {
 }
 
 func BuildIndex(sources map[string]string, sourceKind string) ([]string, map[string]int, error) {
+	return buildIndex(sources, sourceKind, false)
+}
+
+func buildIndex(sources map[string]string, sourceKind string, deduplicatePaths bool) ([]string, map[string]int, error) {
 	if len(sources) == 0 {
 		return nil, map[string]int{}, nil
 	}
@@ -124,19 +137,52 @@ func BuildIndex(sources map[string]string, sourceKind string) ([]string, map[str
 	}
 	sort.Strings(names)
 
-	paths := make([]string, len(names))
+	paths := make([]string, 0, len(names))
 	nameToIndex := make(map[string]int, len(names))
+	pathToIndex := make(map[string]int, len(names))
 
-	for i, name := range names {
+	for _, name := range names {
 		path := sources[name]
 		if path == "" {
 			return nil, nil, fmt.Errorf("%s %q has empty path", sourceKind, name)
 		}
-		paths[i] = path
-		nameToIndex[name] = i
+		if deduplicatePaths {
+			if index, ok := pathToIndex[path]; ok {
+				nameToIndex[name] = index
+				continue
+			}
+		}
+		nameToIndex[name] = len(paths)
+		pathToIndex[path] = len(paths)
+		paths = append(paths, path)
 	}
 
 	return paths, nameToIndex, nil
+}
+
+// ReachableSources returns declared sources referenced by periods or boundary crossfades.
+func ReachableSources(periods []t.Period, sources map[string]string, trackType t.TrackType) map[string]string {
+	reachable := make(map[string]string)
+	for _, period := range periods {
+		for channel := range t.NumberOfChannels {
+			tracks := []t.Track{
+				period.TrackStart[channel],
+				period.TrackEnd[channel],
+				period.CrossfadeOut[channel].Track,
+				period.CrossfadeIn[channel].Track,
+			}
+			for _, track := range tracks {
+				if track.Type != trackType {
+					continue
+				}
+				if path, ok := sources[track.SourceName]; ok {
+					reachable[track.SourceName] = path
+				}
+			}
+		}
+	}
+
+	return reachable
 }
 
 func PrecomputePeriodStart(periods []t.Period, nameToIndex map[string]int, trackType t.TrackType, sourceKind string) ([][]int, error) {
@@ -196,7 +242,16 @@ func (ar *Runtime) UpdateChannelIndex(ch int, periodIdx int, trackType t.TrackTy
 		nextIdx = ar.periodStart[periodIdx][ch]
 	}
 
-	if ar.scope == BufferScopeChannel && nextIdx != ar.channelIdx[ch] {
+	changedSource := nextIdx != ar.channelIdx[ch]
+	if ar.scope == BufferScopeChannel && changedSource {
+		if nextIdx >= 0 {
+			if audio, ok := ar.channelAudio[ch].(selectableSampleAudio); ok {
+				if err := audio.SelectAudio(nextIdx); err == nil {
+					ar.channelIdx[ch] = nextIdx
+					return
+				}
+			}
+		}
 		ar.closeChannelAudio(ch)
 	}
 	ar.channelIdx[ch] = nextIdx
@@ -247,6 +302,15 @@ func (ar *Runtime) CollectActiveIndices(channels []t.Channel) {
 		if !ar.activeMask[idx] {
 			ar.activeMask[idx] = true
 			ar.activeIdx = append(ar.activeIdx, idx)
+		}
+	}
+	ar.releaseInactiveSourceBuffers()
+}
+
+func (ar *Runtime) releaseInactiveSourceBuffers() {
+	for index := range ar.samplesByIdx {
+		if !ar.activeMask[index] {
+			ar.samplesByIdx[index] = nil
 		}
 	}
 }
@@ -312,6 +376,14 @@ func (ar *Runtime) audioForChannel(ch int) (SampleAudio, error) {
 	}
 	if ar.channelAudio[ch] != nil {
 		return ar.channelAudio[ch], nil
+	}
+	if template, ok := ar.audio.(cloneableSampleAudio); ok {
+		audio, err := template.CloneAudio()
+		if err != nil {
+			return nil, err
+		}
+		ar.channelAudio[ch] = audio
+		return audio, nil
 	}
 	if ar.newAudio == nil {
 		return nil, nil

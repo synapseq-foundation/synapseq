@@ -65,6 +65,37 @@ func TestWAVOutput_Write_EmitsDecodableWAV(ts *testing.T) {
 	}
 }
 
+func BenchmarkRendererStreamer(b *testing.B) {
+	const chunks = 64
+	samples := make([]int, 2048)
+	for i := range samples {
+		samples[i] = i
+	}
+	output := make([][2]float64, 512)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		streamer := NewRendererStreamer(func(consume func([]int) error) error {
+			for range chunks {
+				if err := consume(samples); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+		for {
+			_, ok := streamer.Stream(output)
+			if !ok {
+				break
+			}
+		}
+		if err := streamer.Err(); err != nil {
+			b.Fatalf("stream error: %v", err)
+		}
+	}
+}
+
 type byteReadSeekCloser struct {
 	*bytes.Reader
 }

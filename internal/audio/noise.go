@@ -26,12 +26,18 @@ const (
 	noiseSmoothnessMinAlpha             = 0.02
 )
 
+const (
+	noiseSmoothWhiteIndex = iota
+	noiseSmoothPinkIndex
+	noiseSmoothBrownIndex
+)
+
 // NoiseGenerator handles all noise generation
 type NoiseGenerator struct {
 	pinkState   pinkNoiseState
 	seed        uint32
 	brownLast   int
-	smoothState map[t.TrackType]noiseSmoothnessState
+	smoothState [3]noiseSmoothnessState
 }
 
 // pinkNoiseState holds the per-band state for the Voss-McCartney pink noise generator.
@@ -60,10 +66,7 @@ type noiseSmoothnessProfile struct {
 
 // NewNoiseGenerator creates a new noise generator with initial seed
 func NewNoiseGenerator() *NoiseGenerator {
-	ng := &NoiseGenerator{
-		seed:        initialNoiseSeed,
-		smoothState: make(map[t.TrackType]noiseSmoothnessState),
-	}
+	ng := &NoiseGenerator{seed: initialNoiseSeed}
 	ng.initPinkNoise()
 	return ng
 }
@@ -171,14 +174,17 @@ func (ng *NoiseGenerator) applySmoothness(tr t.TrackType, smooth float64, sample
 		smooth = 100
 	}
 
-	state := ng.smoothState[tr]
+	stateIndex, ok := noiseSmoothnessStateIndex(tr)
+	if !ok {
+		return sample
+	}
+	state := &ng.smoothState[stateIndex]
 
 	if !state.initialized {
 		for idx := range state.stages {
 			state.stages[idx] = float64(sample)
 		}
 		state.initialized = true
-		ng.smoothState[tr] = state
 		return sample
 	}
 
@@ -189,8 +195,20 @@ func (ng *NoiseGenerator) applySmoothness(tr t.TrackType, smooth float64, sample
 		value = state.stages[idx]
 	}
 
-	ng.smoothState[tr] = state
 	return clampNoiseSample(int(value))
+}
+
+func noiseSmoothnessStateIndex(tr t.TrackType) (int, bool) {
+	switch tr {
+	case t.TrackWhiteNoise:
+		return noiseSmoothWhiteIndex, true
+	case t.TrackPinkNoise:
+		return noiseSmoothPinkIndex, true
+	case t.TrackBrownNoise:
+		return noiseSmoothBrownIndex, true
+	default:
+		return 0, false
+	}
 }
 
 // noiseSmoothnessAlpha returns the noise smoothing alpha for a given track and smoothness level.

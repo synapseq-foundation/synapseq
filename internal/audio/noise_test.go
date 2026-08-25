@@ -217,7 +217,7 @@ func TestNoise_SmoothnessRampPreservesFilterState(ts *testing.T) {
 		prevReset = ngReset.Generate(t.TrackPinkNoise, 100)
 	}
 
-	ngReset.smoothState[t.TrackPinkNoise] = noiseSmoothnessState{}
+	ngReset.smoothState[noiseSmoothPinkIndex] = noiseSmoothnessState{}
 
 	outPreserved := ngPreserved.Generate(t.TrackPinkNoise, 50)
 	outReset := ngReset.Generate(t.TrackPinkNoise, 50)
@@ -225,8 +225,8 @@ func TestNoise_SmoothnessRampPreservesFilterState(ts *testing.T) {
 	deltaPreserved := absInt(outPreserved - prevPreserved)
 	deltaReset := absInt(outReset - prevReset)
 
-	if len(ngPreserved.smoothState) != 1 {
-		ts.Fatalf("expected a single smooth state entry for ramped pink noise, got %d", len(ngPreserved.smoothState))
+	if !ngPreserved.smoothState[noiseSmoothPinkIndex].initialized {
+		ts.Fatalf("expected pink noise smoothing state to remain initialized")
 	}
 	if deltaPreserved >= deltaReset {
 		ts.Fatalf("expected preserved filter state to reduce transition discontinuity, got preserved=%d reset=%d", deltaPreserved, deltaReset)

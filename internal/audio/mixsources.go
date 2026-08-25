@@ -9,7 +9,7 @@ import (
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
-func (r *AudioRenderer) mixPureTone(channel *t.Channel, signal channelSignalState) stereoSample {
+func (r *AudioRenderer) mixPureTone(channel *t.Channel, signal *channelSignalState) stereoSample {
 	source := src.NewPureTone(signal.sourceSignal())
 	inc0 := r.effectProcessor.ApplyDoppler(channel, signal.effect, signal.increment[0])
 	channel.Offset[0] = advancePhase(channel.Offset[0], inc0)
@@ -18,7 +18,7 @@ func (r *AudioRenderer) mixPureTone(channel *t.Channel, signal channelSignalStat
 	return r.applyEffectToMono(channel, signal, sample)
 }
 
-func (r *AudioRenderer) mixBinauralBeat(channel *t.Channel, signal channelSignalState) stereoSample {
+func (r *AudioRenderer) mixBinauralBeat(channel *t.Channel, signal *channelSignalState) stereoSample {
 	source := src.NewBinaural(signal.sourceSignal())
 	inc0, inc1 := r.effectProcessor.ApplyDopplerPair(channel, signal.effect, signal.increment[0], signal.increment[1])
 	channel.Offset[0] = advancePhase(channel.Offset[0], inc0)
@@ -28,7 +28,7 @@ func (r *AudioRenderer) mixBinauralBeat(channel *t.Channel, signal channelSignal
 	return r.applyEffectToStereo(channel, signal, left, right)
 }
 
-func (r *AudioRenderer) mixMonauralBeat(channel *t.Channel, signal channelSignalState) stereoSample {
+func (r *AudioRenderer) mixMonauralBeat(channel *t.Channel, signal *channelSignalState) stereoSample {
 	source := src.NewMonaural(signal.sourceSignal())
 	inc0, inc1 := r.effectProcessor.ApplyDopplerPair(channel, signal.effect, signal.increment[0], signal.increment[1])
 	channel.Offset[0] = advancePhase(channel.Offset[0], inc0)
@@ -39,7 +39,7 @@ func (r *AudioRenderer) mixMonauralBeat(channel *t.Channel, signal channelSignal
 	return r.applyEffectToMono(channel, signal, mixed)
 }
 
-func (r *AudioRenderer) mixIsochronicBeat(channel *t.Channel, signal channelSignalState) stereoSample {
+func (r *AudioRenderer) mixIsochronicBeat(channel *t.Channel, signal *channelSignalState) stereoSample {
 	source := src.NewIsochronic(signal.sourceSignal())
 	incCarrier := r.effectProcessor.ApplyDoppler(channel, signal.effect, signal.increment[0])
 	channel.Offset[0] = advancePhase(channel.Offset[0], incCarrier)
@@ -51,13 +51,13 @@ func (r *AudioRenderer) mixIsochronicBeat(channel *t.Channel, signal channelSign
 	return r.applyEffectToMono(channel, signal, out)
 }
 
-func (r *AudioRenderer) mixNoise(channel *t.Channel, signal channelSignalState) stereoSample {
+func (r *AudioRenderer) mixNoise(channel *t.Channel, signal *channelSignalState) stereoSample {
 	source := src.NewNoise(signal.sourceSignal())
 	sample := source.Sample(r.noiseGenerator)
 	return r.applyEffectToMono(channel, signal, sample)
 }
 
-func (r *AudioRenderer) mixAmbiance(channel *t.Channel, signal channelSignalState, ch, frame int) stereoSample {
+func (r *AudioRenderer) mixAmbiance(channel *t.Channel, signal *channelSignalState, ch, frame int) stereoSample {
 	source := src.NewAmbiance(signal.sourceSignal())
 	left, right, ok := source.Sample(r.ambianceState, ch, frame)
 	if !ok {
@@ -67,7 +67,7 @@ func (r *AudioRenderer) mixAmbiance(channel *t.Channel, signal channelSignalStat
 	return r.applyEffectToStereo(channel, signal, left, right)
 }
 
-func (r *AudioRenderer) mixMusic(channel *t.Channel, signal channelSignalState, ch, frame int) stereoSample {
+func (r *AudioRenderer) mixMusic(channel *t.Channel, signal *channelSignalState, ch, frame int) stereoSample {
 	source := src.NewAmbiance(signal.sourceSignal())
 	left, right, ok := source.Sample(r.musicState, ch, frame)
 	if !ok {

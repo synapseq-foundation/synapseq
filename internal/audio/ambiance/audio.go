@@ -18,3 +18,11 @@ func NewAudio(filePaths []string, expectedSampleRate int) (*Audio, error) {
 		SourceKind:   "ambiance",
 	})
 }
+
+func NewLazyAudio(filePaths []string, expectedSampleRate int) (*Audio, error) {
+	return audiosource.NewLazy(filePaths, expectedSampleRate, audiosource.Options{
+		PlaybackMode: audiosource.PlaybackLoop,
+		LoadFile:     r.GetAmbianceFile,
+		SourceKind:   "ambiance",
+	})
+}
