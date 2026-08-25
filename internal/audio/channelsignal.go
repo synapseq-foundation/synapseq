@@ -22,8 +22,14 @@ type channelSignalState struct {
 }
 
 func (r *AudioRenderer) applyCueSignalState(cue audiosync.Cue) {
+	r.activeCount = 0
+	r.hasChannelPlan = true
 	for index := range cue.Channels {
 		channelCue := cue.Channels[index]
+		if channelCue.Track.Type != t.TrackOff && channelCue.Track.Type != t.TrackSilence {
+			r.activeChannels[r.activeCount] = index
+			r.activeCount++
+		}
 		r.signals[index] = channelSignalState{
 			resolved:    true,
 			kind:        channelCue.Track.Type,
@@ -34,8 +40,8 @@ func (r *AudioRenderer) applyCueSignalState(cue audiosync.Cue) {
 				End:   channelCue.WaveformEnd,
 				Alpha: channelCue.WaveformAlpha,
 			},
-			amplitude:   channelCue.Amplitude,
-			increment:   channelCue.Increment,
+			amplitude: channelCue.Amplitude,
+			increment: channelCue.Increment,
 		}
 	}
 }
@@ -56,7 +62,7 @@ func (r *AudioRenderer) signalStateFor(ch int, channel *t.Channel) channelSignal
 	}
 }
 
-func (state channelSignalState) sourceSignal() src.Signal {
+func (state *channelSignalState) sourceSignal() src.Signal {
 	return src.Signal{
 		Kind:        state.kind,
 		NoiseSmooth: state.noiseSmooth,

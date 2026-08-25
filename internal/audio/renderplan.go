@@ -23,6 +23,7 @@ type renderPlan struct {
 	sampleRate  int
 	totalFrames int64
 	waveforms   []periodWaveforms
+	active      [][t.NumberOfChannels]bool
 	transitions map[string][]float64
 }
 
@@ -59,6 +60,7 @@ func compileRenderPlanWithWaveformsAndTransitions(periods []t.Period, sampleRate
 		sampleRate:  sampleRate,
 		totalFrames: totalFramesFromDuration(durationMs(periods), sampleRate),
 		waveforms:   make([]periodWaveforms, len(periods)),
+		active:      make([][t.NumberOfChannels]bool, len(periods)),
 		transitions: transitions,
 	}
 
@@ -74,6 +76,7 @@ func compileRenderPlanWithWaveformsAndTransitions(periods []t.Period, sampleRate
 			EndMs:       endMs,
 		}
 		for channel := range t.NumberOfChannels {
+			plan.active[index][channel] = periodCanProduceAudio(periods[index], channel)
 			plan.waveforms[index].Start[channel], _ = registry.Lookup(periods[index].TrackStart[channel].Waveform)
 			plan.waveforms[index].End[channel], _ = registry.Lookup(periods[index].TrackEnd[channel].Waveform)
 			plan.waveforms[index].CrossfadeOut[channel], _ = registry.Lookup(periods[index].CrossfadeOut[channel].Track.Waveform)
@@ -102,6 +105,9 @@ func (rp renderPlan) cue(periodIdx int, currentTimeMs int) audiosync.Cue {
 	}
 
 	for index := 0; index < t.NumberOfChannels; index++ {
+		if !rp.active[periodIdx][index] {
+			continue
+		}
 		track, waveformStart, waveformEnd, waveformAlpha, crossfade := rp.trackStateAt(window, period, index, alpha, currentTimeMs)
 		signal := compileSignalState(planTrackState{
 			track:      track,
@@ -120,6 +126,21 @@ func (rp renderPlan) cue(periodIdx int, currentTimeMs int) audiosync.Cue {
 	}
 
 	return cue
+}
+
+func periodCanProduceAudio(period t.Period, channel int) bool {
+	tracks := [...]t.Track{
+		period.TrackStart[channel],
+		period.TrackEnd[channel],
+		period.CrossfadeOut[channel].Track,
+		period.CrossfadeIn[channel].Track,
+	}
+	for _, track := range tracks {
+		if track.Type != t.TrackOff && track.Type != t.TrackSilence {
+			return true
+		}
+	}
+	return false
 }
 
 func (rp renderPlan) trackStateAt(window renderWindow, period t.Period, ch int, alpha float64, currentTimeMs int) (t.Track, wt.ID, wt.ID, float64, audiosync.CrossfadeCue) {

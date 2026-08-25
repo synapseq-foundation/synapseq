@@ -6,10 +6,12 @@ package audiosource
 
 import (
 	"bytes"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -197,6 +199,119 @@ func TestAudio_LoadReadAndLoop(t *testing.T) {
 	}
 }
 
+func TestAudioCloneSharesAssetsAndStartsIndependentPlayback(t *testing.T) {
+	path := filepath.Join("..", "testdata", "noise.wav")
+	aa, err := newLoopAudio([]string{path}, 44100)
+	if err != nil {
+		t.Fatalf("NewAudio: %v", err)
+	}
+	defer aa.Close()
+
+	cloned, err := aa.CloneAudio()
+	if err != nil {
+		t.Fatalf("CloneAudio: %v", err)
+	}
+	clone := cloned.(*Audio)
+	defer clone.Close()
+
+	if &aa.cachedData[0][0] != &clone.cachedData[0][0] {
+		t.Fatal("expected clone to share cached source data")
+	}
+
+	original := make([]int, stereoChannels)
+	copy := make([]int, stereoChannels)
+	if _, err := aa.ReadSamplesAt(0, original, len(original)); err != nil {
+		t.Fatalf("original ReadSamplesAt: %v", err)
+	}
+	if _, err := clone.ReadSamplesAt(0, copy, len(copy)); err != nil {
+		t.Fatalf("clone ReadSamplesAt: %v", err)
+	}
+	if !slices.Equal(original, copy) {
+		t.Fatalf("expected independent playback to start at same samples: original=%v clone=%v", original, copy)
+	}
+}
+
+func TestAudioSelectResetsExistingDecoder(t *testing.T) {
+	path := filepath.Join("..", "testdata", "noise.wav")
+	aa, err := newLoopAudio([]string{path}, 44100)
+	if err != nil {
+		t.Fatalf("NewAudio: %v", err)
+	}
+	defer aa.Close()
+
+	decoder := aa.decoders[0]
+	first := make([]int, stereoChannels)
+	if _, err := aa.ReadSamplesAt(0, first, len(first)); err != nil {
+		t.Fatalf("first ReadSamplesAt: %v", err)
+	}
+	if err := aa.SelectAudio(0); err != nil {
+		t.Fatalf("SelectAudio: %v", err)
+	}
+	if aa.decoders[0] != decoder {
+		t.Fatal("expected SelectAudio to retain the decoder")
+	}
+	reset := make([]int, stereoChannels)
+	if _, err := aa.ReadSamplesAt(0, reset, len(reset)); err != nil {
+		t.Fatalf("reset ReadSamplesAt: %v", err)
+	}
+	if !slices.Equal(first, reset) {
+		t.Fatalf("expected reset playback to match first samples: first=%v reset=%v", first, reset)
+	}
+}
+
+func BenchmarkAudioReadSamples(b *testing.B) {
+	path := filepath.Join("..", "testdata", "noise.wav")
+	aa, err := newLoopAudio([]string{path}, 44100)
+	if err != nil {
+		b.Fatalf("NewAudio: %v", err)
+	}
+	defer aa.Close()
+
+	samples := make([]int, t.BufferSize*stereoChannels)
+	b.SetBytes(int64(len(samples) * 2))
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		if _, err := aa.ReadSamplesAt(0, samples, len(samples)); err != nil {
+			b.Fatalf("ReadSamplesAt: %v", err)
+		}
+	}
+}
+
+func TestMemoryWriteSeekerGrowsGeometricallyAndRetainsContent(t *testing.T) {
+	writer := &memoryWriteSeeker{}
+	for range 10 {
+		if _, err := writer.Write(make([]byte, 1024)); err != nil {
+			t.Fatalf("Write: %v", err)
+		}
+	}
+	if len(writer.data) != 10*1024 {
+		t.Fatalf("unexpected data length: %d", len(writer.data))
+	}
+	if cap(writer.data) < len(writer.data) || cap(writer.data) >= 2*len(writer.data) {
+		t.Fatalf("unexpected geometric capacity: %d", cap(writer.data))
+	}
+
+	if _, err := writer.Seek(0, io.SeekStart); err != nil {
+		t.Fatalf("Seek: %v", err)
+	}
+	if _, err := writer.Write([]byte{1, 2, 3}); err != nil {
+		t.Fatalf("Write after seek: %v", err)
+	}
+	if got := writer.Bytes()[:3]; !slices.Equal(got, []byte{1, 2, 3}) {
+		t.Fatalf("unexpected overwritten bytes: %v", got)
+	}
+	if _, err := writer.Seek(12*1024, io.SeekStart); err != nil {
+		t.Fatalf("Seek past end: %v", err)
+	}
+	if _, err := writer.Write([]byte{4}); err != nil {
+		t.Fatalf("Write past end: %v", err)
+	}
+	if got := writer.Bytes()[10*1024 : 12*1024]; !slices.Equal(got, make([]byte, len(got))) {
+		t.Fatalf("expected zero-filled seek gap, got %v", got[:3])
+	}
+}
+
 func TestAudio_LoadReadAndLoopMP3(t *testing.T) {
 	path := filepath.Join("..", "testdata", "noise.mp3")
 	data, sr, chans, depth := mustReadMP3All(t, path)
@@ -376,6 +491,41 @@ func TestAudio_MultipleIndicesHaveIndependentReadPosition(t *testing.T) {
 		if second0[i] != want {
 			t.Fatalf("index 0 continuation mismatch at %d: got %d want %d", i, second0[i], want)
 		}
+	}
+}
+
+func TestNewLazyLoadsAndValidatesOnlySelectedAudio(ts *testing.T) {
+	path := filepath.Join("..", "testdata", "noise.wav")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		ts.Fatalf("ReadFile: %v", err)
+	}
+
+	loads := make(map[string]int)
+	aa, err := NewLazy([]string{"first", "second"}, 44100, Options{
+		PlaybackMode: PlaybackLoop,
+		SourceKind:   "ambiance",
+		LoadFile: func(path string) ([]byte, t.AmbianceAudioFormat, error) {
+			loads[path]++
+			return data, t.AmbianceAudioWAV, nil
+		},
+	})
+	if err != nil {
+		ts.Fatalf("NewLazy: %v", err)
+	}
+	defer aa.Close()
+
+	if len(loads) != 0 {
+		ts.Fatalf("lazy constructor loaded files: %v", loads)
+	}
+	if err := aa.SelectAudio(1); err != nil {
+		ts.Fatalf("SelectAudio: %v", err)
+	}
+	if loads["second"] != 1 || len(loads) != 1 {
+		ts.Fatalf("expected only selected file to load, got %v", loads)
+	}
+	if aa.CachedData()[0] != nil || aa.CachedData()[1] == nil {
+		ts.Fatalf("unexpected lazy cache state: %v", aa.CachedData())
 	}
 }
 

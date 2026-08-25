@@ -12,10 +12,18 @@ func (r *AudioRenderer) mix(samples []int) []int {
 	for i := range t.BufferSize {
 		var left, right int
 
-		for ch := range t.NumberOfChannels {
-			mixed := r.mixChannelSample(ch, i)
-			left += mixed.left
-			right += mixed.right
+		if r.hasChannelPlan {
+			for _, ch := range r.activeChannels[:r.activeCount] {
+				mixed := r.mixChannelSample(ch, i)
+				left += mixed.left
+				right += mixed.right
+			}
+		} else {
+			for ch := range t.NumberOfChannels {
+				mixed := r.mixChannelSample(ch, i)
+				left += mixed.left
+				right += mixed.right
+			}
 		}
 
 		final := r.finalizeMixedSample(left, right)

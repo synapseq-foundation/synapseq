@@ -10,6 +10,7 @@ import (
 
 	amb "github.com/synapseq-foundation/synapseq/v4/internal/audio/ambiance"
 	efx "github.com/synapseq-foundation/synapseq/v4/internal/audio/effects"
+	audiosync "github.com/synapseq-foundation/synapseq/v4/internal/audio/sync"
 	wt "github.com/synapseq-foundation/synapseq/v4/internal/audio/wavetable"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
@@ -295,6 +296,46 @@ func TestAudioRendererMix_AmbianceUsesPreparedStereoBuffer(ts *testing.T) {
 
 	if samples[0] != expectedLeft || samples[1] != expectedRight {
 		ts.Fatalf("unexpected ambiance output: got [%d %d], want [%d %d]", samples[0], samples[1], expectedLeft, expectedRight)
+	}
+}
+
+func TestAudioRendererMix_UsesOnlyActiveCueChannels(ts *testing.T) {
+	renderer := newMixTestRenderer()
+	renderer.channels[0] = t.Channel{
+		Track:         t.Track{Type: t.TrackPureTone, Waveform: t.WaveformSquare},
+		WaveformStart: int(wt.SquareID),
+		WaveformEnd:   int(wt.SquareID),
+		Type:          t.TrackPureTone,
+		Amplitude:     [2]int{4096, 4096},
+		Increment:     [2]int{t.PhasePrecision, 0},
+	}
+	for channel := 1; channel < t.NumberOfChannels; channel++ {
+		renderer.channels[channel] = t.Channel{
+			Track:         t.Track{Type: t.TrackPureTone, Waveform: t.WaveformSquare},
+			WaveformStart: int(wt.SquareID),
+			WaveformEnd:   int(wt.SquareID),
+			Type:          t.TrackPureTone,
+			Amplitude:     [2]int{4096, 4096},
+			Increment:     [2]int{t.PhasePrecision, 0},
+		}
+	}
+
+	var cue audiosync.Cue
+	cue.Channels[0] = audiosync.ChannelCue{
+		Track:         renderer.channels[0].Track,
+		WaveformStart: wt.SquareID,
+		WaveformEnd:   wt.SquareID,
+		Amplitude:     [2]int{4096, 4096},
+		Increment:     [2]int{t.PhasePrecision, 0},
+	}
+	renderer.applyCueSignalState(cue)
+
+	samples := renderer.mix(make([]int, t.BufferSize*audioChannels))
+	if samples[0] != 32767 || samples[1] != 32767 {
+		ts.Fatalf("unexpected active-channel output: [%d %d]", samples[0], samples[1])
+	}
+	if renderer.channels[1].Offset != [2]int{} {
+		ts.Fatalf("inactive channel phase advanced: %v", renderer.channels[1].Offset)
 	}
 }
 
