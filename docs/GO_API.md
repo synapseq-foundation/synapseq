@@ -104,6 +104,8 @@ func main() {
 
 `Preset.Shift(separation)` adds `shift` to the most recently added tone, noise, ambiance, or music track. The separation is measured in Hz and `Preset.Intensity(percent)` controls its dry/wet mix.
 
+`Preset.Doppler(rate)` adds `doppler` to the most recently added tone, ambiance, or music track. The rate is measured in Hz; `Preset.Intensity(percent)` controls waveform-shaped pitch or playback-speed movement.
+
 ## Convert SBaGen Sequences
 
 The `sbg` package provides the SBaGen conversion flow in Go:

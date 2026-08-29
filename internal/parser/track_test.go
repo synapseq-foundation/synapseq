@@ -150,6 +150,13 @@ func TestParseTrack_Noise(ts *testing.T) {
 	}
 }
 
+func TestParseTrack_NoiseRejectsDoppler(ts *testing.T) {
+	ctx := NewTextParser("noise pink effect doppler 1 intensity 40 amplitude 20")
+	if _, err := ctx.ParseTrackDeclaration(); err == nil {
+		ts.Fatal("expected noise doppler to be rejected")
+	}
+}
+
 func TestParseTrack_Ambiance(ts *testing.T) {
 	tests := []struct {
 		line      string
@@ -196,6 +203,18 @@ func TestParseTrack_Ambiance(ts *testing.T) {
 				EffectType:             t.EffectShift,
 				EffectValue:            10,
 				EffectIntensityPercent: 25,
+				AmplitudePercent:       50,
+				Waveform:               t.WaveformSine,
+			},
+		},
+		{
+			line: "ambiance rain effect doppler 0.8 intensity 40 amplitude 50",
+			wantTrack: ParsedTrackDeclaration{
+				Type:                   t.TrackAmbiance,
+				SourceName:             "rain",
+				EffectType:             t.EffectDoppler,
+				EffectValue:            0.8,
+				EffectIntensityPercent: 40,
 				AmplitudePercent:       50,
 				Waveform:               t.WaveformSine,
 			},
@@ -283,6 +302,18 @@ func TestParseTrack_Music(ts *testing.T) {
 				EffectType:             t.EffectShift,
 				EffectValue:            8,
 				EffectIntensityPercent: 10,
+				AmplitudePercent:       45,
+				Waveform:               t.WaveformSine,
+			},
+		},
+		{
+			line: "music meditation effect doppler 0.8 intensity 40 amplitude 45",
+			wantTrack: ParsedTrackDeclaration{
+				Type:                   t.TrackMusic,
+				SourceName:             "meditation",
+				EffectType:             t.EffectDoppler,
+				EffectValue:            0.8,
+				EffectIntensityPercent: 40,
 				AmplitudePercent:       45,
 				Waveform:               t.WaveformSine,
 			},

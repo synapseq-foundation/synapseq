@@ -139,7 +139,9 @@ Carrier and beat values must be non-negative. Binaural and monaural values must 
 
 ```spsq
   ambiance rain amplitude 20
+	ambiance rain effect doppler 0.8 intensity 40 amplitude 20
   music bed effect modulation 0.1 intensity 25 amplitude 15
+	music bed effect doppler 0.8 intensity 40 amplitude 15
   music bed effect shift 10 intensity 25 amplitude 15
 ```
 
@@ -149,12 +151,12 @@ These tracks play declared external resources. Ambiance loops; music is finite. 
 
 - `pan` moves stereo position.
 - `modulation` varies amplitude.
-- `doppler` adds pitch motion and is supported only for tones.
+- `doppler` adds pitch motion on tones and waveform-shaped playback-speed motion on ambiance and music. It is not supported for noise.
 - `shift` supports tone, noise, ambiance, and music. It derives a mono wet signal, shifts wet left by `+value/2` Hz and wet right by `-value/2` Hz, and uses intensity as dry/wet mix. Pure sine shift can resemble a pair with the declared separation; non-sine harmonics move by fixed Hz offsets. Monaural and isochronic tracks shift their complete signal. A binaural track preserves its original pair only in the dry portion and may produce several wet components. Shifted white noise may be heard mainly as stereo decorrelation. It is spectral stereo motion, not a guaranteed binaural beat.
 - `intensity` controls effect strength.
 - `amplitude VALUE` controls matching left/right levels. `amplitude left LEFT right RIGHT` controls final channel levels independently; `left` always requires `right`. The per-channel gains apply after effects.
 
-Tone supports `pan`, `modulation`, `doppler`, and `shift`. Noise supports `pan`, `modulation`, and `shift`; ambiance and music support the same set as noise. `shift` uses fixed quadrature regardless of track waveform selection, has a 31-sample wet latency, and may color complex audio or alias near frequency-band edges. Numeric amplitude values for each channel, intensity, smoothness, and volume values are percentages from `0` through `100`. Multiple tracks combine, so a value is not a guarantee of final perceived loudness.
+Tone supports `pan`, `modulation`, `doppler`, and `shift`. Noise supports `pan`, `modulation`, and `shift`; ambiance and music additionally support `doppler`. On external PCM, Doppler preserves left/right source audio and varies playback speed by up to plus or minus 5 percent at full intensity; ambiance loops and music can end slightly earlier or later. `shift` uses fixed quadrature regardless of track waveform selection, has a 31-sample wet latency, and may color complex audio or alias near frequency-band edges. Numeric amplitude values for each channel, intensity, smoothness, and volume values are percentages from `0` through `100`. Multiple tracks combine, so a value is not a guarantee of final perceived loudness.
 
 ## Timeline and transitions
 

@@ -275,9 +275,11 @@ alpha
   tone 300 binaural 10 effect doppler 0.9 intensity 80 amplitude 40
   ambiance rain amplitude 25
   ambiance rain effect pan 0.5 intensity 60 amplitude 30
+	ambiance rain effect doppler 0.8 intensity 40 amplitude 30
   ambiance rain effect shift 10 intensity 25 amplitude 30
   music meditation amplitude 50
   music meditation effect pan 0.5 intensity 60 amplitude 30
+	music meditation effect doppler 0.8 intensity 40 amplitude 30
   music meditation effect shift 8 intensity 20 amplitude 30
   tone 300 binaural 10 amplitude left 10 right 5
   noise pink amplitude left 30 right 25
@@ -303,11 +305,13 @@ Noise lines can describe white, pink, or brown noise, optionally with `smooth`, 
 
 Ambiance lines reference a named ambiance option and then define amplitude, with optional supported effects. The current parser also accepts a leading `waveform` token before ambiance declarations, even though waveform selection is primarily a tone-oriented concept.
 
-For tones, the selected waveform shapes pure, binaural, and monaural oscillators. On an isochronic track, the same waveform shapes both the carrier and the rhythmic gate. It also shapes waveform-driven `pan`, `modulation`, and `doppler` motion. For ambiance and music, it does not reshape the external PCM; it affects waveform-driven `pan` or `modulation`. `shift` always uses sine/cosine quadrature internally and ignores the selected waveform.
+For tones, the selected waveform shapes pure, binaural, and monaural oscillators. On an isochronic track, the same waveform shapes both the carrier and the rhythmic gate. It also shapes waveform-driven `pan`, `modulation`, and `doppler` motion. For ambiance and music, it does not reshape the external PCM; it affects waveform-driven `pan` or `modulation`, while `doppler` uses that waveform to vary PCM playback speed. `shift` always uses sine/cosine quadrature internally and ignores the selected waveform.
 
 Music lines reference a named music option and use the same amplitude/effect forms as ambiance. Music is finite: when the file ends, that channel becomes silent and rendering continues until the sequence timeline ends.
 
 `amplitude` accepts either one percentage, `amplitude <value>`, or explicit channels, `amplitude left <value> right <value>`. The one-value form applies to both channels. `left` always requires a following `right` value. Each value must be between `0` and `100`. The gains are applied after effects, so the declared values control the final left and right channel levels.
+
+`doppler` is available on tone, ambiance, and music, but not noise. Its value is the movement rate in Hz and its intensity sets a waveform-shaped playback-speed variation of up to plus or minus 5 percent. On generated tones this changes oscillator phase advance; on ambiance and music it uses stereo fractional playback, preserving the left/right source image. Ambiance keeps looping while music can end slightly earlier or later than at fixed speed. A waveform prefix shapes Doppler movement on all supported sources; it does not reshape external PCM directly.
 
 `shift` is available on tone, noise, ambiance, and music. Its value is the total frequency separation in Hz: `shift 10` moves the wet left signal up by 5 Hz and the wet right signal down by 5 Hz. The wet signal is derived from `(left + right) / 2`; mono sources naturally supply the same sample to both sides. `intensity 0` or `shift 0` preserves the original signal, while `intensity 100` is the fully shifted mono-derived stereo pair.
 
@@ -707,8 +711,8 @@ beat-kind            = "binaural" | "monaural" | "isochronic" ;
 noise-kind           = "white" | "pink" | "brown" ;
 tone-effect          = "pan" | "modulation" | "doppler" | "shift" ;
 noise-effect         = "pan" | "modulation" | "shift" ;
-ambiance-effect      = "pan" | "modulation" | "shift" ;
-music-effect         = "pan" | "modulation" | "shift" ;
+ambiance-effect      = "pan" | "modulation" | "doppler" | "shift" ;
+music-effect         = "pan" | "modulation" | "doppler" | "shift" ;
 
 track-override-line  = indent2 "track" track-index override-kind override-value ;
 track-index          = integer ;

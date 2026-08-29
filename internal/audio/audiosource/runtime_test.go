@@ -10,6 +10,8 @@ import (
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
+var benchmarkRuntimeSample int
+
 type finiteSampleAudio struct {
 	data [][]int
 	pos  []int
@@ -99,6 +101,139 @@ func TestMusicRuntimeKeepsEOFStatePerChannel(ts *testing.T) {
 	gotCh1 := append([]int(nil), runtime.ChannelBuffer(1)...)
 	if !equalSamples(gotCh1, wantEOF) {
 		ts.Fatalf("channel 1 should start the same music from the beginning, want %v got %v", wantEOF, gotCh1)
+	}
+}
+
+func TestRuntimeSampleDopplerInterpolatesStereoFrames(ts *testing.T) {
+	var period t.Period
+	period.TrackStart[0] = t.Track{Type: t.TrackMusic, SourceName: "tone"}
+	runtime, err := NewRuntime(
+		[]t.Period{period},
+		map[string]string{"tone": "tone.wav"},
+		44100,
+		RuntimeOptions{
+			TrackType:  t.TrackMusic,
+			SourceKind: "music",
+			Scope:      BufferScopeChannel,
+			NewAudio: func(paths []string, sampleRate int) (SampleAudio, error) {
+				return newFiniteSampleAudio([][]int{{0, 0, 10, 20, 20, 40, 30, 60}}), nil
+			},
+		},
+	)
+	if err != nil {
+		ts.Fatalf("NewRuntime: %v", err)
+	}
+	defer runtime.Close()
+	runtime.UpdateChannelIndex(0, 0, t.TrackMusic)
+
+	tests := []struct {
+		left, right int
+	}{
+		{0, 0},
+		{15, 30},
+		{30, 60},
+	}
+	for _, want := range tests {
+		left, right, ok := runtime.SampleDoppler(0, 1.5)
+		if !ok {
+			ts.Fatal("SampleDoppler returned no sample")
+		}
+		if left != want.left || right != want.right {
+			ts.Fatalf("SampleDoppler = [%d %d], want [%d %d]", left, right, want.left, want.right)
+		}
+	}
+}
+
+func TestRuntimeSampleDopplerResetsOnSourceChange(ts *testing.T) {
+	var p0, p1 t.Period
+	p0.TrackStart[0] = t.Track{Type: t.TrackMusic, SourceName: "first"}
+	p1.TrackStart[0] = t.Track{Type: t.TrackMusic, SourceName: "second"}
+	runtime, err := NewRuntime(
+		[]t.Period{p0, p1},
+		map[string]string{"first": "first.wav", "second": "second.wav"},
+		44100,
+		RuntimeOptions{
+			TrackType:  t.TrackMusic,
+			SourceKind: "music",
+			Scope:      BufferScopeChannel,
+			NewAudio: func(paths []string, sampleRate int) (SampleAudio, error) {
+				return newFiniteSampleAudio([][]int{{10, 20}, {30, 40}}), nil
+			},
+		},
+	)
+	if err != nil {
+		ts.Fatalf("NewRuntime: %v", err)
+	}
+	defer runtime.Close()
+	runtime.UpdateChannelIndex(0, 0, t.TrackMusic)
+	_, _, _ = runtime.SampleDoppler(0, 1)
+	runtime.UpdateChannelIndex(0, 1, t.TrackMusic)
+
+	left, right, ok := runtime.SampleDoppler(0, 1)
+	if !ok || left != 30 || right != 40 {
+		ts.Fatalf("source change = [%d %d %t], want [30 40 true]", left, right, ok)
+	}
+}
+
+func TestRuntimeSampleDopplerHasNoSteadyStateAllocations(ts *testing.T) {
+	var period t.Period
+	period.TrackStart[0] = t.Track{Type: t.TrackMusic, SourceName: "tone"}
+	runtime, err := NewRuntime(
+		[]t.Period{period},
+		map[string]string{"tone": "tone.wav"},
+		44100,
+		RuntimeOptions{
+			TrackType:  t.TrackMusic,
+			SourceKind: "music",
+			Scope:      BufferScopeChannel,
+			NewAudio: func(paths []string, sampleRate int) (SampleAudio, error) {
+				return newFiniteSampleAudio([][]int{{10, 20, 30, 40}}), nil
+			},
+		},
+	)
+	if err != nil {
+		ts.Fatalf("NewRuntime: %v", err)
+	}
+	defer runtime.Close()
+	runtime.UpdateChannelIndex(0, 0, t.TrackMusic)
+	_, _, _ = runtime.SampleDoppler(0, 1)
+
+	allocations := testing.AllocsPerRun(100, func() {
+		_, _, _ = runtime.SampleDoppler(0, 1)
+	})
+	if allocations != 0 {
+		ts.Fatalf("SampleDoppler allocated %f times per run", allocations)
+	}
+}
+
+func BenchmarkRuntimeSampleDoppler(b *testing.B) {
+	var period t.Period
+	period.TrackStart[0] = t.Track{Type: t.TrackMusic, SourceName: "tone"}
+	runtime, err := NewRuntime(
+		[]t.Period{period},
+		map[string]string{"tone": "tone.wav"},
+		44100,
+		RuntimeOptions{
+			TrackType:  t.TrackMusic,
+			SourceKind: "music",
+			Scope:      BufferScopeChannel,
+			NewAudio: func(paths []string, sampleRate int) (SampleAudio, error) {
+				return newFiniteSampleAudio([][]int{{10, 20, 30, 40}}), nil
+			},
+		},
+	)
+	if err != nil {
+		b.Fatalf("NewRuntime: %v", err)
+	}
+	b.Cleanup(func() { _ = runtime.Close() })
+	runtime.UpdateChannelIndex(0, 0, t.TrackMusic)
+	_, _, _ = runtime.SampleDoppler(0, 1)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		left, _, _ := runtime.SampleDoppler(0, 1.025)
+		benchmarkRuntimeSample = left
 	}
 }
 

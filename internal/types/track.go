@@ -105,6 +105,9 @@ func (tr *Track) Validate() error {
 	if effect.Intensity < 0 || effect.Intensity > 1.0 {
 		return fmt.Errorf("intensity must be between 0 and 100. Received: %.2f", effect.Intensity.ToPercent())
 	}
+	if !effectSupportedByTrack(tr.Type, effect.Type) {
+		return fmt.Errorf("effect %q is not supported by %s tracks", effect.Type.String(), tr.Type.String())
+	}
 	// Track-type specific validation
 	switch tr.Type {
 	case TrackPureTone:
@@ -122,6 +125,23 @@ func (tr *Track) Validate() error {
 	}
 
 	return nil
+}
+
+func effectSupportedByTrack(trackType TrackType, effectType EffectType) bool {
+	if effectType == EffectOff {
+		return true
+	}
+
+	switch trackType {
+	case TrackPureTone, TrackBinauralBeat, TrackMonauralBeat, TrackIsochronicBeat:
+		return effectType == EffectPan || effectType == EffectModulation || effectType == EffectDoppler || effectType == EffectShift
+	case TrackWhiteNoise, TrackPinkNoise, TrackBrownNoise:
+		return effectType == EffectPan || effectType == EffectModulation || effectType == EffectShift
+	case TrackAmbiance, TrackMusic:
+		return effectType == EffectPan || effectType == EffectModulation || effectType == EffectDoppler || effectType == EffectShift
+	default:
+		return false
+	}
 }
 
 func channelName(channel int) string {

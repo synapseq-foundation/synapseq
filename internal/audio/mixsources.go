@@ -59,6 +59,13 @@ func (r *AudioRenderer) mixNoise(ch int, channel *t.Channel, signal *channelSign
 
 func (r *AudioRenderer) mixAmbiance(channel *t.Channel, signal *channelSignalState, ch, frame int) stereoSample {
 	source := src.NewAmbiance(signal.sourceSignal())
+	if signal.effect.Type == t.EffectDoppler {
+		left, right, ok := source.SampleDoppler(r.ambianceState, ch, r.effectProcessor.DopplerFactor(channel, signal.effect))
+		if !ok {
+			return stereoSample{}
+		}
+		return r.applyEffectToStereo(ch, channel, signal, left, right)
+	}
 	left, right, ok := source.Sample(r.ambianceState, ch, frame)
 	if !ok {
 		return stereoSample{}
@@ -69,6 +76,13 @@ func (r *AudioRenderer) mixAmbiance(channel *t.Channel, signal *channelSignalSta
 
 func (r *AudioRenderer) mixMusic(channel *t.Channel, signal *channelSignalState, ch, frame int) stereoSample {
 	source := src.NewAmbiance(signal.sourceSignal())
+	if signal.effect.Type == t.EffectDoppler {
+		left, right, ok := source.SampleDoppler(r.musicState, ch, r.effectProcessor.DopplerFactor(channel, signal.effect))
+		if !ok {
+			return stereoSample{}
+		}
+		return r.applyEffectToStereo(ch, channel, signal, left, right)
+	}
 	left, right, ok := source.Sample(r.musicState, ch, frame)
 	if !ok {
 		return stereoSample{}

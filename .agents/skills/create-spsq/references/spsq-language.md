@@ -131,7 +131,7 @@ Built-in waveforms are `sine` (default), `square`, `triangle`, and `sawtooth`; a
 
 The waveform shapes pure, binaural, and monaural oscillators. On isochronic tracks, the same waveform shapes both the carrier and gate. It also shapes pan, modulation, and doppler motion. Compatible timeline changes morph between custom and built-in tables while retaining phase. Sharp custom segments can add harmonics and aliasing because tables are not band-limited.
 
-`amplitude VALUE` sets both channels. `amplitude left LEFT right RIGHT` sets final channel percentages independently; `left` always requires `right`. Both values range from `0` through `100` and are applied after `pan`.
+`amplitude VALUE` sets both channels. `amplitude left LEFT right RIGHT` sets final channel percentages independently; `left` always requires `right`. Both values range from `0` through `100` and are applied after effects.
 
 ### Noise
 
@@ -150,13 +150,15 @@ Noise colors are `white`, `pink`, and `brown`. Noise effects are `pan`, `modulat
 ```spsq
   ambiance rain amplitude 20
   ambiance rain effect pan 0.1 intensity 40 amplitude 20
+	ambiance rain effect doppler 0.8 intensity 40 amplitude 20
   ambiance rain effect shift 10 intensity 25 amplitude 20
   music bed amplitude 15
   music bed effect modulation 0.1 intensity 25 amplitude 15
+	music bed effect doppler 0.8 intensity 40 amplitude 15
   music bed effect shift 8 intensity 20 amplitude 15
 ```
 
-Ambiance and music support `pan`, `modulation`, and `shift`, not `doppler`. Their source name must match an `@ambiance` or `@music` declaration. A waveform prefix does not reshape external PCM, but it does shape waveform-driven pan or modulation. `shift` ignores the waveform because it uses fixed sine/cosine quadrature.
+Ambiance and music support `pan`, `modulation`, `doppler`, and `shift`. Their source name must match an `@ambiance` or `@music` declaration. A waveform prefix does not reshape external PCM, but it shapes waveform-driven pan, modulation, and Doppler playback-speed movement. `doppler` preserves source stereo and varies speed by up to plus or minus 5 percent at full intensity; ambiance continues looping and music can end slightly earlier or later. `shift` ignores the waveform because it uses fixed sine/cosine quadrature.
 
 For `shift`, the effect value is the total separation in Hz. The wet left side moves by `+value/2` and the wet right side by `-value/2`; intensity is the dry/wet percentage. The wet pair is derived from mono. On a pure sine, fully wet shift approaches a pair with the declared separation; partial intensity retains the dry carrier. Non-sine harmonics each move by a fixed Hz offset. Monaural and isochronic tracks shift their complete mono signal. On binaural tracks, the dry portion preserves the original pair while the wet portion combines both channels before shifting and may produce multiple components. On white noise, the result may be heard mainly as stereo decorrelation. Prefer modest values and intensity because complex material can become colored and frequency-band edges can alias.
 

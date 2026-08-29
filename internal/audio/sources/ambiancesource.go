@@ -29,3 +29,13 @@ func (source Ambiance) Sample(runtime *audiosource.Runtime, ch, frame int) (int,
 	right := bgBuf[frame*2+1] * bgScaleFactor
 	return left, right, true
 }
+
+func (source Ambiance) SampleDoppler(runtime *audiosource.Runtime, ch int, rate float64) (int, int, bool) {
+	const bgScaleFactor = 16
+
+	left, right, ok := runtime.SampleDoppler(ch, rate)
+	if !ok {
+		return 0, 0, false
+	}
+	return left * bgScaleFactor, right * bgScaleFactor, true
+}

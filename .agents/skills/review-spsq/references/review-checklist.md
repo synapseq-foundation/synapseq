@@ -119,7 +119,7 @@ Effects:
 
 - tone: `pan`, `modulation`, `doppler`, `shift`;
 - noise: `pan`, `modulation`, `shift`;
-- ambiance/music: `pan`, `modulation`, `shift`.
+- ambiance/music: `pan`, `modulation`, `doppler`, `shift`.
 
 Check:
 
@@ -134,8 +134,8 @@ Check:
 - external resource names match declarations.
 - custom points are interpreted as evenly spaced bipolar values (`0 -> -1`, `50 -> 0`, `100 -> +1`) with circular linear interpolation;
 - an isochronic custom waveform intentionally shapes both its carrier and gate, not only the pulse envelope;
-- a non-sine waveform on a tone with `doppler` intentionally shapes the pitch movement as well as the source waveform;
-- waveform prefixes on ambiance/music affect pan or modulation motion, not the external PCM itself; the `shift` quadrature oscillator ignores the selected waveform, although a tone source itself still uses that waveform;
+- a non-sine waveform with `doppler` intentionally shapes tone pitch or external playback-speed movement;
+- waveform prefixes on ambiance/music affect pan, modulation, or Doppler playback-speed motion, not the external PCM itself; Doppler preserves source stereo while `shift` uses a fixed quadrature oscillator;
 - `shift` values are total Hz separation, intensity is dry/wet, and higher wet levels progressively replace the original stereo image with a mono-derived shifted pair;
 - pure sine shift can resemble a pair at full wet, while non-sine harmonics, beat tracks, and noise produce more complex or subtle results;
 - binaural plus shift preserves the original binaural pair only in the dry portion and may create multiple wet spectral components;

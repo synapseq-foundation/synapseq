@@ -429,9 +429,9 @@ In listening terms, `modulation` adds rhythmic emphasis without changing the fun
 
 ### `doppler`
 
-`doppler` creates subtle moving pitch shift behavior.
+`doppler` creates subtle moving pitch shift behavior on tones, ambiance, and music.
 
-It does this by varying playback increment over time, which changes the apparent frequency slightly up and down.
+It does this by varying playback speed over time, which changes apparent frequency slightly up and down. Generated tones vary oscillator increment; ambiance and music use stereo fractional playback, preserving their source-channel relationship. The selected waveform shapes this motion, up to plus or minus 5 percent at full intensity. Ambiance still loops, while music can finish slightly earlier or later than it would at fixed speed. Noise is not supported because it has no stable pitch to move.
 
 ```text
 Approaching feeling:  waves get tighter
