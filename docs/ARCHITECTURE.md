@@ -130,7 +130,7 @@ The root package owns `AudioRenderer` and the main rendering loop. Supporting re
 - `audio/audiosource` for shared WAV/MP3 external audio mechanics: loading callbacks, decoding, caching, resampling, sample reading, playback mode handling, named-source indexing, and prepared runtime buffers;
 - `audio/ambiance` for ambiance-specific policy around external audio: looped playback, ambiance file loading, and source-scoped runtime behavior. WAV is preferred for loopable ambiance; MP3 is supported but may contain codec delay or padding that creates loop gaps;
 - `audio/music` for music-specific policy around external audio: finite playback, music file loading, and channel-scoped runtime behavior. Music does not loop automatically and prefers MP3 before WAV during local path resolution;
-- `audio/effects` for panning, modulation, doppler, external-audio frequency shifting, waveform morph, and effect runtime helpers;
+- `audio/effects` for panning, modulation, doppler, mono-derived frequency shifting, waveform morph, and effect runtime helpers;
 - `audio/sources` for compiled source evaluators such as pure tone, binaural, monaural, isochronic, noise, ambiance, and music;
 - `audio/sync` for temporal synchronization and per-period updates;
 - `audio/wavetable` for built-in table generation, custom point interpolation, and dense rendering IDs;

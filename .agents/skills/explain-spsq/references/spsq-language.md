@@ -106,6 +106,8 @@ Normal presets must contain tracks, directly or through inheritance. Preset name
   tone 220 monaural 10 amplitude 15
   tone 220 isochronic 10 amplitude 15
   waveform triangle tone 220 binaural 10 amplitude 15
+  tone 220 effect shift 10 intensity 25 amplitude 15
+  tone 220 binaural 10 effect shift 4 intensity 20 amplitude 15
 ```
 
 - A pure tone is a generated carrier at the stated frequency.
@@ -114,7 +116,7 @@ Normal presets must contain tracks, directly or through inheritance. Preset name
 - `isochronic` gates a tone on and off at the stated rate, creating a pronounced pulse.
 - Built-in waveforms are `sine` (default), `square`, `triangle`, and `sawtooth`. A custom name may be used after a valid `@waveform` definition.
 - Custom values map `0 -> -1`, `50 -> 0`, and `100 -> +1`. Points are equally spaced and linearly joined around the cycle, including final-to-first interpolation.
-- The waveform shapes pure, binaural, and monaural oscillators. Isochronic tracks use it for both carrier and gate. Pan, modulation, and doppler also use it for their motion.
+- The waveform shapes pure, binaural, and monaural oscillators. Isochronic tracks use it for both carrier and gate. Pan, modulation, and doppler also use it for their motion. Shift still processes the resulting waveform, but its quadrature oscillator is always sine/cosine.
 - Compatible transitions morph normally between any custom or built-in pair while preserving phase. Sharp segments may add harmonics or aliasing; avoid claiming an exact subjective effect.
 
 Carrier and beat values must be non-negative. Binaural and monaural values must remain below twice the carrier so their lower component stays positive.
@@ -125,6 +127,7 @@ Carrier and beat values must be non-negative. Binaural and monaural values must 
   noise white amplitude 10
   noise pink smooth 20 amplitude 15
   noise brown effect pan 0.1 intensity 30 amplitude 12
+  noise pink effect shift 8 intensity 20 amplitude 12
 ```
 
 - White noise is brightest and evenly distributed by frequency.
@@ -147,11 +150,11 @@ These tracks play declared external resources. Ambiance loops; music is finite. 
 - `pan` moves stereo position.
 - `modulation` varies amplitude.
 - `doppler` adds pitch motion and is supported only for tones.
-- `shift` is supported only for ambiance and music. It derives a mono wet signal, shifts wet left by `+value/2` Hz and wet right by `-value/2` Hz, and uses intensity as dry/wet mix. It is spectral stereo motion, not a guaranteed binaural beat.
+- `shift` supports tone, noise, ambiance, and music. It derives a mono wet signal, shifts wet left by `+value/2` Hz and wet right by `-value/2` Hz, and uses intensity as dry/wet mix. Pure sine shift can resemble a pair with the declared separation; non-sine harmonics move by fixed Hz offsets. Monaural and isochronic tracks shift their complete signal. A binaural track preserves its original pair only in the dry portion and may produce several wet components. Shifted white noise may be heard mainly as stereo decorrelation. It is spectral stereo motion, not a guaranteed binaural beat.
 - `intensity` controls effect strength.
 - `amplitude VALUE` controls matching left/right levels. `amplitude left LEFT right RIGHT` controls final channel levels independently; `left` always requires `right`. The per-channel gains apply after effects.
 
-Noise supports `pan` and `modulation`; ambiance and music also support `shift`. `shift` ignores track waveform selection, has a 31-sample wet latency, and may color complex audio or alias near frequency-band edges. Numeric amplitude values for each channel, intensity, smoothness, and volume values are percentages from `0` through `100`. Multiple tracks combine, so a value is not a guarantee of final perceived loudness.
+Tone supports `pan`, `modulation`, `doppler`, and `shift`. Noise supports `pan`, `modulation`, and `shift`; ambiance and music support the same set as noise. `shift` uses fixed quadrature regardless of track waveform selection, has a 31-sample wet latency, and may color complex audio or alias near frequency-band edges. Numeric amplitude values for each channel, intensity, smoothness, and volume values are percentages from `0` through `100`. Multiple tracks combine, so a value is not a guarantee of final perceived loudness.
 
 ## Timeline and transitions
 

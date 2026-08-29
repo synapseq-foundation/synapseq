@@ -329,6 +329,54 @@ func TestAudioRendererMix_AmbianceAppliesShiftDryWet(ts *testing.T) {
 	}
 }
 
+func TestAudioRendererMix_ShiftProcessesGeneratedTrackFamilies(ts *testing.T) {
+	const warmupFrames = 64
+	tests := []struct {
+		name      string
+		trackType t.TrackType
+		increment [2]int
+	}{
+		{name: "pure", trackType: t.TrackPureTone, increment: [2]int{frequencyToIncrement(44100, 1000)}},
+		{name: "binaural", trackType: t.TrackBinauralBeat, increment: [2]int{frequencyToIncrement(44100, 1005), frequencyToIncrement(44100, 995)}},
+		{name: "monaural", trackType: t.TrackMonauralBeat, increment: [2]int{frequencyToIncrement(44100, 1005), frequencyToIncrement(44100, 995)}},
+		{name: "isochronic", trackType: t.TrackIsochronicBeat, increment: [2]int{frequencyToIncrement(44100, 1000), frequencyToIncrement(44100, 10)}},
+		{name: "white noise", trackType: t.TrackWhiteNoise},
+		{name: "pink noise", trackType: t.TrackPinkNoise},
+		{name: "brown noise", trackType: t.TrackBrownNoise},
+	}
+
+	for _, test := range tests {
+		ts.Run(test.name, func(ts *testing.T) {
+			renderer := newMixTestRenderer()
+			renderer.channels[0] = t.Channel{
+				Track: t.Track{
+					Type:      test.trackType,
+					Waveform:  t.WaveformSine,
+					Effect:    t.Effect{Type: t.EffectShift, Value: 100, Intensity: 1},
+					Amplitude: t.AmplitudePercentToRaw(25),
+				},
+				WaveformStart: int(wt.SineID),
+				WaveformEnd:   int(wt.SineID),
+				Type:          test.trackType,
+				Amplitude:     [2]int{1024, 1024},
+				Increment:     test.increment,
+			}
+
+			samples := renderer.mix(make([]int, t.BufferSize*audioChannels))
+			var diverged bool
+			for frame := warmupFrames; frame < t.BufferSize; frame++ {
+				if samples[frame*2] != samples[frame*2+1] {
+					diverged = true
+					break
+				}
+			}
+			if !diverged {
+				ts.Fatalf("shift did not create stereo divergence for %s", test.name)
+			}
+		})
+	}
+}
+
 func TestAudioRendererMix_UsesOnlyActiveCueChannels(ts *testing.T) {
 	renderer := newMixTestRenderer()
 	renderer.channels[0] = t.Channel{

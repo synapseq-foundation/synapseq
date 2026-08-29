@@ -105,10 +105,6 @@ func (tr *Track) Validate() error {
 	if effect.Intensity < 0 || effect.Intensity > 1.0 {
 		return fmt.Errorf("intensity must be between 0 and 100. Received: %.2f", effect.Intensity.ToPercent())
 	}
-	if effect.Type == EffectShift && tr.Type != TrackAmbiance && tr.Type != TrackMusic {
-		return fmt.Errorf("shift effect is only supported on ambiance and music tracks")
-	}
-
 	// Track-type specific validation
 	switch tr.Type {
 	case TrackPureTone:

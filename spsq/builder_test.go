@@ -96,6 +96,35 @@ func TestBuilderLoadReturnsValidationError(t *testing.T) {
 	}
 }
 
+func TestBuilderShiftOnGeneratedTracks(t *testing.T) {
+	builder, err := New(synapseq.NewAppContext())
+	if err != nil {
+		t.Fatalf("New error: %v", err)
+	}
+	focus := builder.NewPreset("focus")
+	focus.Tone(300).Shift(10).Intensity(25).Amplitude(20)
+	focus.Tone(300).Binaural(8).Shift(4).Intensity(20).Amplitude(20)
+	focus.Pink(30).Shift(8).Intensity(20).Amplitude(15)
+
+	loaded, err := builder.
+		PresetAt(0, focus).
+		PresetAt(time.Second, focus).
+		Load()
+	if err != nil {
+		t.Fatalf("Load error: %v", err)
+	}
+	content := string(loaded.RawContent())
+	for _, expected := range []string{
+		"tone 300.00 effect shift 10.00 intensity 25.00 amplitude left 20.00 right 20.00",
+		"tone 300.00 binaural 8.00 effect shift 4.00 intensity 20.00 amplitude left 20.00 right 20.00",
+		"noise pink smooth 30.00 effect shift 8.00 intensity 20.00 amplitude left 15.00 right 15.00",
+	} {
+		if !strings.Contains(content, expected) {
+			t.Fatalf("generated content missing %q:\n%s", expected, content)
+		}
+	}
+}
+
 func TestBuilderCustomWaveform(t *testing.T) {
 	builder, err := New(synapseq.NewAppContext())
 	if err != nil {

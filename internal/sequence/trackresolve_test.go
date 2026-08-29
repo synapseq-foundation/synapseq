@@ -26,8 +26,11 @@ func TestBuildTrackFromDeclaration_Success(ts *testing.T) {
 		want t.Track
 	}{
 		{line: "tone 300 binaural 10 amplitude 15", want: t.Track{Type: t.TrackBinauralBeat, Carrier: 300, Resonance: 10, Amplitude: t.AmplitudePercentToRaw(15), Waveform: t.WaveformSine}},
+		{line: "tone 300 effect shift 10 intensity 25 amplitude 20", want: t.Track{Type: t.TrackPureTone, Carrier: 300, Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectShift, Value: 10, Intensity: t.IntensityPercentToRaw(25)}}},
+		{line: "tone 300 binaural 8 effect shift 4 intensity 20 amplitude 20", want: t.Track{Type: t.TrackBinauralBeat, Carrier: 300, Resonance: 8, Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectShift, Value: 4, Intensity: t.IntensityPercentToRaw(20)}}},
 		{line: "waveform square tone 350 amplitude 10", want: t.Track{Type: t.TrackPureTone, Carrier: 350, Amplitude: t.AmplitudePercentToRaw(10), Waveform: t.WaveformSquare}},
 		{line: "noise pink amplitude 40", want: t.Track{Type: t.TrackPinkNoise, Amplitude: t.AmplitudePercentToRaw(40), Waveform: t.WaveformSine}},
+		{line: "noise pink smooth 30 effect shift 8 intensity 20 amplitude 20", want: t.Track{Type: t.TrackPinkNoise, NoiseSmooth: 30, Amplitude: t.AmplitudePercentToRaw(20), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectShift, Value: 8, Intensity: t.IntensityPercentToRaw(20)}}},
 		{line: "ambiance beach effect pan 10 intensity 75 amplitude 50", want: t.Track{Type: t.TrackAmbiance, SourceName: "beach", Amplitude: t.AmplitudePercentToRaw(50), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectPan, Value: 10, Intensity: t.IntensityPercentToRaw(75)}}},
 		{line: "music meditation effect modulation 2.5 intensity 60 amplitude 40", want: t.Track{Type: t.TrackMusic, SourceName: "meditation", Amplitude: t.AmplitudePercentToRaw(40), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectModulation, Value: 2.5, Intensity: t.IntensityPercentToRaw(60)}}},
 		{line: "ambiance rain effect shift 10 intensity 25 amplitude 50", want: t.Track{Type: t.TrackAmbiance, SourceName: "rain", Amplitude: t.AmplitudePercentToRaw(50), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectShift, Value: 10, Intensity: t.IntensityPercentToRaw(25)}}},

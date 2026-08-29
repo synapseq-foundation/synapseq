@@ -151,8 +151,7 @@ func (p *Preset) Doppler(value float64) *Preset {
 	return p.setEffect(t.EffectDoppler, value)
 }
 
-// Shift adds a symmetric stereo frequency shift effect to the last ambiance or music track.
-// Load reports a validation error when the last track is another type.
+// Shift adds a symmetric stereo frequency shift effect to the last track.
 func (p *Preset) Shift(value float64) *Preset {
 	return p.setEffect(t.EffectShift, value)
 }

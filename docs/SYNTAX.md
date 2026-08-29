@@ -267,8 +267,10 @@ Examples:
 alpha
   noise pink amplitude 30
   noise white effect modulation 5 intensity 40 amplitude 20
+  noise pink effect shift 8 intensity 20 amplitude 20
   tone 200 binaural 10 amplitude 15
   tone 300 effect pan 0.5 intensity 40 amplitude 40
+  tone 300 effect shift 10 intensity 25 amplitude 20
   waveform square tone 300 isochronic 10 amplitude 8
   tone 300 binaural 10 effect doppler 0.9 intensity 80 amplitude 40
   ambiance rain amplitude 25
@@ -307,7 +309,11 @@ Music lines reference a named music option and use the same amplitude/effect for
 
 `amplitude` accepts either one percentage, `amplitude <value>`, or explicit channels, `amplitude left <value> right <value>`. The one-value form applies to both channels. `left` always requires a following `right` value. Each value must be between `0` and `100`. The gains are applied after effects, so the declared values control the final left and right channel levels.
 
-`shift` is available only on ambiance and music. Its value is the total frequency separation in Hz: `shift 10` moves the wet left signal up by 5 Hz and the wet right signal down by 5 Hz. The wet signal is derived from `(left + right) / 2`; `intensity 0` or `shift 0` preserves the original stereo signal, while `intensity 100` is the fully shifted mono-derived stereo pair. This is a frequency-shift effect over external audio, not a guarantee of a binaural beat. The FIR Hilbert path has a 31-sample wet latency, is least accurate near DC and Nyquist, and can alias content shifted across the available frequency band.
+`shift` is available on tone, noise, ambiance, and music. Its value is the total frequency separation in Hz: `shift 10` moves the wet left signal up by 5 Hz and the wet right signal down by 5 Hz. The wet signal is derived from `(left + right) / 2`; mono sources naturally supply the same sample to both sides. `intensity 0` or `shift 0` preserves the original signal, while `intensity 100` is the fully shifted mono-derived stereo pair.
+
+On a pure sine tone, fully wet `shift` approaches a pair separated by the declared value. Partial intensity retains the dry carrier as well. On non-sine tones, every harmonic is shifted by the same number of Hz rather than regenerated from a detuned fundamental. Monaural and isochronic tracks shift their complete generated signal. A binaural track retains its original stereo pair only in the dry portion; its wet portion first combines both channels and can contain multiple shifted components. Noise uses the same operation, although frequency-shifted white noise may be perceived mainly as stereo decorrelation rather than a pitch change.
+
+`shift` creates spectral divergence and is not a guarantee of a binaural beat or perceptual response. The FIR Hilbert path has a 31-sample wet latency, is least accurate near DC and Nyquist, and can alias content shifted across the available frequency band. `shift` always uses sine/cosine quadrature internally and does not use the selected track waveform for its oscillator.
 
 Track declarations are rejected when:
 
@@ -699,8 +705,8 @@ transition-point     = float ;  (* non-decreasing 0 through 100; 2 through 256 p
 amplitude-value      = float | "left" float "right" float ;  (* each 0 through 100 *)
 beat-kind            = "binaural" | "monaural" | "isochronic" ;
 noise-kind           = "white" | "pink" | "brown" ;
-tone-effect          = "pan" | "modulation" | "doppler" ;
-noise-effect         = "pan" | "modulation" ;
+tone-effect          = "pan" | "modulation" | "doppler" | "shift" ;
+noise-effect         = "pan" | "modulation" | "shift" ;
 ambiance-effect      = "pan" | "modulation" | "shift" ;
 music-effect         = "pan" | "modulation" | "shift" ;
 

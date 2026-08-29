@@ -94,6 +94,10 @@ func TestParseTrack_Tones(ts *testing.T) {
 		{fmtLine(toTrack(trs[2])), *trs[2]},
 		{toTrack(trs[3]).String(), *trs[3]},
 		{toTrack(trs[4]).String(), *trs[4]},
+		{"tone 300 effect shift 10 intensity 25 amplitude 20", ParsedTrackDeclaration{Type: t.TrackPureTone, Carrier: 300, EffectType: t.EffectShift, EffectValue: 10, EffectIntensityPercent: 25, AmplitudePercent: 20, Waveform: t.WaveformSine}},
+		{"tone 300 binaural 8 effect shift 4 intensity 20 amplitude 20", ParsedTrackDeclaration{Type: t.TrackBinauralBeat, Carrier: 300, Resonance: 8, EffectType: t.EffectShift, EffectValue: 4, EffectIntensityPercent: 20, AmplitudePercent: 20, Waveform: t.WaveformSine}},
+		{"tone 300 monaural 8 effect shift 4 intensity 20 amplitude 20", ParsedTrackDeclaration{Type: t.TrackMonauralBeat, Carrier: 300, Resonance: 8, EffectType: t.EffectShift, EffectValue: 4, EffectIntensityPercent: 20, AmplitudePercent: 20, Waveform: t.WaveformSine}},
+		{"tone 300 isochronic 8 effect shift 4 intensity 20 amplitude 20", ParsedTrackDeclaration{Type: t.TrackIsochronicBeat, Carrier: 300, Resonance: 8, EffectType: t.EffectShift, EffectValue: 4, EffectIntensityPercent: 20, AmplitudePercent: 20, Waveform: t.WaveformSine}},
 	}
 
 	for i, tt := range tests {
@@ -127,6 +131,9 @@ func TestParseTrack_Noise(ts *testing.T) {
 		{toTrack(trs[0]).String(), *trs[0]},
 		{toTrack(trs[1]).String(), *trs[1]},
 		{toTrack(trs[2]).String(), *trs[2]},
+		{"noise white effect shift 10 intensity 25 amplitude 20", ParsedTrackDeclaration{Type: t.TrackWhiteNoise, EffectType: t.EffectShift, EffectValue: 10, EffectIntensityPercent: 25, AmplitudePercent: 20, Waveform: t.WaveformSine}},
+		{"noise pink smooth 30 effect shift 8 intensity 20 amplitude 20", ParsedTrackDeclaration{Type: t.TrackPinkNoise, NoiseSmooth: 30, EffectType: t.EffectShift, EffectValue: 8, EffectIntensityPercent: 20, AmplitudePercent: 20, Waveform: t.WaveformSine}},
+		{"noise brown effect shift 6 intensity 15 amplitude 20", ParsedTrackDeclaration{Type: t.TrackBrownNoise, EffectType: t.EffectShift, EffectValue: 6, EffectIntensityPercent: 15, AmplitudePercent: 20, Waveform: t.WaveformSine}},
 	}
 
 	for _, tt := range tests {
@@ -317,8 +324,6 @@ func TestParseTrack_Errors(ts *testing.T) {
 		"  tone 300 amplitude left 10 right",
 		"  ambiance spin 200 rate five intensity 75 amplitude 50",
 		"  ambiance pulse effect modulation 2.5 intensity sixty amplitude 40",
-		"  noise pink effect shift 10 intensity 20 amplitude 30",
-		"  tone 300 effect shift 10 intensity 20 amplitude 30",
 		"  ambiance amplitude 50 extra",
 		"  unknown something",
 	}

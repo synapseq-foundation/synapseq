@@ -21,15 +21,15 @@ func (r *AudioRenderer) mixChannelSample(ch, frame int) stereoSample {
 
 	switch signal.kind {
 	case t.TrackPureTone:
-		return r.mixPureTone(channel, signal)
+		return r.mixPureTone(ch, channel, signal)
 	case t.TrackBinauralBeat:
-		return r.mixBinauralBeat(channel, signal)
+		return r.mixBinauralBeat(ch, channel, signal)
 	case t.TrackMonauralBeat:
-		return r.mixMonauralBeat(channel, signal)
+		return r.mixMonauralBeat(ch, channel, signal)
 	case t.TrackIsochronicBeat:
-		return r.mixIsochronicBeat(channel, signal)
+		return r.mixIsochronicBeat(ch, channel, signal)
 	case t.TrackWhiteNoise, t.TrackPinkNoise, t.TrackBrownNoise:
-		return r.mixNoise(channel, signal)
+		return r.mixNoise(ch, channel, signal)
 	case t.TrackAmbiance:
 		return r.mixAmbiance(channel, signal, ch, frame)
 	case t.TrackMusic:
@@ -39,22 +39,22 @@ func (r *AudioRenderer) mixChannelSample(ch, frame int) stereoSample {
 	}
 }
 
-func (r *AudioRenderer) applyEffectToMono(channel *t.Channel, signal *channelSignalState, sample int) stereoSample {
+func (r *AudioRenderer) applyEffectToMono(ch int, channel *t.Channel, signal *channelSignalState, sample int) stereoSample {
+	if signal.effect.Type == t.EffectShift {
+		left, right := r.effectProcessor.ApplyShift(ch, signal.effect, sample, sample)
+		return applyAmplitude(signal.amplitude, left, right)
+	}
 	left, right := r.effectProcessor.ApplyEffectToMono(channel, signal.effect, signal.waveform, sample)
 	return applyAmplitude(signal.amplitude, left, right)
 }
 
-func (r *AudioRenderer) applyEffectToStereo(channel *t.Channel, signal *channelSignalState, left, right int) stereoSample {
-	left, right = r.effectProcessor.ApplyEffectToStereo(channel, signal.effect, signal.waveform, left, right)
-	return applyAmplitude(signal.amplitude, left, right)
-}
-
-func (r *AudioRenderer) applyExternalEffectToStereo(ch int, channel *t.Channel, signal *channelSignalState, left, right int) stereoSample {
+func (r *AudioRenderer) applyEffectToStereo(ch int, channel *t.Channel, signal *channelSignalState, left, right int) stereoSample {
 	if signal.effect.Type == t.EffectShift {
 		left, right = r.effectProcessor.ApplyShift(ch, signal.effect, left, right)
 		return applyAmplitude(signal.amplitude, left, right)
 	}
-	return r.applyEffectToStereo(channel, signal, left, right)
+	left, right = r.effectProcessor.ApplyEffectToStereo(channel, signal.effect, signal.waveform, left, right)
+	return applyAmplitude(signal.amplitude, left, right)
 }
 
 func applyAmplitude(amplitude [2]int, left, right int) stereoSample {

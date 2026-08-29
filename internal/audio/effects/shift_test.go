@@ -69,6 +69,38 @@ func TestApplyShiftCreatesSymmetricFrequencySeparation(ts *testing.T) {
 	}
 }
 
+func TestApplyShiftDerivesWetSignalFromBinauralStereoPair(ts *testing.T) {
+	processor := NewProcessor(shiftTestSampleRate, nil)
+	effect := t.Effect{Type: t.EffectShift, Value: 10, Intensity: 1}
+	const carrier = 1000.0
+	const beat = 10.0
+	const amplitude = 12000.0
+
+	for sample := range shiftTestSampleRate {
+		left, right := binauralShiftTestInput(sample, carrier, beat, amplitude)
+		processor.ApplyShift(0, effect, left, right)
+	}
+
+	left := make([]int, shiftTestSampleRate)
+	right := make([]int, shiftTestSampleRate)
+	for sample := range shiftTestSampleRate {
+		position := sample + shiftTestSampleRate
+		inLeft, inRight := binauralShiftTestInput(position, carrier, beat, amplitude)
+		left[sample], right[sample] = processor.ApplyShift(0, effect, inLeft, inRight)
+	}
+
+	leftUpper := spectralMagnitude(left, carrier+beat, shiftTestSampleRate)
+	leftLower := spectralMagnitude(left, carrier-beat, shiftTestSampleRate)
+	rightUpper := spectralMagnitude(right, carrier+beat, shiftTestSampleRate)
+	rightLower := spectralMagnitude(right, carrier-beat, shiftTestSampleRate)
+	if leftUpper < leftLower*10 {
+		ts.Fatalf("binaural-derived left wet signal did not shift upward: upper=%f lower=%f", leftUpper, leftLower)
+	}
+	if rightLower < rightUpper*10 {
+		ts.Fatalf("binaural-derived right wet signal did not shift downward: lower=%f upper=%f", rightLower, rightUpper)
+	}
+}
+
 func TestResetShiftClearsChannelState(ts *testing.T) {
 	processor := NewProcessor(shiftTestSampleRate, nil)
 	effect := t.Effect{Type: t.EffectShift, Value: 10, Intensity: 1}
@@ -133,4 +165,11 @@ func spectralMagnitude(samples []int, frequency float64, sampleRate int) float64
 		imaginaryPart -= float64(value) * math.Sin(phase)
 	}
 	return math.Hypot(realPart, imaginaryPart)
+}
+
+func binauralShiftTestInput(sample int, carrier, beat, amplitude float64) (int, int) {
+	position := float64(sample) / shiftTestSampleRate
+	left := int(math.Round(amplitude * math.Cos(2*math.Pi*(carrier+beat/2)*position)))
+	right := int(math.Round(amplitude * math.Cos(2*math.Pi*(carrier-beat/2)*position)))
+	return left, right
 }

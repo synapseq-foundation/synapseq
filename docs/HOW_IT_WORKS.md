@@ -453,7 +453,7 @@ In listening terms, `doppler` adds gentle motion and a sense of passing or orbit
 
 ### `shift`
 
-`shift` is available only for ambiance and music. It derives a mono signal from the external stereo source, uses a Hilbert transform to create a quadrature pair, and moves the wet spectrum in opposite directions:
+`shift` is available for tone, noise, ambiance, and music. It derives a mono wet signal, uses a Hilbert transform to create a quadrature pair, and moves the wet spectrum in opposite directions:
 
 ```text
 mono wet source = (left + right) / 2
@@ -461,9 +461,13 @@ wet left        = source shifted by +(value / 2) Hz
 wet right       = source shifted by -(value / 2) Hz
 ```
 
-The declared value is the total separation. For example, `effect shift 10` produces `+5 Hz` on the wet left channel and `-5 Hz` on the wet right channel. `intensity` blends the original stereo signal with that wet pair: zero is dry, while 100 is fully wet.
+The declared value is the total separation. For example, `effect shift 10` produces `+5 Hz` on the wet left channel and `-5 Hz` on the wet right channel. `intensity` blends the original signal with that wet pair: zero is dry, while 100 is fully wet.
 
-Unlike a generated binaural tone, external audio has no single controlled carrier. `shift` therefore creates spectral divergence and stereo motion, not a guaranteed binaural beat or a guaranteed perceptual response. It can color complex material, especially at high intensity. Its short FIR history delays only the wet path by 31 samples, and frequency shifting near DC or Nyquist is less accurate and can alias.
+For mono sources such as pure tones, noise, monaural beats, and isochronic beats, the source naturally supplies the mono wet input. A fully wet pure sine resembles a frequency pair separated by the declared value; with partial intensity, the dry center carrier remains. On non-sine waveforms, every harmonic moves by the same number of Hz, which differs from generating two detuned waveforms.
+
+A binaural source begins with different left and right frequencies. Its dry portion preserves that pair, but its wet portion first averages both channels and then shifts the combined spectrum. This can produce several components rather than one simple binaural pair. Frequency-shifted white noise may retain a similar power spectrum and be heard mainly as stereo decorrelation; pink, brown, and complex sources may show more obvious coloration.
+
+`shift` creates spectral divergence and stereo motion, not a guaranteed binaural beat or a guaranteed perceptual response. It can color complex material, especially at high intensity. Its short FIR history delays only the wet path by 31 samples, and frequency shifting near DC or Nyquist is less accurate and can alias.
 
 ## Putting It Together
 
