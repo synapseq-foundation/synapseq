@@ -150,6 +150,7 @@ The waveform has several roles:
 - isochronic tracks use the same shape for both the audible carrier and the pulse gate;
 - pan and modulation use it as their motion shape, including on ambiance and music;
 - pan, modulation, and doppler motion use the selected waveform;
+- shift uses fixed sine/cosine quadrature and does not use the selected waveform;
 - compatible timeline changes morph linearly between the old and new waveform while preserving oscillator phase.
 
 The engine performs this compilation before rendering and uses integer table IDs in the sample loop. Custom waveforms are not band-limited. Steep segments, sharp corners, and high carrier frequencies can therefore emphasize harmonics or aliasing, much like square and sawtooth waves. Phase alignment also matters when morphing between differently oriented shapes.
@@ -372,11 +373,12 @@ Effects add motion on top of a track.
 
 They do not define the sound source itself. Instead, they shape how that source moves, sways, or breathes during playback.
 
-SynapSeq currently supports three effects:
+SynapSeq currently supports four effects:
 
 - `pan`
 - `modulation`
 - `doppler`
+- `shift`
 
 ### `pan`
 
@@ -449,13 +451,27 @@ flowchart LR
 
 In listening terms, `doppler` adds gentle motion and a sense of passing or orbital drift rather than simple left-right movement.
 
+### `shift`
+
+`shift` is available only for ambiance and music. It derives a mono signal from the external stereo source, uses a Hilbert transform to create a quadrature pair, and moves the wet spectrum in opposite directions:
+
+```text
+mono wet source = (left + right) / 2
+wet left        = source shifted by +(value / 2) Hz
+wet right       = source shifted by -(value / 2) Hz
+```
+
+The declared value is the total separation. For example, `effect shift 10` produces `+5 Hz` on the wet left channel and `-5 Hz` on the wet right channel. `intensity` blends the original stereo signal with that wet pair: zero is dry, while 100 is fully wet.
+
+Unlike a generated binaural tone, external audio has no single controlled carrier. `shift` therefore creates spectral divergence and stereo motion, not a guaranteed binaural beat or a guaranteed perceptual response. It can color complex material, especially at high intensity. Its short FIR history delays only the wet path by 31 samples, and frequency shifting near DC or Nyquist is less accurate and can alias.
+
 ## Putting It Together
 
 A typical SynapSeq session combines several layers of perception at once:
 
 - a source identity, such as binaural, monaural, isochronic, noise, ambiance, or music;
 - a movement profile, shaped by transitions and optional steps;
-- an animation layer, shaped by effects such as `pan`, `modulation`, or `doppler`.
+- an animation layer, shaped by effects such as `pan`, `modulation`, `doppler`, or `shift`.
 
 That combination is what gives a sequence its character. Two sessions can use the same beat rate and still feel very different because they move differently, layer noise differently, or animate the stereo field in different ways.
 

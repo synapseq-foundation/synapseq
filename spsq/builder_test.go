@@ -37,6 +37,7 @@ func TestBuilderLoadPreservesOrder(t *testing.T) {
 	alpha := builder.NewPreset("alpha")
 	alpha.Pink(0).Amplitude(30, 15)
 	alpha.Music("meditation").Amplitude(20)
+	alpha.Ambiance("rain").Shift(10).Intensity(25).Amplitude(30)
 
 	beta := builder.NewPreset("beta")
 	beta.Pink(10).Amplitude(15)
@@ -65,6 +66,7 @@ func TestBuilderLoadPreservesOrder(t *testing.T) {
 		"alpha",
 		"  noise pink smooth 0.00 amplitude left 30.00 right 15.00",
 		"  music meditation amplitude left 20.00 right 20.00",
+		"  ambiance rain effect shift 10.00 intensity 25.00 amplitude left 30.00 right 30.00",
 		"beta",
 		"  noise pink smooth 10.00 amplitude left 15.00 right 15.00",
 		"",

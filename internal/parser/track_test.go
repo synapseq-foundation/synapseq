@@ -182,6 +182,18 @@ func TestParseTrack_Ambiance(ts *testing.T) {
 			},
 		},
 		{
+			line: "ambiance rain effect shift 10 intensity 25 amplitude 50",
+			wantTrack: ParsedTrackDeclaration{
+				Type:                   t.TrackAmbiance,
+				SourceName:             "rain",
+				EffectType:             t.EffectShift,
+				EffectValue:            10,
+				EffectIntensityPercent: 25,
+				AmplitudePercent:       50,
+				Waveform:               t.WaveformSine,
+			},
+		},
+		{
 			line: "waveform square ambiance river effect modulation 2.5 intensity 60 amplitude 40",
 			wantTrack: ParsedTrackDeclaration{
 				Type:                   t.TrackAmbiance,
@@ -257,6 +269,18 @@ func TestParseTrack_Music(ts *testing.T) {
 			},
 		},
 		{
+			line: "music meditation effect shift 8 intensity 10 amplitude 45",
+			wantTrack: ParsedTrackDeclaration{
+				Type:                   t.TrackMusic,
+				SourceName:             "meditation",
+				EffectType:             t.EffectShift,
+				EffectValue:            8,
+				EffectIntensityPercent: 10,
+				AmplitudePercent:       45,
+				Waveform:               t.WaveformSine,
+			},
+		},
+		{
 			line: "waveform square music bells effect modulation 2.5 intensity 60 amplitude 40",
 			wantTrack: ParsedTrackDeclaration{
 				Type:                   t.TrackMusic,
@@ -293,6 +317,8 @@ func TestParseTrack_Errors(ts *testing.T) {
 		"  tone 300 amplitude left 10 right",
 		"  ambiance spin 200 rate five intensity 75 amplitude 50",
 		"  ambiance pulse effect modulation 2.5 intensity sixty amplitude 40",
+		"  noise pink effect shift 10 intensity 20 amplitude 30",
+		"  tone 300 effect shift 10 intensity 20 amplitude 30",
 		"  ambiance amplitude 50 extra",
 		"  unknown something",
 	}

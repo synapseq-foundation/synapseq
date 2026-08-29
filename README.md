@@ -57,7 +57,7 @@ SynapSeq is best understood as a **creative and experimental audio tool**. It gi
 - layered noise, music, and ambient soundscapes;
 - gradual or stepped changes in pitch, rhythm, amplitude, and other parameters;
 - optional independent left/right track amplitudes;
-- spatial movement and modulation through effects;
+- spatial movement, modulation, and symmetric frequency shifting of external audio through effects;
 - reusable custom periodic waveforms defined as amplitude points;
 - reusable custom timeline-transition curves defined as interpolation points;
 - repeatable sessions rendered as WAV, streamed as PCM, played directly, or converted to MP3;

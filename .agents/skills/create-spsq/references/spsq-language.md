@@ -104,7 +104,7 @@ Override syntax is:
   track INDEX KIND VALUE
 ```
 
-The current parser accepts `INDEX` values `1` through `15`. Override kinds are `tone`, `binaural`, `monaural`, `isochronic`, `waveform`, `pan`, `modulation`, `doppler`, `smooth`, `amplitude`, and `intensity`.
+The current parser accepts `INDEX` values `1` through `15`. Override kinds are `tone`, `binaural`, `monaural`, `isochronic`, `waveform`, `pan`, `modulation`, `doppler`, `shift`, `smooth`, `amplitude`, and `intensity`.
 
 Numeric overrides beginning with `+` or `-` are relative to the template value; unsigned values replace it. `track N amplitude VALUE` updates both channels, while `track N left VALUE` and `track N right VALUE` update one channel. The override must match the inherited track: for example, `smooth` requires noise, `binaural` requires a binaural track, and `pan` requires an existing pan effect. Waveform values are absolute built-in or declared custom names, not numeric.
 
@@ -147,11 +147,15 @@ Noise colors are `white`, `pink`, and `brown`. Noise effects are `pan` and `modu
 ```spsq
   ambiance rain amplitude 20
   ambiance rain effect pan 0.1 intensity 40 amplitude 20
+  ambiance rain effect shift 10 intensity 25 amplitude 20
   music bed amplitude 15
   music bed effect modulation 0.1 intensity 25 amplitude 15
+  music bed effect shift 8 intensity 20 amplitude 15
 ```
 
-Ambiance and music support `pan` and `modulation`, not `doppler`. Their source name must match an `@ambiance` or `@music` declaration. A waveform prefix does not reshape external PCM, but it does shape waveform-driven pan or modulation. Use it only when that motion is intentional.
+Ambiance and music support `pan`, `modulation`, and `shift`, not `doppler`. Their source name must match an `@ambiance` or `@music` declaration. A waveform prefix does not reshape external PCM, but it does shape waveform-driven pan or modulation. `shift` ignores the waveform because it uses fixed sine/cosine quadrature.
+
+For `shift`, the effect value is the total separation in Hz. The wet left side moves by `+value/2` and the wet right side by `-value/2`; intensity is the dry/wet percentage. The wet pair is derived from mono, so increasing intensity reduces the source's original stereo image. Treat it as spectral stereo motion, not as a guaranteed binaural beat. Prefer modest values and intensity because complex material can become colored and frequency-band edges can alias.
 
 ## Values and limits
 
@@ -227,7 +231,7 @@ Here the sequence holds `relax-deep` until `00:14:00`, then fades to silence ove
 - Isochronic gates one tone on and off for a pronounced pulse.
 - White noise is brightest; pink is more balanced; brown emphasizes lower frequencies.
 - Higher noise `smooth` values reduce moment-to-moment roughness without changing noise color.
-- `pan` moves the stereo position, `modulation` varies amplitude, and `doppler` adds subtle pitch motion.
+- `pan` moves the stereo position, `modulation` varies amplitude, `doppler` adds subtle pitch motion, and `shift` creates opposing frequency offsets on external audio.
 - `steady` changes uniformly, `ease-in` starts gently, `ease-out` settles gently, and `smooth` eases at both ends.
 
 Use these as descriptive design tools, not medical claims.

@@ -6,6 +6,24 @@ package types
 
 import "testing"
 
+func TestShiftEffectValidation(t *testing.T) {
+	valid := Track{Type: TrackAmbiance, Effect: Effect{Type: EffectShift, Value: 10, Intensity: 0.25}}
+	if err := valid.Validate(); err != nil {
+		t.Fatalf("valid ambiance shift: %v", err)
+	}
+
+	invalid := Track{Type: TrackPureTone, Carrier: 300, Effect: Effect{Type: EffectShift, Value: 10, Intensity: 0.25}}
+	if err := invalid.Validate(); err == nil {
+		t.Fatal("expected shift on tone to be rejected")
+	}
+}
+
+func TestShiftEffectString(t *testing.T) {
+	if EffectShift.String() != KeywordShift || EffectString(KeywordShift) != EffectShift {
+		t.Fatal("shift effect string conversion is inconsistent")
+	}
+}
+
 func TestTrackAmplitudeStringsAlwaysIncludeChannels(t *testing.T) {
 	track := Track{
 		Type:      TrackBinauralBeat,

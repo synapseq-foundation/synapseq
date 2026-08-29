@@ -102,6 +102,8 @@ func main() {
 
 `Builder.Waveform(name, points...)` emits a top-level `@waveform` definition with 2 through 16384 points in the range `0..100`. `Preset.Waveform(name)` selects that named waveform for the most recently added track. The regular SPSQ loading pipeline validates names, point counts, ranges, duplicates, built-in conflicts, and references when `Load` is called.
 
+`Preset.Shift(separation)` adds the external-audio `shift` effect to the most recently added track. It must follow an ambiance or music track; as with other fluent builder constraints, `Load` reports an error if the resulting track is invalid. The separation is measured in Hz and `Preset.Intensity(percent)` controls its dry/wet mix.
+
 ## Convert SBaGen Sequences
 
 The `sbg` package provides the SBaGen conversion flow in Go:

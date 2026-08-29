@@ -299,6 +299,36 @@ func TestAudioRendererMix_AmbianceUsesPreparedStereoBuffer(ts *testing.T) {
 	}
 }
 
+func TestAudioRendererMix_AmbianceAppliesShiftDryWet(ts *testing.T) {
+	renderer := newMixTestRenderer()
+	renderer.ambianceState = amb.NewTestRuntime(1)
+	buffer := make([]int, t.BufferSize*audioChannels)
+	for frame := range t.BufferSize {
+		buffer[frame*2] = 20000
+		buffer[frame*2+1] = -10000
+	}
+	renderer.ambianceState.SetChannelBuffer(0, buffer)
+	renderer.ambianceState.SetChannelIndex(0, 0)
+	renderer.channels[0] = t.Channel{
+		Track: t.Track{
+			Type:   t.TrackAmbiance,
+			Effect: t.Effect{Type: t.EffectShift, Value: 10, Intensity: 0.5},
+		},
+		Type:      t.TrackAmbiance,
+		Amplitude: [2]int{3, 3},
+	}
+
+	samples := renderer.mix(make([]int, t.BufferSize*audioChannels))
+	expectedLeft := clampPCM16((10000 * 16 * 3) >> audioBitShift)
+	expectedRight := clampPCM16((-5000 * 16 * 3) >> audioBitShift)
+	if samples[0] != expectedLeft || samples[1] != expectedRight {
+		ts.Fatalf("unexpected shifted ambiance onset: got [%d %d], want [%d %d]", samples[0], samples[1], expectedLeft, expectedRight)
+	}
+	if samples[200] == expectedLeft && samples[201] == expectedRight {
+		ts.Fatal("shift wet path did not reach the mixer after FIR warmup")
+	}
+}
+
 func TestAudioRendererMix_UsesOnlyActiveCueChannels(ts *testing.T) {
 	renderer := newMixTestRenderer()
 	renderer.channels[0] = t.Channel{

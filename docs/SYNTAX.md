@@ -273,8 +273,10 @@ alpha
   tone 300 binaural 10 effect doppler 0.9 intensity 80 amplitude 40
   ambiance rain amplitude 25
   ambiance rain effect pan 0.5 intensity 60 amplitude 30
+  ambiance rain effect shift 10 intensity 25 amplitude 30
   music meditation amplitude 50
   music meditation effect pan 0.5 intensity 60 amplitude 30
+  music meditation effect shift 8 intensity 20 amplitude 30
   tone 300 binaural 10 amplitude left 10 right 5
   noise pink amplitude left 30 right 25
 ```
@@ -299,11 +301,13 @@ Noise lines can describe white, pink, or brown noise, optionally with `smooth`, 
 
 Ambiance lines reference a named ambiance option and then define amplitude, with optional supported effects. The current parser also accepts a leading `waveform` token before ambiance declarations, even though waveform selection is primarily a tone-oriented concept.
 
-For tones, the selected waveform shapes pure, binaural, and monaural oscillators. On an isochronic track, the same waveform shapes both the carrier and the rhythmic gate. It also shapes waveform-driven `pan`, `modulation`, and `doppler` motion. For ambiance and music, it does not reshape the external PCM; it affects waveform-driven `pan` or `modulation`.
+For tones, the selected waveform shapes pure, binaural, and monaural oscillators. On an isochronic track, the same waveform shapes both the carrier and the rhythmic gate. It also shapes waveform-driven `pan`, `modulation`, and `doppler` motion. For ambiance and music, it does not reshape the external PCM; it affects waveform-driven `pan` or `modulation`. `shift` always uses sine/cosine quadrature internally and ignores the selected waveform.
 
 Music lines reference a named music option and use the same amplitude/effect forms as ambiance. Music is finite: when the file ends, that channel becomes silent and rendering continues until the sequence timeline ends.
 
-`amplitude` accepts either one percentage, `amplitude <value>`, or explicit channels, `amplitude left <value> right <value>`. The one-value form applies to both channels. `left` always requires a following `right` value. Each value must be between `0` and `100`. The gains are applied after `pan`, so the declared values control the final left and right channel levels.
+`amplitude` accepts either one percentage, `amplitude <value>`, or explicit channels, `amplitude left <value> right <value>`. The one-value form applies to both channels. `left` always requires a following `right` value. Each value must be between `0` and `100`. The gains are applied after effects, so the declared values control the final left and right channel levels.
+
+`shift` is available only on ambiance and music. Its value is the total frequency separation in Hz: `shift 10` moves the wet left signal up by 5 Hz and the wet right signal down by 5 Hz. The wet signal is derived from `(left + right) / 2`; `intensity 0` or `shift 0` preserves the original stereo signal, while `intensity 100` is the fully shifted mono-derived stereo pair. This is a frequency-shift effect over external audio, not a guarantee of a binaural beat. The FIR Hilbert path has a 31-sample wet latency, is least accurate near DC and Nyquist, and can alias content shifted across the available frequency band.
 
 Track declarations are rejected when:
 
@@ -339,6 +343,7 @@ The parser accepts override kinds such as:
 - `pan`
 - `modulation`
 - `doppler`
+- `shift`
 - `smooth`
 - `amplitude`
 - `intensity`
@@ -696,8 +701,8 @@ beat-kind            = "binaural" | "monaural" | "isochronic" ;
 noise-kind           = "white" | "pink" | "brown" ;
 tone-effect          = "pan" | "modulation" | "doppler" ;
 noise-effect         = "pan" | "modulation" ;
-ambiance-effect      = "pan" | "modulation" ;
-music-effect         = "pan" | "modulation" ;
+ambiance-effect      = "pan" | "modulation" | "shift" ;
+music-effect         = "pan" | "modulation" | "shift" ;
 
 track-override-line  = indent2 "track" track-index override-kind override-value ;
 track-index          = integer ;
@@ -709,6 +714,7 @@ override-kind        = "tone"
                      | "pan"
                      | "modulation"
                      | "doppler"
+			 | "shift"
                       | "smooth"
                       | "amplitude"
 		      | "left"

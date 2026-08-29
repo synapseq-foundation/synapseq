@@ -137,6 +137,7 @@ Carrier and beat values must be non-negative. Binaural and monaural values must 
 ```spsq
   ambiance rain amplitude 20
   music bed effect modulation 0.1 intensity 25 amplitude 15
+  music bed effect shift 10 intensity 25 amplitude 15
 ```
 
 These tracks play declared external resources. Ambiance loops; music is finite. Explain their configured role without inferring the recording's contents beyond supplied names or comments.
@@ -146,10 +147,11 @@ These tracks play declared external resources. Ambiance loops; music is finite. 
 - `pan` moves stereo position.
 - `modulation` varies amplitude.
 - `doppler` adds pitch motion and is supported only for tones.
+- `shift` is supported only for ambiance and music. It derives a mono wet signal, shifts wet left by `+value/2` Hz and wet right by `-value/2` Hz, and uses intensity as dry/wet mix. It is spectral stereo motion, not a guaranteed binaural beat.
 - `intensity` controls effect strength.
-- `amplitude VALUE` controls matching left/right levels. `amplitude left LEFT right RIGHT` controls final channel levels independently; `left` always requires `right`. The per-channel gains apply after `pan`.
+- `amplitude VALUE` controls matching left/right levels. `amplitude left LEFT right RIGHT` controls final channel levels independently; `left` always requires `right`. The per-channel gains apply after effects.
 
-Noise, ambiance, and music support `pan` and `modulation`. Numeric amplitude values for each channel, intensity, smoothness, and volume values are percentages from `0` through `100`. Multiple tracks combine, so a value is not a guarantee of final perceived loudness.
+Noise supports `pan` and `modulation`; ambiance and music also support `shift`. `shift` ignores track waveform selection, has a 31-sample wet latency, and may color complex audio or alias near frequency-band edges. Numeric amplitude values for each channel, intensity, smoothness, and volume values are percentages from `0` through `100`. Multiple tracks combine, so a value is not a guarantee of final perceived loudness.
 
 ## Timeline and transitions
 

@@ -16,6 +16,8 @@ const (
 	EffectModulation
 	// Effect is doppler
 	EffectDoppler
+	// Effect is a symmetric stereo frequency shift
+	EffectShift
 )
 
 // String returns the string representation of the EffectType
@@ -29,6 +31,8 @@ func (et EffectType) String() string {
 		return KeywordModulation
 	case EffectDoppler:
 		return KeywordDoppler
+	case EffectShift:
+		return KeywordShift
 	default:
 		return "unknown"
 	}
@@ -68,6 +72,8 @@ func EffectString(s string) EffectType {
 		return EffectModulation
 	case KeywordDoppler:
 		return EffectDoppler
+	case KeywordShift:
+		return EffectShift
 	default:
 		return EffectOff
 	}

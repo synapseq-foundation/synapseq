@@ -119,7 +119,7 @@ Effects:
 
 - tone: `pan`, `modulation`, `doppler`;
 - noise: `pan`, `modulation`;
-- ambiance/music: `pan`, `modulation`.
+- ambiance/music: `pan`, `modulation`, `shift`.
 
 Check:
 
@@ -135,7 +135,9 @@ Check:
 - custom points are interpreted as evenly spaced bipolar values (`0 -> -1`, `50 -> 0`, `100 -> +1`) with circular linear interpolation;
 - an isochronic custom waveform intentionally shapes both its carrier and gate, not only the pulse envelope;
 - a non-sine waveform on a tone with `doppler` intentionally shapes the pitch movement as well as the source waveform;
-- waveform prefixes on ambiance/music affect pan or modulation motion, not the external PCM itself.
+- waveform prefixes on ambiance/music affect pan or modulation motion, not the external PCM itself; `shift` ignores the selected waveform;
+- `shift` values are total Hz separation, intensity is dry/wet, and higher wet levels progressively replace the original stereo image with a mono-derived shifted pair;
+- `shift` is not classified as a generated binaural beat, and claims of guaranteed entrainment or perceptual response are unsupported.
 
 Do not invent unsupported codecs, effects, source types, or implied parameters.
 

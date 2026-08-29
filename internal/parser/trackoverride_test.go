@@ -57,6 +57,7 @@ func TestParseTrackOverrideDeclaration(ts *testing.T) {
 		{name: "right amplitude relative", line: "  track 1 right -5", expectedKind: t.KeywordRight, expectedIndex: 1, expectedValue: -5, expectedRaw: "-5", expectedRel: true},
 		{name: "waveform", line: "  track 2 waveform sawtooth", expectedKind: t.KeywordWaveform, expectedIndex: 2, expectedWave: t.WaveformSawtooth},
 		{name: "smooth", line: "  track 4 smooth 45", expectedKind: t.KeywordSmooth, expectedIndex: 4, expectedValue: 45, expectedRaw: "45"},
+		{name: "shift relative", line: "  track 5 shift +2", expectedKind: t.KeywordShift, expectedIndex: 5, expectedValue: 2, expectedRaw: "+2", expectedRel: true},
 		{name: "missing track index", line: "  track amplitude 10", expectedError: true},
 		{name: "invalid track index", line: "  track abc amplitude 10", expectedError: true},
 		{name: "track index out of range", line: "  track 20 amplitude 10", expectedError: true},

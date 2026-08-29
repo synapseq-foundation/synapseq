@@ -11,6 +11,7 @@ import wt "github.com/synapseq-foundation/synapseq/v4/internal/audio/wavetable"
 type Engine struct {
 	SampleRate          int
 	UpdateAmbianceIndex func(ch int, periodIdx int, trackType t.TrackType)
+	ResetEffect         func(ch int)
 }
 
 type Cue struct {
@@ -64,6 +65,7 @@ func (e *Engine) syncChannel(ch int, channels []t.Channel, periodIdx int, cue Ch
 	channel := &channels[ch]
 	previousTrackType := channel.Type
 	previousEffectType := channel.Track.Effect.Type
+	previousSourceName := channel.Track.SourceName
 
 	channel.Track = cue.Track
 	channel.WaveformStart = int(cue.WaveformStart)
@@ -72,7 +74,7 @@ func (e *Engine) syncChannel(ch int, channels []t.Channel, periodIdx int, cue Ch
 	channel.Amplitude = cue.Amplitude
 	channel.Increment = cue.Increment
 	e.updateAmbianceIndex(ch, periodIdx, cue.Track.Type)
-	e.resetRuntimeState(channel, previousTrackType, previousEffectType)
+	e.resetRuntimeState(ch, channel, previousTrackType, previousEffectType, previousSourceName)
 	e.applyEffectState(channel, cue)
 }
 
@@ -84,7 +86,7 @@ func (e *Engine) updateAmbianceIndex(ch int, periodIdx int, trackType t.TrackTyp
 	e.UpdateAmbianceIndex(ch, periodIdx, trackType)
 }
 
-func (e *Engine) resetRuntimeState(channel *t.Channel, previousTrackType t.TrackType, previousEffectType t.EffectType) {
+func (e *Engine) resetRuntimeState(ch int, channel *t.Channel, previousTrackType t.TrackType, previousEffectType t.EffectType, previousSourceName string) {
 	if previousTrackType != channel.Track.Type {
 		channel.Offset = [2]int{}
 	}
@@ -96,6 +98,10 @@ func (e *Engine) resetRuntimeState(channel *t.Channel, previousTrackType t.Track
 		channel.Effect.ModulationInitialized = false
 		channel.Effect.PanPosition = 0
 		channel.Effect.PanInitialized = false
+	}
+	if e.ResetEffect != nil && (previousTrackType != channel.Track.Type ||
+		previousEffectType != channel.Track.Effect.Type || previousSourceName != channel.Track.SourceName) {
+		e.ResetEffect(ch)
 	}
 }
 

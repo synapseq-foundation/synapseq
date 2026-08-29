@@ -49,6 +49,14 @@ func (r *AudioRenderer) applyEffectToStereo(channel *t.Channel, signal *channelS
 	return applyAmplitude(signal.amplitude, left, right)
 }
 
+func (r *AudioRenderer) applyExternalEffectToStereo(ch int, channel *t.Channel, signal *channelSignalState, left, right int) stereoSample {
+	if signal.effect.Type == t.EffectShift {
+		left, right = r.effectProcessor.ApplyShift(ch, signal.effect, left, right)
+		return applyAmplitude(signal.amplitude, left, right)
+	}
+	return r.applyEffectToStereo(channel, signal, left, right)
+}
+
 func applyAmplitude(amplitude [2]int, left, right int) stereoSample {
 	return stereoSample{
 		left:  int(int64(left) * int64(amplitude[0])),

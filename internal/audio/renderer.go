@@ -107,6 +107,7 @@ func NewAudioRenderer(p []t.Period, ar *AudioRendererOptions) (*AudioRenderer, e
 		musicState:           musicState,
 		AudioRendererOptions: ar,
 	}
+	renderer.effectProcessor = efx.NewProcessor(renderer.SampleRate, renderer.waveTables)
 	renderer.syncEngine = audiosync.NewEngine(renderer.SampleRate, func(ch int, periodIdx int, trackType t.TrackType) {
 		if renderer.ambianceState != nil {
 			renderer.ambianceState.UpdateChannelIndex(ch, periodIdx, trackType)
@@ -115,7 +116,7 @@ func NewAudioRenderer(p []t.Period, ar *AudioRendererOptions) (*AudioRenderer, e
 			renderer.musicState.UpdateChannelIndex(ch, periodIdx, trackType)
 		}
 	})
-	renderer.effectProcessor = efx.NewProcessor(renderer.SampleRate, renderer.waveTables)
+	renderer.syncEngine.ResetEffect = renderer.effectProcessor.ResetShift
 
 	return renderer, nil
 }

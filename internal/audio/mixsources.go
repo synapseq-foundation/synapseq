@@ -64,7 +64,7 @@ func (r *AudioRenderer) mixAmbiance(channel *t.Channel, signal *channelSignalSta
 		return stereoSample{}
 	}
 
-	return r.applyEffectToStereo(channel, signal, left, right)
+	return r.applyExternalEffectToStereo(ch, channel, signal, left, right)
 }
 
 func (r *AudioRenderer) mixMusic(channel *t.Channel, signal *channelSignalState, ch, frame int) stereoSample {
@@ -74,5 +74,5 @@ func (r *AudioRenderer) mixMusic(channel *t.Channel, signal *channelSignalState,
 		return stereoSample{}
 	}
 
-	return r.applyEffectToStereo(channel, signal, left, right)
+	return r.applyExternalEffectToStereo(ch, channel, signal, left, right)
 }
