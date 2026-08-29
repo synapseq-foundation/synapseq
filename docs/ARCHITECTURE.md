@@ -130,7 +130,7 @@ The root package owns `AudioRenderer` and the main rendering loop. Supporting re
 - `audio/audiosource` for shared WAV/MP3 external audio mechanics: loading callbacks, decoding, caching, resampling, sample reading, playback mode handling, named-source indexing, and prepared runtime buffers;
 - `audio/ambiance` for ambiance-specific policy around external audio: looped playback, ambiance file loading, and source-scoped runtime behavior. WAV is preferred for loopable ambiance; MP3 is supported but may contain codec delay or padding that creates loop gaps;
 - `audio/music` for music-specific policy around external audio: finite playback, music file loading, and channel-scoped runtime behavior. Music does not loop automatically and prefers MP3 before WAV during local path resolution;
-- `audio/effects` for panning, modulation, doppler, waveform morph, and effect runtime helpers;
+- `audio/effects` for panning, modulation, doppler, mono-derived frequency shifting, waveform morph, and effect runtime helpers;
 - `audio/sources` for compiled source evaluators such as pure tone, binaural, monaural, isochronic, noise, ambiance, and music;
 - `audio/sync` for temporal synchronization and per-period updates;
 - `audio/wavetable` for built-in table generation, custom point interpolation, and dense rendering IDs;
@@ -319,7 +319,7 @@ At a high level:
 
 The audio engine is in the middle of a controlled rearchitecture. The current direction should be preserved:
 
-1. parser and `.spsq` syntax remain frozen;
+1. parser and `.spsq` syntax changes remain deliberate and synchronized with tests, documentation, and bundled skills;
 2. semantic sequence loading still ends in `types.Sequence` and `types.Period`;
 3. `renderPlan` is the first compilation boundary after semantic sequence data;
 4. `audio/sync` is being narrowed so it applies resolved cues instead of deciding temporal interpolation;
@@ -340,7 +340,8 @@ Within `internal/audio/effects`, the supporting effect processor code is also no
 
 - `morph.go` owns waveform morph resolution from channel state;
 - `waveform.go` owns waveform lookup and interpolation helpers;
-- `doppler.go`, `modulation.go`, and `pan.go` own their respective effect families;
+- `doppler.go`, `modulation.go`, `pan.go`, and `shift.go` own their respective effect families;
+- `shift.go` owns preallocated per-channel FIR Hilbert history and quadrature oscillator state outside the domain model;
 - `apply.go`, `runtime.go`, and `smoothing.go` hold effect dispatch, phase advancement, and smoothing state.
 
 Contributors working in `internal/audio` should prefer continuing this direction over reintroducing semantic or temporal decision-making into `sync`, `mix`, or `effects` hot paths.

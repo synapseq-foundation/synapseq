@@ -165,6 +165,8 @@ func TestEngine_Sync_ResetsEffectPhaseWhenEffectChanges(ts *testing.T) {
 	channels[0].Effect.PanInitialized = true
 
 	engine := NewEngine(testSampleRate, nil)
+	resetChannel := -1
+	engine.ResetEffect = func(ch int) { resetChannel = ch }
 	engine.Sync(channels, testCue(0, p0, p1, 0))
 
 	channel := channels[0]
@@ -185,6 +187,26 @@ func TestEngine_Sync_ResetsEffectPhaseWhenEffectChanges(ts *testing.T) {
 	}
 	if channel.Increment[1] != 0 {
 		ts.Fatalf("unexpected secondary increment for pure tone: got %d", channel.Increment[1])
+	}
+	if resetChannel != 0 {
+		ts.Fatalf("effect processor reset channel = %d, want 0", resetChannel)
+	}
+}
+
+func TestEngine_Sync_ResetsEffectProcessorWhenSourceChanges(ts *testing.T) {
+	channels := make([]t.Channel, t.NumberOfChannels)
+	channels[0].Type = t.TrackAmbiance
+	channels[0].Track = t.Track{Type: t.TrackAmbiance, SourceName: "rain", Effect: t.Effect{Type: t.EffectShift}}
+	resetChannel := -1
+	engine := NewEngine(testSampleRate, nil)
+	engine.ResetEffect = func(ch int) { resetChannel = ch }
+	cue := Cue{}
+	cue.Channels[0].Track = t.Track{Type: t.TrackAmbiance, SourceName: "ocean", Effect: t.Effect{Type: t.EffectShift}}
+
+	engine.Sync(channels, cue)
+
+	if resetChannel != 0 {
+		ts.Fatalf("effect processor reset channel = %d, want 0", resetChannel)
 	}
 }
 

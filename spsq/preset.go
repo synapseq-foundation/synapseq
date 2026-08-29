@@ -151,6 +151,11 @@ func (p *Preset) Doppler(value float64) *Preset {
 	return p.setEffect(t.EffectDoppler, value)
 }
 
+// Shift adds a symmetric stereo frequency shift effect to the last track.
+func (p *Preset) Shift(value float64) *Preset {
+	return p.setEffect(t.EffectShift, value)
+}
+
 // Intensity sets the effect intensity on the last track.
 func (p *Preset) Intensity(value float64) *Preset {
 	track := p.lastTrack()

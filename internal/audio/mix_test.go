@@ -299,6 +299,84 @@ func TestAudioRendererMix_AmbianceUsesPreparedStereoBuffer(ts *testing.T) {
 	}
 }
 
+func TestAudioRendererMix_AmbianceAppliesShiftDryWet(ts *testing.T) {
+	renderer := newMixTestRenderer()
+	renderer.ambianceState = amb.NewTestRuntime(1)
+	buffer := make([]int, t.BufferSize*audioChannels)
+	for frame := range t.BufferSize {
+		buffer[frame*2] = 20000
+		buffer[frame*2+1] = -10000
+	}
+	renderer.ambianceState.SetChannelBuffer(0, buffer)
+	renderer.ambianceState.SetChannelIndex(0, 0)
+	renderer.channels[0] = t.Channel{
+		Track: t.Track{
+			Type:   t.TrackAmbiance,
+			Effect: t.Effect{Type: t.EffectShift, Value: 10, Intensity: 0.5},
+		},
+		Type:      t.TrackAmbiance,
+		Amplitude: [2]int{3, 3},
+	}
+
+	samples := renderer.mix(make([]int, t.BufferSize*audioChannels))
+	expectedLeft := clampPCM16((10000 * 16 * 3) >> audioBitShift)
+	expectedRight := clampPCM16((-5000 * 16 * 3) >> audioBitShift)
+	if samples[0] != expectedLeft || samples[1] != expectedRight {
+		ts.Fatalf("unexpected shifted ambiance onset: got [%d %d], want [%d %d]", samples[0], samples[1], expectedLeft, expectedRight)
+	}
+	if samples[200] == expectedLeft && samples[201] == expectedRight {
+		ts.Fatal("shift wet path did not reach the mixer after FIR warmup")
+	}
+}
+
+func TestAudioRendererMix_ShiftProcessesGeneratedTrackFamilies(ts *testing.T) {
+	const warmupFrames = 64
+	tests := []struct {
+		name      string
+		trackType t.TrackType
+		increment [2]int
+	}{
+		{name: "pure", trackType: t.TrackPureTone, increment: [2]int{frequencyToIncrement(44100, 1000)}},
+		{name: "binaural", trackType: t.TrackBinauralBeat, increment: [2]int{frequencyToIncrement(44100, 1005), frequencyToIncrement(44100, 995)}},
+		{name: "monaural", trackType: t.TrackMonauralBeat, increment: [2]int{frequencyToIncrement(44100, 1005), frequencyToIncrement(44100, 995)}},
+		{name: "isochronic", trackType: t.TrackIsochronicBeat, increment: [2]int{frequencyToIncrement(44100, 1000), frequencyToIncrement(44100, 10)}},
+		{name: "white noise", trackType: t.TrackWhiteNoise},
+		{name: "pink noise", trackType: t.TrackPinkNoise},
+		{name: "brown noise", trackType: t.TrackBrownNoise},
+	}
+
+	for _, test := range tests {
+		ts.Run(test.name, func(ts *testing.T) {
+			renderer := newMixTestRenderer()
+			renderer.channels[0] = t.Channel{
+				Track: t.Track{
+					Type:      test.trackType,
+					Waveform:  t.WaveformSine,
+					Effect:    t.Effect{Type: t.EffectShift, Value: 100, Intensity: 1},
+					Amplitude: t.AmplitudePercentToRaw(25),
+				},
+				WaveformStart: int(wt.SineID),
+				WaveformEnd:   int(wt.SineID),
+				Type:          test.trackType,
+				Amplitude:     [2]int{1024, 1024},
+				Increment:     test.increment,
+			}
+
+			samples := renderer.mix(make([]int, t.BufferSize*audioChannels))
+			var diverged bool
+			for frame := warmupFrames; frame < t.BufferSize; frame++ {
+				if samples[frame*2] != samples[frame*2+1] {
+					diverged = true
+					break
+				}
+			}
+			if !diverged {
+				ts.Fatalf("shift did not create stereo divergence for %s", test.name)
+			}
+		})
+	}
+}
+
 func TestAudioRendererMix_UsesOnlyActiveCueChannels(ts *testing.T) {
 	renderer := newMixTestRenderer()
 	renderer.channels[0] = t.Channel{

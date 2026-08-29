@@ -97,6 +97,8 @@ const (
 	KeywordTemplate = "template"
 	// Represents a doppler effect
 	KeywordDoppler = "doppler"
+	// Represents a frequency shift effect
+	KeywordShift = "shift"
 	// Represents a smooth
 	KeywordSmooth = "smooth"
 )

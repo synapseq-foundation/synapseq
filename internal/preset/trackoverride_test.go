@@ -31,6 +31,7 @@ func testTemplatePreset(ts *testing.T) *t.Preset {
 	templatePreset.Track[1] = t.Track{Type: t.TrackAmbiance, SourceName: "rain", Amplitude: t.AmplitudePercentToRaw(40), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectPan, Value: 5, Intensity: t.IntensityPercentToRaw(75)}}
 	templatePreset.Track[2] = t.Track{Type: t.TrackMonauralBeat, Carrier: 440, Resonance: 8, Amplitude: t.AmplitudePercentToRaw(15), Waveform: t.WaveformSquare}
 	templatePreset.Track[3] = t.Track{Type: t.TrackPinkNoise, NoiseSmooth: 20, Amplitude: t.AmplitudePercentToRaw(25)}
+	templatePreset.Track[4] = t.Track{Type: t.TrackMusic, SourceName: "meditation", Amplitude: t.AmplitudePercentToRaw(30), Waveform: t.WaveformSine, Effect: t.Effect{Type: t.EffectShift, Value: 10, Intensity: t.IntensityPercentToRaw(25)}}
 	return templatePreset
 }
 
@@ -116,6 +117,11 @@ func TestApplyTrackOverride_Success(ts *testing.T) {
 				tst.Errorf("expected smooth 15, got %v", p.Track[3].NoiseSmooth)
 			}
 		}},
+		{name: "override shift", line: "  track 5 shift +2", checkFunc: func(tst *testing.T, p *t.Preset) {
+			if p.Track[4].Effect.Value != 12 {
+				tst.Errorf("expected shift separation 12, got %v", p.Track[4].Effect.Value)
+			}
+		}},
 	}
 
 	for _, tt := range tests {
@@ -139,12 +145,13 @@ func TestApplyTrackOverride_Errors(ts *testing.T) {
 		name string
 		line string
 	}{
-		{"override off track", "  track 5 amplitude 10"},
+		{"override off track", "  track 6 amplitude 10"},
 		{"tone on ambiance track", "  track 2 tone 300"},
 		{"waveform on noise track", "  track 4 waveform square"},
 		{"smooth on non-noise track", "  track 1 smooth 30"},
 		{"wrong beat type override", "  track 1 monaural 8"},
 		{"modulation on pan effect", "  track 2 modulation 3"},
+		{"shift on pan effect", "  track 2 shift 3"},
 		{"invalid amplitude", "  track 1 amplitude 150"},
 		{"invalid intensity", "  track 2 intensity 150"},
 		{"invalid smooth", "  track 4 smooth 150"},

@@ -57,7 +57,7 @@ func ApplyTrackOverride(preset *t.Preset, spec *TrackOverrideSpec) error {
 		}
 		preset.Track[idx].Carrier = carrier
 
-	case t.KeywordPan, t.KeywordModulation, t.KeywordDoppler:
+	case t.KeywordPan, t.KeywordModulation, t.KeywordDoppler, t.KeywordShift:
 		if spec.Kind == t.KeywordPan && track.Effect.Type != t.EffectPan {
 			return diag.Validation(fmt.Sprintf("pan can only be set on track %d with pan effect, it is %q", spec.TrackIndex, track.Effect.Type.String())).WithSpan(spec.KindSpan).WithFound(spec.Kind)
 		}
@@ -66,6 +66,9 @@ func ApplyTrackOverride(preset *t.Preset, spec *TrackOverrideSpec) error {
 		}
 		if spec.Kind == t.KeywordDoppler && track.Effect.Type != t.EffectDoppler {
 			return diag.Validation(fmt.Sprintf("doppler speed can only be set on track %d with doppler effect, it is %q", spec.TrackIndex, track.Effect.Type.String())).WithSpan(spec.KindSpan).WithFound(spec.Kind)
+		}
+		if spec.Kind == t.KeywordShift && track.Effect.Type != t.EffectShift {
+			return diag.Validation(fmt.Sprintf("shift separation can only be set on track %d with shift effect, it is %q", spec.TrackIndex, track.Effect.Type.String())).WithSpan(spec.KindSpan).WithFound(spec.Kind)
 		}
 
 		effectValue := spec.Value

@@ -56,7 +56,7 @@ Run only one applicable command. Validation is evidence for the explanation, not
    - a plain-language overview of the sound and total duration;
    - top-level options, comments, declared resources, custom waveform definitions, and extends;
    - each playable preset and template, including inherited overrides and effective track order;
-   - what each track contributes: source, rhythm or beat, waveform, left/right amplitude when asymmetric, smoothness, and effects, including waveform-shaped doppler motion;
+   - what each track contributes: source, rhythm or beat, waveform, left/right amplitude when asymmetric, smoothness, and effects, including waveform-shaped doppler motion and mono-derived shift;
    - a chronological phase table with interval duration, active preset, transition, steps, and the change toward the next entry;
    - fades, incompatible-channel crossfades, repeated presets, and the role of `silence`;
    - the expected perceptual progression and practical listening notes relevant to the question.
@@ -97,7 +97,7 @@ Use short illustrative fragments when they make a rule easier to understand. Do 
 
 ## Keep claims grounded
 
-- Describe binaural, monaural, isochronic, noise, modulation, spatial movement, and transitions as audio behavior.
+- Describe binaural, monaural, isochronic, noise, modulation, shift, spatial movement, and transitions as audio behavior. Distinguish `shift` on any source from a generated binaural beat.
 - Mention that binaural material is most meaningful with stereo headphones.
 - Treat focus, relaxation, meditation, sleep, and similar labels as creative intent or likely listening character.
 - Do not promise medical, therapeutic, cognitive, sleep, or brainwave outcomes.

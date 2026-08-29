@@ -9,26 +9,26 @@ import (
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
-func (r *AudioRenderer) mixPureTone(channel *t.Channel, signal *channelSignalState) stereoSample {
+func (r *AudioRenderer) mixPureTone(ch int, channel *t.Channel, signal *channelSignalState) stereoSample {
 	source := src.NewPureTone(signal.sourceSignal())
 	inc0 := r.effectProcessor.ApplyDoppler(channel, signal.effect, signal.increment[0])
 	channel.Offset[0] = advancePhase(channel.Offset[0], inc0)
 
 	sample := source.Sample(r.effectProcessor, channel.Offset[0])
-	return r.applyEffectToMono(channel, signal, sample)
+	return r.applyEffectToMono(ch, channel, signal, sample)
 }
 
-func (r *AudioRenderer) mixBinauralBeat(channel *t.Channel, signal *channelSignalState) stereoSample {
+func (r *AudioRenderer) mixBinauralBeat(ch int, channel *t.Channel, signal *channelSignalState) stereoSample {
 	source := src.NewBinaural(signal.sourceSignal())
 	inc0, inc1 := r.effectProcessor.ApplyDopplerPair(channel, signal.effect, signal.increment[0], signal.increment[1])
 	channel.Offset[0] = advancePhase(channel.Offset[0], inc0)
 	channel.Offset[1] = advancePhase(channel.Offset[1], inc1)
 
 	left, right := source.Sample(r.effectProcessor, channel.Offset[0], channel.Offset[1])
-	return r.applyEffectToStereo(channel, signal, left, right)
+	return r.applyEffectToStereo(ch, channel, signal, left, right)
 }
 
-func (r *AudioRenderer) mixMonauralBeat(channel *t.Channel, signal *channelSignalState) stereoSample {
+func (r *AudioRenderer) mixMonauralBeat(ch int, channel *t.Channel, signal *channelSignalState) stereoSample {
 	source := src.NewMonaural(signal.sourceSignal())
 	inc0, inc1 := r.effectProcessor.ApplyDopplerPair(channel, signal.effect, signal.increment[0], signal.increment[1])
 	channel.Offset[0] = advancePhase(channel.Offset[0], inc0)
@@ -36,10 +36,10 @@ func (r *AudioRenderer) mixMonauralBeat(channel *t.Channel, signal *channelSigna
 
 	mixed := source.Sample(r.effectProcessor, channel.Offset[0], channel.Offset[1])
 
-	return r.applyEffectToMono(channel, signal, mixed)
+	return r.applyEffectToMono(ch, channel, signal, mixed)
 }
 
-func (r *AudioRenderer) mixIsochronicBeat(channel *t.Channel, signal *channelSignalState) stereoSample {
+func (r *AudioRenderer) mixIsochronicBeat(ch int, channel *t.Channel, signal *channelSignalState) stereoSample {
 	source := src.NewIsochronic(signal.sourceSignal())
 	incCarrier := r.effectProcessor.ApplyDoppler(channel, signal.effect, signal.increment[0])
 	channel.Offset[0] = advancePhase(channel.Offset[0], incCarrier)
@@ -48,13 +48,13 @@ func (r *AudioRenderer) mixIsochronicBeat(channel *t.Channel, signal *channelSig
 	modFactor := r.effectProcessor.CalcModulationFactorForMorph(signal.waveform, channel.Offset[1])
 	out := source.Sample(r.effectProcessor, channel.Offset[0], modFactor)
 
-	return r.applyEffectToMono(channel, signal, out)
+	return r.applyEffectToMono(ch, channel, signal, out)
 }
 
-func (r *AudioRenderer) mixNoise(channel *t.Channel, signal *channelSignalState) stereoSample {
+func (r *AudioRenderer) mixNoise(ch int, channel *t.Channel, signal *channelSignalState) stereoSample {
 	source := src.NewNoise(signal.sourceSignal())
 	sample := source.Sample(r.noiseGenerator)
-	return r.applyEffectToMono(channel, signal, sample)
+	return r.applyEffectToMono(ch, channel, signal, sample)
 }
 
 func (r *AudioRenderer) mixAmbiance(channel *t.Channel, signal *channelSignalState, ch, frame int) stereoSample {
@@ -64,7 +64,7 @@ func (r *AudioRenderer) mixAmbiance(channel *t.Channel, signal *channelSignalSta
 		return stereoSample{}
 	}
 
-	return r.applyEffectToStereo(channel, signal, left, right)
+	return r.applyEffectToStereo(ch, channel, signal, left, right)
 }
 
 func (r *AudioRenderer) mixMusic(channel *t.Channel, signal *channelSignalState, ch, frame int) stereoSample {
@@ -74,5 +74,5 @@ func (r *AudioRenderer) mixMusic(channel *t.Channel, signal *channelSignalState,
 		return stereoSample{}
 	}
 
-	return r.applyEffectToStereo(channel, signal, left, right)
+	return r.applyEffectToStereo(ch, channel, signal, left, right)
 }

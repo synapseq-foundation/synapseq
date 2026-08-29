@@ -119,7 +119,7 @@ func (ctx *TextParser) ParseTrackDeclaration() (*ParsedTrackDeclaration, error) 
 		}
 
 		if kind == t.KeywordEffect {
-			effectKind, err := ctx.Line.NextExpectOneOf(t.KeywordPan, t.KeywordModulation, t.KeywordDoppler)
+			effectKind, err := ctx.Line.NextExpectOneOf(t.KeywordPan, t.KeywordModulation, t.KeywordDoppler, t.KeywordShift)
 			if err != nil {
 				return nil, err
 			}
@@ -137,6 +137,8 @@ func (ctx *TextParser) ParseTrackDeclaration() (*ParsedTrackDeclaration, error) 
 				decl.EffectType = t.EffectModulation
 			case t.KeywordDoppler:
 				decl.EffectType = t.EffectDoppler
+			case t.KeywordShift:
+				decl.EffectType = t.EffectShift
 			}
 
 			if _, err := ctx.Line.NextExpectOneOf(t.KeywordIntensity); err != nil {
@@ -185,7 +187,7 @@ func (ctx *TextParser) ParseTrackDeclaration() (*ParsedTrackDeclaration, error) 
 		}
 
 		if kind == t.KeywordEffect {
-			effectKind, err := ctx.Line.NextExpectOneOf(t.KeywordPan, t.KeywordModulation)
+			effectKind, err := ctx.Line.NextExpectOneOf(t.KeywordPan, t.KeywordModulation, t.KeywordShift)
 			if err != nil {
 				return nil, err
 			}
@@ -201,6 +203,8 @@ func (ctx *TextParser) ParseTrackDeclaration() (*ParsedTrackDeclaration, error) 
 				decl.EffectType = t.EffectPan
 			case t.KeywordModulation:
 				decl.EffectType = t.EffectModulation
+			case t.KeywordShift:
+				decl.EffectType = t.EffectShift
 			}
 
 			if _, err := ctx.Line.NextExpectOneOf(t.KeywordIntensity); err != nil {
@@ -246,7 +250,7 @@ func (ctx *TextParser) ParseTrackDeclaration() (*ParsedTrackDeclaration, error) 
 		}
 
 		if kind == t.KeywordEffect {
-			effectKind, err := ctx.Line.NextExpectOneOf(t.KeywordPan, t.KeywordModulation)
+			effectKind, err := ctx.Line.NextExpectOneOf(t.KeywordPan, t.KeywordModulation, t.KeywordShift)
 			if err != nil {
 				return nil, err
 			}
@@ -262,6 +266,8 @@ func (ctx *TextParser) ParseTrackDeclaration() (*ParsedTrackDeclaration, error) 
 				decl.EffectType = t.EffectPan
 			case t.KeywordModulation:
 				decl.EffectType = t.EffectModulation
+			case t.KeywordShift:
+				decl.EffectType = t.EffectShift
 			}
 
 			if _, err := ctx.Line.NextExpectOneOf(t.KeywordIntensity); err != nil {

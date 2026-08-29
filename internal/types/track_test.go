@@ -6,6 +6,32 @@ package types
 
 import "testing"
 
+func TestShiftEffectValidation(t *testing.T) {
+	tests := []Track{
+		{Type: TrackPureTone, Carrier: 300},
+		{Type: TrackBinauralBeat, Carrier: 300, Resonance: 8},
+		{Type: TrackMonauralBeat, Carrier: 300, Resonance: 8},
+		{Type: TrackIsochronicBeat, Carrier: 300, Resonance: 8},
+		{Type: TrackWhiteNoise},
+		{Type: TrackPinkNoise},
+		{Type: TrackBrownNoise},
+		{Type: TrackAmbiance},
+		{Type: TrackMusic},
+	}
+	for _, track := range tests {
+		track.Effect = Effect{Type: EffectShift, Value: 10, Intensity: 0.25}
+		if err := track.Validate(); err != nil {
+			t.Fatalf("valid shift on %s: %v", track.Type.String(), err)
+		}
+	}
+}
+
+func TestShiftEffectString(t *testing.T) {
+	if EffectShift.String() != KeywordShift || EffectString(KeywordShift) != EffectShift {
+		t.Fatal("shift effect string conversion is inconsistent")
+	}
+}
+
 func TestTrackAmplitudeStringsAlwaysIncludeChannels(t *testing.T) {
 	track := Track{
 		Type:      TrackBinauralBeat,

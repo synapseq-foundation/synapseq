@@ -56,6 +56,7 @@ func (ctx *TextParser) ParseTrackOverrideDeclaration() (*p.TrackOverrideSpec, er
 		t.KeywordPan,
 		t.KeywordModulation,
 		t.KeywordDoppler,
+		t.KeywordShift,
 		t.KeywordSmooth,
 		t.KeywordAmplitude,
 		t.KeywordLeft,
@@ -82,7 +83,7 @@ func (ctx *TextParser) ParseTrackOverrideDeclaration() (*p.TrackOverrideSpec, er
 		}
 		decl.ValueSpan, _ = ctx.Line.LastTokenSpan()
 		decl.Relative = decl.RawValue != "" && (decl.RawValue[0] == '+' || decl.RawValue[0] == '-')
-	case t.KeywordPan, t.KeywordModulation, t.KeywordDoppler:
+	case t.KeywordPan, t.KeywordModulation, t.KeywordDoppler, t.KeywordShift:
 		decl.RawValue, _ = ctx.Line.Peek()
 		decl.Value, err = ctx.Line.NextFloat64Strict()
 		if err != nil {

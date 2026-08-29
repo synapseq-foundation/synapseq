@@ -226,6 +226,30 @@ func TestRenderPlanCueInterpolatesEffectIntensityFadeOut(ts *testing.T) {
 	assertAlmostEqual(ts, float64(effect.Intensity), float64(t.IntensityPercentToRaw(30)), 0.0001)
 }
 
+func TestRenderPlanCueInterpolatesShiftSeparationAndIntensity(ts *testing.T) {
+	var p0, p1 t.Period
+	p0.Time = 0
+	p1.Time = 1000
+	p0.TrackStart[0] = t.Track{
+		Type:      t.TrackPureTone,
+		Amplitude: t.AmplitudePercentToRaw(20),
+		Carrier:   300,
+		Waveform:  t.WaveformSine,
+		Effect:    t.Effect{Type: t.EffectShift, Value: 4, Intensity: t.IntensityPercentToRaw(20)},
+	}
+	p0.TrackEnd[0] = p0.TrackStart[0]
+	p0.TrackEnd[0].Effect.Value = 12
+	p0.TrackEnd[0].Effect.Intensity = t.IntensityPercentToRaw(60)
+
+	plan := compileRenderPlan([]t.Period{p0, p1}, 44100)
+	cue := plan.cue(0, 500).Channels[0]
+
+	if cue.Track.Effect.Type != t.EffectShift || cue.Track.Effect.Value != 8 {
+		ts.Fatalf("unexpected interpolated shift effect: %+v", cue.Track.Effect)
+	}
+	assertAlmostEqual(ts, float64(cue.Track.Effect.Intensity), float64(t.IntensityPercentToRaw(40)), 0.0001)
+}
+
 func TestRenderPlanCueAppliesFullBoundaryCrossfadeDuration(ts *testing.T) {
 	var p0, p1, p2 t.Period
 	p0.Time = 0

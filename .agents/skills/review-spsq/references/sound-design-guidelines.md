@@ -77,8 +77,9 @@ Effects:
 - `pan` moves stereo position;
 - `modulation` varies amplitude;
 - `doppler` adds pitch motion to tone tracks.
+- `shift` gives any supported source opposing frequency offsets from a mono-derived wet signal.
 
-Multiple simultaneous pan movements can occupy the stereo field. Multiple modulation effects can make the mix breathe or pulse competitively. Doppler plus carrier/beat interpolation can create compound pitch motion.
+Multiple simultaneous pan movements can occupy the stereo field. Multiple modulation effects can make the mix breathe or pulse competitively. Doppler plus carrier/beat interpolation can create compound pitch motion. High shift intensity can add components to tones, reduce an existing stereo image, decorrelate noise, and color complex material; multiple shifted tracks can make the spectrum and stereo field less stable.
 
 Do not report simultaneous effects as wrong. Explain the likely complexity and whether a stable anchor remains.
 
