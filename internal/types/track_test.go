@@ -32,6 +32,25 @@ func TestShiftEffectString(t *testing.T) {
 	}
 }
 
+func TestDopplerEffectTrackCompatibility(t *testing.T) {
+	for _, trackType := range []TrackType{TrackPureTone, TrackBinauralBeat, TrackMonauralBeat, TrackIsochronicBeat, TrackAmbiance, TrackMusic} {
+		track := Track{Type: trackType, Carrier: 300, Effect: Effect{Type: EffectDoppler, Value: 1, Intensity: 0.5}}
+		if trackType == TrackBinauralBeat || trackType == TrackMonauralBeat || trackType == TrackIsochronicBeat {
+			track.Resonance = 8
+		}
+		if err := track.Validate(); err != nil {
+			t.Fatalf("valid doppler on %s: %v", trackType.String(), err)
+		}
+	}
+
+	for _, trackType := range []TrackType{TrackWhiteNoise, TrackPinkNoise, TrackBrownNoise} {
+		track := Track{Type: trackType, Effect: Effect{Type: EffectDoppler, Value: 1, Intensity: 0.5}}
+		if err := track.Validate(); err == nil {
+			t.Fatalf("expected doppler to be rejected on %s", trackType.String())
+		}
+	}
+}
+
 func TestTrackAmplitudeStringsAlwaysIncludeChannels(t *testing.T) {
 	track := Track{
 		Type:      TrackBinauralBeat,

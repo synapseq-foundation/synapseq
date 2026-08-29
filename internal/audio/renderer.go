@@ -116,7 +116,11 @@ func NewAudioRenderer(p []t.Period, ar *AudioRendererOptions) (*AudioRenderer, e
 			renderer.musicState.UpdateChannelIndex(ch, periodIdx, trackType)
 		}
 	})
-	renderer.syncEngine.ResetEffect = renderer.effectProcessor.ResetShift
+	renderer.syncEngine.ResetEffect = func(ch int) {
+		renderer.effectProcessor.ResetShift(ch)
+		renderer.ambianceState.ResetDoppler(ch)
+		renderer.musicState.ResetDoppler(ch)
+	}
 
 	return renderer, nil
 }

@@ -13,6 +13,8 @@ import (
 
 const stereoChannels = 2
 
+const dopplerReadFrames = 256
+
 type SampleAudio interface {
 	ReadSamplesAt(index int, samples []int, numSamples int) (int, error)
 	Close() error
@@ -58,6 +60,11 @@ type Runtime struct {
 	activeChMask [t.NumberOfChannels]bool
 	channelIdx   [t.NumberOfChannels]int
 	channelAudio [t.NumberOfChannels]SampleAudio
+	dopplerAudio [t.NumberOfChannels]SampleAudio
+	dopplerBuf   [t.NumberOfChannels][]int
+	dopplerCount [t.NumberOfChannels]int
+	dopplerPos   [t.NumberOfChannels]float64
+	dopplerMask  [t.NumberOfChannels]bool
 	periodStart  [][]int
 }
 
@@ -229,6 +236,9 @@ func (ar *Runtime) Close() error {
 			ar.channelAudio[ch] = nil
 		}
 	}
+	for ch := range ar.dopplerAudio {
+		ar.closeDopplerAudio(ch)
+	}
 	return firstErr
 }
 
@@ -243,6 +253,9 @@ func (ar *Runtime) UpdateChannelIndex(ch int, periodIdx int, trackType t.TrackTy
 	}
 
 	changedSource := nextIdx != ar.channelIdx[ch]
+	if changedSource {
+		ar.ResetDoppler(ch)
+	}
 	if ar.scope == BufferScopeChannel && changedSource {
 		if nextIdx >= 0 {
 			if audio, ok := ar.channelAudio[ch].(selectableSampleAudio); ok {
@@ -269,6 +282,7 @@ func (ar *Runtime) CollectActiveIndices(channels []t.Channel) {
 		ar.activeCh = ar.activeCh[:0]
 
 		for ch := range channels {
+			ar.dopplerMask[ch] = channels[ch].Track.Effect.Type == t.EffectDoppler
 			if ch >= len(ar.channelIdx) || channels[ch].Track.Type != ar.trackType {
 				continue
 			}
@@ -290,6 +304,7 @@ func (ar *Runtime) CollectActiveIndices(channels []t.Channel) {
 	ar.activeIdx = ar.activeIdx[:0]
 
 	for ch := range channels {
+		ar.dopplerMask[ch] = channels[ch].Track.Effect.Type == t.EffectDoppler
 		if channels[ch].Track.Type != ar.trackType {
 			continue
 		}
@@ -327,6 +342,9 @@ func (ar *Runtime) PrepareBuffers(bufferSize int) {
 
 	need := bufferSize * stereoChannels
 	for _, idx := range ar.activeIdx {
+		if !ar.sourceNeedsFixedBuffer(idx) {
+			continue
+		}
 		buf := ar.samplesByIdx[idx]
 		if len(buf) != need {
 			buf = make([]int, need)
@@ -344,9 +362,21 @@ func (ar *Runtime) PrepareBuffers(bufferSize int) {
 	}
 }
 
+func (ar *Runtime) sourceNeedsFixedBuffer(idx int) bool {
+	for ch, channelIdx := range ar.channelIdx {
+		if channelIdx == idx && !ar.dopplerMask[ch] {
+			return true
+		}
+	}
+	return false
+}
+
 func (ar *Runtime) prepareChannelBuffers(bufferSize int) {
 	need := bufferSize * stereoChannels
 	for _, ch := range ar.activeCh {
+		if ar.dopplerMask[ch] {
+			continue
+		}
 		idx := ar.channelIdx[ch]
 		if idx < 0 || idx >= len(ar.paths) {
 			continue
@@ -368,6 +398,131 @@ func (ar *Runtime) prepareChannelBuffers(bufferSize int) {
 			zeroSamples(buf)
 		}
 	}
+}
+
+// SampleDoppler reads one stereo frame at a fractional playback rate. Its
+// cursor and buffered source data are isolated per sequencer channel.
+func (ar *Runtime) SampleDoppler(ch int, rate float64) (int, int, bool) {
+	if ar == nil || ch < 0 || ch >= len(ar.channelIdx) || ar.channelIdx[ch] < 0 {
+		return 0, 0, false
+	}
+	if rate <= 0 {
+		rate = 1
+	}
+
+	if !ar.ensureDopplerFrames(ch, int(ar.dopplerPos[ch])+2) {
+		return 0, 0, false
+	}
+
+	position := ar.dopplerPos[ch]
+	frame := int(position)
+	fraction := position - float64(frame)
+	buf := ar.dopplerBuf[ch]
+	left := interpolateSample(buf[frame*stereoChannels], buf[(frame+1)*stereoChannels], fraction)
+	right := interpolateSample(buf[frame*stereoChannels+1], buf[(frame+1)*stereoChannels+1], fraction)
+
+	next := position + rate
+	consumed := int(next)
+	ar.dopplerPos[ch] = next - float64(consumed)
+	if consumed > 0 {
+		ar.consumeDopplerFrames(ch, consumed)
+	}
+	return left, right, true
+}
+
+// ResetDoppler discards the independent PCM cursor for one sequencer channel.
+func (ar *Runtime) ResetDoppler(ch int) {
+	if ar == nil || ch < 0 || ch >= len(ar.dopplerBuf) {
+		return
+	}
+	ar.closeDopplerAudio(ch)
+	ar.dopplerBuf[ch] = nil
+	ar.dopplerCount[ch] = 0
+	ar.dopplerPos[ch] = 0
+}
+
+func (ar *Runtime) ensureDopplerFrames(ch, needed int) bool {
+	if needed <= ar.dopplerCount[ch] {
+		return true
+	}
+	if ar.dopplerBuf[ch] == nil {
+		ar.dopplerBuf[ch] = make([]int, dopplerReadFrames*2*stereoChannels)
+	}
+	audio, err := ar.dopplerAudioForChannel(ch)
+	if err != nil || audio == nil {
+		return false
+	}
+
+	for ar.dopplerCount[ch] < needed {
+		capacity := len(ar.dopplerBuf[ch])/stereoChannels - ar.dopplerCount[ch]
+		if capacity == 0 {
+			return false
+		}
+		frames := min(dopplerReadFrames, capacity)
+		start := ar.dopplerCount[ch] * stereoChannels
+		if _, err := audio.ReadSamplesAt(ar.channelIdx[ch], ar.dopplerBuf[ch][start:start+frames*stereoChannels], frames*stereoChannels); err != nil {
+			return false
+		}
+		ar.dopplerCount[ch] += frames
+	}
+	return true
+}
+
+func (ar *Runtime) consumeDopplerFrames(ch, count int) {
+	if count >= ar.dopplerCount[ch] {
+		ar.dopplerCount[ch] = 0
+		return
+	}
+	remaining := ar.dopplerCount[ch] - count
+	copy(ar.dopplerBuf[ch], ar.dopplerBuf[ch][count*stereoChannels:ar.dopplerCount[ch]*stereoChannels])
+	ar.dopplerCount[ch] = remaining
+}
+
+func (ar *Runtime) dopplerAudioForChannel(ch int) (SampleAudio, error) {
+	if ar.dopplerAudio[ch] != nil {
+		return ar.dopplerAudio[ch], nil
+	}
+	if template, ok := ar.audio.(cloneableSampleAudio); ok {
+		audio, err := template.CloneAudio()
+		if err != nil {
+			return nil, err
+		}
+		if selectable, ok := audio.(selectableSampleAudio); ok {
+			if err := selectable.SelectAudio(ar.channelIdx[ch]); err != nil {
+				_ = audio.Close()
+				return nil, err
+			}
+		}
+		ar.dopplerAudio[ch] = audio
+		return audio, nil
+	}
+	if ar.newAudio == nil {
+		return nil, nil
+	}
+	audio, err := ar.newAudio(ar.paths, ar.sampleRate)
+	if err != nil {
+		return nil, err
+	}
+	if selectable, ok := audio.(selectableSampleAudio); ok {
+		if err := selectable.SelectAudio(ar.channelIdx[ch]); err != nil {
+			_ = audio.Close()
+			return nil, err
+		}
+	}
+	ar.dopplerAudio[ch] = audio
+	return audio, nil
+}
+
+func (ar *Runtime) closeDopplerAudio(ch int) {
+	if ar.dopplerAudio[ch] == nil {
+		return
+	}
+	_ = ar.dopplerAudio[ch].Close()
+	ar.dopplerAudio[ch] = nil
+}
+
+func interpolateSample(start, end int, fraction float64) int {
+	return start + int(float64(end-start)*fraction)
 }
 
 func (ar *Runtime) audioForChannel(ch int) (SampleAudio, error) {

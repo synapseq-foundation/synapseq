@@ -11,23 +11,24 @@ import (
 )
 
 func (p *Processor) ApplyDoppler(channel *t.Channel, effect t.Effect, increment int) int {
-	if effect.Type != t.EffectDoppler {
-		return increment
-	}
-
-	p.advanceEffectPhase(channel)
-	factor := p.calcDopplerFactor(WaveformMorphFromChannel(channel), channel.Effect.Offset, effect.Intensity)
-	return int(math.Round(float64(increment) * factor))
+	return int(math.Round(float64(increment) * p.DopplerFactor(channel, effect)))
 }
 
 func (p *Processor) ApplyDopplerPair(channel *t.Channel, effect t.Effect, inc0, inc1 int) (int, int) {
+	factor := p.DopplerFactor(channel, effect)
+	return int(math.Round(float64(inc0) * factor)), int(math.Round(float64(inc1) * factor))
+}
+
+// DopplerFactor advances the Doppler LFO and returns the instantaneous
+// playback-rate multiplier. It is shared by generated oscillators and PCM
+// sources so their depth and waveform semantics stay identical.
+func (p *Processor) DopplerFactor(channel *t.Channel, effect t.Effect) float64 {
 	if effect.Type != t.EffectDoppler {
-		return inc0, inc1
+		return 1
 	}
 
 	p.advanceEffectPhase(channel)
-	factor := p.calcDopplerFactor(WaveformMorphFromChannel(channel), channel.Effect.Offset, effect.Intensity)
-	return int(math.Round(float64(inc0) * factor)), int(math.Round(float64(inc1) * factor))
+	return p.calcDopplerFactor(WaveformMorphFromChannel(channel), channel.Effect.Offset, effect.Intensity)
 }
 
 func (p *Processor) calcDopplerFactor(waveform WaveformMorph, offset int, intensity t.IntensityType) float64 {
