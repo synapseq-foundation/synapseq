@@ -36,6 +36,7 @@ func TestBuilderLoadPreservesOrder(t *testing.T) {
 
 	alpha := builder.NewPreset("alpha")
 	alpha.Pink(0).Amplitude(30, 15)
+	alpha.Tone(180).Binaural(8.5).Doppler(8.5).Intensity(10).Amplitude(7.5)
 	alpha.Music("meditation").Doppler(0.8).Intensity(40).Amplitude(20)
 	alpha.Ambiance("rain").Doppler(0.6).Intensity(30).Amplitude(30)
 
@@ -65,6 +66,7 @@ func TestBuilderLoadPreservesOrder(t *testing.T) {
 		"# Presets",
 		"alpha",
 		"  noise pink smooth 0.00 amplitude left 30.00 right 15.00",
+		"  waveform sine tone 180.00 binaural 8.50 effect doppler 8.50 intensity 10.00 amplitude left 7.50 right 7.50",
 		"  music meditation effect doppler 0.80 intensity 40.00 amplitude left 20.00 right 20.00",
 		"  ambiance rain effect doppler 0.60 intensity 30.00 amplitude left 30.00 right 30.00",
 		"beta",

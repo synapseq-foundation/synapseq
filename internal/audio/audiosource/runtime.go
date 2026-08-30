@@ -62,6 +62,7 @@ type Runtime struct {
 	channelAudio [t.NumberOfChannels]SampleAudio
 	dopplerAudio [t.NumberOfChannels]SampleAudio
 	dopplerBuf   [t.NumberOfChannels][]int
+	dopplerHead  [t.NumberOfChannels]int
 	dopplerCount [t.NumberOfChannels]int
 	dopplerPos   [t.NumberOfChannels]float64
 	dopplerMask  [t.NumberOfChannels]bool
@@ -417,9 +418,16 @@ func (ar *Runtime) SampleDoppler(ch int, rate float64) (int, int, bool) {
 	position := ar.dopplerPos[ch]
 	frame := int(position)
 	fraction := position - float64(frame)
-	buf := ar.dopplerBuf[ch]
-	left := interpolateSample(buf[frame*stereoChannels], buf[(frame+1)*stereoChannels], fraction)
-	right := interpolateSample(buf[frame*stereoChannels+1], buf[(frame+1)*stereoChannels+1], fraction)
+	left := interpolateSample(
+		ar.dopplerFrameSample(ch, frame, 0),
+		ar.dopplerFrameSample(ch, frame+1, 0),
+		fraction,
+	)
+	right := interpolateSample(
+		ar.dopplerFrameSample(ch, frame, 1),
+		ar.dopplerFrameSample(ch, frame+1, 1),
+		fraction,
+	)
 
 	next := position + rate
 	consumed := int(next)
@@ -437,6 +445,7 @@ func (ar *Runtime) ResetDoppler(ch int) {
 	}
 	ar.closeDopplerAudio(ch)
 	ar.dopplerBuf[ch] = nil
+	ar.dopplerHead[ch] = 0
 	ar.dopplerCount[ch] = 0
 	ar.dopplerPos[ch] = 0
 }
@@ -454,28 +463,57 @@ func (ar *Runtime) ensureDopplerFrames(ch, needed int) bool {
 	}
 
 	for ar.dopplerCount[ch] < needed {
-		capacity := len(ar.dopplerBuf[ch])/stereoChannels - ar.dopplerCount[ch]
+		capacity := ar.dopplerFrameCapacity(ch) - ar.dopplerCount[ch]
 		if capacity == 0 {
 			return false
 		}
 		frames := min(dopplerReadFrames, capacity)
-		start := ar.dopplerCount[ch] * stereoChannels
-		if _, err := audio.ReadSamplesAt(ar.channelIdx[ch], ar.dopplerBuf[ch][start:start+frames*stereoChannels], frames*stereoChannels); err != nil {
+		if !ar.readDopplerFrames(ch, audio, frames) {
 			return false
 		}
-		ar.dopplerCount[ch] += frames
 	}
 	return true
 }
 
 func (ar *Runtime) consumeDopplerFrames(ch, count int) {
 	if count >= ar.dopplerCount[ch] {
+		ar.dopplerHead[ch] = 0
 		ar.dopplerCount[ch] = 0
 		return
 	}
-	remaining := ar.dopplerCount[ch] - count
-	copy(ar.dopplerBuf[ch], ar.dopplerBuf[ch][count*stereoChannels:ar.dopplerCount[ch]*stereoChannels])
-	ar.dopplerCount[ch] = remaining
+	ar.dopplerHead[ch] = (ar.dopplerHead[ch] + count) % ar.dopplerFrameCapacity(ch)
+	ar.dopplerCount[ch] -= count
+}
+
+func (ar *Runtime) readDopplerFrames(ch int, audio SampleAudio, frames int) bool {
+	capacity := ar.dopplerFrameCapacity(ch)
+	tail := (ar.dopplerHead[ch] + ar.dopplerCount[ch]) % capacity
+	firstFrames := min(frames, capacity-tail)
+	if !ar.readDopplerFrameRange(ch, audio, tail, firstFrames) {
+		return false
+	}
+	remaining := frames - firstFrames
+	if remaining > 0 && !ar.readDopplerFrameRange(ch, audio, 0, remaining) {
+		return false
+	}
+	ar.dopplerCount[ch] += frames
+	return true
+}
+
+func (ar *Runtime) readDopplerFrameRange(ch int, audio SampleAudio, startFrame, frames int) bool {
+	start := startFrame * stereoChannels
+	end := start + frames*stereoChannels
+	_, err := audio.ReadSamplesAt(ar.channelIdx[ch], ar.dopplerBuf[ch][start:end], end-start)
+	return err == nil
+}
+
+func (ar *Runtime) dopplerFrameCapacity(ch int) int {
+	return len(ar.dopplerBuf[ch]) / stereoChannels
+}
+
+func (ar *Runtime) dopplerFrameSample(ch, offset, channel int) int {
+	frame := (ar.dopplerHead[ch] + offset) % ar.dopplerFrameCapacity(ch)
+	return ar.dopplerBuf[ch][frame*stereoChannels+channel]
 }
 
 func (ar *Runtime) dopplerAudioForChannel(ch int) (SampleAudio, error) {
