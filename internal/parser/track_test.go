@@ -94,6 +94,7 @@ func TestParseTrack_Tones(ts *testing.T) {
 		{fmtLine(toTrack(trs[2])), *trs[2]},
 		{toTrack(trs[3]).String(), *trs[3]},
 		{toTrack(trs[4]).String(), *trs[4]},
+		{"tone 180 binaural 8.5 effect doppler 8.5 intensity 10 amplitude 7.5", ParsedTrackDeclaration{Type: t.TrackBinauralBeat, Carrier: 180, Resonance: 8.5, EffectType: t.EffectDoppler, EffectValue: 8.5, EffectIntensityPercent: 10, AmplitudePercent: 7.5, Waveform: t.WaveformSine}},
 		{"tone 300 effect shift 10 intensity 25 amplitude 20", ParsedTrackDeclaration{Type: t.TrackPureTone, Carrier: 300, EffectType: t.EffectShift, EffectValue: 10, EffectIntensityPercent: 25, AmplitudePercent: 20, Waveform: t.WaveformSine}},
 		{"tone 300 binaural 8 effect shift 4 intensity 20 amplitude 20", ParsedTrackDeclaration{Type: t.TrackBinauralBeat, Carrier: 300, Resonance: 8, EffectType: t.EffectShift, EffectValue: 4, EffectIntensityPercent: 20, AmplitudePercent: 20, Waveform: t.WaveformSine}},
 		{"tone 300 monaural 8 effect shift 4 intensity 20 amplitude 20", ParsedTrackDeclaration{Type: t.TrackMonauralBeat, Carrier: 300, Resonance: 8, EffectType: t.EffectShift, EffectValue: 4, EffectIntensityPercent: 20, AmplitudePercent: 20, Waveform: t.WaveformSine}},
