@@ -28,6 +28,10 @@ type selectableSampleAudio interface {
 	SelectAudio(index int) error
 }
 
+type bufferedCursorSampleAudio interface {
+	RewindBufferedFrames(index, frames int) error
+}
+
 type NewAudioFunc func(paths []string, sampleRate int) (SampleAudio, error)
 
 type BufferScope int
@@ -443,6 +447,9 @@ func (ar *Runtime) ResetDoppler(ch int) {
 	if ar == nil || ch < 0 || ch >= len(ar.dopplerBuf) {
 		return
 	}
+	if audio, ok := ar.dopplerPlaybackAudio(ch).(bufferedCursorSampleAudio); ok {
+		_ = audio.RewindBufferedFrames(ar.channelIdx[ch], ar.dopplerCount[ch])
+	}
 	ar.closeDopplerAudio(ch)
 	ar.dopplerBuf[ch] = nil
 	ar.dopplerHead[ch] = 0
@@ -517,6 +524,9 @@ func (ar *Runtime) dopplerFrameSample(ch, offset, channel int) int {
 }
 
 func (ar *Runtime) dopplerAudioForChannel(ch int) (SampleAudio, error) {
+	if ar.scope == BufferScopeChannel {
+		return ar.audioForChannel(ch)
+	}
 	if ar.dopplerAudio[ch] != nil {
 		return ar.dopplerAudio[ch], nil
 	}
@@ -549,6 +559,13 @@ func (ar *Runtime) dopplerAudioForChannel(ch int) (SampleAudio, error) {
 	}
 	ar.dopplerAudio[ch] = audio
 	return audio, nil
+}
+
+func (ar *Runtime) dopplerPlaybackAudio(ch int) SampleAudio {
+	if ar.scope == BufferScopeChannel {
+		return ar.channelAudio[ch]
+	}
+	return ar.dopplerAudio[ch]
 }
 
 func (ar *Runtime) closeDopplerAudio(ch int) {

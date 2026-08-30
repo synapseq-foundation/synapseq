@@ -180,6 +180,34 @@ func (aa *Audio) SelectAudio(index int) error {
 	return nil
 }
 
+// RewindBufferedFrames moves playback back to the first frame retained by a
+// fractional-rate buffer so fixed-rate playback can resume without a jump.
+func (aa *Audio) RewindBufferedFrames(index, frames int) error {
+	if aa == nil || frames <= 0 {
+		return nil
+	}
+	if index < 0 || index >= len(aa.filePaths) {
+		return fmt.Errorf("invalid %s index: %d", aa.sourceKind, index)
+	}
+	if aa.decoders[index] == nil {
+		return nil
+	}
+
+	position := aa.decoders[index].Position() - frames
+	if aa.playbackMode == PlaybackLoop {
+		length := aa.decoders[index].Len()
+		if length > 0 {
+			position %= length
+			if position < 0 {
+				position += length
+			}
+		}
+	} else if position < 0 {
+		position = 0
+	}
+	return aa.decoders[index].Seek(position)
+}
+
 func (aa *Audio) loadAndCacheAll() error {
 	for i, path := range aa.filePaths {
 		if err := aa.loadAndCache(i, path); err != nil {

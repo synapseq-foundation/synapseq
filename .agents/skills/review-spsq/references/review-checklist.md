@@ -135,7 +135,7 @@ Check:
 - custom points are interpreted as evenly spaced bipolar values (`0 -> -1`, `50 -> 0`, `100 -> +1`) with circular linear interpolation;
 - an isochronic custom waveform intentionally shapes both its carrier and gate, not only the pulse envelope;
 - a non-sine waveform with `doppler` intentionally shapes tone pitch or external playback-speed movement;
-- waveform prefixes on ambiance/music affect pan, modulation, or Doppler playback-speed motion, not the external PCM itself; Doppler preserves source stereo while `shift` uses a fixed quadrature oscillator;
+- waveform prefixes on ambiance/music affect pan, modulation, or Doppler playback-speed motion, not the external PCM itself; Doppler preserves source stereo, uses a cursor independent from other tracks, and resumes position when returning to fixed speed, while `shift` uses a fixed quadrature oscillator;
 - `shift` values are total Hz separation, intensity is dry/wet, and higher wet levels progressively replace the original stereo image with a mono-derived shifted pair;
 - pure sine shift can resemble a pair at full wet, while non-sine harmonics, beat tracks, and noise produce more complex or subtle results;
 - binaural plus shift preserves the original binaural pair only in the dry portion and may create multiple wet spectral components;
