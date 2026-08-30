@@ -5,6 +5,7 @@
 package audiosource
 
 import (
+	"path/filepath"
 	"testing"
 
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
@@ -172,6 +173,61 @@ func TestRuntimeSampleDopplerResetsOnSourceChange(ts *testing.T) {
 	left, right, ok := runtime.SampleDoppler(0, 1)
 	if !ok || left != 30 || right != 40 {
 		ts.Fatalf("source change = [%d %d %t], want [30 40 true]", left, right, ok)
+	}
+}
+
+func TestChannelRuntimeResumesAfterDoppler(ts *testing.T) {
+	path := filepath.Join("..", "testdata", "noise.wav")
+	baseline, err := newFiniteAudio([]string{path}, 44100)
+	if err != nil {
+		ts.Fatalf("newFiniteAudio: %v", err)
+	}
+	defer baseline.Close()
+	allFrames := make([]int, stereoChannels*8)
+	if _, err := baseline.ReadSamplesAt(0, allFrames, len(allFrames)); err != nil {
+		ts.Fatalf("baseline ReadSamplesAt: %v", err)
+	}
+
+	var period t.Period
+	period.TrackStart[0] = t.Track{Type: t.TrackMusic, SourceName: "tone"}
+	runtime, err := NewRuntime(
+		[]t.Period{period},
+		map[string]string{"tone": path},
+		44100,
+		RuntimeOptions{
+			TrackType:  t.TrackMusic,
+			SourceKind: "music",
+			Scope:      BufferScopeChannel,
+			NewAudio: func(paths []string, sampleRate int) (SampleAudio, error) {
+				return newFiniteAudio(paths, sampleRate)
+			},
+		},
+	)
+	if err != nil {
+		ts.Fatalf("NewRuntime: %v", err)
+	}
+	defer runtime.Close()
+	runtime.UpdateChannelIndex(0, 0, t.TrackMusic)
+
+	channels := make([]t.Channel, t.NumberOfChannels)
+	channels[0].Track.Type = t.TrackMusic
+	runtime.CollectActiveIndices(channels)
+	runtime.PrepareBuffers(3)
+
+	channels[0].Track.Effect.Type = t.EffectDoppler
+	runtime.CollectActiveIndices(channels)
+	for range 3 {
+		if _, _, ok := runtime.SampleDoppler(0, 1); !ok {
+			ts.Fatal("SampleDoppler returned no sample")
+		}
+	}
+	runtime.ResetDoppler(0)
+
+	channels[0].Track.Effect.Type = t.EffectOff
+	runtime.CollectActiveIndices(channels)
+	runtime.PrepareBuffers(2)
+	if got, want := runtime.ChannelBuffer(0), allFrames[stereoChannels*6:stereoChannels*8]; !equalSamples(got, want) {
+		ts.Fatalf("post-doppler frames = %v, want %v", got, want)
 	}
 }
 

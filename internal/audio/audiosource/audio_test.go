@@ -259,6 +259,31 @@ func TestAudioSelectResetsExistingDecoder(t *testing.T) {
 	}
 }
 
+func TestAudioRewindBufferedFramesRestoresPlaybackPosition(t *testing.T) {
+	path := filepath.Join("..", "testdata", "noise.wav")
+	aa, err := newFiniteAudio([]string{path}, 44100)
+	if err != nil {
+		t.Fatalf("NewAudio: %v", err)
+	}
+	defer aa.Close()
+
+	frames := make([]int, stereoChannels*4)
+	if _, err := aa.ReadSamplesAt(0, frames, len(frames)); err != nil {
+		t.Fatalf("ReadSamplesAt: %v", err)
+	}
+	if err := aa.RewindBufferedFrames(0, 2); err != nil {
+		t.Fatalf("RewindBufferedFrames: %v", err)
+	}
+
+	replayed := make([]int, stereoChannels*2)
+	if _, err := aa.ReadSamplesAt(0, replayed, len(replayed)); err != nil {
+		t.Fatalf("ReadSamplesAt after rewind: %v", err)
+	}
+	if !slices.Equal(replayed, frames[stereoChannels*2:]) {
+		t.Fatalf("rewound frames = %v, want %v", replayed, frames[stereoChannels*2:])
+	}
+}
+
 func BenchmarkAudioReadSamples(b *testing.B) {
 	path := filepath.Join("..", "testdata", "noise.wav")
 	aa, err := newLoopAudio([]string{path}, 44100)

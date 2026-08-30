@@ -16,7 +16,7 @@ func NewRuntime(periods []t.Period, ambiance map[string]string, sampleRate int, 
 	return audiosource.NewRuntime(periods, ambiance, sampleRate, audiosource.RuntimeOptions{
 		TrackType:  t.TrackAmbiance,
 		SourceKind: "ambiance",
-		Scope:      audiosource.BufferScopeSource,
+		Scope:      audiosource.BufferScopeChannel,
 		NewAudio:   newAudio,
 	})
 }
