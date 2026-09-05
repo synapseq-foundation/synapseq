@@ -484,10 +484,7 @@ func (aa *Audio) ReadSamplesAt(index int, samples []int, numSamples int) (int, e
 				return numSamples, nil
 			}
 			if restartErr := aa.restartAt(index); restartErr != nil {
-				for i := samplesRead; i < numSamples; i++ {
-					samples[i] = 0
-				}
-				return numSamples, nil
+				return samplesRead, fmt.Errorf("failed to restart %s audio index %d: %w", aa.sourceKind, index, restartErr)
 			}
 			continue
 		}

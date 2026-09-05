@@ -46,10 +46,15 @@ func (rr *renderRuntime) run() error {
 	for rr.framesWritten < rr.totalFrames {
 		currentTimeMs := rr.currentTimeMs()
 		rr.advancePeriod(currentTimeMs)
-		rr.syncAndPrepare(currentTimeMs)
+		if err := rr.syncAndPrepare(currentTimeMs); err != nil {
+			return err
+		}
 		rr.reportPeriodChange()
 
 		data, framesToWrite := rr.mixCurrentChunk()
+		if err := rr.externalAudioError(); err != nil {
+			return err
+		}
 		if err := rr.consumeChunk(data); err != nil {
 			return err
 		}
@@ -69,7 +74,7 @@ func (rr *renderRuntime) advancePeriod(currentTimeMs int) {
 	rr.periodIdx = rr.renderer.plan.periodIndexAt(currentTimeMs, rr.periodIdx)
 }
 
-func (rr *renderRuntime) syncAndPrepare(currentTimeMs int) {
+func (rr *renderRuntime) syncAndPrepare(currentTimeMs int) error {
 	cue := rr.renderer.plan.cue(rr.periodIdx, currentTimeMs)
 	rr.renderer.applyCueSignalState(cue)
 	rr.renderer.syncEngine.Sync(rr.renderer.channels[:], cue)
@@ -81,6 +86,18 @@ func (rr *renderRuntime) syncAndPrepare(currentTimeMs int) {
 		rr.renderer.musicState.CollectActiveIndices(rr.renderer.channels[:])
 		rr.renderer.musicState.PrepareBuffers(t.BufferSize)
 	}
+
+	return rr.externalAudioError()
+}
+
+func (rr *renderRuntime) externalAudioError() error {
+	if err := rr.renderer.ambianceState.Err(); err != nil {
+		return fmt.Errorf("ambiance audio: %w", err)
+	}
+	if err := rr.renderer.musicState.Err(); err != nil {
+		return fmt.Errorf("music audio: %w", err)
+	}
+	return nil
 }
 
 func (rr *renderRuntime) reportPeriodChange() {
