@@ -7,6 +7,8 @@ package audio
 import (
 	"errors"
 	"math"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -545,5 +547,68 @@ func TestNewAudioRendererRejectsUnknownWaveform(ts *testing.T) {
 	})
 	if err == nil || !strings.Contains(err.Error(), `unknown waveform "missing"`) {
 		ts.Fatalf("expected unknown waveform error, got %v", err)
+	}
+}
+
+func TestAudioRendererReportsLazyRemoteAudioFailure(ts *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.WriteHeader(http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	tests := []struct {
+		name      string
+		trackType t.TrackType
+		sources   map[string]string
+	}{
+		{
+			name:      "ambiance",
+			trackType: t.TrackAmbiance,
+			sources:   map[string]string{"missing": server.URL + "/missing.wav"},
+		},
+		{
+			name:      "music",
+			trackType: t.TrackMusic,
+			sources:   map[string]string{"missing": server.URL + "/missing.mp3"},
+		},
+	}
+
+	for _, test := range tests {
+		ts.Run(test.name, func(ts *testing.T) {
+			var start, end t.Period
+			start.TrackStart[0] = t.Track{
+				Type:       test.trackType,
+				SourceName: "missing",
+				Amplitude:  t.AmplitudePercentToRaw(10),
+				Waveform:   t.WaveformSine,
+			}
+			start.TrackEnd[0] = start.TrackStart[0]
+			end.Time = 100
+
+			options := &AudioRendererOptions{
+				SampleRate: 44100,
+				Volume:     100,
+				Ambiance:   map[string]string{},
+				Music:      map[string]string{},
+			}
+			if test.trackType == t.TrackAmbiance {
+				options.Ambiance = test.sources
+			} else {
+				options.Music = test.sources
+			}
+
+			renderer, err := NewAudioRenderer([]t.Period{start, end}, options)
+			if err != nil {
+				ts.Fatalf("NewAudioRenderer: %v", err)
+			}
+
+			err = renderer.Render(nil)
+			if err == nil {
+				ts.Fatal("expected lazy remote audio failure")
+			}
+			if !strings.Contains(err.Error(), "404 Not Found") {
+				ts.Fatalf("unexpected error: %v", err)
+			}
+		})
 	}
 }

@@ -183,13 +183,16 @@ func copyFile(src, dst string, mode os.FileMode) error {
 func getRemoteFile(url string, maxSize int64) ([]byte, error) {
 	resp, err := http.Get(url)
 	if err != nil {
-		return nil, fmt.Errorf("error fetching remote file: %v", err)
+		return nil, fmt.Errorf("error fetching remote file: %w", err)
 	}
 	defer resp.Body.Close()
+	if err := validateRemoteResponse(resp); err != nil {
+		return nil, err
+	}
 
 	data, err := readFile(resp.Body, maxSize)
 	if err != nil {
-		return nil, fmt.Errorf("error reading remote file: %v", err)
+		return nil, fmt.Errorf("error reading remote file: %w", err)
 	}
 
 	return data, nil
@@ -208,9 +211,12 @@ func getRemoteAudioFile(rawURL string, maxSize int64, sourceKind string) ([]byte
 
 	resp, err := http.Get(rawURL)
 	if err != nil {
-		return nil, t.AmbianceAudioUnknown, fmt.Errorf("error fetching remote file: %v", err)
+		return nil, t.AmbianceAudioUnknown, fmt.Errorf("error fetching remote file: %w", err)
 	}
 	defer resp.Body.Close()
+	if err := validateRemoteResponse(resp); err != nil {
+		return nil, t.AmbianceAudioUnknown, err
+	}
 
 	if format == t.AmbianceAudioUnknown {
 		format, err = audioFormatFromMIME(resp.Header.Get("Content-Type"), sourceKind)
@@ -221,8 +227,16 @@ func getRemoteAudioFile(rawURL string, maxSize int64, sourceKind string) ([]byte
 
 	data, err := readFile(resp.Body, maxSize)
 	if err != nil {
-		return nil, t.AmbianceAudioUnknown, fmt.Errorf("error reading remote file: %v", err)
+		return nil, t.AmbianceAudioUnknown, fmt.Errorf("error reading remote file: %w", err)
 	}
 
 	return data, format, nil
+}
+
+func validateRemoteResponse(resp *http.Response) error {
+	if resp.StatusCode >= http.StatusOK && resp.StatusCode < http.StatusMultipleChoices {
+		return nil
+	}
+
+	return fmt.Errorf("remote server returned %s", resp.Status)
 }

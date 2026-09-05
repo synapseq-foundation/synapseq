@@ -71,6 +71,7 @@ type Runtime struct {
 	dopplerPos   [t.NumberOfChannels]float64
 	dopplerMask  [t.NumberOfChannels]bool
 	periodStart  [][]int
+	err          error
 }
 
 func NewRuntime(periods []t.Period, sources map[string]string, sampleRate int, opts RuntimeOptions) (*Runtime, error) {
@@ -247,6 +248,15 @@ func (ar *Runtime) Close() error {
 	return firstErr
 }
 
+// Err returns the first external audio failure encountered during rendering.
+func (ar *Runtime) Err() error {
+	if ar == nil {
+		return nil
+	}
+
+	return ar.err
+}
+
 func (ar *Runtime) UpdateChannelIndex(ch int, periodIdx int, trackType t.TrackType) {
 	if ar == nil || ch < 0 || ch >= len(ar.channelIdx) {
 		return
@@ -267,6 +277,8 @@ func (ar *Runtime) UpdateChannelIndex(ch int, periodIdx int, trackType t.TrackTy
 				if err := audio.SelectAudio(nextIdx); err == nil {
 					ar.channelIdx[ch] = nextIdx
 					return
+				} else {
+					ar.recordError(err)
 				}
 			}
 		}
@@ -362,6 +374,7 @@ func (ar *Runtime) PrepareBuffers(bufferSize int) {
 		}
 
 		if _, err := ar.audio.ReadSamplesAt(idx, buf, need); err != nil {
+			ar.recordError(err)
 			zeroSamples(buf)
 		}
 	}
@@ -395,11 +408,13 @@ func (ar *Runtime) prepareChannelBuffers(bufferSize int) {
 
 		audio, err := ar.audioForChannel(ch)
 		if err != nil || audio == nil {
+			ar.recordError(err)
 			zeroSamples(buf)
 			continue
 		}
 
 		if _, err := audio.ReadSamplesAt(idx, buf, need); err != nil {
+			ar.recordError(err)
 			zeroSamples(buf)
 		}
 	}
@@ -448,7 +463,7 @@ func (ar *Runtime) ResetDoppler(ch int) {
 		return
 	}
 	if audio, ok := ar.dopplerPlaybackAudio(ch).(bufferedCursorSampleAudio); ok {
-		_ = audio.RewindBufferedFrames(ar.channelIdx[ch], ar.dopplerCount[ch])
+		ar.recordError(audio.RewindBufferedFrames(ar.channelIdx[ch], ar.dopplerCount[ch]))
 	}
 	ar.closeDopplerAudio(ch)
 	ar.dopplerBuf[ch] = nil
@@ -466,6 +481,7 @@ func (ar *Runtime) ensureDopplerFrames(ch, needed int) bool {
 	}
 	audio, err := ar.dopplerAudioForChannel(ch)
 	if err != nil || audio == nil {
+		ar.recordError(err)
 		return false
 	}
 
@@ -511,7 +527,11 @@ func (ar *Runtime) readDopplerFrameRange(ch int, audio SampleAudio, startFrame, 
 	start := startFrame * stereoChannels
 	end := start + frames*stereoChannels
 	_, err := audio.ReadSamplesAt(ar.channelIdx[ch], ar.dopplerBuf[ch][start:end], end-start)
-	return err == nil
+	if err != nil {
+		ar.recordError(err)
+		return false
+	}
+	return true
 }
 
 func (ar *Runtime) dopplerFrameCapacity(ch int) int {
@@ -614,6 +634,12 @@ func (ar *Runtime) closeChannelAudio(ch int) {
 	_ = ar.channelAudio[ch].Close()
 	ar.channelAudio[ch] = nil
 	ar.samplesByCh[ch] = nil
+}
+
+func (ar *Runtime) recordError(err error) {
+	if ar.err == nil && err != nil {
+		ar.err = err
+	}
 }
 
 func (ar *Runtime) ChannelBuffer(ch int) []int {

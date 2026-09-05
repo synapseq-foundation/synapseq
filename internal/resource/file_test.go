@@ -197,6 +197,21 @@ func TestGetFile_HTTP_WAV(ts *testing.T) {
 	}
 }
 
+func TestGetFile_HTTPStatusError(ts *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.WriteHeader(http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	_, err := GetFile(server.URL+"/missing.spsq", t.FormatText)
+	if err == nil {
+		ts.Fatal("expected HTTP status error")
+	}
+	if !strings.Contains(err.Error(), "404 Not Found") {
+		ts.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestGetAmbianceFile_HTTPFormatFromExtension(ts *testing.T) {
 	content := []byte("mp3 data")
 
@@ -216,6 +231,41 @@ func TestGetAmbianceFile_HTTPFormatFromExtension(ts *testing.T) {
 	}
 	if !bytes.Equal(got, content) {
 		ts.Errorf("content mismatch")
+	}
+}
+
+func TestGetAmbianceFile_HTTPStatusError(ts *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	_, _, err := GetAmbianceFile(server.URL + "/missing.wav")
+	if err == nil {
+		ts.Fatal("expected HTTP status error")
+	}
+	if !strings.Contains(err.Error(), "500 Internal Server Error") {
+		ts.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestGetAmbianceFile_HTTPRedirectToStatusError(ts *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if request.URL.Path == "/redirect.wav" {
+			http.Redirect(writer, request, "/missing.wav", http.StatusFound)
+			return
+		}
+
+		writer.WriteHeader(http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	_, _, err := GetAmbianceFile(server.URL + "/redirect.wav")
+	if err == nil {
+		ts.Fatal("expected HTTP status error")
+	}
+	if !strings.Contains(err.Error(), "404 Not Found") {
+		ts.Fatalf("unexpected error: %v", err)
 	}
 }
 
@@ -292,6 +342,21 @@ func TestGetMusicFile_HTTPFormatFromExtension(ts *testing.T) {
 	}
 	if !bytes.Equal(got, content) {
 		ts.Errorf("content mismatch")
+	}
+}
+
+func TestGetMusicFile_HTTPStatusError(ts *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.WriteHeader(http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	_, _, err := GetMusicFile(server.URL + "/missing.mp3")
+	if err == nil {
+		ts.Fatal("expected HTTP status error")
+	}
+	if !strings.Contains(err.Error(), "404 Not Found") {
+		ts.Fatalf("unexpected error: %v", err)
 	}
 }
 
