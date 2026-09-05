@@ -189,7 +189,7 @@ func TestNextExpectOneOf(ts *testing.T) {
 		{trLnTone, []string{t.KeywordWaveform, t.KeywordNoise}, t.KeywordWaveform, false},
 		{trLnNoisePink, []string{t.KeywordAmbiance, t.KeywordNoise}, t.KeywordNoise, false},
 		{trLnNoiseWhite, []string{t.KeywordTriangle, t.KeywordAmbiance}, "", true},
-		{trLnAmbiance, []string{t.KeywordNoise, t.KeywordAmbiance}, t.KeywordAmbiance, false},
+		{trLnAmbiance, []string{t.KeywordWaveform, t.KeywordNoise, t.KeywordAmbiance}, t.KeywordWaveform, false},
 	}
 
 	for _, test := range tests {
