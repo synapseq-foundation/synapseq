@@ -13,11 +13,23 @@ This table is meant to answer the most common question quickly: what kind of lin
 | Comment        | `# ...` or `## ...`                     | any                | anywhere                   | `##` comments are also stored in sequence metadata                     |
 | Option         | `@samplerate ...`                       | top-level          | before presets or timeline | options lock after the first preset, track, override, or timeline line |
 | Preset         | `alpha`                                 | top-level          | before timeline            | may also use `from` or `as template`                                   |
-| Track          | `tone ...`, `noise ...`, `ambiance ...`, `music ...` | exactly two spaces | under the current preset   | not allowed on presets created with `from`                             |
+| Track          | `[waveform <name>] tone ...`, `noise ...`, `[waveform <name>] ambiance ...`, `[waveform <name>] music ...` | exactly two spaces | under the current preset   | not allowed on presets created with `from`                             |
 | Track override | `track 1 amplitude 35`                  | exactly two spaces | under an inherited preset  | only valid on non-template presets created with `from`                 |
 | Timeline       | `00:00:20 alpha smooth 5`               | top-level          | after presets              | first entry must be `00:00:00`                                         |
 
 Use this as a quick orientation tool. The sections below describe the exact syntax and the builder rules behind each line type.
+
+## Authoring Rules for Agents
+
+Use these rules before consulting the detailed sections:
+
+- put all options before presets and timeline entries;
+- indent every track and track override with exactly two ASCII spaces;
+- do not use quoted strings: SPSQ tokenizes on whitespace;
+- declare only ambiance and music sources supplied by the user or already present in the sequence and its dependencies;
+- use `waveform <name>` explicitly for `tone`, `ambiance`, and `music` tracks when generating or serializing SPSQ; omitted waveform means `sine`;
+- end every playable sequence with at least two strictly increasing timeline entries, beginning at `00:00:00`;
+- validate generated files with `bin/synapseq -test <file>` or `go run ./cmd/synapseq -test <file>`.
 
 ## The `.spsq` Format
 
@@ -125,6 +137,7 @@ Local option paths are normalized and validated before use:
 - WAV is the recommended ambiance format, especially for continuous or seamless loops;
 - MP3 is supported as a fallback format, but MP3 encoding can add delay or padding that may create audible gaps when the file loops;
 - remote ambiance URLs must identify a WAV or MP3 file by extension, or provide a WAV or MP3 MIME type when the URL has no extension;
+- remote resource failures, including non-2xx responses, invalid MIME types, and decode failures, stop rendering with an error;
 - local music paths first resolve to `.mp3`, then to `.wav` only when the MP3 file is missing;
 - music does not loop automatically, so MP3 is the preferred local fallback order for this use case;
 - remote music URLs follow the same WAV/MP3 extension or MIME type rules as ambiance URLs;
@@ -273,14 +286,14 @@ alpha
   tone 300 effect shift 10 intensity 25 amplitude 20
   waveform square tone 300 isochronic 10 amplitude 8
   tone 300 binaural 10 effect doppler 0.9 intensity 80 amplitude 40
-  ambiance rain amplitude 25
-  ambiance rain effect pan 0.5 intensity 60 amplitude 30
-	ambiance rain effect doppler 0.8 intensity 40 amplitude 30
-  ambiance rain effect shift 10 intensity 25 amplitude 30
-  music meditation amplitude 50
-  music meditation effect pan 0.5 intensity 60 amplitude 30
-	music meditation effect doppler 0.8 intensity 40 amplitude 30
-  music meditation effect shift 8 intensity 20 amplitude 30
+  waveform sine ambiance rain amplitude 25
+  waveform sine ambiance rain effect pan 0.5 intensity 60 amplitude 30
+  waveform sine ambiance rain effect doppler 0.8 intensity 40 amplitude 30
+  waveform sine ambiance rain effect shift 10 intensity 25 amplitude 30
+  waveform sine music meditation amplitude 50
+  waveform sine music meditation effect pan 0.5 intensity 60 amplitude 30
+  waveform sine music meditation effect doppler 0.8 intensity 40 amplitude 30
+  waveform sine music meditation effect shift 8 intensity 20 amplitude 30
   tone 300 binaural 10 amplitude left 10 right 5
   noise pink amplitude left 30 right 25
 ```
@@ -303,11 +316,11 @@ Tone lines can describe:
 
 Noise lines can describe white, pink, or brown noise, optionally with `smooth`, optional effects, and then `amplitude`.
 
-Ambiance lines reference a named ambiance option and then define amplitude, with optional supported effects. The current parser also accepts a leading `waveform` token before ambiance declarations, even though waveform selection is primarily a tone-oriented concept.
+Ambiance lines reference a named ambiance option and then define amplitude, with optional supported effects. A leading `waveform <name>` is valid and controls the shape of waveform-driven effects; omitted waveform means `sine`.
 
 For tones, the selected waveform shapes pure, binaural, and monaural oscillators. On an isochronic track, the same waveform shapes both the carrier and the rhythmic gate. It also shapes waveform-driven `pan`, `modulation`, and `doppler` motion. For ambiance and music, it does not reshape the external PCM; it affects waveform-driven `pan` or `modulation`, while `doppler` uses that waveform to vary PCM playback speed. `shift` always uses sine/cosine quadrature internally and ignores the selected waveform.
 
-Music lines reference a named music option and use the same amplitude/effect forms as ambiance. Music is finite: when the file ends, that channel becomes silent and rendering continues until the sequence timeline ends.
+Music lines reference a named music option and use the same waveform, amplitude, and effect forms as ambiance. Music is finite: when the file ends, that channel becomes silent and rendering continues until the sequence timeline ends.
 
 `amplitude` accepts either one percentage, `amplitude <value>`, or explicit channels, `amplitude left <value> right <value>`. The one-value form applies to both channels. `left` always requires a following `right` value. Each value must be between `0` and `100`. The gains are applied after effects, so the declared values control the final left and right channel levels.
 
@@ -668,9 +681,9 @@ comment-line         = [indent] "#" text
 option-line          = "@samplerate" integer
                      | "@volume" integer
                      | "@ambiance" name [path-or-url]
-                      | "@music" name [path-or-url]
-                      | "@waveform" name waveform-point waveform-point { waveform-point }
-		      | "@transition" name transition-point transition-point { transition-point }
+                     | "@music" name [path-or-url]
+                     | "@waveform" name waveform-point waveform-point { waveform-point }
+                     | "@transition" name transition-point transition-point { transition-point }
                      | "@extends" path-or-url ;
 
 preset-line          = name
@@ -724,11 +737,11 @@ override-kind        = "tone"
                      | "pan"
                      | "modulation"
                      | "doppler"
-			 | "shift"
-                      | "smooth"
-                      | "amplitude"
-		      | "left"
-		      | "right"
+                     | "shift"
+                     | "smooth"
+                     | "amplitude"
+                     | "left"
+                     | "right"
                       | "intensity" ;
 override-value       = signed-float | waveform ;
 
