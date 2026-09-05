@@ -4,13 +4,13 @@ This guide explains the main listening concepts behind SynapSeq.
 
 It is written for users who want to understand what the engine is doing in perceptual terms: what kind of sound is being generated, how it moves over time, and how effects shape the stereo image and motion.
 
-It complements [SYNTAX.md](SYNTAX.md). `SYNTAX.md` explains how to write a sequence. This document explains what those features mean when you listen to them.
+It complements [SYNTAX.md](SYNTAX.md). `SYNTAX.md` is the authoritative reference for accepted syntax and validation; this document explains what those features mean when you listen to them.
 
 ## The Core Idea
 
 SynapSeq builds a session from two layers of intent:
 
-- what is playing: tones, beat-based tones, noise, and ambiance;
+- what is playing: tones, beat-based tones, noise, ambiance, and music;
 - how it changes: transitions, steps, and effects.
 
 A preset defines a sound state. The timeline defines how one state becomes the next.
@@ -148,12 +148,13 @@ The waveform has several roles:
 
 - pure, binaural, and monaural tones use it as their oscillator shape;
 - isochronic tracks use the same shape for both the audible carrier and the pulse gate;
-- pan and modulation use it as their motion shape, including on ambiance and music;
-- pan, modulation, and doppler motion use the selected waveform;
+- pan, modulation, and doppler use it as their motion shape, including on ambiance and music;
 - shift uses fixed sine/cosine quadrature and does not use the selected waveform;
 - compatible timeline changes morph linearly between the old and new waveform while preserving oscillator phase.
 
 The engine performs this compilation before rendering and uses integer table IDs in the sample loop. Custom waveforms are not band-limited. Steep segments, sharp corners, and high carrier frequencies can therefore emphasize harmonics or aliasing, much like square and sawtooth waves. Phase alignment also matters when morphing between differently oriented shapes.
+
+`waveform <name>` is also valid before ambiance and music tracks. It does not reshape their external PCM; it shapes the movement of `pan`, `modulation`, and `doppler`. When omitted, the waveform is `sine`. Ambiance loops its external source, while music plays only until its source ends.
 
 ## Transitions
 
