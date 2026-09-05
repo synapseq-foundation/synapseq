@@ -2,12 +2,13 @@
 
 This guide covers how to compile SynapSeq from source on macOS, Linux, and Windows.
 
-You need Go v1.26 or later and `make` installed before building.
+You need Go 1.27.0 or later and `make` installed before building.
 
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)
 - [Install Go and Make](#install-go-and-make)
+- [Verify the Toolchain](#verify-the-toolchain)
 - [Compile SynapSeq](#compile-synapseq)
 - [Installing the Binary](#installing-the-binary)
 - [Additional Make Targets](#additional-make-targets)
@@ -16,7 +17,7 @@ You need Go v1.26 or later and `make` installed before building.
 
 Before compiling, make sure the following tools are available:
 
-- Go v1.26 or later
+- Go 1.27.0 or later
 - `make`
 - `git`
 
@@ -49,6 +50,8 @@ sudo apt install golang-go make
 sudo snap install go --classic
 ```
 
+Distribution packages can lag behind the required Go version. After installation, verify `go version`; if it is older than 1.27.0, install a current release from the [official Go downloads](https://go.dev/dl/).
+
 ### Linux (CentOS/RHEL/Fedora)
 
 Install the required packages with your system package manager:
@@ -60,6 +63,8 @@ sudo dnf install golang make
 # For CentOS/RHEL
 sudo yum install golang make
 ```
+
+Distribution packages can lag behind the required Go version. After installation, verify `go version`; if it is older than 1.27.0, install a current release from the [official Go downloads](https://go.dev/dl/).
 
 ### Windows
 
@@ -84,12 +89,25 @@ Use Git Bash instead of PowerShell or CMD, since the Makefile relies on Unix-lik
    scoop install go make
    ```
 
-4. Open Git Bash and verify that everything is available:
+4. Open Git Bash and verify that everything is available and Go meets the required version:
 
 ```bash
 go version
 make --version
+git --version
 ```
+
+## Verify the Toolchain
+
+Before building on any platform, verify the required commands:
+
+```bash
+go version
+make --version
+git --version
+```
+
+The reported Go version must be 1.27.0 or newer. If a platform package manager installed an older version, install a current release from the [official Go downloads](https://go.dev/dl/).
 
 ## Compile SynapSeq
 
@@ -104,10 +122,11 @@ cd synapseq
 
 ### Build for the current platform
 
-On macOS and Linux, the default build target creates a binary for the current operating system and architecture:
+On macOS and Linux, run the test suite before creating a binary for the current operating system and architecture:
 
 ```bash
-make
+make test
+make build
 ```
 
 This creates the output binary in the `bin/` directory.
@@ -117,6 +136,7 @@ This creates the output binary in the `bin/` directory.
 Use the platform-specific Windows targets to preserve the `.exe` extension, application icon, and Windows-specific command-line behavior:
 
 ```bash
+make test
 make build-windows-amd64    # Windows 64-bit (Intel/AMD) - Recommended
 make build-windows-arm64    # Windows 64-bit (ARM)
 ```
@@ -124,6 +144,8 @@ make build-windows-arm64    # Windows 64-bit (ARM)
 Do not use `make build` on Windows, as it creates a binary without the `.exe` extension and without the Windows-specific resource metadata.
 
 The Windows build automatically generates resource metadata such as icon and version info using `goversioninfo` during the build.
+
+The first Windows build also downloads and runs `goversioninfo` through `go run`, so it requires network access. The repository includes the required icon at `assets/synapseq.ico`.
 
 ### Cross-compile for other platforms
 
@@ -152,19 +174,19 @@ This installs SynapSeq to `/usr/local/bin/synapseq`.
 
 ### Windows
 
-Using Git Bash as Administrator:
+For a system-wide installation, use Git Bash as Administrator:
 
 ```bash
 mkdir -p "/c/Program Files/SynapSeq"
 cp bin/synapseq-windows-amd64.exe "/c/Program Files/SynapSeq/synapseq.exe"
 ```
 
-After copying the executable, add `C:\Program Files\SynapSeq` to your `PATH` environment variable.
+After copying the executable, add `C:\Program Files\SynapSeq` to the system `PATH` environment variable.
 
 1. Open **Start Menu** and search for "Environment Variables"
 2. Click **Edit the system environment variables**
 3. Click **Environment Variables...**
-4. Under **User variables** or **System variables**, select **Path**
+4. Under **System variables**, select **Path**
 5. Click **Edit...**
 6. Click **New**
 7. Add `C:\Program Files\SynapSeq`
@@ -175,6 +197,8 @@ Restart Git Bash or PowerShell and verify:
 ```bash
 synapseq -h
 ```
+
+For a per-user installation that does not require Administrator privileges, copy the executable to `%LOCALAPPDATA%\SynapSeq` instead, then add that directory to the **User** `Path` variable using the same Environment Variables dialog.
 
 ## Additional Make Targets
 
