@@ -78,3 +78,44 @@ func TestTrackAmplitudeStringsAlwaysIncludeChannels(t *testing.T) {
 		t.Fatalf("ShortString() = %q, want %q", got, want)
 	}
 }
+
+func TestExternalTrackStringsAlwaysIncludeWaveform(t *testing.T) {
+	tests := []struct {
+		name  string
+		track Track
+		want  string
+	}{
+		{
+			name: "ambiance default waveform",
+			track: Track{
+				Type:       TrackAmbiance,
+				SourceName: "rain",
+				Amplitude:  AmplitudePercentToRaw(25),
+			},
+			want: "waveform sine ambiance rain amplitude left 25.00 right 25.00",
+		},
+		{
+			name: "music custom waveform with effect",
+			track: Track{
+				Type:       TrackMusic,
+				SourceName: "drones",
+				Waveform:   WaveformSquare,
+				Amplitude:  AmplitudePercentToRaw(25),
+				Effect: Effect{
+					Type:      EffectModulation,
+					Value:     2.5,
+					Intensity: IntensityPercentToRaw(50),
+				},
+			},
+			want: "waveform square music drones effect modulation 2.50 intensity 50.00 amplitude left 25.00 right 25.00",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := test.track.String(); got != test.want {
+				t.Fatalf("String() = %q, want %q", got, test.want)
+			}
+		})
+	}
+}

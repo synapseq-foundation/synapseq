@@ -177,13 +177,7 @@ func (tr *Track) String() string {
 	case TrackAmbiance, TrackMusic:
 		keyword := tr.Type.String()
 		if tr.Effect.Type == EffectOff {
-			if tr.Waveform.Effective() == WaveformSine {
-				return fmt.Sprintf("%s %s %s %s %.2f %s %.2f", keyword, tr.SourceName, KeywordAmplitude, KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent())
-			}
 			return fmt.Sprintf("%s %s %s %s %s %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), keyword, tr.SourceName, KeywordAmplitude, KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent())
-		}
-		if tr.Waveform.Effective() == WaveformSine {
-			return fmt.Sprintf("%s %s %s %s %.2f %s %.2f %s %s %.2f %s %.2f", keyword, tr.SourceName, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent())
 		}
 		return fmt.Sprintf("%s %s %s %s %s %s %.2f %s %.2f %s %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), keyword, tr.SourceName, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent())
 	default:
