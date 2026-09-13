@@ -17,7 +17,7 @@ Read all three references before reviewing:
 - [references/sound-design-guidelines.md](references/sound-design-guidelines.md) for sound structure, artistic judgment, safety, and optional rendered-audio analysis;
 - [references/report-format.md](references/report-format.md) for finding categories and individual or batch reports.
 
-When working inside the SynapSeq repository, also consult `README.md`, `docs/SYNTAX.md`, `docs/HOW_IT_WORKS.md`, and the parser or sequence builder when a bundled reference appears stale or incomplete. Treat the current implementation as authoritative.
+When working inside the SynapSeq repository, also consult `README.md`, `docs/GRAMMAR.md` for line shapes and tokens, the SPSQ documentation at `https://synapseq.org/docs/spsq` for semantic and audible behavior, and the parser or sequence builder when a bundled reference appears stale or incomplete. Treat the current implementation as authoritative.
 
 Read [references/handoff-contract.md](references/handoff-contract.md) only when consuming or producing a real handoff.
 

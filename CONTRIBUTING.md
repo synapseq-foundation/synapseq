@@ -30,7 +30,7 @@ When making changes, use these principles as a filter for API design, user exper
 
 Before making larger code changes, read [ARCHITECTURE](docs/ARCHITECTURE.md). It explains the package boundaries, runtime flow, and the architectural invariants contributors are expected to preserve.
 
-If your change touches the `.spsq` or `.spsc` language, parser behavior, timeline rules, or sequence-building semantics, also read [SYNTAX](docs/SYNTAX.md).
+If your change touches the `.spsq` or `.spsc` language, parser behavior, timeline rules, or sequence-building semantics, also read [the SPSQ documentation](https://synapseq.org/docs/spsq).
 
 ### Git Flow Workflow
 

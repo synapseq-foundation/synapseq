@@ -275,7 +275,7 @@ Important responsibilities:
 
 This split is important because it keeps parser logic isolated from construction and validation logic.
 
-The `.spsq` and `.spsc` language rules are documented in [SYNTAX.md](SYNTAX.md). Keep this architecture document focused on package structure and runtime flow; use the syntax document when changing parser behavior, sequence-building rules, or the text format itself.
+The `.spsq` and `.spsc` language rules are documented in [the SPSQ documentation](https://synapseq.org/docs/spsq). Keep this architecture document focused on package structure and runtime flow; use the SPSQ documentation when changing parser behavior, sequence-building rules, or the text format itself.
 
 ## Audio Rendering Flow
 
