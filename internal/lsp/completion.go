@@ -62,6 +62,9 @@ func completionValues(prefix string, index symbols) []string {
 }
 
 func trackCompletions(fields []string, index symbols) []string {
+	if values, ok := amplitudeCompletions(fields); ok {
+		return values
+	}
 	if len(fields) <= 1 {
 		return []string{t.KeywordTone, t.KeywordNoise, t.KeywordAmbiance, t.KeywordMusic, t.KeywordWaveform, t.KeywordTrack}
 	}
@@ -81,6 +84,24 @@ func trackCompletions(fields []string, index symbols) []string {
 		return []string{t.KeywordBinaural, t.KeywordMonaural, t.KeywordIsochronic, t.KeywordEffect, t.KeywordAmplitude}
 	}
 	return []string{t.KeywordEffect, t.KeywordAmplitude, t.KeywordSmooth, t.KeywordIntensity}
+}
+
+func amplitudeCompletions(fields []string) ([]string, bool) {
+	for index, field := range fields {
+		if field != t.KeywordAmplitude {
+			continue
+		}
+
+		values := fields[index+1:]
+		if len(values) == 0 {
+			return []string{t.KeywordLeft}, true
+		}
+		if len(values) == 2 && values[0] == t.KeywordLeft {
+			return []string{t.KeywordRight}, true
+		}
+		return []string{}, true
+	}
+	return nil, false
 }
 
 func collectSymbols(text string) symbols {

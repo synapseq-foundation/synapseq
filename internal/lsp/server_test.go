@@ -5,10 +5,12 @@
 package lsp
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
+	types "github.com/synapseq-foundation/synapseq/v4/internal/types"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 )
@@ -56,6 +58,15 @@ func TestCompletionIncludesDeclaredSymbols(t *testing.T) {
 	}
 	if !strings.Contains(strings.Join(labels, ","), "focus") {
 		t.Fatalf("completion labels = %v, want focus", labels)
+	}
+}
+
+func TestAmplitudeCompletionSupportsStereoForm(t *testing.T) {
+	if got := trackCompletions([]string{types.KeywordTone, "220", types.KeywordAmplitude}, symbols{}); !slices.Equal(got, []string{types.KeywordLeft}) {
+		t.Fatalf("amplitude completion = %v, want left", got)
+	}
+	if got := trackCompletions([]string{types.KeywordTone, "220", types.KeywordAmplitude, types.KeywordLeft, "20"}, symbols{}); !slices.Equal(got, []string{types.KeywordRight}) {
+		t.Fatalf("left amplitude completion = %v, want right", got)
 	}
 }
 
