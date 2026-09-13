@@ -16,9 +16,10 @@
 Use evidence in this order:
 
 1. current parser and sequence-builder diagnostics;
-2. `docs/SYNTAX.md`;
-3. bundled review references;
-4. comments, names, and apparent author intent.
+2. `docs/GRAMMAR.md` for line shapes and tokens;
+3. [the SPSQ documentation](https://synapseq.org/docs/spsq) for semantic behavior;
+4. bundled review references;
+5. comments, names, and apparent author intent.
 
 Never downgrade a validator failure to an artistic preference. Never promote an inference into an objective error.
 

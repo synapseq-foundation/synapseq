@@ -13,7 +13,7 @@ This is the only SynapSeq skill authorized to create complete `.spsq` files. It 
 
 Read [references/spsq-language.md](references/spsq-language.md) before writing a new sequence. It contains the accepted line forms, validated ranges, timeline semantics, and examples.
 
-When working inside the SynapSeq repository, consult `docs/SYNTAX.md` and the parser only if the bundled reference appears stale or the requested feature is not covered. Treat the current parser and sequence builder as authoritative.
+When working inside the SynapSeq repository, consult `docs/GRAMMAR.md` for line shapes and tokens, the SPSQ documentation at `https://synapseq.org/docs/spsq` for semantic behavior, and the parser only if the bundled reference appears stale or the requested feature is not covered. Treat the current parser and sequence builder as authoritative.
 
 Read [references/handoff-contract.md](references/handoff-contract.md) only when consuming or producing a real handoff to another skill.
 

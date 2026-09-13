@@ -90,8 +90,8 @@ Any change that affects accepted `.spsq` or `.spsc` syntax, parser behavior, bui
 
 At minimum, review and update:
 
-1. `docs/SYNTAX.md` for grammar, placement, ranges, and validation rules;
-2. `docs/HOW_IT_WORKS.md` when audible or temporal behavior changes;
+1. [the SPSQ documentation](https://synapseq.org/docs/spsq) for grammar, placement, ranges, and validation rules;
+2. [the SPSQ documentation](https://synapseq.org/docs/spsq) when audible or temporal behavior changes;
 3. `.agents/skills/create-spsq/references/spsq-language.md`;
 4. `.agents/skills/explain-spsq/references/spsq-language.md`;
 5. `.agents/skills/review-spsq/references/review-checklist.md`;
@@ -152,4 +152,4 @@ For new contributors, the fastest way to understand the codebase:
 7. `internal/audio/renderer.go`, `internal/audio/rendercycle.go`, and `internal/audio/audiosource/*`
 8. `internal/remote/*`
 
-For detailed architecture, see `docs/ARCHITECTURE.md`. For DSL syntax, see `docs/SYNTAX.md`.
+For detailed architecture, see `docs/ARCHITECTURE.md`. For DSL syntax, see [the SPSQ documentation](https://synapseq.org/docs/spsq).

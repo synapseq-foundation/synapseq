@@ -13,7 +13,7 @@ Never create, edit, repair, rename, move, delete, overwrite, or rewrite an `.sps
 
 Read [references/spsq-language.md](references/spsq-language.md) before explaining syntax or a sequence. It contains the language model, track meanings, inheritance, timeline behavior, and perceptual vocabulary.
 
-When working inside the SynapSeq repository, consult `docs/SYNTAX.md`, `docs/HOW_IT_WORKS.md`, and the parser or sequence builder only if the bundled reference appears stale or does not cover the requested feature. Treat the current parser and sequence builder as authoritative.
+When working inside the SynapSeq repository, consult `docs/GRAMMAR.md` for line shapes and tokens, the SPSQ documentation at `https://synapseq.org/docs/spsq` for semantic and audible behavior, and the parser or sequence builder only if the bundled reference appears stale or does not cover the requested feature. Treat the current parser and sequence builder as authoritative.
 
 Read [references/handoff-contract.md](references/handoff-contract.md) only when consuming or producing a real handoff.
 
