@@ -18,6 +18,13 @@ func SetColorEnabled(enabled bool) {
 
 func warmRGB(token palette.RGBColor, attrs ...color.Attribute) *color.Color {
 	styled := color.RGB(token.R(), token.G(), token.B())
+	// Keep the CLI-controlled global color setting authoritative when color is
+	// constructed while NO_COLOR is present in the environment.
+	if color.NoColor {
+		styled.DisableColor()
+	} else {
+		styled.EnableColor()
+	}
 	if len(attrs) > 0 {
 		styled.Add(attrs...)
 	}

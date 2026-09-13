@@ -322,3 +322,10 @@ func TestResolveSpecialCommandSBG(ts *testing.T) {
 		ts.Fatalf("expected SBG command, got %q", command.Kind)
 	}
 }
+
+func TestResolveSpecialCommandLSP(ts *testing.T) {
+	command := clistyle.ResolveSpecialCommand(&clistyle.CLIOptions{LSP: true}, nil)
+	if command.Kind != clistyle.SpecialCommandLSP {
+		ts.Fatalf("expected LSP command, got %q", command.Kind)
+	}
+}

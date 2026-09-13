@@ -141,6 +141,7 @@ func flagBindings() []flagBinding {
 		{Name: "version", Usage: "Show version information", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.ShowVersion }, SpecialCommand: SpecialCommandShowVersion},
 		{Name: "sbg", Usage: "Convert an SBaGen file to SPSQ", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.ConvertSBG }, SpecialCommand: SpecialCommandSBG},
 		{Name: "ai", Usage: "Generate an SPSQ sequence from a prompt", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.AI }, SpecialCommand: SpecialCommandAI},
+		{Name: "lsp", Usage: "Start the SPSQ language server over stdio", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.LSP }, SpecialCommand: SpecialCommandLSP},
 		{Name: "ai-model", Usage: "OpenAI-compatible model for -ai", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.AIModel }},
 		{Name: "ai-base-url", Usage: "OpenAI-compatible API host for -ai", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.AIBaseURL }},
 		{Name: "ai-temperature", Usage: "Sampling temperature for -ai", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.AITemperature }},

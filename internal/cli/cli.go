@@ -25,6 +25,7 @@ const (
 	SpecialCommandDoctor                   SpecialCommandKind = "doctor"
 	SpecialCommandSBG                      SpecialCommandKind = "sbg"
 	SpecialCommandAI                       SpecialCommandKind = "ai"
+	SpecialCommandLSP                      SpecialCommandKind = "lsp"
 )
 
 type SpecialCommand struct {
@@ -88,6 +89,8 @@ type CLIOptions struct {
 	CompletionArgs bool
 	// Generate an SPSQ sequence with an AI prompt
 	AI string
+	// Start the SPSQ language server over standard input and output.
+	LSP bool
 	// Whether the -ai flag was provided, including with an empty prompt
 	AIRequested bool
 	// OpenAI-compatible model name for AI generation

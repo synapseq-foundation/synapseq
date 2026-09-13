@@ -10,6 +10,7 @@ import (
 	"os/signal"
 
 	"github.com/synapseq-foundation/synapseq/v4/internal/cli"
+	"github.com/synapseq-foundation/synapseq/v4/internal/lsp"
 )
 
 func dispatchSpecialCommand(opts *cli.CLIOptions, args []string) (bool, error) {
@@ -58,6 +59,8 @@ func dispatchSpecialCommand(opts *cli.CLIOptions, args []string) (bool, error) {
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 		defer stop()
 		return true, runAI(ctx, opts.AI, args, opts, os.Stderr, os.Stdout)
+	case cli.SpecialCommandLSP:
+		return true, lsp.Run(context.Background(), os.Stdin, os.Stdout)
 	default:
 		return false, nil
 	}
