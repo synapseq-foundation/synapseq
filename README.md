@@ -21,7 +21,7 @@
   &nbsp;&middot;&nbsp;
   <a href="https://synapseq.org/ai" target="_blank" rel="noopener noreferrer">AI</a>
   &nbsp;&middot;&nbsp;
-  <a href="https://synapseq.org/library" target="_blank" rel="noopener noreferrer">Community Library</a>
+  <a href="https://synapseq.org/library" target="_blank" rel="noopener noreferrer">Curated Library</a>
   &nbsp;&middot;&nbsp;
   <a href="https://synapseq.org/faq" target="_blank" rel="noopener noreferrer">FAQ</a>
 </p>
