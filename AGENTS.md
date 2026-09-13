@@ -90,14 +90,14 @@ Any change that affects accepted `.spsq` or `.spsc` syntax, parser behavior, bui
 
 At minimum, review and update:
 
-1. [the SPSQ documentation](https://synapseq.org/docs/spsq) for grammar, placement, ranges, and validation rules;
-2. [the SPSQ documentation](https://synapseq.org/docs/spsq) when audible or temporal behavior changes;
+1. `docs/GRAMMAR.md` for the compact syntax reference;
+2. [the SPSQ documentation](https://synapseq.org/docs/spsq) for the complete syntax documentation, including placement, ranges, validation rules, and audible or temporal behavior changes;
 3. `.agents/skills/create-spsq/references/spsq-language.md`;
 4. `.agents/skills/explain-spsq/references/spsq-language.md`;
 5. `.agents/skills/review-spsq/references/review-checklist.md`;
 6. each affected `SKILL.md`, plus review sound-design or report references when the change alters analysis or output guidance.
 
-Also update `README.md` when the language change affects user-facing examples or capabilities. When a skill's routing description changes, update its front matter and every repository manifest that references it.
+When a skill's routing description changes, update its front matter and every repository manifest that references it.
 
 Before completing an SPSQ language change:
 
