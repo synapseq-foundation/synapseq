@@ -47,6 +47,89 @@ func TestDiagnosticUsesUTF16Columns(t *testing.T) {
 	}
 }
 
+func TestInitializeAdvertisesSemanticTokens(t *testing.T) {
+	result, err := (&server{}).Initialize(t.Context(), &protocol.InitializeParams{})
+	if err != nil {
+		t.Fatalf("Initialize() error = %v", err)
+	}
+	provider, ok := result.Capabilities.SemanticTokensProvider.(*protocol.SemanticTokensOptions)
+	if !ok {
+		t.Fatalf("semantic token provider = %T, want *protocol.SemanticTokensOptions", result.Capabilities.SemanticTokensProvider)
+	}
+	if !slices.Equal(provider.Legend.TokenTypes, semanticTokenLegend) {
+		t.Fatalf("semantic token legend = %v, want %v", provider.Legend.TokenTypes, semanticTokenLegend)
+	}
+}
+
+func TestSemanticTokensClassifySPSQSyntax(t *testing.T) {
+	data := semanticTokenData("# sessão 😀\n@ambiance rain audio/rain\nfocus\n  tone 220 binaural 8 amplitude left 20 right 30\n00:00:00 focus smooth 4")
+	got := decodeSemanticTokenData(data)
+	want := []semanticToken{
+		{line: 0, start: 0, length: 11, tokenType: semanticTokenComment},
+		{line: 1, start: 0, length: 9, tokenType: semanticTokenKeyword},
+		{line: 1, start: 10, length: 4, tokenType: semanticTokenVariable},
+		{line: 1, start: 15, length: 10, tokenType: semanticTokenString},
+		{line: 2, start: 0, length: 5, tokenType: semanticTokenVariable},
+		{line: 3, start: 2, length: 4, tokenType: semanticTokenKeyword},
+		{line: 3, start: 7, length: 3, tokenType: semanticTokenNumber},
+		{line: 3, start: 11, length: 8, tokenType: semanticTokenKeyword},
+		{line: 3, start: 20, length: 1, tokenType: semanticTokenNumber},
+		{line: 3, start: 22, length: 9, tokenType: semanticTokenParameter},
+		{line: 3, start: 32, length: 4, tokenType: semanticTokenParameter},
+		{line: 3, start: 37, length: 2, tokenType: semanticTokenNumber},
+		{line: 3, start: 40, length: 5, tokenType: semanticTokenParameter},
+		{line: 3, start: 46, length: 2, tokenType: semanticTokenNumber},
+		{line: 4, start: 0, length: 8, tokenType: semanticTokenNumber},
+		{line: 4, start: 9, length: 5, tokenType: semanticTokenVariable},
+		{line: 4, start: 15, length: 6, tokenType: semanticTokenKeyword},
+		{line: 4, start: 22, length: 1, tokenType: semanticTokenNumber},
+	}
+	if !slices.Equal(got, want) {
+		t.Fatalf("semantic tokens = %#v, want %#v", got, want)
+	}
+}
+
+func TestSemanticTokensUseUTF16Columns(t *testing.T) {
+	tokens := semanticTokens("  😀 tone 220")
+	if tokens[0].start != 2 || tokens[0].length != 2 {
+		t.Fatalf("emoji token = %#v, want UTF-16 width 2", tokens[0])
+	}
+	if tokens[1].start != 5 {
+		t.Fatalf("tone start = %d, want 5", tokens[1].start)
+	}
+}
+
+func TestSemanticTokensClassifyOptionPathsWithoutSeparators(t *testing.T) {
+	tokens := semanticTokens("@extends common\n@music ocean library")
+	if tokens[1].tokenType != semanticTokenString {
+		t.Fatalf("extends path token type = %d, want string", tokens[1].tokenType)
+	}
+	if tokens[4].tokenType != semanticTokenString {
+		t.Fatalf("music path token type = %d, want string", tokens[4].tokenType)
+	}
+}
+
+func TestSemanticTokensFullUsesOpenDocument(t *testing.T) {
+	documentURI := uri.MustParse("untitled:semantic.spsq")
+	server := &server{
+		documents: map[uri.URI]document{
+			documentURI: {
+				uri:  documentURI,
+				text: "focus",
+			},
+		},
+	}
+	result, err := server.SemanticTokensFull(t.Context(), &protocol.SemanticTokensParams{
+		TextDocument: protocol.TextDocumentIdentifier{URI: documentURI},
+	})
+	if err != nil {
+		t.Fatalf("SemanticTokensFull() error = %v", err)
+	}
+	if !slices.Equal(result.Data, []uint32{0, 0, 5, semanticTokenVariable, 0}) {
+		t.Fatalf("semantic token data = %v", result.Data)
+	}
+}
+
 func TestCompletionIncludesDeclaredSymbols(t *testing.T) {
 	items := complete("@ambiance rain audio/rain\nfocus\n00:00:00 ", protocol.Position{
 		Line:      2,
@@ -75,4 +158,25 @@ func parseDiagnostic(column, endColumn int) *diag.Diagnostic {
 		Column:    column,
 		EndColumn: endColumn,
 	})
+}
+
+func decodeSemanticTokenData(data []uint32) []semanticToken {
+	result := make([]semanticToken, 0, len(data)/5)
+	var line uint32
+	var start uint32
+	for index := 0; index < len(data); index += 5 {
+		line += data[index]
+		if data[index] == 0 {
+			start += data[index+1]
+		} else {
+			start = data[index+1]
+		}
+		result = append(result, semanticToken{
+			line:      line,
+			start:     start,
+			length:    data[index+2],
+			tokenType: data[index+3],
+		})
+	}
+	return result
 }

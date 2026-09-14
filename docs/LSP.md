@@ -16,6 +16,9 @@ not use it to render audio or pass a sequence filename in the same invocation.
 - Parse and validation diagnostics while editing.
 - Contextual completion for SPSQ options, tracks, rhythms, effects, transitions,
   waveforms, presets, and declared music or ambiance resources.
+- Full-document semantic tokens for comments, SPSQ keywords and parameters,
+  numbers, paths or URLs, and named resources or presets. These use standard
+  LSP token categories, so clients may apply their own color theme.
 
 For documents backed by a local file URI, diagnostics also check local
 `@extends`, `@ambiance`, and `@music` references. Untitled buffers are checked

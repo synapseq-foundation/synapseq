@@ -96,14 +96,14 @@ At minimum, review and update:
 4. `.agents/skills/explain-spsq/references/spsq-language.md`;
 5. `.agents/skills/review-spsq/references/review-checklist.md`;
 6. each affected `SKILL.md`, plus review sound-design or report references when the change alters analysis or output guidance.
-7. `internal/lsp`, updating diagnostics and completion so the language server accepts and suggests the current SPSQ syntax.
+7. `internal/lsp`, updating diagnostics, completion, and semantic-token classification so the language server accepts, suggests, and highlights the current SPSQ syntax.
 
 When a skill's routing description changes, update its front matter and every repository manifest that references it.
 
 Before completing an SPSQ language change:
 
 - add or update parser and sequence-builder tests;
-- add or update LSP diagnostics and completion tests when the syntax affects editor feedback;
+- add or update LSP diagnostics, completion, and semantic-token tests when the syntax affects editor feedback;
 - validate representative valid and invalid `.spsq` fixtures with `bin/synapseq -test` or `go run ./cmd/synapseq -test`;
 - run `make test`;
 - validate each affected skill using the checks shipped with that skill, when available;

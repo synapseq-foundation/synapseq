@@ -83,6 +83,13 @@ func (s *server) Initialize(context.Context, *protocol.InitializeParams) (*proto
 			CompletionProvider: &protocol.CompletionOptions{
 				TriggerCharacters: []string{"@"},
 			},
+			SemanticTokensProvider: &protocol.SemanticTokensOptions{
+				Legend: protocol.SemanticTokensLegend{
+					TokenTypes:     semanticTokenLegend,
+					TokenModifiers: []string{},
+				},
+				Full: protocol.Boolean(true),
+			},
 		},
 		ServerInfo: protocol.ServerInfo{
 			Name: serverName,
@@ -156,6 +163,14 @@ func (s *server) Completion(_ context.Context, params *protocol.CompletionParams
 		return protocol.CompletionItemSlice{}, nil
 	}
 	return complete(doc.text, params.Position), nil
+}
+
+func (s *server) SemanticTokensFull(_ context.Context, params *protocol.SemanticTokensParams) (*protocol.SemanticTokens, error) {
+	doc, ok := s.load(params.TextDocument.URI)
+	if !ok {
+		return &protocol.SemanticTokens{Data: []uint32{}}, nil
+	}
+	return &protocol.SemanticTokens{Data: semanticTokenData(doc.text)}, nil
 }
 
 func (s *server) store(doc document) {
