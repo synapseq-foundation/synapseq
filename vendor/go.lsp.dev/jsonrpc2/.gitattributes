@@ -1,0 +1,7 @@
+# go.lsp.dev/jsonrpc2 project gitattributes file
+#  https://github.com/github-linguist/linguist/blob/main/docs/overrides.md
+
+# To prevent CRLF breakages on Windows for fragile files, like testdata.
+* -text
+
+internal/benchmark/mcpref linguist-vendored

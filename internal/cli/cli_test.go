@@ -83,6 +83,12 @@ func TestParseFlags(ts *testing.T) {
 			expectedArgs: []string{"input.sbg", "output.spsq"},
 			expectError:  false,
 		},
+		{
+			args:         []string{"cmd", "-lsp"},
+			expected:     &CLIOptions{LSP: true},
+			expectedArgs: []string{},
+			expectError:  false,
+		},
 		// Test and quiet combined
 		{
 			args:         []string{"cmd", "-test", "-quiet", "input.spsq"},

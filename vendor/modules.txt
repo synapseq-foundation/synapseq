@@ -1,6 +1,14 @@
-# github.com/fatih/color v1.18.0
-## explicit; go 1.17
+# github.com/fatih/color v1.19.0
+## explicit; go 1.25.0
 github.com/fatih/color
+# github.com/go-json-experiment/json v0.0.0-20260623181947-01eb4420fa68
+## explicit; go 1.26
+github.com/go-json-experiment/json
+github.com/go-json-experiment/json/internal
+github.com/go-json-experiment/json/internal/jsonflags
+github.com/go-json-experiment/json/internal/jsonopts
+github.com/go-json-experiment/json/internal/jsonwire
+github.com/go-json-experiment/json/jsontext
 # github.com/gopxl/beep/v2 v2.1.1
 ## explicit; go 1.21
 github.com/gopxl/beep/v2
@@ -18,8 +26,8 @@ github.com/hajimehoshi/go-mp3/internal/huffman
 github.com/hajimehoshi/go-mp3/internal/imdct
 github.com/hajimehoshi/go-mp3/internal/maindata
 github.com/hajimehoshi/go-mp3/internal/sideinfo
-# github.com/mattn/go-colorable v0.1.13
-## explicit; go 1.15
+# github.com/mattn/go-colorable v0.1.14
+## explicit; go 1.18
 github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.20
 ## explicit; go 1.15
@@ -27,8 +35,17 @@ github.com/mattn/go-isatty
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
-# golang.org/x/sys v0.38.0
-## explicit; go 1.24.0
+# go.lsp.dev/jsonrpc2 v1.0.1
+## explicit; go 1.26
+go.lsp.dev/jsonrpc2
+# go.lsp.dev/protocol v1.0.1
+## explicit; go 1.26
+go.lsp.dev/protocol
+# go.lsp.dev/uri v1.0.1
+## explicit; go 1.26
+go.lsp.dev/uri
+# golang.org/x/sys v0.45.0
+## explicit; go 1.25.0
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 golang.org/x/sys/windows/registry

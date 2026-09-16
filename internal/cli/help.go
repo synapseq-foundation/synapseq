@@ -154,6 +154,7 @@ func quickStartExamples() []helpExample {
 func commonHelpOptions() []helpOption {
 	return []helpOption{
 		{FlagText: "-test", ColumnWidth: 19, Description: "Check syntax only"},
+		{FlagText: "-lsp", ColumnWidth: 19, Description: "Start the SPSQ language server over stdio"},
 		{FlagText: "-sbg FILE [OUTPUT]", ColumnWidth: 19, Description: "Convert an SBaGen file to SPSQ"},
 		{FlagText: "-dump", ColumnWidth: 19, Description: "Render JSON sequence data"},
 		{FlagText: "-play", ColumnWidth: 19, Description: "Play audio using ffplay"},
