@@ -82,7 +82,7 @@ func TestAppleFoundationProviderRequestsNonStreamingResponses(ts *testing.T) {
 		if body.Model != "configured-model" || body.Stream == nil || *body.Stream {
 			ts.Errorf("unexpected Apple Foundation request: %#v", body)
 		}
-		if body.Messages[0].Content != systemPromptForProvider(t.AIProviderAppleFoundation, "make a sequence") {
+		if body.Messages[0].Content != appleFoundationSystemPrompt {
 			ts.Error("unexpected Apple Foundation system prompt")
 		}
 
