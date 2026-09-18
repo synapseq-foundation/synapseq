@@ -11,6 +11,16 @@ import (
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
+// AIProvider selects the compatibility behavior for an AI service.
+type AIProvider string
+
+const (
+	// AIProviderDefault uses the standard OpenAI-compatible request behavior.
+	AIProviderDefault AIProvider = "default"
+	// AIProviderAppleFoundation enables compatibility with Apple's fm serve.
+	AIProviderAppleFoundation AIProvider = "apple-foundation"
+)
+
 // AppContext holds the configuration for the application.
 // It provides a safe, immutable context for sequence processing.
 // Methods that modify the context return a new instance.
@@ -21,11 +31,13 @@ type AppContext struct {
 
 // AIOptions configures an OpenAI-compatible model used to generate SPSQ text.
 // Empty Model and BaseURL values use SYNAPSEQ_AI_MODEL and SYNAPSEQ_AI_BASE_URL,
-// then SynapSeq defaults. Temperature must be between 0 and 2. Timeout must be
-// greater than zero.
+// then SynapSeq defaults. Provider accepts AIProviderDefault,
+// AIProviderAppleFoundation, or an empty value. Temperature must be between 0
+// and 2. Timeout must be greater than zero.
 type AIOptions struct {
 	Model       string
 	BaseURL     string
+	Provider    AIProvider
 	Temperature float64
 	Timeout     time.Duration
 }

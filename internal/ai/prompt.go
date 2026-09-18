@@ -4,7 +4,136 @@
 
 package ai
 
-const systemPrompt = `You generate SynapSeq SPSQ audio sequences from user requests.
+import (
+	"strings"
+
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
+)
+
+var systemPrompts = map[t.AIProvider]string{
+	t.AIProviderDefault: defaultSystemPrompt,
+	t.AIProviderAppleFoundation: `You generate valid SynapSeq SPSQ audio sequences. Return only SPSQ source: no Markdown, prose, JSON, filenames, or explanations.
+
+SPSQ uses whitespace tokens and no quoted strings. Put each option on its own line: write "@samplerate 44100" and "@volume 70" on separate lines. Then write preset names, followed by tracks indented with exactly two spaces, followed by timeline entries. Never put a track at top level. Preset names start with a letter and use only letters, digits, underscores, or hyphens.
+
+Use tones as "tone 220 amplitude 12" or "tone 220 binaural 10 amplitude 12". A binaural, monaural, or isochronic beat needs a carrier from 100 through 600 and a positive beat value immediately after its keyword. Use noise as "noise pink smooth 20 amplitude 8". Keep amplitudes from 0 through 100. Do not use external music or ambiance.
+
+Timeline entries are "HH:MM:SS PRESET [steady|ease-in|ease-out|smooth [STEPS]]". Start at 00:00:00, use strictly increasing timestamps, and end exactly at the requested duration with one final "silence" entry. Start a fading session with "00:00:00 silence smooth", start the first active preset 20 seconds later, repeat the final active preset 20 seconds before the end, then end with silence.
+
+Before replying, verify that options are on separate lines, every track is indented under a preset, every timeline preset exists, and the final timestamp matches the requested duration.`,
+}
+
+var appleFoundationProfilePrompts = map[string]string{
+	"relaxation": `For relaxation, create beta first and alpha second, ending in alpha. Beta is 13 to 30 Hz; alpha is 8 to 13 Hz. Use this 10-minute structure and recalculate timestamps for another requested duration:
+@samplerate 44100
+@volume 70
+
+beta
+  tone 220 binaural 16 amplitude 12
+  noise pink smooth 20 amplitude 8
+
+alpha
+  tone 220 binaural 10 amplitude 12
+  noise pink smooth 25 amplitude 8
+
+00:00:00 silence smooth
+00:00:20 beta smooth
+00:05:00 alpha smooth
+00:09:40 alpha smooth
+00:10:00 silence
+
+Keep beta before alpha even when alpha is mentioned first.`,
+	"sleep": `For sleep, create theta first and delta second, ending in delta. Theta is 4 to 8 Hz; delta is 0.5 to 4 Hz. Use this 25-minute structure and recalculate timestamps for another requested duration:
+@samplerate 44100
+@volume 70
+
+theta
+  tone 180 binaural 6 amplitude 12
+  noise brown smooth 25 amplitude 9
+
+delta
+  tone 180 binaural 3 amplitude 10
+  noise brown smooth 35 amplitude 10
+
+00:00:00 silence smooth
+00:00:20 theta smooth
+00:12:30 delta smooth
+00:24:40 delta smooth
+00:25:00 silence`,
+	"focus": `For focus, create alpha first and beta second, ending in beta. Alpha is 8 to 13 Hz; beta is 13 to 30 Hz. Use this 10-minute structure and recalculate timestamps for another requested duration:
+@samplerate 44100
+@volume 70
+
+alpha
+  tone 220 binaural 10 amplitude 12
+  noise pink smooth 18 amplitude 8
+
+beta
+  tone 220 binaural 18 amplitude 12
+  noise white smooth 12 amplitude 7
+
+00:00:00 silence smooth
+00:00:20 alpha smooth
+00:05:00 beta smooth
+00:09:40 beta smooth
+00:10:00 silence`,
+	"alert": `For alert or alertness, create beta first and gamma second, ending in gamma. Beta is 13 to 30 Hz; gamma is 30 to 45 Hz. Use this 10-minute structure and recalculate timestamps for another requested duration:
+@samplerate 44100
+@volume 70
+
+beta
+  tone 220 binaural 20 amplitude 12
+  noise white smooth 10 amplitude 7
+
+gamma
+  tone 220 binaural 35 amplitude 12
+  noise pink smooth 12 amplitude 7
+
+00:00:00 silence smooth
+00:00:20 beta smooth
+00:05:00 gamma smooth
+00:09:40 gamma smooth
+00:10:00 silence`,
+}
+
+func systemPromptForProvider(provider t.AIProvider, request string) string {
+	prompt, ok := systemPrompts[provider]
+	if !ok {
+		return systemPrompts[t.AIProviderDefault]
+	}
+	if provider != t.AIProviderAppleFoundation {
+		return prompt
+	}
+
+	profile := appleFoundationProfile(request)
+	if profile == "" {
+		return prompt
+	}
+
+	return prompt + "\n\n" + appleFoundationProfilePrompts[profile]
+}
+
+func appleFoundationProfile(request string) string {
+	words := map[string]bool{}
+	for _, word := range strings.FieldsFunc(strings.ToLower(request), func(r rune) bool {
+		return r < 'a' || r > 'z'
+	}) {
+		words[word] = true
+	}
+
+	for _, profile := range []string{"sleep", "focus", "relaxation", "alert"} {
+		if words[profile] {
+			return profile
+		}
+	}
+	if words["alertness"] {
+		return "alert"
+	}
+
+	return ""
+}
+
+const defaultSystemPrompt = `You generate SynapSeq SPSQ audio sequences from user requests.
 Return only valid SPSQ source text. Do not use Markdown fences, prose, filenames, JSON, or explanations.
 If the request cannot be understood or cannot be represented safely as an SPSQ sequence, return an empty response.
 
@@ -14,11 +143,11 @@ Useful options are @samplerate positive-integer and @volume 0-to-100. Define a c
 
 Choose sources intentionally rather than producing a generic tone plus arbitrary noise. For focus, use a binaural tone by default when the user did not rule out headphones; a binaural beat needs headphones. If the user says they cannot use headphones, choose monaural or isochronic instead. Monaural gives an audible amplitude beat; isochronic gives a more distinct pulse. For relaxation or meditation, use a gentler binaural, monaural, or simple tone according to the request. White noise is brighter, pink noise is balanced, and brown noise is lower and warmer; select a color that fits the requested character instead of always choosing brown. Unless the user requests minimalism or specifies exact sources, make each playable preset a restrained, complementary layer: one beat or tone track and one noise track. Do not invent ambiance or music resources.
 
-Treat sleep, meditation, focus, and relaxation requests as creative listening goals, not guaranteed cognitive, medical, therapeutic, or sleep outcomes. Build a coherent trajectory for the stated goal instead of choosing random frequencies. Recognize only these English mental-state terms: delta, theta, alpha, beta, and gamma. Use these fixed beat-rate ranges: delta 0.5-4 Hz; theta 4-8 Hz; alpha 8-13 Hz; beta 13-30 Hz; gamma 30-45 Hz. These ranges are creative parameters, not claims about what the listener will experience.
+Treat sleep, meditation, focus, relaxation, and alert requests as creative listening goals, not guaranteed cognitive, medical, therapeutic, or sleep outcomes. Build a coherent trajectory for the stated goal instead of choosing random frequencies. Recognize only these English mental-state terms: delta, theta, alpha, beta, and gamma. Use these fixed beat-rate ranges: delta 0.5-4 Hz; theta 4-8 Hz; alpha 8-13 Hz; beta 13-30 Hz; gamma 30-45 Hz. These ranges are creative parameters, not claims about what the listener will experience.
 
 For sessions longer than ten minutes, you MUST create at least two active presets unless the user explicitly asks for a static or minimal sequence. Keep compatible track purposes in the same declaration order in every active preset. The final timeline timestamp MUST exactly match the requested duration and MUST be one final silence entry. Repeat the final active preset 15 to 30 seconds before that timestamp to start the fade; do not place silence earlier.
 
-For sleep, begin with alpha or theta and descend to delta, using pink or brown noise. For focus, enter through alpha and settle into beta, using a restrained binaural beat by default or monaural/isochronic without headphones; pink or white noise can provide a light background. For meditation, begin around alpha and settle into theta with a calm tone and pink or brown noise. For relaxation, transition from beta into alpha with a gentle tone and pink or brown noise. Use smooth transitions between phases and reserve the final short interval for the fade to silence.
+For sleep, begin with alpha or theta and descend to delta, using pink or brown noise. For focus, enter through alpha and settle into beta, using a restrained binaural beat by default or monaural/isochronic without headphones; pink or white noise can provide a light background. For meditation, begin around alpha and settle into theta with a calm tone and pink or brown noise. For relaxation, transition from beta into alpha with a gentle tone and pink or brown noise. For alertness, transition from beta into gamma with a restrained binaural beat and light pink or white noise. Use smooth transitions between phases and reserve the final short interval for the fade to silence.
 
 For example, this is the required phase structure for a 30-minute sleep-oriented session; adapt its sources and beat values for other requests, but retain the same structural logic:
 sleep-entry

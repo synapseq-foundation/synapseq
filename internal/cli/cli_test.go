@@ -319,6 +319,7 @@ func TestParseFlagsAI(ts *testing.T) {
 		"-ai", "generate relaxation",
 		"-ai-model", "local-model",
 		"-ai-base-url", "http://localhost:1234",
+		"-ai-provider", "apple-foundation",
 		"-ai-temperature", "0.2",
 		"-ai-timeout", "90s",
 		"output.spsq",
@@ -327,7 +328,7 @@ func TestParseFlagsAI(ts *testing.T) {
 	if err != nil {
 		ts.Fatalf("ParseFlags error: %v", err)
 	}
-	if opts.AI != "generate relaxation" || opts.AIModel != "local-model" || opts.AIBaseURL != "http://localhost:1234" || opts.AITemperature != "0.2" || opts.AITimeout != "90s" {
+	if opts.AI != "generate relaxation" || opts.AIModel != "local-model" || opts.AIBaseURL != "http://localhost:1234" || opts.AIProvider != "apple-foundation" || opts.AITemperature != "0.2" || opts.AITimeout != "90s" {
 		ts.Fatalf("unexpected AI options: %#v", opts)
 	}
 	if len(args) != 1 || args[0] != "output.spsq" {
@@ -352,6 +353,20 @@ func TestParseFlagsEmptyAIPromptIsSpecialCommand(ts *testing.T) {
 	}
 	if command := ResolveSpecialCommand(opts, args); command.Kind != SpecialCommandAI {
 		ts.Fatalf("expected AI special command, got %q", command.Kind)
+	}
+}
+
+func TestParseFlagsAcceptsDefaultAIProvider(ts *testing.T) {
+	originalArgs := os.Args
+	defer func() { os.Args = originalArgs }()
+
+	os.Args = []string{"cmd", "-ai", "generate relaxation", "-ai-provider", "default"}
+	opts, _, err := ParseFlags()
+	if err != nil {
+		ts.Fatalf("ParseFlags error: %v", err)
+	}
+	if opts.AIProvider != "default" {
+		ts.Fatalf("unexpected AI provider: %q", opts.AIProvider)
 	}
 }
 

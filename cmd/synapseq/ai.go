@@ -63,6 +63,7 @@ func runAI(ctx context.Context, prompt string, args []string, opts *cli.CLIOptio
 	loaded, err := synapseq.NewAppContext().AI(ctx, prompt, &synapseq.AIOptions{
 		Model:       opts.AIModel,
 		BaseURL:     opts.AIBaseURL,
+		Provider:    synapseq.AIProvider(opts.AIProvider),
 		Temperature: temperature,
 		Timeout:     timeout,
 	})

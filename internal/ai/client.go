@@ -14,6 +14,8 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 const defaultBaseURL = "https://api.openai.com/v1"
@@ -22,6 +24,7 @@ type Config struct {
 	APIKey      string
 	BaseURL     string
 	Model       string
+	Provider    t.AIProvider
 	Temperature float64
 }
 
@@ -33,6 +36,7 @@ type Client struct {
 type chatCompletionRequest struct {
 	Model       string    `json:"model"`
 	Messages    []message `json:"messages"`
+	Stream      *bool     `json:"stream,omitempty"`
 	Temperature float64   `json:"temperature"`
 }
 
@@ -95,14 +99,20 @@ func (c *Client) Repair(ctx context.Context, prompt, content string, validationE
 }
 
 func (c *Client) generate(ctx context.Context, prompt string) (string, error) {
-	body, err := json.Marshal(chatCompletionRequest{
+	completionRequest := chatCompletionRequest{
 		Model: c.config.Model,
 		Messages: []message{
-			{Role: "system", Content: systemPrompt},
+			{Role: "system", Content: systemPromptForProvider(c.config.Provider, prompt)},
 			{Role: "user", Content: prompt},
 		},
 		Temperature: c.config.Temperature,
-	})
+	}
+	if c.config.Provider == t.AIProviderAppleFoundation {
+		stream := false
+		completionRequest.Stream = &stream
+	}
+
+	body, err := json.Marshal(completionRequest)
 	if err != nil {
 		return "", fmt.Errorf("encode AI request: %w", err)
 	}

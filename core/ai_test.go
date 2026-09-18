@@ -69,6 +69,22 @@ func TestAITemperatureRejectsInvalidValue(ts *testing.T) {
 	}
 }
 
+func TestAIRejectsUnsupportedProvider(ts *testing.T) {
+	_, err := NewAppContext().AI(context.Background(), "make sequence", &AIOptions{Provider: "unknown"})
+	if err == nil || err.Error() != `unsupported AI provider "unknown"` {
+		ts.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestAIProviderDefaultsToDefault(t *testing.T) {
+	if got := aiProvider(&AIOptions{}); got != "default" {
+		t.Fatalf("unexpected default provider: %q", got)
+	}
+	if err := validateAIProvider(AIProviderDefault); err != nil {
+		t.Fatalf("validate default provider: %v", err)
+	}
+}
+
 func TestAIRepairsInvalidSPSQ(ts *testing.T) {
 	requests := 0
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {

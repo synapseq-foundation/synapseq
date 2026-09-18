@@ -14,6 +14,7 @@ import (
 	"time"
 
 	internalai "github.com/synapseq-foundation/synapseq/v4/internal/ai"
+	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 const (
@@ -36,6 +37,9 @@ func (ac *AppContext) AI(ctx context.Context, prompt string, options *AIOptions)
 		return nil, fmt.Errorf("AI options are nil")
 	}
 
+	if err := validateAIProvider(options.Provider); err != nil {
+		return nil, err
+	}
 	if err := validateAITemperature(options.Temperature); err != nil {
 		return nil, err
 	}
@@ -50,6 +54,7 @@ func (ac *AppContext) AI(ctx context.Context, prompt string, options *AIOptions)
 		APIKey:      os.Getenv("SYNAPSEQ_AI_API_KEY"),
 		BaseURL:     aiBaseURL(options),
 		Model:       aiModel(options),
+		Provider:    aiProvider(options),
 		Temperature: options.Temperature,
 	})
 	if err != nil {
@@ -99,6 +104,22 @@ func aiBaseURL(options *AIOptions) string {
 	}
 
 	return os.Getenv("SYNAPSEQ_AI_BASE_URL")
+}
+
+func aiProvider(options *AIOptions) t.AIProvider {
+	if options == nil || options.Provider == "" {
+		return t.AIProviderDefault
+	}
+
+	return t.AIProvider(options.Provider)
+}
+
+func validateAIProvider(provider AIProvider) error {
+	if provider == "" || provider == AIProviderDefault || provider == AIProviderAppleFoundation {
+		return nil
+	}
+
+	return fmt.Errorf("unsupported AI provider %q", provider)
 }
 
 func validateAITemperature(temperature float64) error {
