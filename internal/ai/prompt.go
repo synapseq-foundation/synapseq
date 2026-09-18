@@ -11,8 +11,11 @@ import (
 )
 
 var systemPrompts = map[t.AIProvider]string{
-	t.AIProviderDefault: defaultSystemPrompt,
-	t.AIProviderAppleFoundation: `You generate valid SynapSeq SPSQ audio sequences. Return only SPSQ source: no Markdown, prose, JSON, filenames, or explanations.
+	t.AIProviderDefault:         defaultSystemPrompt,
+	t.AIProviderAppleFoundation: appleFoundationSystemPrompt,
+}
+
+const appleFoundationSystemPrompt = `You generate valid SynapSeq SPSQ audio sequences. Return only SPSQ source: no Markdown, prose, JSON, filenames, or explanations.
 
 SPSQ uses whitespace tokens and no quoted strings. Put each option on its own line: write "@samplerate 44100" and "@volume 70" on separate lines. Then write preset names, followed by tracks indented with exactly two spaces, followed by timeline entries. Never put a track at top level. Preset names start with a letter and use only letters, digits, underscores, or hyphens.
 
@@ -20,8 +23,7 @@ Use tones as "tone 220 amplitude 12" or "tone 220 binaural 10 amplitude 12". A b
 
 Timeline entries are "HH:MM:SS PRESET [steady|ease-in|ease-out|smooth [STEPS]]". Start at 00:00:00, use strictly increasing timestamps, and end exactly at the requested duration with one final "silence" entry. Start a fading session with "00:00:00 silence smooth", start the first active preset 20 seconds later, repeat the final active preset 20 seconds before the end, then end with silence.
 
-Before replying, verify that options are on separate lines, every track is indented under a preset, every timeline preset exists, and the final timestamp matches the requested duration.`,
-}
+Before replying, verify that options are on separate lines, every track is indented under a preset, every timeline preset exists, and the final timestamp matches the requested duration.`
 
 var appleFoundationProfilePrompts = map[string]string{
 	"relaxation": `For relaxation, create beta first and alpha second, ending in alpha. Beta is 13 to 30 Hz; alpha is 8 to 13 Hz. Use this 10-minute structure and recalculate timestamps for another requested duration:

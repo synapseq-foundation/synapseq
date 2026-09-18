@@ -15,7 +15,7 @@ func TestSystemPromptForProvider(ts *testing.T) {
 	if got := systemPromptForProvider(t.AIProviderDefault, "sleep"); got != defaultSystemPrompt {
 		ts.Fatal("default provider did not select the default prompt")
 	}
-	if got := systemPromptForProvider(t.AIProviderAppleFoundation, "make a sequence"); got != systemPrompts[t.AIProviderAppleFoundation] {
+	if got := systemPromptForProvider(t.AIProviderAppleFoundation, "make a sequence"); got != appleFoundationSystemPrompt {
 		ts.Fatal("Apple Foundation provider did not select its base prompt")
 	}
 	if got := systemPromptForProvider(t.AIProvider("unknown"), "sleep"); got != defaultSystemPrompt {
