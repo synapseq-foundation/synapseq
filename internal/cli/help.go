@@ -123,6 +123,7 @@ func writeIndentedOptionsList(writer io.Writer, indent string, options []helpOpt
 func writeAISection(writer io.Writer) {
 	fmt.Fprintf(writer, "%s\n", Section("AI:"))
 	fmt.Fprintf(writer, "  %s\n\n", Muted("Requires SYNAPSEQ_AI_API_KEY."))
+	fmt.Fprintf(writer, "  %s\n\n", Muted("Providers: default or apple-foundation; configure model and host normally."))
 	writeHelpSubsection(writer, "Command:", aiCommandHelpOptions())
 	writeHelpSubsection(writer, "Options:", aiConfigurationHelpOptions())
 	writeHelpSubsection(writer, "Environment:", aiEnvironmentHelpOptions())
@@ -179,6 +180,7 @@ func aiConfigurationHelpOptions() []helpOption {
 	return []helpOption{
 		{FlagText: "-ai-model MODEL", ColumnWidth: 28, Description: "Model name"},
 		{FlagText: "-ai-base-url URL", ColumnWidth: 28, Description: "OpenAI-compatible API host"},
+		{FlagText: "-ai-provider PROVIDER", ColumnWidth: 28, Description: "Compatibility mode; default or apple-foundation"},
 		{FlagText: "-ai-temperature VALUE", ColumnWidth: 28, Description: "Sampling temperature from 0 to 2"},
 		{FlagText: "-ai-timeout DURATION", ColumnWidth: 28, Description: "Request timeout"},
 	}

@@ -7,6 +7,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -74,6 +75,51 @@ func TestRunAIStreamsOnlySPSQ(ts *testing.T) {
 	}
 	if strings.Contains(output.String(), "Generated:") || !strings.Contains(output.String(), "noise pink") {
 		ts.Fatalf("unexpected standard output: %q", output.String())
+	}
+}
+
+func TestRunAIAppleFoundationProviderPreservesConfiguration(ts *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if got := request.Header.Get("Authorization"); got != "Bearer test-key" {
+			ts.Errorf("unexpected authorization: %q", got)
+		}
+
+		var body struct {
+			Model       string  `json:"model"`
+			Temperature float64 `json:"temperature"`
+			Stream      *bool   `json:"stream"`
+		}
+		if err := json.NewDecoder(request.Body).Decode(&body); err != nil {
+			ts.Errorf("decode request: %v", err)
+		}
+		if body.Model != "system" || body.Temperature != 0.2 || body.Stream == nil || *body.Stream {
+			ts.Errorf("unexpected Apple Foundation request: %#v", body)
+		}
+
+		_, _ = writer.Write([]byte(`{"choices":[{"message":{"content":"focus\n  tone 220 amplitude 10\n00:00:00 focus\n00:05:00 focus"}}]}`))
+	}))
+	defer server.Close()
+	ts.Setenv("SYNAPSEQ_AI_API_KEY", "test-key")
+
+	var output bytes.Buffer
+	err := runAI(
+		context.Background(),
+		"Generate a session",
+		[]string{"-"},
+		&cli.CLIOptions{
+			AIBaseURL:     server.URL,
+			AIModel:       "system",
+			AIProvider:    "apple-foundation",
+			AITemperature: "0.2",
+		},
+		&bytes.Buffer{},
+		&output,
+	)
+	if err != nil {
+		ts.Fatalf("runAI error: %v", err)
+	}
+	if !strings.Contains(output.String(), "tone 220") {
+		ts.Fatalf("unexpected output: %q", output.String())
 	}
 }
 

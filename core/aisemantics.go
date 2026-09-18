@@ -63,6 +63,9 @@ func resolveAIIntent(prompt string) aiIntent {
 			return aiIntent{profile: profile}
 		}
 	}
+	if words["alert"] || words["alertness"] {
+		return aiIntent{profile: "alert"}
+	}
 	for _, state := range []aiState{aiStateDelta, aiStateTheta, aiStateAlpha, aiStateBeta, aiStateGamma} {
 		if words[string(state)] {
 			return aiIntent{state: state}
@@ -116,6 +119,7 @@ func validateAIProfile(loaded *LoadedContext, profile string) error {
 		"meditation": {{aiStateAlpha}, {aiStateTheta}},
 		"focus":      {{aiStateAlpha}, {aiStateBeta}},
 		"relaxation": {{aiStateBeta}, {aiStateAlpha}},
+		"alert":      {{aiStateBeta}, {aiStateGamma}},
 	}[profile]
 
 	if followsAIStages(loaded, stages) {

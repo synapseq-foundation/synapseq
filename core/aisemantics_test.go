@@ -99,3 +99,24 @@ focus
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+
+func TestValidateAISequenceSemanticsAcceptsAlertProgression(t *testing.T) {
+	loaded, err := NewAppContext().LoadContent(`
+beta
+  tone 220 binaural 20 amplitude 10
+
+gamma
+  tone 220 binaural 35 amplitude 10
+
+00:00:00 beta
+00:05:00 gamma
+00:10:00 gamma
+`)
+	if err != nil {
+		t.Fatalf("LoadContent error: %v", err)
+	}
+
+	if err := validateAISequenceSemantics(loaded, "Create an alert session"); err != nil {
+		t.Fatalf("validateAISequenceSemantics error: %v", err)
+	}
+}

@@ -144,6 +144,7 @@ func flagBindings() []flagBinding {
 		{Name: "lsp", Usage: "Start the SPSQ language server over stdio", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.LSP }, SpecialCommand: SpecialCommandLSP},
 		{Name: "ai-model", Usage: "OpenAI-compatible model for -ai", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.AIModel }},
 		{Name: "ai-base-url", Usage: "OpenAI-compatible API host for -ai", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.AIBaseURL }},
+		{Name: "ai-provider", Usage: "Provider compatibility mode for -ai", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.AIProvider }},
 		{Name: "ai-temperature", Usage: "Sampling temperature for -ai", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.AITemperature }},
 		{Name: "ai-timeout", Usage: "Maximum duration for -ai", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.AITimeout }},
 		{Name: "dump", Usage: "Render JSON sequence data", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.Dump }},

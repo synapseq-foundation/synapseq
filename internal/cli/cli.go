@@ -97,6 +97,8 @@ type CLIOptions struct {
 	AIModel string
 	// OpenAI-compatible API host for AI generation
 	AIBaseURL string
+	// Provider compatibility mode for AI generation
+	AIProvider string
 	// Sampling temperature for AI generation
 	AITemperature string
 	// Maximum duration for AI generation
