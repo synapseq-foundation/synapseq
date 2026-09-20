@@ -21,9 +21,10 @@ import (
 
 var promptDurationPattern = regexp.MustCompile(`(?i)\b(\d+)\s*(hours?|hrs?|h|minutes?|mins?|m)\b`)
 
-const defaultAITimeout = 5 * time.Minute
-
-const defaultAITemperature = 1
+const (
+	defaultAITimeout     = 5 * time.Minute
+	defaultAITemperature = 1
+)
 
 func runAI(ctx context.Context, prompt string, args []string, opts *cli.CLIOptions, statusWriter, outputWriter io.Writer) error {
 	if opts == nil {
@@ -35,7 +36,6 @@ func runAI(ctx context.Context, prompt string, args []string, opts *cli.CLIOptio
 	if len(args) > 1 {
 		return fmt.Errorf("invalid AI generation arguments\nUsage: synapseq -ai <prompt> [output.spsq|-]")
 	}
-
 	outputPath := aiOutputPath(prompt)
 	if len(args) == 1 {
 		outputPath = args[0]

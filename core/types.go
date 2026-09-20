@@ -17,7 +17,7 @@ type AIProvider string
 const (
 	// AIProviderDefault uses the standard OpenAI-compatible request behavior.
 	AIProviderDefault AIProvider = "default"
-	// AIProviderAppleFoundation enables compatibility with Apple's fm serve.
+	// AIProviderAppleFoundation uses Apple's local Foundation Models through fmgo.
 	AIProviderAppleFoundation AIProvider = "apple-foundation"
 )
 
@@ -29,11 +29,12 @@ type AppContext struct {
 	statusColors bool
 }
 
-// AIOptions configures an OpenAI-compatible model used to generate SPSQ text.
-// Empty Model and BaseURL values use SYNAPSEQ_AI_MODEL and SYNAPSEQ_AI_BASE_URL,
-// then SynapSeq defaults. Provider accepts AIProviderDefault,
-// AIProviderAppleFoundation, or an empty value. Temperature must be between 0
-// and 2. Timeout must be greater than zero.
+// AIOptions configures a model used to generate SPSQ text. Empty Model and
+// BaseURL values use SYNAPSEQ_AI_MODEL and SYNAPSEQ_AI_BASE_URL, then SynapSeq
+// defaults. Provider accepts AIProviderDefault, AIProviderAppleFoundation, or
+// an empty value. Apple Foundation uses the local fm command and ignores
+// BaseURL and Temperature. Temperature must be between 0 and 2. Timeout must
+// be greater than zero.
 type AIOptions struct {
 	Model       string
 	BaseURL     string
