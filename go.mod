@@ -5,6 +5,7 @@ go 1.27.0
 require (
 	github.com/fatih/color v1.19.0
 	github.com/gopxl/beep/v2 v2.1.1
+	github.com/ruanklein/fmgo v0.1.1
 	go.lsp.dev/jsonrpc2 v1.0.1
 	go.lsp.dev/protocol v1.0.1
 	go.lsp.dev/uri v1.0.1

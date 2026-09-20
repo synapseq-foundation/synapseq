@@ -18,8 +18,9 @@ import (
 )
 
 const (
-	defaultAIModel   = "gpt-4.1-mini"
-	aiRepairAttempts = 2
+	defaultAIModel                = "gpt-4.1-mini"
+	defaultAppleFoundationAIModel = "system"
+	aiRepairAttempts              = 2
 )
 
 // AI generates and validates an SPSQ sequence from prompt using an
@@ -93,6 +94,9 @@ func aiModel(options *AIOptions) string {
 	}
 	if model := strings.TrimSpace(os.Getenv("SYNAPSEQ_AI_MODEL")); model != "" {
 		return model
+	}
+	if aiProvider(options) == t.AIProviderAppleFoundation {
+		return defaultAppleFoundationAIModel
 	}
 
 	return defaultAIModel

@@ -9,7 +9,7 @@ type AIProvider string
 
 const (
 	// AIProviderDefault selects the standard provider behavior.
-	AIProviderDefault         AIProvider = "default"
-	// AIProviderAppleFoundation selects Apple's fm serve behavior.
+	AIProviderDefault AIProvider = "default"
+	// AIProviderAppleFoundation selects Apple's local Foundation Models behavior.
 	AIProviderAppleFoundation AIProvider = "apple-foundation"
 )

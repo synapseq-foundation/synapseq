@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/ruanklein/fmgo"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -29,8 +30,9 @@ type Config struct {
 }
 
 type Client struct {
-	config     Config
-	httpClient *http.Client
+	config          Config
+	httpClient      *http.Client
+	appleFoundation *fmgo.Client
 }
 
 type chatCompletionRequest struct {
@@ -60,11 +62,19 @@ type apiErrorResponse struct {
 }
 
 func New(config Config) (*Client, error) {
-	if strings.TrimSpace(config.APIKey) == "" {
-		return nil, fmt.Errorf("SYNAPSEQ_AI_API_KEY is not set")
-	}
 	if strings.TrimSpace(config.Model) == "" {
 		return nil, fmt.Errorf("AI model cannot be empty")
+	}
+	if config.Provider == t.AIProviderAppleFoundation {
+		client, err := fmgo.New()
+		if err != nil {
+			return nil, err
+		}
+
+		return &Client{config: config, appleFoundation: client}, nil
+	}
+	if strings.TrimSpace(config.APIKey) == "" {
+		return nil, fmt.Errorf("SYNAPSEQ_AI_API_KEY is not set")
 	}
 
 	baseURL, err := completionURL(config.BaseURL)
@@ -99,6 +109,10 @@ func (c *Client) Repair(ctx context.Context, prompt, content string, validationE
 }
 
 func (c *Client) generate(ctx context.Context, prompt string) (string, error) {
+	if c.config.Provider == t.AIProviderAppleFoundation {
+		return c.generateAppleFoundation(ctx, prompt)
+	}
+
 	completionRequest := chatCompletionRequest{
 		Model: c.config.Model,
 		Messages: []message{
@@ -107,11 +121,6 @@ func (c *Client) generate(ctx context.Context, prompt string) (string, error) {
 		},
 		Temperature: c.config.Temperature,
 	}
-	if c.config.Provider == t.AIProviderAppleFoundation {
-		stream := false
-		completionRequest.Stream = &stream
-	}
-
 	body, err := json.Marshal(completionRequest)
 	if err != nil {
 		return "", fmt.Errorf("encode AI request: %w", err)
@@ -152,6 +161,22 @@ func (c *Client) generate(ctx context.Context, prompt string) (string, error) {
 	}
 
 	return strings.TrimSpace(completion.Choices[0].Message.Content) + "\n", nil
+}
+
+func (c *Client) generateAppleFoundation(ctx context.Context, prompt string) (string, error) {
+	response, err := c.appleFoundation.Respond(ctx, fmgo.Request{
+		Prompt:       prompt,
+		Instructions: systemPromptForProvider(c.config.Provider, prompt),
+		Model:        fmgo.Model(c.config.Model),
+	})
+	if err != nil {
+		return "", err
+	}
+	if strings.TrimSpace(response.Text) == "" {
+		return "", fmt.Errorf("AI did not understand the prompt")
+	}
+
+	return strings.TrimSpace(response.Text) + "\n", nil
 }
 
 func completionURL(baseURL string) (string, error) {

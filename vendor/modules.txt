@@ -35,6 +35,11 @@ github.com/mattn/go-isatty
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
+# github.com/ruanklein/fmgo v0.1.1
+## explicit; go 1.27.0
+github.com/ruanklein/fmgo
+github.com/ruanklein/fmgo/internal/platform
+github.com/ruanklein/fmgo/internal/process
 # go.lsp.dev/jsonrpc2 v1.0.1
 ## explicit; go 1.26
 go.lsp.dev/jsonrpc2

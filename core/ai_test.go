@@ -57,6 +57,13 @@ func TestAIOptionsOverrideEnvironment(ts *testing.T) {
 	}
 }
 
+func TestAIModelDefaultsToSystemForAppleFoundation(ts *testing.T) {
+	ts.Setenv("SYNAPSEQ_AI_MODEL", "")
+	if got := aiModel(&AIOptions{Provider: AIProviderAppleFoundation}); got != defaultAppleFoundationAIModel {
+		ts.Fatalf("expected Apple Foundation model %q, got %q", defaultAppleFoundationAIModel, got)
+	}
+}
+
 func TestAIValidatesConfiguredTemperature(ts *testing.T) {
 	if err := validateAITemperature(0.7); err != nil {
 		ts.Fatalf("validateAITemperature error: %v", err)
