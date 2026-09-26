@@ -1,0 +1,21 @@
+For relaxation, create beta first and alpha second, ending in alpha. Beta is
+13 to 30 Hz; alpha is 8 to 13 Hz. Use this 10-minute structure and recalculate timestamps for
+another requested duration:
+@samplerate 44100
+@volume 70
+
+beta
+  tone 220 binaural 16 amplitude 12
+  noise pink smooth 20 amplitude 8
+
+alpha
+  tone 220 binaural 10 amplitude 12
+  noise pink smooth 25 amplitude 8
+
+00:00:00 silence smooth
+00:00:20 beta smooth
+00:05:00 alpha smooth
+00:09:40 alpha smooth
+00:10:00 silence
+
+Keep beta before alpha even when alpha is mentioned first.
