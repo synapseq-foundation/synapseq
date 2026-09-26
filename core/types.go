@@ -32,9 +32,9 @@ type AppContext struct {
 // AIOptions configures a model used to generate SPSQ text. Empty Model and
 // BaseURL values use SYNAPSEQ_AI_MODEL and SYNAPSEQ_AI_BASE_URL, then SynapSeq
 // defaults. Provider accepts AIProviderDefault, AIProviderAppleFoundation, or
-// an empty value. Apple Foundation uses the local fm command and ignores
-// BaseURL and Temperature. Temperature must be between 0 and 2. Timeout must
-// be greater than zero.
+// an empty value. Apple Foundation is available only in darwin/arm64 builds,
+// uses the local fm command, and ignores BaseURL and Temperature. Temperature
+// must be between 0 and 2. Timeout must be greater than zero.
 type AIOptions struct {
 	Model       string
 	BaseURL     string

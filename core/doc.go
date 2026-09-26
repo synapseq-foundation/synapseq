@@ -94,8 +94,9 @@ SYNAPSEQ_AI_API_KEY. Model and API host default to gpt-4.1-mini and the OpenAI
 API; configure a local or alternate provider through AIOptions or the
 SYNAPSEQ_AI_MODEL and SYNAPSEQ_AI_BASE_URL environment variables. Provider
 defaults to AIProviderDefault. Set it to AIProviderAppleFoundation to use
-Apple's local Foundation Models through fmgo; it requires macOS 27 or later,
-uses the system model by default, and does not require an API key or host.
+Apple's local Foundation Models through fmgo in darwin/arm64 builds; it requires
+macOS 27 or later, uses the system model by default, and does not require an API
+key or host. Other builds return an unsupported-provider error.
 Temperature applies only to the default provider. Set AIOptions.Timeout to a
 positive time.Duration appropriate for the calling application.
 

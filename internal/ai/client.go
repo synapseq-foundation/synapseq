@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Package ai communicates with OpenAI-compatible chat completion APIs.
+// Package ai generates SPSQ text through compatible chat APIs or Apple Foundation Models on darwin/arm64.
 package ai
 
 import (
@@ -15,7 +15,6 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/ruanklein/fmgo"
 	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
@@ -32,7 +31,7 @@ type Config struct {
 type Client struct {
 	config          Config
 	httpClient      *http.Client
-	appleFoundation *fmgo.Client
+	appleFoundation foundationClient
 }
 
 type chatCompletionRequest struct {
@@ -66,7 +65,7 @@ func New(config Config) (*Client, error) {
 		return nil, fmt.Errorf("AI model cannot be empty")
 	}
 	if config.Provider == t.AIProviderAppleFoundation {
-		client, err := fmgo.New()
+		client, err := newFoundationClient()
 		if err != nil {
 			return nil, err
 		}
@@ -110,13 +109,13 @@ func (c *Client) Repair(ctx context.Context, prompt, content string, validationE
 
 func (c *Client) generate(ctx context.Context, prompt string) (string, error) {
 	if c.config.Provider == t.AIProviderAppleFoundation {
-		return c.generateAppleFoundation(ctx, prompt)
+		return c.appleFoundation.generate(ctx, c.config, prompt)
 	}
 
 	completionRequest := chatCompletionRequest{
 		Model: c.config.Model,
 		Messages: []message{
-			{Role: "system", Content: systemPromptForProvider(c.config.Provider, prompt)},
+			{Role: "system", Content: defaultSystemPrompt},
 			{Role: "user", Content: prompt},
 		},
 		Temperature: c.config.Temperature,
@@ -161,22 +160,6 @@ func (c *Client) generate(ctx context.Context, prompt string) (string, error) {
 	}
 
 	return strings.TrimSpace(completion.Choices[0].Message.Content) + "\n", nil
-}
-
-func (c *Client) generateAppleFoundation(ctx context.Context, prompt string) (string, error) {
-	response, err := c.appleFoundation.Respond(ctx, fmgo.Request{
-		Prompt:       prompt,
-		Instructions: systemPromptForProvider(c.config.Provider, prompt),
-		Model:        fmgo.Model(c.config.Model),
-	})
-	if err != nil {
-		return "", err
-	}
-	if strings.TrimSpace(response.Text) == "" {
-		return "", fmt.Errorf("AI did not understand the prompt")
-	}
-
-	return strings.TrimSpace(response.Text) + "\n", nil
 }
 
 func completionURL(baseURL string) (string, error) {

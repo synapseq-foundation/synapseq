@@ -13,8 +13,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	t "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
 
 func TestGenerateSendsOpenAICompatibleRequest(ts *testing.T) {
@@ -39,7 +37,7 @@ func TestGenerateSendsOpenAICompatibleRequest(ts *testing.T) {
 		if body.Messages[1].Content != "make a sequence" {
 			ts.Errorf("unexpected user prompt: %q", body.Messages[1].Content)
 		}
-		if body.Messages[0].Content != systemPromptForProvider(t.AIProviderDefault, "make a sequence") {
+		if body.Messages[0].Content != defaultSystemPrompt {
 			ts.Error("unexpected default system prompt")
 		}
 		if body.Temperature != 1 {
@@ -118,13 +116,6 @@ func TestNewRequiresAPIKey(ts *testing.T) {
 	_, err := New(Config{Model: "test"})
 	if err == nil || !strings.Contains(err.Error(), "SYNAPSEQ_AI_API_KEY") {
 		ts.Fatalf("unexpected error: %v", err)
-	}
-}
-
-func TestAppleFoundationDoesNotRequireAPIKey(ts *testing.T) {
-	_, err := New(Config{Model: "system", Provider: t.AIProviderAppleFoundation})
-	if err != nil && strings.Contains(err.Error(), "SYNAPSEQ_AI_API_KEY") {
-		ts.Fatalf("Apple Foundation unexpectedly required an API key: %v", err)
 	}
 }
 
