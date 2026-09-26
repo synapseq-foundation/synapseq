@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -494,6 +495,13 @@ func TestHelpIncludesQuickStart(ts *testing.T) {
 		if !strings.Contains(helpText, expected) {
 			ts.Errorf("help output missing %q\nfull output:\n%s", expected, helpText)
 		}
+	}
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+		if !strings.Contains(helpText, "default or apple-foundation") {
+			ts.Errorf("Apple Silicon help does not mention apple-foundation\nfull output:\n%s", helpText)
+		}
+	} else if strings.Contains(helpText, "apple-foundation") {
+		ts.Errorf("unsupported build help mentions apple-foundation\nfull output:\n%s", helpText)
 	}
 
 	if strings.Contains(helpText, "-new") {

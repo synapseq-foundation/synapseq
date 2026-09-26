@@ -18,9 +18,8 @@ import (
 )
 
 const (
-	defaultAIModel                = "gpt-4.1-mini"
-	defaultAppleFoundationAIModel = "system"
-	aiRepairAttempts              = 2
+	defaultAIModel   = "gpt-4.1-mini"
+	aiRepairAttempts = 2
 )
 
 // AI generates and validates an SPSQ sequence from prompt using an
@@ -96,7 +95,9 @@ func aiModel(options *AIOptions) string {
 		return model
 	}
 	if aiProvider(options) == t.AIProviderAppleFoundation {
-		return defaultAppleFoundationAIModel
+		if model := appleFoundationAIModel(); model != "" {
+			return model
+		}
 	}
 
 	return defaultAIModel
@@ -119,7 +120,10 @@ func aiProvider(options *AIOptions) t.AIProvider {
 }
 
 func validateAIProvider(provider AIProvider) error {
-	if provider == "" || provider == AIProviderDefault || provider == AIProviderAppleFoundation {
+	if provider == AIProviderAppleFoundation {
+		return validateAppleFoundationProvider()
+	}
+	if provider == "" || provider == AIProviderDefault {
 		return nil
 	}
 

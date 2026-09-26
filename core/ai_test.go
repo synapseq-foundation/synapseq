@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -59,8 +60,26 @@ func TestAIOptionsOverrideEnvironment(ts *testing.T) {
 
 func TestAIModelDefaultsToSystemForAppleFoundation(ts *testing.T) {
 	ts.Setenv("SYNAPSEQ_AI_MODEL", "")
-	if got := aiModel(&AIOptions{Provider: AIProviderAppleFoundation}); got != defaultAppleFoundationAIModel {
-		ts.Fatalf("expected Apple Foundation model %q, got %q", defaultAppleFoundationAIModel, got)
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+		if got := aiModel(&AIOptions{Provider: AIProviderAppleFoundation}); got != "system" {
+			ts.Fatalf("expected Apple Foundation model %q, got %q", "system", got)
+		}
+		return
+	}
+
+	if got := aiModel(&AIOptions{Provider: AIProviderAppleFoundation}); got != defaultAIModel {
+		ts.Fatalf("expected default AI model %q, got %q", defaultAIModel, got)
+	}
+}
+
+func TestAIRejectsAppleFoundationOutsideDarwinARM64(ts *testing.T) {
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+		ts.Skip("Apple Foundation is supported on this build target")
+	}
+
+	_, err := NewAppContext().AI(context.Background(), "make sequence", &AIOptions{Provider: AIProviderAppleFoundation})
+	if err == nil || !strings.Contains(err.Error(), "supported only on macOS with Apple Silicon") {
+		ts.Fatalf("unexpected Apple Foundation error: %v", err)
 	}
 }
 
