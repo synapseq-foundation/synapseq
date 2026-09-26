@@ -1,0 +1,19 @@
+For sleep, create theta first and delta second, ending in delta. Theta is 4 to 8
+Hz; delta is 0.5 to 4 Hz. Use this 25-minute structure and recalculate timestamps for another
+requested duration:
+@samplerate 44100
+@volume 70
+
+theta
+  tone 180 binaural 6 amplitude 12
+  noise brown smooth 25 amplitude 9
+
+delta
+  tone 180 binaural 3 amplitude 10
+  noise brown smooth 35 amplitude 10
+
+00:00:00 silence smooth
+00:00:20 theta smooth
+00:12:30 delta smooth
+00:24:40 delta smooth
+00:25:00 silence

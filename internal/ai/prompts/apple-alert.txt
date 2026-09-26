@@ -1,0 +1,19 @@
+For alert or alertness, create beta first and gamma second, ending in gamma. Beta
+is 13 to 30 Hz; gamma is 30 to 45 Hz. Use this 10-minute structure and recalculate timestamps for
+another requested duration:
+@samplerate 44100
+@volume 70
+
+beta
+  tone 220 binaural 20 amplitude 12
+  noise white smooth 10 amplitude 7
+
+gamma
+  tone 220 binaural 35 amplitude 12
+  noise pink smooth 12 amplitude 7
+
+00:00:00 silence smooth
+00:00:20 beta smooth
+00:05:00 gamma smooth
+00:09:40 gamma smooth
+00:10:00 silence
