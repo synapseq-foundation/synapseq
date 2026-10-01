@@ -59,7 +59,7 @@ This is the executable entry layer.
 
 - `main.go` handles process startup, flag parsing, and top-level command routing.
 - `dispatch.go` executes special commands such as `-version`, `-sbg`, and `-sync`, `-list`, `-search`, `-info`, `-download`, `-get`, `-clean`.
-- `sequencehandlers.go` handles the standard local sequence flow.
+- `sequence_handlers.go` handles the standard local sequence flow.
 - `output.go` routes loaded sequences to JSON dump, stream, WAV, playback, or MP3 conversion.
 - `remote.go` implements CLI-facing Remote commands.
 
@@ -414,9 +414,9 @@ For new contributors, the fastest way to build context is:
 1. `cmd/synapseq/main.go`
 2. `cmd/synapseq/dispatch.go`
 3. `core/context.go`, `core/sequence.go`, `core/generate.go`
-4. `internal/sequence/loadtext.go` and `internal/sequence/parsecontent.go`
+4. `internal/sequence/load_text.go` and `internal/sequence/parse_content.go`
 5. `internal/parser/*`
-6. `internal/audio/renderer.go` and `internal/audio/rendercycle.go`
+6. `internal/audio/renderer.go` and `internal/audio/render_cycle.go`
 7. `internal/remote/*` if working on remote sequence workflows
 
 That path mirrors how the application itself flows at runtime.
