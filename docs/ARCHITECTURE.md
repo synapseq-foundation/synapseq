@@ -160,6 +160,10 @@ Remote is optional input infrastructure, not part of the renderer itself.
 
 This public package parses supported SBaGen input and maps its structured values into the public `spsq` builder. `New` receives a caller-owned `core.AppContext`, and its `LoadFile` and `LoadContent` methods return validated `core.LoadedContext` values. The CLI writes `RawContent()` to the requested destination.
 
+`sbg.go` coordinates reading, parsing, conversion, and validation. `parser.go` owns line classification, source diagnostics, duplicate detection, and the absolute base used by relative timeline entries. Parsing of definitions, options, and voices lives in `definition.go`, `option.go`, and `voice.go`.
+
+`conversion.go` builds SPSQ presets, while `timeline.go` parses times and emits timeline entries. `name.go` handles name validation and collision resolution; `music.go` resolves local music paths. Shared parsed values remain in `types.go`. Conversion continues through `spsq.Builder.Load`, so this package does not implement a separate sequence loader or renderer.
+
 ### `internal/cli`
 
 This package contains CLI-oriented infrastructure used by the executable:

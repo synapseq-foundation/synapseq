@@ -31,20 +31,31 @@ func parseVoice(token string) (voice, error) {
 		return voice{kind: voiceMix, amplitude: amplitude}, err
 	case strings.HasPrefix(token, "spin:"):
 		tone, err := parseTone(strings.TrimPrefix(token, "spin:"), true)
-		return voice{kind: voiceSpin, carrier: tone.carrier, beat: tone.beat, amplitude: tone.amplitude}, err
+		return voice{
+			kind:      voiceSpin,
+			carrier:   tone.carrier,
+			beat:      tone.beat,
+			amplitude: tone.amplitude,
+		}, err
 	default:
 		tone, err := parseTone(token, false)
 		kind := voiceTone
 		if tone.hasBeat {
 			kind = voiceBinaural
 		}
-		return voice{kind: kind, carrier: tone.carrier, beat: tone.beat, amplitude: tone.amplitude}, err
+		return voice{
+			kind:      kind,
+			carrier:   tone.carrier,
+			beat:      tone.beat,
+			amplitude: tone.amplitude,
+		}, err
 	}
 }
 
 func parseTone(token string, requireBeat bool) (parsedTone, error) {
 	toneText, amplitudeText, found := strings.Cut(token, "/")
-	if !found || toneText == "" || amplitudeText == "" || strings.Contains(amplitudeText, "/") {
+	missingComponent := !found || toneText == "" || amplitudeText == ""
+	if missingComponent || strings.Contains(amplitudeText, "/") {
 		return parsedTone{}, errors.New("expected carrier[+|-beat]/amplitude")
 	}
 	amplitude, err := parseDecimal(amplitudeText)
@@ -54,12 +65,13 @@ func parseTone(token string, requireBeat bool) (parsedTone, error) {
 
 	signIndex := -1
 	for index := 1; index < len(toneText); index++ {
-		if toneText[index] == '+' || toneText[index] == '-' {
-			if signIndex >= 0 {
-				return parsedTone{}, errors.New("multiple beat signs")
-			}
-			signIndex = index
+		if toneText[index] != '+' && toneText[index] != '-' {
+			continue
 		}
+		if signIndex >= 0 {
+			return parsedTone{}, errors.New("multiple beat signs")
+		}
+		signIndex = index
 	}
 	if signIndex < 0 {
 		if requireBeat {
@@ -79,7 +91,12 @@ func parseTone(token string, requireBeat bool) (parsedTone, error) {
 	if err != nil {
 		return parsedTone{}, fmt.Errorf("invalid beat: %w", err)
 	}
-	return parsedTone{carrier: carrier, hasBeat: true, beat: beat, amplitude: amplitude}, nil
+	return parsedTone{
+		carrier:   carrier,
+		hasBeat:   true,
+		beat:      beat,
+		amplitude: amplitude,
+	}, nil
 }
 
 func parseDecimal(value string) (float64, error) {
@@ -91,12 +108,13 @@ func parseDecimal(value string) (float64, error) {
 		if (char < '0' || char > '9') && char != '.' {
 			return 0, fmt.Errorf("unexpected character %q", char)
 		}
-		if char == '.' {
-			if seenDecimal {
-				return 0, errors.New("more than one decimal point")
-			}
-			seenDecimal = true
+		if char != '.' {
+			continue
 		}
+		if seenDecimal {
+			return 0, errors.New("more than one decimal point")
+		}
+		seenDecimal = true
 	}
 	number, err := strconv.ParseFloat(value, 64)
 	if err != nil || math.IsInf(number, 0) || math.IsNaN(number) {

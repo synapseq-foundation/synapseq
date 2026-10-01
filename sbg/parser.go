@@ -15,6 +15,7 @@ import (
 func parse(source string, reader io.Reader) (*sequence, error) {
 	result := &sequence{source: source, sampleRate: defaultSampleRate}
 	definitions := make(map[string]struct{})
+	// Relative entries are offsets from the last absolute entry, not the previous entry.
 	var relativeBase time.Duration
 	scanner := bufio.NewScanner(reader)
 	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
@@ -33,7 +34,7 @@ func parse(source string, reader io.Reader) (*sequence, error) {
 		}
 
 		fields := strings.Fields(line)
-		musicPath, ok, err := parseMusicOption(fields)
+		musicPath, hasMusic, err := parseMusicOption(fields)
 		if err != nil {
 			return nil, lineError(source, lineNumber, err.Error())
 		}
@@ -41,14 +42,14 @@ func parse(source string, reader io.Reader) (*sequence, error) {
 		if err != nil {
 			return nil, lineError(source, lineNumber, err.Error())
 		}
-		if ok {
+		if hasMusic {
 			result.musicPath = musicPath
 			result.musicLine = lineNumber
 		}
 		if hasSampleRate {
 			result.sampleRate = sampleRate
 		}
-		if ok || hasSampleRate {
+		if hasMusic || hasSampleRate {
 			continue
 		}
 
@@ -79,17 +80,11 @@ func parse(source string, reader io.Reader) (*sequence, error) {
 			return nil, lineError(source, lineNumber, fmt.Sprintf("duplicate NameDef %q", name))
 		}
 
-		definition := nameDef{name: name, line: lineNumber}
-		for _, token := range strings.Fields(voicesText) {
-			parsed, err := parseVoice(token)
-			if err != nil {
-				return nil, lineError(source, lineNumber, fmt.Sprintf("voice %q: %v", token, err))
-			}
-			definition.voices = append(definition.voices, parsed)
+		definition, err := parseDefinition(name, voicesText)
+		if err != nil {
+			return nil, lineError(source, lineNumber, err.Error())
 		}
-		if len(definition.voices) == 0 {
-			return nil, lineError(source, lineNumber, fmt.Sprintf("NameDef %q has no voices", name))
-		}
+		definition.line = lineNumber
 		definitions[name] = struct{}{}
 		result.definitions = append(result.definitions, definition)
 	}
@@ -104,9 +99,14 @@ func parse(source string, reader io.Reader) (*sequence, error) {
 		return nil, fmt.Errorf("parse %q: no timeline entries found", source)
 	}
 	for _, event := range result.timeline {
-		if _, ok := definitions[event.name]; !ok {
-			return nil, lineError(source, event.line, fmt.Sprintf("timeline references undefined NameDef %q", event.name))
+		if _, exists := definitions[event.name]; !exists {
+			message := fmt.Sprintf("timeline references undefined NameDef %q", event.name)
+			return nil, lineError(source, event.line, message)
 		}
 	}
 	return result, nil
+}
+
+func lineError(source string, line int, message string) error {
+	return fmt.Errorf("parse %q line %d: %s", source, line, message)
 }
