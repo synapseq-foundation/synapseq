@@ -10,7 +10,11 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/synapseq-foundation/synapseq/v4/spsq"
 )
+
+const initialFadeDuration = 30 * time.Second
 
 type parsedTime struct {
 	duration time.Duration
@@ -18,11 +22,53 @@ type parsedTime struct {
 	relative bool
 }
 
+func appendTimeline(
+	builder *spsq.Builder,
+	parsedSequence *sequence,
+	presets map[string]*spsq.Preset,
+	silentDefinitions map[string]struct{},
+) error {
+	if len(parsedSequence.timeline) == 0 {
+		return fmt.Errorf("convert %q: no timeline entries found", parsedSequence.source)
+	}
+	firstEvent := parsedSequence.timeline[0]
+	baseTime := firstEvent.at
+	if firstEvent.initial {
+		baseTime = 0
+		builder.SilenceAt(0).Steady()
+	}
+	var previousAt time.Duration
+	for index, event := range parsedSequence.timeline {
+		at := event.at - baseTime
+		if index == 0 && event.initial && event.at == 0 {
+			at = initialFadeDuration
+		}
+		if index > 0 && at <= previousAt {
+			return lineError(parsedSequence.source, event.line, "timeline entries must be strictly increasing")
+		}
+		previousAt = at
+		if _, silent := silentDefinitions[event.name]; silent {
+			if index == 0 && firstEvent.initial {
+				continue
+			}
+			builder.SilenceAt(at).Steady()
+			continue
+		}
+		preset := presets[event.name]
+		if preset == nil {
+			message := fmt.Sprintf("NameDef %q has no convertible voices", event.name)
+			return lineError(parsedSequence.source, event.line, message)
+		}
+		builder.PresetAt(at, preset).Steady()
+	}
+	return nil
+}
+
 func parseTimeline(fields []string) (timelineEvent, error) {
 	if len(fields) < 2 || len(fields) > 4 {
 		return timelineEvent{}, errors.New("timeline must contain time, optional fade marker, NameDef, and optional ->")
 	}
-	parsed, err := parseTime(fields[0])
+	timestamp, err := parseTime(fields[0])
 	if err != nil {
 		return timelineEvent{}, err
 	}
@@ -33,7 +79,12 @@ func parseTimeline(fields []string) (timelineEvent, error) {
 	if index >= len(fields) || !validName(fields[index]) {
 		return timelineEvent{}, errors.New("timeline has an invalid or missing NameDef")
 	}
-	event := timelineEvent{at: parsed.duration, initial: parsed.initial, relative: parsed.relative, name: fields[index]}
+	event := timelineEvent{
+		at:       timestamp.duration,
+		initial:  timestamp.initial,
+		relative: timestamp.relative,
+		name:     fields[index],
+	}
 	index++
 	if index == len(fields) {
 		return event, nil
@@ -45,15 +96,15 @@ func parseTimeline(fields []string) (timelineEvent, error) {
 }
 
 func parseTime(value string) (parsedTime, error) {
-	parsed := parsedTime{initial: value == "NOW" || strings.HasPrefix(value, "NOW+")}
+	timestamp := parsedTime{initial: value == "NOW" || strings.HasPrefix(value, "NOW+")}
 	switch {
 	case value == "NOW":
-		return parsed, nil
+		return timestamp, nil
 	case strings.HasPrefix(value, "NOW+"):
 		value = strings.TrimPrefix(value, "NOW+")
 	case strings.HasPrefix(value, "+"):
 		value = strings.TrimPrefix(value, "+")
-		parsed.relative = true
+		timestamp.relative = true
 	}
 
 	parts := strings.Split(value, ":")
@@ -65,11 +116,11 @@ func parseTime(value string) (parsedTime, error) {
 		if len(part) != 2 {
 			return parsedTime{}, errors.New("timeline time fields must have two digits")
 		}
-		parsed, err := strconv.Atoi(part)
-		if err != nil || parsed < 0 {
+		fieldValue, err := strconv.Atoi(part)
+		if err != nil || fieldValue < 0 {
 			return parsedTime{}, fmt.Errorf("invalid timeline time %q", value)
 		}
-		values[index] = parsed
+		values[index] = fieldValue
 	}
 	minutes := values[len(values)-2]
 	seconds := values[len(values)-1]
@@ -80,8 +131,8 @@ func parseTime(value string) (parsedTime, error) {
 	if len(values) == 3 {
 		duration += time.Duration(values[0]) * time.Hour
 	}
-	parsed.duration = duration
-	return parsed, nil
+	timestamp.duration = duration
+	return timestamp, nil
 }
 
 func isTimelineTime(value string) bool {
@@ -96,5 +147,8 @@ func isTimelineTime(value string) bool {
 }
 
 func isFadeMarker(value string) bool {
-	return len(value) == 2 && strings.ContainsRune("<-=", rune(value[0])) && strings.ContainsRune(">-=", rune(value[1]))
+	if len(value) != 2 {
+		return false
+	}
+	return strings.ContainsRune("<-=", rune(value[0])) && strings.ContainsRune(">-=", rune(value[1]))
 }
