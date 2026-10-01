@@ -149,9 +149,9 @@ For new contributors, the fastest way to understand the codebase:
 2. `cmd/synapseq/dispatch.go`
 3. `core/context.go`, `core/sequence.go`, `core/generate.go`
 4. `spsq/builder.go` and `sbg/sbg.go`
-5. `internal/sequence/loadtext.go` and `internal/sequence/parsecontent.go`
+5. `internal/sequence/load_text.go` and `internal/sequence/parse_content.go`
 6. `internal/parser/*`
-7. `internal/audio/renderer.go`, `internal/audio/rendercycle.go`, and `internal/audio/audiosource/*`
+7. `internal/audio/renderer.go`, `internal/audio/render_cycle.go`, and `internal/audio/audiosource/*`
 8. `internal/remote/*`
 
 For detailed architecture, see `docs/ARCHITECTURE.md`. For DSL syntax, see [the SPSQ documentation](https://synapseq.org/docs/spsq).
