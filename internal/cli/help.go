@@ -26,7 +26,7 @@ type helpOption struct {
 }
 
 // Help prints the help message
-func Help() {
+func Help(showSupportMessage bool) {
 	writer := color.Output
 	writeHelpHeader(writer)
 	writeUsageSection(writer)
@@ -40,6 +40,11 @@ func Help() {
 
 	if runtime.GOOS == "windows" {
 		writeOptionsSection(writer, "Windows-specific options:", windowsHelpOptions())
+	}
+
+	if showSupportMessage {
+		fmt.Fprintf(writer, "%s %s\n", Accent("♥"), Muted("If SynapSeq is useful to you, consider supporting its development:"))
+		fmt.Fprintf(writer, "  %s\n", Command("https://github.com/sponsors/ruanklein"))
 	}
 }
 

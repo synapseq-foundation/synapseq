@@ -5,6 +5,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"os"
@@ -12,11 +13,49 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/fatih/color"
 	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
 	clistyle "github.com/synapseq-foundation/synapseq/v4/internal/cli"
 	"github.com/synapseq-foundation/synapseq/v4/internal/diag"
 	types "github.com/synapseq-foundation/synapseq/v4/internal/types"
 )
+
+func TestRunShowsSupportMessageOnlyForExplicitHelp(ts *testing.T) {
+	originalColorOutput := color.Output
+	originalNoColor := color.NoColor
+	defer func() {
+		color.Output = originalColorOutput
+		color.NoColor = originalNoColor
+		clistyle.SetColorEnabled(true)
+	}()
+	clistyle.SetColorEnabled(false)
+
+	tests := []struct {
+		name            string
+		options         *clistyle.CLIOptions
+		args            []string
+		wantSupportText bool
+	}{
+		{name: "explicit help", options: &clistyle.CLIOptions{ShowHelp: true}, wantSupportText: true},
+		{name: "help from missing arguments", options: &clistyle.CLIOptions{}, wantSupportText: false},
+	}
+
+	for _, test := range tests {
+		ts.Run(test.name, func(ts *testing.T) {
+			var output bytes.Buffer
+			color.Output = &output
+
+			if err := run(test.options, test.args); err != nil {
+				ts.Fatalf("run returned an error: %v", err)
+			}
+
+			gotSupportText := bytes.Contains(output.Bytes(), []byte("https://github.com/sponsors/ruanklein"))
+			if gotSupportText != test.wantSupportText {
+				ts.Errorf("support message present = %t, want %t", gotSupportText, test.wantSupportText)
+			}
+		})
+	}
+}
 
 func TestFormatCLIErrorDiagnostic(ts *testing.T) {
 	clistyle.SetColorEnabled(false)
