@@ -12,7 +12,9 @@ import (
 	"testing"
 
 	"github.com/fatih/color"
+	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
 	"github.com/synapseq-foundation/synapseq/v4/internal/cli"
+	"github.com/synapseq-foundation/synapseq/v4/sbg"
 )
 
 func TestRunSBGConversionUsesDefaultOutputAndWarns(t *testing.T) {
@@ -101,6 +103,103 @@ func TestRunSBGConversionQuietSuppressesStatus(t *testing.T) {
 	}
 }
 
+func TestRunSBGConversionExportsMP3(t *testing.T) {
+	tests := []struct {
+		name               string
+		outputName         string
+		useMP3Flag         bool
+		expectedOutputName string
+	}{
+		{name: "explicit MP3 target", outputName: "custom.mp3", expectedOutputName: "custom.mp3"},
+		{name: "default MP3 target", useMP3Flag: true, expectedOutputName: "session.mp3"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			inputPath := filepath.Join(dir, "session.sbg")
+			if err := os.WriteFile(inputPath, []byte("alpha: 300+10/20\noff: -\n00:00:00 alpha\n+00:00:01 off\n"), 0o600); err != nil {
+				t.Fatalf("write input: %v", err)
+			}
+
+			audioCapture := filepath.Join(dir, "audio.raw")
+			outputCapture := filepath.Join(dir, "output-path")
+			t.Setenv("SYNAPSEQ_TEST_FFMPEG_CAPTURE", audioCapture)
+			t.Setenv("SYNAPSEQ_TEST_FFMPEG_OUTPUT", outputCapture)
+
+			ffmpegPath := filepath.Join(dir, "ffmpeg")
+			ffmpegScript := "#!/bin/sh\nset -e\noutput=\nfor argument do output=\"$argument\"; done\ncat > \"$SYNAPSEQ_TEST_FFMPEG_CAPTURE\"\nprintf '%s' \"$output\" > \"$SYNAPSEQ_TEST_FFMPEG_OUTPUT\"\n: > \"$output\"\n"
+			if err := os.WriteFile(ffmpegPath, []byte(ffmpegScript), 0o700); err != nil {
+				t.Fatalf("write fake ffmpeg: %v", err)
+			}
+
+			opts := &cli.CLIOptions{Mp3: test.useMP3Flag, FFmpegPath: ffmpegPath}
+			args := []string{inputPath}
+			if test.outputName != "" {
+				args = append(args, filepath.Join(dir, test.outputName))
+			}
+			var status bytes.Buffer
+			if err := runSBGConversion(args, opts, &status, nil); err != nil {
+				t.Fatalf("runSBGConversion error: %v", err)
+			}
+
+			expectedOutputPath := filepath.Join(dir, test.expectedOutputName)
+			if !strings.Contains(status.String(), "review the converted output") || !strings.Contains(status.String(), "Converted:") || !strings.Contains(status.String(), expectedOutputPath) {
+				t.Fatalf("unexpected status: %q", status.String())
+			}
+			outputPath, err := os.ReadFile(outputCapture)
+			if err != nil {
+				t.Fatalf("read ffmpeg output path: %v", err)
+			}
+			if string(outputPath) != expectedOutputPath {
+				t.Fatalf("ffmpeg output path = %q, want %q", outputPath, expectedOutputPath)
+			}
+			audio, err := os.ReadFile(audioCapture)
+			if err != nil {
+				t.Fatalf("read captured audio: %v", err)
+			}
+			if len(audio) == 0 {
+				t.Fatal("no audio was streamed to ffmpeg")
+			}
+			if _, err := os.Stat(expectedOutputPath); err != nil {
+				t.Fatalf("MP3 output was not created: %v", err)
+			}
+			if _, err := os.Stat(filepath.Join(dir, "session.spsq")); !os.IsNotExist(err) {
+				t.Fatalf("intermediate SPSQ file was created: %v", err)
+			}
+		})
+	}
+}
+
+func TestRunSBGConversionStreamsPCMWhenMP3TargetsStandardOutput(t *testing.T) {
+	dir := t.TempDir()
+	inputPath := filepath.Join(dir, "session.sbg")
+	if err := os.WriteFile(inputPath, []byte("alpha: 300+10/20\noff: -\n00:00:00 alpha\n+00:00:01 off\n"), 0o600); err != nil {
+		t.Fatalf("write input: %v", err)
+	}
+
+	converter, err := sbg.New(synapseq.NewAppContext())
+	if err != nil {
+		t.Fatalf("create SBG converter: %v", err)
+	}
+	loaded, err := converter.LoadFile(inputPath)
+	if err != nil {
+		t.Fatalf("load expected sequence: %v", err)
+	}
+	var expectedPCM bytes.Buffer
+	if err := loaded.Stream(&expectedPCM); err != nil {
+		t.Fatalf("stream expected PCM: %v", err)
+	}
+
+	var output bytes.Buffer
+	if err := runSBGConversion([]string{inputPath, "-"}, &cli.CLIOptions{Mp3: true}, nil, &output); err != nil {
+		t.Fatalf("runSBGConversion error: %v", err)
+	}
+	if !bytes.Equal(output.Bytes(), expectedPCM.Bytes()) {
+		t.Fatal("standard output did not contain the unencoded PCM stream")
+	}
+}
+
 func TestRunSBGConversionPlaysWithoutWritingSequence(t *testing.T) {
 	dir := t.TempDir()
 	inputPath := filepath.Join(dir, "session.sbg")
@@ -136,7 +235,7 @@ func TestRunSBGConversionPlaysWithoutWritingSequence(t *testing.T) {
 
 	var status bytes.Buffer
 	var output bytes.Buffer
-	opts := &cli.CLIOptions{Play: true, FFplayPath: ffplayPath}
+	opts := &cli.CLIOptions{Play: true, Mp3: true, FFplayPath: ffplayPath}
 	if err := runSBGConversion([]string{inputPath}, opts, &status, &output); err != nil {
 		t.Fatalf("runSBGConversion error: %v", err)
 	}
@@ -161,6 +260,9 @@ func TestRunSBGConversionPlaysWithoutWritingSequence(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dir, "session.spsq")); !os.IsNotExist(err) {
 		t.Fatalf("converted SPSQ file was created during playback: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "session.mp3")); !os.IsNotExist(err) {
+		t.Fatalf("MP3 file was created during playback: %v", err)
 	}
 }
 
