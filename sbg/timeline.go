@@ -160,7 +160,9 @@ func isTimelineTime(value string) bool {
 		return false
 	}
 	first := value[0]
-	return first == '-' || (first >= '0' && first <= '9')
+	startsWithDigit := first >= '0' && first <= '9'
+	startsWithNegativeDigit := first == '-' && len(value) > 1 && value[1] >= '0' && value[1] <= '9'
+	return startsWithDigit || startsWithNegativeDigit
 }
 
 func isFadeMarker(value string) bool {
