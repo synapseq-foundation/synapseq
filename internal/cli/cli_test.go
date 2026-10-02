@@ -85,6 +85,36 @@ func TestParseFlags(ts *testing.T) {
 			expectError:  false,
 		},
 		{
+			args:         []string{"cmd", "-play", "-sbg", "input.sbg"},
+			expected:     &CLIOptions{Play: true, ConvertSBG: true},
+			expectedArgs: []string{"input.sbg"},
+			expectError:  false,
+		},
+		{
+			args:         []string{"cmd", "-sbg", "input.sbg", "-play"},
+			expected:     &CLIOptions{Play: true, ConvertSBG: true},
+			expectedArgs: []string{"input.sbg"},
+			expectError:  false,
+		},
+		{
+			args:         []string{"cmd", "input.spsq", "-ffplay-path", "ffplay-custom", "-quiet", "output.wav"},
+			expected:     &CLIOptions{FFplayPath: "ffplay-custom", Quiet: true},
+			expectedArgs: []string{"input.spsq", "output.wav"},
+			expectError:  false,
+		},
+		{
+			args:         []string{"cmd", "input.spsq", "-play", "--", "-output.wav"},
+			expected:     &CLIOptions{Play: true},
+			expectedArgs: []string{"input.spsq", "-output.wav"},
+			expectError:  false,
+		},
+		{
+			args:         []string{"cmd", "input.spsq", "-unknown"},
+			expected:     nil,
+			expectedArgs: nil,
+			expectError:  true,
+		},
+		{
 			args:         []string{"cmd", "-lsp"},
 			expected:     &CLIOptions{LSP: true},
 			expectedArgs: []string{},

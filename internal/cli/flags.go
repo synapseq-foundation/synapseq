@@ -43,7 +43,7 @@ func ParseFlags() (*CLIOptions, []string, error) {
 	fs.Usage = func() {}
 	bindFlags(fs, opts)
 
-	err := fs.Parse(os.Args[1:])
+	err := fs.Parse(interspersedFlagArgs(os.Args[1:]))
 	if err != nil {
 		return nil, nil, formatFlagParseError(fs, err)
 	}
@@ -95,11 +95,59 @@ func ResolveSpecialCommand(opts *CLIOptions, args []string) SpecialCommand {
 
 func hasNoColorArg(args []string) bool {
 	for _, arg := range args {
-		if arg == "-no-color" {
+		if arg == "-no-color" || arg == "--no-color" || arg == "-no-color=true" || arg == "--no-color=true" {
 			return true
 		}
 	}
 	return false
+}
+
+func interspersedFlagArgs(args []string) []string {
+	bindings := make(map[string]flagBinding, len(flagBindings()))
+	for _, binding := range flagBindings() {
+		bindings[binding.Name] = binding
+	}
+
+	parsedArgs := make([]string, 0, len(args))
+	positionalArgs := make([]string, 0, len(args))
+	for index := 0; index < len(args); index++ {
+		argument := args[index]
+		if argument == "--" {
+			parsedArgs = append(parsedArgs, "--")
+			positionalArgs = append(positionalArgs, args[index+1:]...)
+			break
+		}
+
+		binding, knownFlag := flagBindingForArgument(argument, bindings)
+		if strings.HasPrefix(argument, "-") && argument != "-" {
+			parsedArgs = append(parsedArgs, argument)
+			if knownFlag && binding.ValueKind == flagValueString && !strings.Contains(argument, "=") && index+1 < len(args) {
+				index++
+				parsedArgs = append(parsedArgs, args[index])
+			}
+			continue
+		}
+
+		positionalArgs = append(positionalArgs, argument)
+	}
+
+	return append(parsedArgs, positionalArgs...)
+}
+
+func flagBindingForArgument(argument string, bindings map[string]flagBinding) (flagBinding, bool) {
+	if !strings.HasPrefix(argument, "-") || argument == "-" {
+		return flagBinding{}, false
+	}
+
+	name := argument[1:]
+	if strings.HasPrefix(argument, "--") {
+		name = argument[2:]
+	}
+	if equalsIndex := strings.IndexByte(name, '='); equalsIndex >= 0 {
+		name = name[:equalsIndex]
+	}
+	binding, ok := bindings[name]
+	return binding, ok
 }
 
 func formatFlagParseError(fs *flag.FlagSet, err error) error {
