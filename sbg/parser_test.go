@@ -47,6 +47,52 @@ func TestParseRejectsUndefinedTimelineName(t *testing.T) {
 	}
 }
 
+func TestParseRejectsBlockDefinitions(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     string
+		wantError string
+	}{
+		{
+			name: "simple",
+			input: "alpha: 300+10/20\n" +
+				"seq: {\n" +
+				" +0:00 alpha\n" +
+				"}\n" +
+				"00:00:00 seq\n",
+			wantError: `parse "test.sbg" line 2: block definitions are not supported by SynapSeq`,
+		},
+		{
+			name: "nested",
+			input: "alpha: 300+10/20\n" +
+				"inner: {\n" +
+				" +0:00 alpha\n" +
+				"}\n" +
+				"outer: {\n" +
+				" +0:00 inner\n" +
+				"}\n" +
+				"00:00:00 outer\n",
+			wantError: `parse "test.sbg" line 2: block definitions are not supported by SynapSeq`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := parse("test.sbg", strings.NewReader(test.input))
+			if err == nil || err.Error() != test.wantError {
+				t.Fatalf("error = %v", err)
+			}
+		})
+	}
+}
+
+func TestParseIgnoresBracesInComments(t *testing.T) {
+	input := "# seq: {\nalpha: 300+10/20 # block-like text: {\n00:00:00 alpha\n"
+	if _, err := parse("test.sbg", strings.NewReader(input)); err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
+}
+
 func TestParseAbsoluteTimelineTimes(t *testing.T) {
 	input := "off: -\nts1: 300+10/20\nalpha: 300+10/20\n00:00:00 off ->\n00:00:15 ts1\n00:20:00 alpha\n"
 	parsed, err := parse("test.sbg", strings.NewReader(input))
