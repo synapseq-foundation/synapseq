@@ -76,6 +76,9 @@ func parse(source string, reader io.Reader) (*sequence, error) {
 		if !validName(name) {
 			continue
 		}
+		if strings.TrimSpace(voicesText) == "{" {
+			return nil, lineError(source, lineNumber, "block definitions are not supported by SynapSeq")
+		}
 		if _, exists := definitions[name]; exists {
 			return nil, lineError(source, lineNumber, fmt.Sprintf("duplicate NameDef %q", name))
 		}
