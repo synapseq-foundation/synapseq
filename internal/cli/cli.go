@@ -79,7 +79,7 @@ type CLIOptions struct {
 	FFprobePath string
 	// Show doctor diagnostic information
 	ShowDoctor bool
-	// Convert an SBaGen sequence to SPSQ
+	// Convert an SBaGen sequence to SPSQ or MP3
 	ConvertSBG bool
 	// Print bash completion script
 	CompletionBash bool

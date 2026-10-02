@@ -85,6 +85,18 @@ func TestParseFlags(ts *testing.T) {
 			expectError:  false,
 		},
 		{
+			args:         []string{"cmd", "-sbg", "input.sbg", "-mp3"},
+			expected:     &CLIOptions{ConvertSBG: true, Mp3: true},
+			expectedArgs: []string{"input.sbg"},
+			expectError:  false,
+		},
+		{
+			args:         []string{"cmd", "-sbg", "-mp3", "input.sbg"},
+			expected:     &CLIOptions{ConvertSBG: true, Mp3: true},
+			expectedArgs: []string{"input.sbg"},
+			expectError:  false,
+		},
+		{
 			args:         []string{"cmd", "-play", "-sbg", "input.sbg"},
 			expected:     &CLIOptions{Play: true, ConvertSBG: true},
 			expectedArgs: []string{"input.sbg"},
@@ -290,6 +302,9 @@ func TestParseFlags(ts *testing.T) {
 		}
 		if opts.ConvertSBG != test.expected.ConvertSBG {
 			ts.Errorf("For args %v, ConvertSBG: expected %v but got %v", test.args, test.expected.ConvertSBG, opts.ConvertSBG)
+		}
+		if opts.Mp3 != test.expected.Mp3 {
+			ts.Errorf("For args %v, Mp3: expected %v but got %v", test.args, test.expected.Mp3, opts.Mp3)
 		}
 		if opts.RemoteSync != test.expected.RemoteSync {
 			ts.Errorf("For args %v, RemoteSync: expected %v but got %v", test.args, test.expected.RemoteSync, opts.RemoteSync)
@@ -513,7 +528,7 @@ func TestHelpIncludesQuickStart(ts *testing.T) {
 		"Generate session.wav in the current folder",
 		"Most common options:",
 		"-dump              Render JSON sequence data",
-		"-sbg FILE [OUTPUT] Convert an SBaGen file to SPSQ",
+		"-sbg FILE [OUTPUT] Convert an SBaGen file to SPSQ or MP3",
 		"Remote:",
 		"Run -sync first to initialize the local Remote index.",
 		"-sync",

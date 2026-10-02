@@ -12,7 +12,7 @@ import (
 // of 50 characters or fewer with no ":" character.
 var completionFlags = map[string]string{
 	"version":                    "Show version information",
-	"sbg":                        "Convert an SBaGen file to SPSQ",
+	"sbg":                        "Convert SBaGen to SPSQ or MP3",
 	"dump":                       "Dump sequence as JSON",
 	"quiet":                      "Enable quiet mode",
 	"no-color":                   "Disable ANSI colors in CLI output",
@@ -27,7 +27,7 @@ var completionFlags = map[string]string{
 	"download":                   "Download remote sequence",
 	"info":                       "Show remote sequence information",
 	"play":                       "Play audio using ffplay",
-	"mp3":                        "Export to MP3 with ffmpeg",
+	"mp3":                        "Export to MP3; default output uses .mp3",
 	"install-file-association":   "Add .spsq association and .sbg action (Windows)",
 	"uninstall-file-association": "Remove .spsq association and .sbg action (Windows)",
 	"ffmpeg-path":                "Path to ffmpeg executable",

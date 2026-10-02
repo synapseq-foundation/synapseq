@@ -154,7 +154,7 @@ func quickStartExamples() []helpExample {
 		{Label: "1. Render audio", CommandText: "synapseq session.spsq", Description: "Generate session.wav in the current folder"},
 		{Label: "2. Play audio", CommandText: "synapseq -play session.spsq", Description: "Play the sequence directly with ffplay"},
 		{Label: "3. Export to MP3", CommandText: "synapseq session.spsq session.mp3", Description: "Export to MP3 with ffmpeg"},
-		{Label: "4. Convert SBaGen", CommandText: "synapseq -sbg session.sbg [session.spsq]", Description: "Convert an SBaGen sequence to SPSQ"},
+		{Label: "4. Convert SBaGen", CommandText: "synapseq -sbg session.sbg [session.spsq|session.mp3]", Description: "Convert an SBaGen sequence to SPSQ or MP3"},
 		{Label: "5. Generate SPSQ", CommandText: "synapseq -ai \"10 minutes of relaxation\" [session.spsq]", Description: "Generate an SPSQ sequence with an OpenAI-compatible model"},
 	}
 }
@@ -163,10 +163,10 @@ func commonHelpOptions() []helpOption {
 	return []helpOption{
 		{FlagText: "-test", ColumnWidth: 19, Description: "Check syntax only"},
 		{FlagText: "-lsp", ColumnWidth: 19, Description: "Start the SPSQ language server over stdio"},
-		{FlagText: "-sbg FILE [OUTPUT]", ColumnWidth: 19, Description: "Convert an SBaGen file to SPSQ"},
+		{FlagText: "-sbg FILE [OUTPUT]", ColumnWidth: 19, Description: "Convert an SBaGen file to SPSQ or MP3"},
 		{FlagText: "-dump", ColumnWidth: 19, Description: "Render JSON sequence data"},
 		{FlagText: "-play", ColumnWidth: 19, Description: "Play audio using ffplay"},
-		{FlagText: "-mp3", ColumnWidth: 19, Description: "Export to MP3 with ffmpeg"},
+		{FlagText: "-mp3", ColumnWidth: 19, Description: "Export to MP3 with ffmpeg; default output uses .mp3"},
 		{FlagText: "-quiet", ColumnWidth: 19, Description: "Suppress non-error output"},
 		{FlagText: "-no-color", ColumnWidth: 19, Description: "Disable ANSI colors in CLI output"},
 		{FlagText: "-version", ColumnWidth: 19, Description: "Show version information"},

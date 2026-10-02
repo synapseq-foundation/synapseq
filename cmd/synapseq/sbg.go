@@ -15,14 +15,14 @@ import (
 	"github.com/synapseq-foundation/synapseq/v4/sbg"
 )
 
-const sbgConversionWarning = "SBaGen conversion is approximate and may contain errors; review the generated SPSQ before use."
+const sbgConversionWarning = "SBaGen conversion is approximate and may contain errors; review the converted output before use."
 
 func runSBGConversion(args []string, opts *cli.CLIOptions, statusWriter, outputWriter io.Writer) error {
 	if opts == nil {
 		return fmt.Errorf("CLI options are nil")
 	}
 	if len(args) < 1 || len(args) > 2 {
-		return fmt.Errorf("invalid SBaGen conversion arguments\nUsage: synapseq -sbg <file.sbg> [output.spsq]")
+		return fmt.Errorf("invalid SBaGen conversion arguments\nUsage: synapseq -sbg <file.sbg> [output.spsq|output.mp3|-]")
 	}
 	inputPath := args[0]
 	if !strings.EqualFold(filepath.Ext(inputPath), ".sbg") {
@@ -35,12 +35,17 @@ func runSBGConversion(args []string, opts *cli.CLIOptions, statusWriter, outputW
 		return fmt.Errorf("an output destination cannot be provided with -play")
 	}
 
-	outputPath := strings.TrimSuffix(inputPath, filepath.Ext(inputPath)) + ".spsq"
+	defaultExtension := ".spsq"
+	if opts.Mp3 {
+		defaultExtension = ".mp3"
+	}
+	outputPath := strings.TrimSuffix(inputPath, filepath.Ext(inputPath)) + defaultExtension
 	if len(args) == 2 {
 		outputPath = args[1]
 	}
-	if outputPath != "-" && !strings.EqualFold(filepath.Ext(outputPath), ".spsq") {
-		return fmt.Errorf("SPSQ output must use the .spsq extension: %q", outputPath)
+	outputExtension := filepath.Ext(outputPath)
+	if outputPath != "-" && !strings.EqualFold(outputExtension, ".spsq") && !strings.EqualFold(outputExtension, ".mp3") {
+		return fmt.Errorf("SBaGen output must use the .spsq or .mp3 extension: %q", outputPath)
 	}
 
 	if !opts.Quiet && statusWriter != nil {
@@ -60,15 +65,29 @@ func runSBGConversion(args []string, opts *cli.CLIOptions, statusWriter, outputW
 		return processSequenceOutput(loaded, buildOutputOptions(outputPath, filepath.Ext(outputPath), opts))
 	}
 
-	content := loaded.RawContent()
 	if outputPath == "-" {
 		if outputWriter == nil {
+			if opts.Mp3 {
+				return fmt.Errorf("PCM output writer is nil")
+			}
 			return fmt.Errorf("SPSQ output writer is nil")
 		}
-		_, err := outputWriter.Write(content)
+		if opts.Mp3 {
+			return loaded.Stream(outputWriter)
+		}
+		_, err := outputWriter.Write(loaded.RawContent())
 		return err
 	}
-	if err := os.WriteFile(outputPath, content, 0o644); err != nil {
+	if strings.EqualFold(outputExtension, ".mp3") || opts.Mp3 {
+		if err := externalMp3(opts.FFmpegPath, loaded, outputPath); err != nil {
+			return err
+		}
+		if !opts.Quiet && statusWriter != nil {
+			return writeSBGConversionSuccess(statusWriter, outputPath)
+		}
+		return nil
+	}
+	if err := os.WriteFile(outputPath, loaded.RawContent(), 0o644); err != nil {
 		return fmt.Errorf("write converted sequence %q: %w", outputPath, err)
 	}
 	if !opts.Quiet && statusWriter != nil {
