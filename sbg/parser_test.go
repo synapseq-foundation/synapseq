@@ -143,6 +143,23 @@ func TestParseTimeKeepsMinuteAndSecondFieldsTwoDigits(t *testing.T) {
 	}
 }
 
+func TestParseIgnoresUnsupportedOptions(t *testing.T) {
+	input := strings.Join([]string{
+		"-SE",
+		"-Q",
+		"-T 0:00 -L 0:30",
+		"alpha: 300+10/20",
+		"00:00:00 alpha",
+	}, "\n")
+	parsed, err := parse("test.sbg", strings.NewReader(input))
+	if err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
+	if len(parsed.timeline) != 1 || parsed.timeline[0].name != "alpha" {
+		t.Fatalf("timeline = %#v", parsed.timeline)
+	}
+}
+
 func TestParseRejectsNegativeTimelineFields(t *testing.T) {
 	input := "alpha: 300+10/20\n-1:00 alpha\n"
 	_, err := parse("test.sbg", strings.NewReader(input))
