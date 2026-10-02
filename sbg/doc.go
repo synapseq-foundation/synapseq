@@ -39,5 +39,9 @@ traversal; their extension is removed so SynapSeq can resolve an MP3 or WAV
 source. The SBaGen -r option becomes the SPSQ sample rate; it defaults to 44100
 when absent. SBaGen fade markers are accepted but converted to steady
 transitions.
+
+Timeline hours may use one or two digits; minutes and seconds use two digits.
+A sequence with a single timeline entry is treated as open-ended and converted
+to 30 minutes by repeating its final state at the end of that period.
 */
 package sbg

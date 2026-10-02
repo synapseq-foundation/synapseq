@@ -14,7 +14,10 @@ import (
 	"github.com/synapseq-foundation/synapseq/v4/spsq"
 )
 
-const initialFadeDuration = 30 * time.Second
+const (
+	initialFadeDuration       = 30 * time.Second
+	openEndedSequenceDuration = 30 * time.Minute
+)
 
 type parsedTime struct {
 	duration time.Duration
@@ -37,8 +40,14 @@ func appendTimeline(
 		baseTime = 0
 		builder.SilenceAt(0).Steady()
 	}
+	events := parsedSequence.timeline
+	if len(events) == 1 {
+		endingEvent := events[0]
+		endingEvent.at = baseTime + openEndedSequenceDuration
+		events = []timelineEvent{events[0], endingEvent}
+	}
 	var previousAt time.Duration
-	for index, event := range parsedSequence.timeline {
+	for index, event := range events {
 		at := event.at - baseTime
 		if index == 0 && event.initial && event.at == 0 {
 			at = initialFadeDuration
@@ -113,8 +122,12 @@ func parseTime(value string) (parsedTime, error) {
 	}
 	values := make([]int, len(parts))
 	for index, part := range parts {
-		if len(part) != 2 {
-			return parsedTime{}, errors.New("timeline time fields must have two digits")
+		if index == 0 {
+			if len(part) < 1 || len(part) > 2 {
+				return parsedTime{}, errors.New("timeline hour must have one or two digits")
+			}
+		} else if len(part) != 2 {
+			return parsedTime{}, errors.New("timeline minutes and seconds must have two digits")
 		}
 		fieldValue, err := strconv.Atoi(part)
 		if err != nil || fieldValue < 0 {
@@ -122,14 +135,18 @@ func parseTime(value string) (parsedTime, error) {
 		}
 		values[index] = fieldValue
 	}
-	minutes := values[len(values)-2]
-	seconds := values[len(values)-1]
-	if minutes >= 60 || seconds >= 60 {
+	hours := values[0]
+	minutes := values[1]
+	if minutes >= 60 {
 		return parsedTime{}, errors.New("timeline minutes and seconds must be below 60")
 	}
-	duration := time.Duration(minutes)*time.Minute + time.Duration(seconds)*time.Second
+	duration := time.Duration(hours)*time.Hour + time.Duration(minutes)*time.Minute
 	if len(values) == 3 {
-		duration += time.Duration(values[0]) * time.Hour
+		seconds := values[2]
+		if seconds >= 60 {
+			return parsedTime{}, errors.New("timeline minutes and seconds must be below 60")
+		}
+		duration += time.Duration(seconds) * time.Second
 	}
 	timestamp.duration = duration
 	return timestamp, nil

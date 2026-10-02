@@ -58,6 +58,45 @@ func TestParseAbsoluteTimelineTimes(t *testing.T) {
 	}
 }
 
+func TestParseTimeSupportsSingleDigitHour(t *testing.T) {
+	tests := []struct {
+		name         string
+		input        string
+		wantDuration time.Duration
+		wantInitial  bool
+		wantRelative bool
+	}{
+		{name: "absolute", input: "0:00"},
+		{name: "absolute with minutes", input: "1:30", wantDuration: 90 * time.Minute},
+		{name: "absolute with seconds", input: "0:00:15", wantDuration: 15 * time.Second},
+		{name: "relative", input: "+0:30", wantDuration: 30 * time.Minute, wantRelative: true},
+		{name: "relative with seconds", input: "+0:00:15", wantDuration: 15 * time.Second, wantRelative: true},
+		{name: "relative from now", input: "NOW+0:30", wantDuration: 30 * time.Minute, wantInitial: true},
+		{name: "relative from now with seconds", input: "NOW+0:00:15", wantDuration: 15 * time.Second, wantInitial: true},
+		{name: "two digit hour", input: "12:30", wantDuration: 12*time.Hour + 30*time.Minute},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			parsed, err := parseTime(test.input)
+			if err != nil {
+				t.Fatalf("parseTime(%q) error: %v", test.input, err)
+			}
+			if parsed.duration != test.wantDuration || parsed.initial != test.wantInitial || parsed.relative != test.wantRelative {
+				t.Fatalf("parseTime(%q) = %#v", test.input, parsed)
+			}
+		})
+	}
+}
+
+func TestParseTimeKeepsMinuteAndSecondFieldsTwoDigits(t *testing.T) {
+	for _, input := range []string{"0:0", "0:00:0"} {
+		if _, err := parseTime(input); err == nil {
+			t.Errorf("parseTime(%q) succeeded; want invalid minute or second width", input)
+		}
+	}
+}
+
 func TestParseRejectsNegativeTimelineFields(t *testing.T) {
 	input := "alpha: 300+10/20\n-1:00 alpha\n"
 	_, err := parse("test.sbg", strings.NewReader(input))
