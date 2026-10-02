@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	synapseq "github.com/synapseq-foundation/synapseq/v4/core"
 )
@@ -106,6 +107,9 @@ func TestLoadContentSupportsAbsoluteTimelineTimes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadContent error: %v", err)
 	}
+	if got := loaded.Duration(); got != 20*time.Minute+30*time.Second {
+		t.Fatalf("sequence duration = %v, want 20m30s", got)
+	}
 	for _, expected := range []string{
 		"00:00:00 silence steady 0",
 		"00:00:15 ts1 steady 0",
@@ -115,6 +119,29 @@ func TestLoadContentSupportsAbsoluteTimelineTimes(t *testing.T) {
 		if !strings.Contains(string(loaded.RawContent()), expected) {
 			t.Errorf("converted content missing %q:\n%s", expected, loaded.RawContent())
 		}
+	}
+}
+
+func TestLoadContentLimitsSingleTimelineEntryToThirtyMinutes(t *testing.T) {
+	for _, timestamp := range []string{"0:00", "12:00"} {
+		t.Run(timestamp, func(t *testing.T) {
+			input := "ts: 50+1.2/10\n" + timestamp + " ts\n"
+			loaded, err := newTestConverter(t).LoadContent(input)
+			if err != nil {
+				t.Fatalf("LoadContent error: %v", err)
+			}
+			if got := loaded.Duration(); got != 30*time.Minute {
+				t.Fatalf("sequence duration = %v, want 30m", got)
+			}
+			for _, expected := range []string{
+				"00:00:00 ts steady 0",
+				"00:30:00 ts steady 0",
+			} {
+				if !strings.Contains(string(loaded.RawContent()), expected) {
+					t.Errorf("converted content missing %q:\n%s", expected, loaded.RawContent())
+				}
+			}
+		})
 	}
 }
 
