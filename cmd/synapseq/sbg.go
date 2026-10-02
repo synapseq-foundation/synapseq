@@ -28,6 +28,13 @@ func runSBGConversion(args []string, opts *cli.CLIOptions, statusWriter, outputW
 	if !strings.EqualFold(filepath.Ext(inputPath), ".sbg") {
 		return fmt.Errorf("SBaGen input must use the .sbg extension: %q", inputPath)
 	}
+	if opts.Play && (opts.Dump || opts.Test) {
+		return fmt.Errorf("-play cannot be combined with -dump or -test for SBaGen input")
+	}
+	if opts.Play && len(args) == 2 {
+		return fmt.Errorf("an output destination cannot be provided with -play")
+	}
+
 	outputPath := strings.TrimSuffix(inputPath, filepath.Ext(inputPath)) + ".spsq"
 	if len(args) == 2 {
 		outputPath = args[1]
@@ -49,6 +56,10 @@ func runSBGConversion(args []string, opts *cli.CLIOptions, statusWriter, outputW
 	if err != nil {
 		return err
 	}
+	if opts.Play {
+		return processSequenceOutput(loaded, buildOutputOptions(outputPath, filepath.Ext(outputPath), opts))
+	}
+
 	content := loaded.RawContent()
 	if outputPath == "-" {
 		if outputWriter == nil {

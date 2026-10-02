@@ -25,6 +25,10 @@ func TestParseVoiceCompatibility(t *testing.T) {
 		{token: "200+/10", wantError: "missing beat frequency"},
 		{token: "200/1..0", wantError: "invalid amplitude: more than one decimal point"},
 		{token: "200+a/10", wantError: "invalid beat: unexpected character 'a'"},
+		{token: "bell", wantError: "bell voices are not supported by SynapSeq"},
+		{token: "bell/20", wantError: "bell voices are not supported by SynapSeq"},
+		{token: "bell+10/20", wantError: "bell voices are not supported by SynapSeq"},
+		{token: "bell-10/20", wantError: "bell voices are not supported by SynapSeq"},
 	}
 	for _, test := range tests {
 		t.Run(test.token, func(t *testing.T) {

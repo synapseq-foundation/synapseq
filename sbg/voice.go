@@ -29,6 +29,11 @@ func parseVoice(token string) (voice, error) {
 	case token == "mix" || strings.HasPrefix(token, "mix/"):
 		amplitude, err := parseDecimal(strings.TrimPrefix(token, "mix/"))
 		return voice{kind: voiceMix, amplitude: amplitude}, err
+	case token == "bell" ||
+		strings.HasPrefix(token, "bell+") ||
+		strings.HasPrefix(token, "bell-") ||
+		strings.HasPrefix(token, "bell/"):
+		return voice{}, errors.New("bell voices are not supported by SynapSeq")
 	case strings.HasPrefix(token, "spin:"):
 		tone, err := parseTone(strings.TrimPrefix(token, "spin:"), true)
 		return voice{
