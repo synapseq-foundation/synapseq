@@ -37,7 +37,7 @@ func run(opts *cli.CLIOptions, args []string) error {
 
 	// --help or missing args
 	if opts.ShowHelp || len(args) == 0 {
-		cli.Help()
+		cli.Help(opts.ShowHelp)
 		return nil
 	}
 

@@ -465,7 +465,7 @@ func TestHelpIncludesQuickStart(ts *testing.T) {
 	os.Stdout = writePipe
 	color.Output = writePipe
 	SetColorEnabled(true)
-	Help()
+	Help(true)
 	writePipe.Close()
 	os.Stdout = originalStdout
 
@@ -489,6 +489,7 @@ func TestHelpIncludesQuickStart(ts *testing.T) {
 		"-sync",
 		"-list",
 		"-get NAME [OUTPUT]",
+		"♥ If SynapSeq is useful to you, consider supporting its development:\n  https://github.com/sponsors/ruanklein",
 	}
 
 	for _, expected := range checks {
@@ -506,6 +507,13 @@ func TestHelpIncludesQuickStart(ts *testing.T) {
 
 	if strings.Contains(helpText, "-new") {
 		ts.Errorf("help output still contains removed -new flag\nfull output:\n%s", helpText)
+	}
+	if !strings.HasSuffix(helpText, "♥ If SynapSeq is useful to you, consider supporting its development:\n  https://github.com/sponsors/ruanklein\n") {
+		ts.Errorf("support message should be the last content in help output\nfull output:\n%s", helpText)
+	}
+	styledSupportMessage := Accent("♥") + " " + Muted("If SynapSeq is useful to you, consider supporting its development:") + "\n  " + Command("https://github.com/sponsors/ruanklein") + "\n"
+	if !strings.Contains(string(output), styledSupportMessage) {
+		ts.Errorf("support message should use the SynapSeq text styles\nfull output:\n%s", string(output))
 	}
 }
 
@@ -527,7 +535,7 @@ func TestHelpNoColorOmitsANSI(ts *testing.T) {
 	os.Stdout = writePipe
 	color.Output = writePipe
 	SetColorEnabled(false)
-	Help()
+	Help(true)
 	writePipe.Close()
 
 	output, err := io.ReadAll(readPipe)
@@ -540,5 +548,8 @@ func TestHelpNoColorOmitsANSI(ts *testing.T) {
 	}
 	if !strings.Contains(string(output), "-no-color") {
 		ts.Fatalf("expected help to mention -no-color, got:\n%s", string(output))
+	}
+	if !strings.Contains(string(output), "♥ If SynapSeq is useful to you, consider supporting its development:\n  https://github.com/sponsors/ruanklein") {
+		ts.Fatalf("expected support message without ANSI escapes, got:\n%s", string(output))
 	}
 }
