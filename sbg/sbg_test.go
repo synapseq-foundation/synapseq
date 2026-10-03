@@ -30,6 +30,28 @@ func TestNewRejectsNilContext(t *testing.T) {
 	}
 }
 
+func TestConversionPreservesCommentsBelowWarning(t *testing.T) {
+	input := "# Original description\r\n" +
+		"  ## Original metadata\r\n" +
+		"alpha: 300+10/20 # inline comment\n" +
+		"#\n# Timeline note\n00:00 alpha\n"
+	loaded, err := newTestConverter(t).LoadContent(input)
+	if err != nil {
+		t.Fatalf("LoadContent error: %v", err)
+	}
+	wantPrefix := conversionHeader + "# Original description\n## Original metadata\n#\n# Timeline note\n\n"
+	content := string(loaded.RawContent())
+	if !strings.HasPrefix(content, wantPrefix) {
+		t.Fatalf("converted content has unexpected comments:\n%s", content)
+	}
+	if strings.Contains(content, "inline comment") {
+		t.Fatal("inline comment was copied as a full-line comment")
+	}
+	if got := loaded.Comments(); len(got) != 1 || got[0] != "Original metadata" {
+		t.Fatalf("metadata comments = %#v", got)
+	}
+}
+
 func TestLoadFileUsesSPSQBuilder(t *testing.T) {
 	dir := t.TempDir()
 	t.Chdir(dir)

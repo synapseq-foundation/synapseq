@@ -30,6 +30,10 @@ RawContent, or render it with the regular core API.
 
 # Conversion Notes
 
+Converted content starts with a warning about possible conversion errors.
+Full-line SBaGen comments are copied below this warning in their original
+order, preserving their # or ## prefixes.
+
 Supported SBaGen voices are mapped to the corresponding SPSQ tracks. Binaural
 sign orientation is not represented by SPSQ. Spin voices are approximated with
 pink noise and a pan effect. An SBaGen -m source becomes an SPSQ music source

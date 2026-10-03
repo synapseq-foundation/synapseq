@@ -42,6 +42,7 @@ type timelineEvent struct {
 
 type sequence struct {
 	source      string
+	comments    []string
 	sampleRate  int
 	musicPath   string
 	musicLine   int

@@ -25,6 +25,10 @@ func parse(source string, reader io.Reader) (*sequence, error) {
 		if strings.IndexByte(line, 0) >= 0 {
 			return nil, lineError(source, lineNumber, "NUL byte is not allowed")
 		}
+		if comment := strings.TrimLeft(line, " \t"); strings.HasPrefix(comment, "#") {
+			result.comments = append(result.comments, comment)
+			continue
+		}
 		if before, _, found := strings.Cut(line, "#"); found {
 			line = before
 		}
