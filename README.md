@@ -62,19 +62,3 @@ for questions, support, sequence sharing, and ideas.
 ## Credits
 
 Check out the [CREDITS](CREDITS.md) to see a list of all contributors and special thanks!
-
-### Render progress
-
-Audio rendering displays a responsive progress bar on stderr by default,
-inside a rounded container whose centered title shows the current preset
-and the next timeline preset when different. The bar shows the percentage
-of audio rendered relative to the sequence's final timeline timestamp. Redirected stderr receives plain start and completion
-summaries. Use `-verbose` for detailed period and track reports instead of the
-bar, `-quiet` to suppress both, and `-no-color` to disable colors. Raw PCM output
-(`-`) remains silent. Progress measures audio generation; MP3 encoder
-finalization may continue after the bar reaches 100%.
-
-The progress container has two-column side margins and a blank line above it.
-Its interior contains only the bar and percentage, with no blank rows or times.
-The full container requires at least 40 columns and 5 rows.
-Narrow terminals use a compact two-line layout or a single progress line.
