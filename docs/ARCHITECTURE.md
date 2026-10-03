@@ -389,7 +389,7 @@ This package should remain thin. It wraps process invocation and streaming, not 
 The public Go API should continue to revolve around the following mental model:
 
 1. Create an `AppContext`.
-2. Optionally configure it with `WithVerbose()`.
+2. Optionally configure it with `WithProgress()` for render progress or `WithVerbose()` for detailed period and track status. The last call selects the mode; the Go API is silent by default.
 3. Load an `.spsq` file with `LoadFile()` or `LoadContent()` for string sequence content. If the sequence is constructed programmatically, use `spsq.New(ctx)` and `Builder.Load()` to get a `LoadedContext`.
 4. Use the resulting `LoadedContext` to:
    - inspect comments, sample rate, volume, ambiance, extends, and raw content;

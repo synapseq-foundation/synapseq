@@ -5,6 +5,7 @@
 package audio
 
 import (
+	"bytes"
 	"errors"
 	"math"
 	"net/http"
@@ -585,11 +586,14 @@ func TestAudioRendererReportsLazyRemoteAudioFailure(ts *testing.T) {
 			start.TrackEnd[0] = start.TrackStart[0]
 			end.Time = 100
 
+			var status bytes.Buffer
 			options := &AudioRendererOptions{
-				SampleRate: 44100,
-				Volume:     100,
-				Ambiance:   map[string]string{},
-				Music:      map[string]string{},
+				StatusOutput: &status,
+				Progress:     true,
+				SampleRate:   44100,
+				Volume:       100,
+				Ambiance:     map[string]string{},
+				Music:        map[string]string{},
 			}
 			if test.trackType == t.TrackAmbiance {
 				options.Ambiance = test.sources
@@ -605,6 +609,9 @@ func TestAudioRendererReportsLazyRemoteAudioFailure(ts *testing.T) {
 			err = renderer.Render(nil)
 			if err == nil {
 				ts.Fatal("expected lazy remote audio failure")
+			}
+			if strings.Contains(status.String(), "100%") || !strings.Contains(status.String(), "Audio rendering failed") {
+				ts.Fatalf("unexpected progress: %s", status.String())
 			}
 			if !strings.Contains(err.Error(), "404 Not Found") {
 				ts.Fatalf("unexpected error: %v", err)

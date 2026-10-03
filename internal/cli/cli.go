@@ -41,6 +41,8 @@ type CLIOptions struct {
 	Dump bool
 	// Quiet mode, suppress non-error output
 	Quiet bool
+	// Show detailed render status instead of the progress bar.
+	Verbose bool
 	// Test mode, validate syntax without generating output
 	Test bool
 	// Show help message and exit

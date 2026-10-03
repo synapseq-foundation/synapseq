@@ -56,7 +56,11 @@ func loadSequenceContext(inputFile, outputFile string, verboseWriter io.Writer, 
 func newAppContext(outputFile string, verboseWriter io.Writer, opts *cli.CLIOptions) *synapseq.AppContext {
 	appCtx := synapseq.NewAppContext()
 	if !opts.Quiet && outputFile != "-" && verboseWriter != nil {
-		appCtx = appCtx.WithVerbose(verboseWriter, !opts.NoColor)
+		if opts.Verbose {
+			appCtx = appCtx.WithVerbose(verboseWriter, !opts.NoColor)
+		} else {
+			appCtx = appCtx.WithProgress(verboseWriter, !opts.NoColor)
+		}
 	}
 	return appCtx
 }

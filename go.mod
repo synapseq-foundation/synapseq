@@ -10,6 +10,7 @@ require (
 	go.lsp.dev/protocol v1.0.1
 	go.lsp.dev/uri v1.0.1
 	golang.org/x/sys v0.45.0
+	golang.org/x/term v0.39.0
 )
 
 require (
