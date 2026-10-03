@@ -15,6 +15,7 @@ type renderRuntime struct {
 	renderer      *AudioRenderer
 	consume       func(samples []int) error
 	status        *audiostatus.Reporter
+	progress      *audiostatus.Progress
 	samples       []int
 	totalFrames   int64
 	chunkFrames   int64
@@ -32,13 +33,21 @@ func newRenderRuntime(renderer *AudioRenderer, consume func(samples []int) error
 	}
 
 	if renderer.StatusOutput != nil {
-		runtime.status = audiostatus.NewReporter(renderer.StatusOutput, renderer.Colors)
+		if renderer.Progress {
+			runtime.progress = audiostatus.NewProgress(renderer.StatusOutput, renderer.Colors, durationMs(renderer.periods), runtime.totalFrames, renderer.periods)
+		} else {
+			runtime.status = audiostatus.NewReporter(renderer.StatusOutput, renderer.Colors)
+		}
 	}
 
 	return runtime
 }
 
-func (rr *renderRuntime) run() error {
+func (rr *renderRuntime) run() (err error) {
+	if rr.progress != nil {
+		rr.progress.Start()
+		defer func() { rr.progress.Finish(rr.framesWritten, err == nil) }()
+	}
 	if rr.status != nil {
 		defer rr.status.FinalStatus()
 	}
@@ -61,6 +70,9 @@ func (rr *renderRuntime) run() error {
 
 		rr.framesWritten += framesToWrite
 		rr.reportProgress(currentTimeMs)
+		if rr.progress != nil {
+			rr.progress.Update(rr.framesWritten)
+		}
 	}
 
 	return nil

@@ -598,3 +598,16 @@ func TestHelpNoColorOmitsANSI(ts *testing.T) {
 		ts.Fatalf("expected support message without ANSI escapes, got:\n%s", string(output))
 	}
 }
+
+func TestVerboseFlagAndCompletion(ts *testing.T) {
+	original := os.Args
+	defer func() { os.Args = original }()
+	os.Args = []string{"synapseq", "input.spsq", "-verbose"}
+	opts, args, err := ParseFlags()
+	if err != nil || !opts.Verbose || len(args) != 1 {
+		ts.Fatalf("opts=%+v args=%v err=%v", opts, args, err)
+	}
+	if _, ok := completionFlags["verbose"]; !ok {
+		ts.Fatal("missing verbose completion")
+	}
+}

@@ -14,6 +14,7 @@ var completionFlags = map[string]string{
 	"version":                    "Show version information",
 	"sbg":                        "Convert SBaGen to SPSQ or MP3",
 	"dump":                       "Dump sequence as JSON",
+	"verbose":                    "Show detailed render status instead of progress",
 	"quiet":                      "Enable quiet mode",
 	"no-color":                   "Disable ANSI colors in CLI output",
 	"test":                       "Validate syntax without generating output",

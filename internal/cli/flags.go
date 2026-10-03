@@ -196,6 +196,7 @@ func flagBindings() []flagBinding {
 		{Name: "ai-temperature", Usage: "Sampling temperature for -ai", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.AITemperature }},
 		{Name: "ai-timeout", Usage: "Maximum duration for -ai", ValueKind: flagValueString, BindString: func(opts *CLIOptions) *string { return &opts.AITimeout }},
 		{Name: "dump", Usage: "Render JSON sequence data", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.Dump }},
+		{Name: "verbose", Usage: "Show detailed render status instead of the progress bar", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.Verbose }},
 		{Name: "quiet", Usage: "Enable quiet mode", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.Quiet }},
 		{Name: "no-color", Usage: "Disable ANSI colors in CLI output", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.NoColor }},
 		{Name: "test", Usage: "Validate syntax without generating output", ValueKind: flagValueBool, BindBool: func(opts *CLIOptions) *bool { return &opts.Test }},

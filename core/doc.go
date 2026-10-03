@@ -127,6 +127,15 @@ time.Duration:
 
 	duration := loaded.Duration()
 
+# Render Status
+
+The Go API is silent by default. WithProgress(writer, colors) enables a
+responsive terminal progress bar, or plain start and completion summaries
+for non-terminal writers. WithVerbose(writer, colors) enables detailed
+period and track reports instead. The last call selects the mode; a nil
+writer disables output. Progress measures generated audio, not subsequent
+external encoder finalization.
+
 # Thread Safety
 
 AppContext methods are safe for concurrent use because configuration methods

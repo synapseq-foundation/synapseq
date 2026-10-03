@@ -167,6 +167,7 @@ func commonHelpOptions() []helpOption {
 		{FlagText: "-dump", ColumnWidth: 19, Description: "Render JSON sequence data"},
 		{FlagText: "-play", ColumnWidth: 19, Description: "Play audio using ffplay"},
 		{FlagText: "-mp3", ColumnWidth: 19, Description: "Export to MP3 with ffmpeg; default output uses .mp3"},
+		{FlagText: "-verbose", ColumnWidth: 19, Description: "Show detailed render status instead of the default progress bar"},
 		{FlagText: "-quiet", ColumnWidth: 19, Description: "Suppress non-error output"},
 		{FlagText: "-no-color", ColumnWidth: 19, Description: "Disable ANSI colors in CLI output"},
 		{FlagText: "-version", ColumnWidth: 19, Description: "Show version information"},

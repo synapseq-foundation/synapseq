@@ -25,8 +25,9 @@ const (
 // It provides a safe, immutable context for sequence processing.
 // Methods that modify the context return a new instance.
 type AppContext struct {
-	statusOutput io.Writer
-	statusColors bool
+	statusOutput   io.Writer
+	statusColors   bool
+	statusProgress bool
 }
 
 // AIOptions configures a model used to generate SPSQ text. Empty Model and

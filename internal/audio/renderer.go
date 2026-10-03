@@ -52,6 +52,7 @@ type AudioRendererOptions struct {
 	Music        map[string]string
 	StatusOutput io.Writer
 	Colors       bool
+	Progress     bool
 	Waveforms    []t.WaveformDefinition
 	Transitions  []t.TransitionDefinition
 }
