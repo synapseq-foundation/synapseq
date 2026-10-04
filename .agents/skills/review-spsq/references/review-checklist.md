@@ -114,7 +114,37 @@ Supported source families:
 - `ambiance`;
 - `music`.
 
+### Tones
+
+```spsq
+  tone 220 amplitude 15
+  tone 220 binaural 10 amplitude 15
+  tone 220 binaural left-right 10 amplitude 15
+  tone 220 binaural right-left 10 amplitude 15
+  tone 220 monaural 10 amplitude 15
+  tone 220 isochronic 10 amplitude 15
+  tone 220 isochronic standard 10 amplitude 15
+  tone 220 isochronic short 10 amplitude 15
+  tone 220 isochronic wide 10 amplitude 15
+```
+
 Tone may be pure, binaural, monaural, or isochronic. Built-in waveforms are `sine`, `square`, `triangle`, and `sawtooth`; declared custom names are accepted in the same waveform position.
+
+**Binaural modifiers**
+
+Syntax: `tone 220 binaural [left-right|right-left] 10 amplitude 15`. The optional modifier precedes the non-negative beat value. Omitted/left-right gives 225 Hz left and 215 Hz right; right-left swaps them. These orientation modifiers are accepted only in binaural declarations. Numeric inherited overrides preserve the mode. Different modes use boundary crossfades; silence fades preserve the active mode. Effects process the resulting pair normally.
+
+**Isochronic modes**
+
+Syntax: `tone 220 isochronic [standard|short|wide] 10 amplitude 15`. The optional modifier precedes the non-negative beat rate. Omitted and `standard` preserve the existing audio exactly. `short` compresses one entire standard envelope cycle into the first half of each beat cycle, multiplies its gain by 0.75, and is silent during the second half. A smoothstep window fades each boundary over 8% of the compressed interval. Carrier waveform/frequency, beat rate and session duration are unchanged. No loudness compensation is applied; perceived subtlety depends on waveform and composition. Effects continue to process the generated signal; `effect modulation` is unchanged.
+
+Modifiers are exclusive to isochronic declarations, including `.spsc`; unknown, repeated or misplaced tokens and missing beat values are errors. Numeric inherited overrides preserve the mode and do not accept modifier tokens. Matching modes interpolate normally, mode changes use existing boundary crossfades (up to 30 seconds on each available side), and silence fades preserve the active mode. Monaural declarations do not accept tone modifiers.
+
+**Isochronic wide**
+
+`tone 220 isochronic wide 10 amplitude 15` uses a fixed envelope independent of the waveform: sound occupies 75% of each cycle and the remaining 25% is silent. Each edge uses a smoothstep fade over 8% of the sound window, with a full-gain plateau between them. Waveform still defines the carrier, including custom waveforms; carrier pitch, pulse rate, and duration stay unchanged. There is no loudness compensation. Standard remains the default; standard, short and effect modulation are unchanged.
+
+### Effects and values
 
 Effects:
 
@@ -134,7 +164,7 @@ Check:
 - effect is followed by its value, `intensity`, then amplitude;
 - external resource names match declarations.
 - custom points are interpreted as evenly spaced bipolar values (`0 -> -1`, `50 -> 0`, `100 -> +1`) with circular linear interpolation;
-- an isochronic custom waveform intentionally shapes both its carrier and gate, not only the pulse envelope;
+- an isochronic custom waveform shapes both carrier and gate in `standard`/`short`, while `wide` uses it only for the carrier;
 - a non-sine waveform with `doppler` intentionally shapes tone pitch or external playback-speed movement;
 - waveform prefixes on ambiance/music affect pan, modulation, or Doppler playback-speed motion, not the external PCM itself; Doppler preserves source stereo, uses a cursor independent from other tracks, and resumes position when returning to fixed speed, while `shift` uses a fixed quadrature oscillator;
 - `shift` values are total Hz separation, intensity is dry/wet, and higher wet levels progressively replace the original stereo image with a mono-derived shifted pair;
@@ -205,27 +235,3 @@ Check:
 - Amplitude is a control percentage, not dB SPL.
 - Compatible waveform changes, including custom-to-built-in changes, morph by phase-aligned table interpolation rather than boundary crossfade.
 - A syntactically valid combination can still be dense, masked, abrupt, or artistically incoherent.
-
-### Binaural modifiers
-
-Syntax: `tone 220 binaural [left-right|right-left] 10 amplitude 15`. The optional modifier precedes the non-negative beat value. Omitted/left-right gives 225 Hz left and 215 Hz right; right-left swaps them. Only binaural declarations accept modifiers. Numeric inherited overrides preserve the mode. Different modes use boundary crossfades; silence fades preserve the active mode. Effects process the resulting pair normally.
-
-Verbose track descriptions (`String`) and builder-generated SPSQ include the effective binaural modifier, including the implicit `left-right` default. Other tone types have no modifier text.
-
-The Go builder supports `preset.Tone(220).Binaural(10).RightLeft().Amplitude(10)` and `LeftRight()` for the default. These fluent methods affect only the last binaural track and otherwise do nothing. Last mode wins; updating Binaural preserves it, converting to Monaural/Isochronic clears it, and new tracks do not inherit it.
-
-Compact track descriptions (`ShortString`) include `mode:left-right` or `mode:right-left` for binaural tracks, `mode:standard`, `mode:short`, or `mode:wide` for isochronic tracks, and `mode:none` for monaural tracks.
-
-## Isochronic modes
-
-Syntax: `tone 220 isochronic [standard|short|wide] 10 amplitude 15`. The optional modifier precedes the non-negative beat rate. Omitted and `standard` preserve the existing audio exactly. `short` compresses one entire standard envelope cycle into the first half of each beat cycle, multiplies its gain by 0.75, and is silent during the second half. A smoothstep window fades each boundary over 8% of the compressed interval. Carrier waveform/frequency, beat rate and session duration are unchanged. No loudness compensation is applied; perceived subtlety depends on waveform and composition. Effects continue to process the generated signal; `effect modulation` is unchanged.
-
-Modifiers are exclusive to isochronic declarations, including `.spsc`; unknown, repeated or misplaced tokens and missing beat values are errors. Numeric inherited overrides preserve the mode and do not accept modifier tokens. Matching modes interpolate normally, mode changes use existing boundary crossfades (up to 30 seconds on each available side), and silence fades preserve the active mode. String output includes the effective mode; ShortString uses `mode:standard`, `mode:short`, or `mode:wide`. Monaural uses `mode:none`.
-
-Go builder: `preset.Tone(220).Isochronic(10).Short().Amplitude(15)`; `Standard()` selects the original envelope. Both return the same preset and affect only the last isochronic track, otherwise doing nothing. Last mode wins; Isochronic beat updates preserve the mode, conversions between tone types clear it, and new tracks do not inherit it.
-
-## Isochronic wide
-
-`tone 220 isochronic wide 10 amplitude 15` uses a fixed envelope independent of the waveform: sound occupies 75% of each cycle and the remaining 25% is silent. Each edge uses a smoothstep fade over 8% of the sound window, with a full-gain plateau between them. Waveform still defines the carrier, including custom waveforms; carrier pitch, pulse rate, and duration stay unchanged. There is no loudness compensation. Standard remains the default; standard, short and effect modulation are unchanged.
-
-The Go builder supports `preset.Tone(220).Isochronic(10).Wide().Amplitude(15)`. It returns the same preset and affects only its last isochronic track. Last mode wins, updating the beat preserves it, conversions between tone types clear it, and new tracks do not inherit it. Missing or incompatible tracks are unchanged. String includes `isochronic wide` and ShortString includes `mode:wide`. Inherited numeric overrides and silence fades retain the mode; changing modes uses the existing boundary crossfade. The modifier is optional, belongs before the beat, and is rejected if misplaced, repeated, unknown, or missing its beat value.
