@@ -180,3 +180,23 @@ func decodeSemanticTokenData(data []uint32) []semanticToken {
 	}
 	return result
 }
+
+func TestIsochronicModeEditor(t *testing.T) {
+	for _, mode := range []string{"standard", "short"} {
+		if len(syntaxDiagnostics("  tone 220 isochronic "+mode+" 10 amplitude 10")) != 0 {
+			t.Fatal("valid mode rejected")
+		}
+		if semanticTokenType(mode) != semanticTokenKeyword {
+			t.Fatal("mode not keyword")
+		}
+	}
+	if len(syntaxDiagnostics("  tone 220 isochronic short amplitude 10")) == 0 {
+		t.Fatal("missing beat accepted")
+	}
+	for _, prefix := range []string{"  tone 220 isochronic ", "  waveform sine tone 220 isochronic "} {
+		got := completionValues(prefix, symbols{})
+		if !slices.Contains(got, "standard") || !slices.Contains(got, "short") {
+			t.Fatal(got)
+		}
+	}
+}

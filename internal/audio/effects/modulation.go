@@ -90,3 +90,18 @@ func smoothstep(x float64) float64 {
 	}
 	return x * x * (3 - 2*x)
 }
+
+// CalcIsochronicFactor preserves standard modulation and shapes short pulses separately.
+func (p *Processor) CalcIsochronicFactor(waveform WaveformMorph, offset int, mode t.IsochronicMode) float64 {
+	if mode != t.IsochronicShort {
+		return p.CalcModulationFactorForMorph(waveform, offset)
+	}
+	cycle := t.SineTableSize * t.PhasePrecision
+	phaseOffset := offset & (cycle - 1)
+	if phaseOffset >= cycle/2 {
+		return 0
+	}
+	position := float64(phaseOffset) / float64(cycle/2)
+	window := smoothstep(position/0.08) * smoothstep((1-position)/0.08)
+	return 0.75 * window * p.CalcModulationFactorForMorph(waveform, phaseOffset*2)
+}

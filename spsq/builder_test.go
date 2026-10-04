@@ -149,7 +149,7 @@ func TestBuilderCustomWaveform(t *testing.T) {
 	if !strings.Contains(content, "@waveform softpulse 0 0 20.5 60 100 60 20 0") {
 		t.Fatalf("missing custom waveform declaration:\n%s", content)
 	}
-	if !strings.Contains(content, "waveform softpulse tone 200.00 isochronic 10.00 amplitude left 20.00 right 20.00") {
+	if !strings.Contains(content, "waveform softpulse tone 200.00 isochronic standard 10.00 amplitude left 20.00 right 20.00") {
 		t.Fatalf("missing custom waveform reference:\n%s", content)
 	}
 	if got := loaded.Presets()[0].Tracks[0].Waveform; got != "softpulse" {
@@ -258,4 +258,40 @@ func TestNewRequiresContext(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected nil context error")
 	}
+}
+
+func TestIsochronicModesFluent(t *testing.T) {
+	b, _ := New(synapseq.NewAppContext())
+	p := b.NewPreset("focus")
+	p.Tone(220).Isochronic(10).Short().Amplitude(10, 15)
+	if p.Short() != p || p.Standard() != p {
+		t.Fatal("changed receiver")
+	}
+	p.Short().Isochronic(12)
+	loaded, err := b.PresetAt(0, p).PresetAt(time.Minute, p).Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(loaded.RawContent()), "isochronic short 12.00 amplitude left 10.00 right 15.00") {
+		t.Fatal("lost short mode")
+	}
+	p.Monaural(10)
+	p.Standard().Short()
+	if p.lastTrack().ToneModifier != nil {
+		t.Fatal("incompatible modifier")
+	}
+	p.Isochronic(10).Short().Binaural(10)
+	if p.lastTrack().ToneModifier != nil {
+		t.Fatal("conversion retained modifier")
+	}
+	p.Isochronic(10).Short().Tone(300).Isochronic(8)
+	if p.lastTrack().ToneModifier != nil {
+		t.Fatal("new track inherited mode")
+	}
+	var absent *Preset
+	if absent.Standard() != nil || absent.Short() != nil {
+		t.Fatal("nil receiver")
+	}
+	empty := b.NewPreset("empty")
+	empty.Standard().Short()
 }

@@ -92,6 +92,12 @@ func trackCompletions(fields []string, index symbols) []string {
 			return []string{t.KeywordEffect, t.KeywordAmplitude}
 		}
 	}
+	if len(toneFields) >= 3 && toneFields[0] == t.KeywordTone && toneFields[2] == t.KeywordIsochronic {
+		if len(toneFields) == 3 {
+			return []string{t.KeywordIsochronicStandard, t.KeywordIsochronicShort}
+		}
+		return []string{t.KeywordEffect, t.KeywordAmplitude}
+	}
 	if fields[0] == t.KeywordTone && len(fields) >= 2 {
 		return []string{t.KeywordBinaural, t.KeywordMonaural, t.KeywordIsochronic, t.KeywordEffect, t.KeywordAmplitude}
 	}

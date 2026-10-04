@@ -119,6 +119,16 @@ func (ctx *TextParser) ParseTrackDeclaration() (*ParsedTrackDeclaration, error) 
 					decl.ToneModifier = t.BinauralModifier{Mode: mode}
 				}
 			}
+			if decl.Type == t.TrackIsochronicBeat {
+				if token, ok := ctx.Line.Peek(); ok && (token == t.KeywordIsochronicStandard || token == t.KeywordIsochronicShort) {
+					ctx.Line.NextToken()
+					mode := t.IsochronicStandard
+					if token == t.KeywordIsochronicShort {
+						mode = t.IsochronicShort
+					}
+					decl.ToneModifier = t.IsochronicModifier{Mode: mode}
+				}
+			}
 			if decl.Resonance, err = ctx.Line.NextFloat64Strict(); err != nil {
 				return nil, err
 			}

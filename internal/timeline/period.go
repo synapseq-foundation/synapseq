@@ -87,7 +87,7 @@ func requiresBoundaryCrossfade(last, next t.Track) bool {
 	if !isActiveTrack(last) || !isActiveTrack(next) {
 		return false
 	}
-	if last.Type == t.TrackBinauralBeat && next.Type == t.TrackBinauralBeat && last.BinauralMode() != next.BinauralMode() {
+	if last.BinauralMode() != next.BinauralMode() || last.IsochronicMode() != next.IsochronicMode() {
 		return true
 	}
 	if isEffectOnOffTransition(last, next) {
@@ -117,7 +117,7 @@ func isEffectOnOffTransition(last, next t.Track) bool {
 	if !isActiveTrack(last) || !isActiveTrack(next) {
 		return false
 	}
-	if last.Type != next.Type || last.SourceName != next.SourceName || last.BinauralMode() != next.BinauralMode() {
+	if last.Type != next.Type || last.SourceName != next.SourceName || last.BinauralMode() != next.BinauralMode() || last.IsochronicMode() != next.IsochronicMode() {
 		return false
 	}
 	return (last.Effect.Type == t.EffectOff && next.Effect.Type != t.EffectOff) ||

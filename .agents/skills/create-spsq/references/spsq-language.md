@@ -317,4 +317,12 @@ Verbose track descriptions (`String`) and builder-generated SPSQ include the eff
 
 The Go builder supports `preset.Tone(220).Binaural(10).RightLeft().Amplitude(10)` and `LeftRight()` for the default. These fluent methods affect only the last binaural track and otherwise do nothing. Last mode wins; updating Binaural preserves it, converting to Monaural/Isochronic clears it, and new tracks do not inherit it.
 
-Compact track descriptions (`ShortString`) include `mode:left-right` or `mode:right-left` for binaural tracks, and `mode:none` for monaural and isochronic tracks.
+Compact track descriptions (`ShortString`) include `mode:left-right` or `mode:right-left` for binaural tracks, `mode:standard` or `mode:short` for isochronic tracks, and `mode:none` for monaural tracks.
+
+## Isochronic modes
+
+Syntax: `tone 220 isochronic [standard|short] 10 amplitude 15`. The optional modifier precedes the non-negative beat rate. Omitted and `standard` preserve the existing audio exactly. `short` compresses one entire standard envelope cycle into the first half of each beat cycle, multiplies its gain by 0.75, and is silent during the second half. A smoothstep window fades each boundary over 8% of the compressed interval. Carrier waveform/frequency, beat rate and session duration are unchanged. No loudness compensation is applied; perceived subtlety depends on waveform and composition. Effects continue to process the generated signal; `effect modulation` is unchanged.
+
+Modifiers are exclusive to isochronic declarations, including `.spsc`; unknown, repeated or misplaced tokens and missing beat values are errors. Numeric inherited overrides preserve the mode and do not accept modifier tokens. Matching modes interpolate normally, mode changes use existing boundary crossfades (up to 30 seconds on each available side), and silence fades preserve the active mode. String output includes the effective mode; ShortString uses `mode:standard` or `mode:short`. Monaural uses `mode:none`.
+
+Go builder: `preset.Tone(220).Isochronic(10).Short().Amplitude(15)`; `Standard()` selects the original envelope. Both return the same preset and affect only the last isochronic track, otherwise doing nothing. Last mode wins; Isochronic beat updates preserve the mode, conversions between tone types clear it, and new tracks do not inherit it.

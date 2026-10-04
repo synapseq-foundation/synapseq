@@ -119,6 +119,13 @@ func (tr *Track) Validate() error {
 		if modifier.Mode != BinauralLeftRight && modifier.Mode != BinauralRightLeft {
 			return fmt.Errorf("invalid binaural mode: %d", modifier.Mode)
 		}
+	case IsochronicModifier:
+		if tr.Type != TrackIsochronicBeat {
+			return fmt.Errorf("isochronic modifier is not supported by %s tracks", tr.Type.String())
+		}
+		if modifier.Mode != IsochronicStandard && modifier.Mode != IsochronicShort {
+			return fmt.Errorf("invalid isochronic mode: %d", modifier.Mode)
+		}
 	default:
 		return fmt.Errorf("unsupported tone modifier type: %T (use a modifier value)", modifier)
 	}

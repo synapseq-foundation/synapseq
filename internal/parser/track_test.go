@@ -109,6 +109,9 @@ func TestParseTrack_Tones(ts *testing.T) {
 			continue
 		}
 		tr.WaveformSpan = diag.Span{}
+		if strings.Contains(tt.line, "isochronic standard ") {
+			tt.wantTrack.ToneModifier = t.IsochronicModifier{}
+		}
 		if strings.Contains(tt.line, "binaural left-right ") {
 			tt.wantTrack.ToneModifier = t.BinauralModifier{}
 		}
@@ -392,5 +395,27 @@ func TestParseTrack_TypoDiagnostic(ts *testing.T) {
 	}
 	if diagnostic.Span.Column != 10 || diagnostic.Span.EndColumn != 17 {
 		ts.Fatalf("expected typo at 10..17, got %d..%d", diagnostic.Span.Column, diagnostic.Span.EndColumn)
+	}
+}
+
+func TestIsochronicModifierSyntax(ts *testing.T) {
+	for _, mode := range []string{"", "standard ", "short "} {
+		decl, err := NewTextParser("tone 220 isochronic " + mode + "10 amplitude 10").ParseTrackDeclaration()
+		if err != nil {
+			ts.Fatal(err)
+		}
+		track := t.Track{ToneModifier: decl.ToneModifier}
+		want := t.IsochronicStandard
+		if mode == "short " {
+			want = t.IsochronicShort
+		}
+		if track.IsochronicMode() != want {
+			ts.Fatal("wrong mode")
+		}
+	}
+	for _, input := range []string{"tone 220 isochronic short standard 10 amplitude 10", "tone 220 isochronic 10 short amplitude 10", "tone 220 isochronic unknown 10 amplitude 10", "tone 220 isochronic short amplitude 10", "tone 220 binaural short 10 amplitude 10"} {
+		if _, err := NewTextParser(input).ParseTrackDeclaration(); err == nil {
+			ts.Fatal(input)
+		}
 	}
 }

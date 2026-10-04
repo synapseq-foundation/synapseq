@@ -107,6 +107,9 @@ func (p *Preset) Binaural(beat float64) *Preset {
 		return p
 	}
 
+	if track.Type != t.TrackBinauralBeat {
+		track.ToneModifier = nil
+	}
 	track.Type = t.TrackBinauralBeat
 	track.Resonance = beat
 	return p
@@ -153,8 +156,10 @@ func (p *Preset) Isochronic(beat float64) *Preset {
 		return p
 	}
 
+	if track.Type != t.TrackIsochronicBeat {
+		track.ToneModifier = nil
+	}
 	track.Type = t.TrackIsochronicBeat
-	track.ToneModifier = nil
 	track.Resonance = beat
 	return p
 }
@@ -265,4 +270,20 @@ func (b *Builder) presetIndex(name string) int {
 	}
 
 	return -1
+}
+
+// Standard selects the original envelope on the last isochronic track.
+// Missing or incompatible tracks are left unchanged.
+func (p *Preset) Standard() *Preset { return p.setIsochronicMode(t.IsochronicStandard) }
+
+// Short selects half-width pulses at 75 percent envelope gain.
+// Missing or incompatible tracks are left unchanged.
+func (p *Preset) Short() *Preset { return p.setIsochronicMode(t.IsochronicShort) }
+func (p *Preset) setIsochronicMode(mode t.IsochronicMode) *Preset {
+	track := p.lastTrack()
+	if track == nil || track.Type != t.TrackIsochronicBeat {
+		return p
+	}
+	track.ToneModifier = t.IsochronicModifier{Mode: mode}
+	return p
 }

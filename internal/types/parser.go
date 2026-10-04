@@ -55,6 +55,10 @@ const (
 	KeywordMonaural = "monaural"
 	// Represents an isochronic tone
 	KeywordIsochronic = "isochronic"
+	// Represents a standard isochronic tone
+	KeywordIsochronicStandard = "standard"
+	// Represents a short isochronic tone
+	KeywordIsochronicShort = "short"
 	// Represents an amplitude
 	KeywordAmplitude = "amplitude"
 	// Represents the left channel

@@ -49,7 +49,8 @@ func (modifier BinauralModifier) String() string {
 }
 
 var defaultToneModifiers = map[TrackType]ToneModifier{
-	TrackBinauralBeat: BinauralModifier{},
+	TrackBinauralBeat:   BinauralModifier{},
+	TrackIsochronicBeat: IsochronicModifier{},
 }
 
 // ToneModifierString returns the configured or default modifier's keyword.
@@ -63,4 +64,37 @@ func (tr Track) ToneModifierString() string {
 		return ""
 	}
 	return modifier.String()
+}
+
+// IsochronicMode specifies the pulse envelope of an isochronic tone.
+type IsochronicMode int
+
+const (
+	// IsochronicStandard preserves the original pulse envelope.
+	IsochronicStandard IsochronicMode = iota
+	// IsochronicShort compresses the envelope to half a cycle at 75 percent gain.
+	IsochronicShort
+)
+
+// IsochronicModifier configures an isochronic tone; store it as a value.
+type IsochronicModifier struct{ Mode IsochronicMode }
+
+func (IsochronicModifier) isToneModifier() {}
+func (modifier IsochronicModifier) String() string {
+	switch modifier.Mode {
+	case IsochronicStandard:
+		return KeywordIsochronicStandard
+	case IsochronicShort:
+		return KeywordIsochronicShort
+	default:
+		return ""
+	}
+}
+
+// IsochronicMode returns the effective mode, including the implicit standard default.
+func (tr Track) IsochronicMode() IsochronicMode {
+	if modifier, ok := tr.ToneModifier.(IsochronicModifier); ok {
+		return modifier.Mode
+	}
+	return IsochronicStandard
 }

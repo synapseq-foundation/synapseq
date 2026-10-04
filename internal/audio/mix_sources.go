@@ -45,7 +45,7 @@ func (r *AudioRenderer) mixIsochronicBeat(ch int, channel *t.Channel, signal *ch
 	channel.Offset[0] = advancePhase(channel.Offset[0], incCarrier)
 	channel.Offset[1] = advancePhase(channel.Offset[1], signal.increment[1])
 
-	modFactor := r.effectProcessor.CalcModulationFactorForMorph(signal.waveform, channel.Offset[1])
+	modFactor := r.effectProcessor.CalcIsochronicFactor(signal.waveform, channel.Offset[1], channel.Track.IsochronicMode())
 	out := source.Sample(r.effectProcessor, channel.Offset[0], modFactor)
 
 	return r.applyEffectToMono(ch, channel, signal, out)

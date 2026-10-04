@@ -158,6 +158,7 @@ func IsTrackEqual(trackA, trackB *t.Track) bool {
 		trackA.Carrier == trackB.Carrier &&
 		trackA.Resonance == trackB.Resonance &&
 		trackA.BinauralMode() == trackB.BinauralMode() &&
+		trackA.IsochronicMode() == trackB.IsochronicMode() &&
 		trackA.Waveform == trackB.Waveform &&
 		trackA.Effect.Intensity == trackB.Effect.Intensity
 }
