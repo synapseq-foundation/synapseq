@@ -109,6 +109,9 @@ func TestParseTrack_Tones(ts *testing.T) {
 			continue
 		}
 		tr.WaveformSpan = diag.Span{}
+		if strings.Contains(tt.line, "binaural left-right ") {
+			tt.wantTrack.ToneModifier = t.BinauralModifier{}
+		}
 		if *tr != tt.wantTrack {
 			ts.Errorf("Test %d: For line '%s', expected track %+v but got %+v", i, tt.line, tt.wantTrack, *tr)
 		}

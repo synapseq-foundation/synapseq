@@ -37,9 +37,9 @@ track-line           = indent2 tone-track
 
 tone-track           = [waveform-prefix] "tone" float tone-tail ;
 tone-tail            = "amplitude" amplitude-value
-                     | beat-kind float "amplitude" amplitude-value
+                     | beat-spec float "amplitude" amplitude-value
                      | "effect" tone-effect float "intensity" float "amplitude" amplitude-value
-                     | beat-kind float "effect" tone-effect float "intensity" float "amplitude" amplitude-value ;
+                     | beat-spec float "effect" tone-effect float "intensity" float "amplitude" amplitude-value ;
 
 noise-track          = "noise" noise-kind noise-tail ;
 noise-tail           = "amplitude" amplitude-value
@@ -60,6 +60,7 @@ waveform             = name ;
 waveform-point       = float ;  (* 0 through 100; 2 through 16384 points *)
 transition-point     = float ;  (* non-decreasing 0 through 100; 2 through 256 points; first 0, last 100 *)
 amplitude-value      = float | "left" float "right" float ;  (* each 0 through 100 *)
+beat-spec            = "binaural" [ "left-right" | "right-left" ] | "monaural" | "isochronic" ;
 beat-kind            = "binaural" | "monaural" | "isochronic" ;
 noise-kind           = "white" | "pink" | "brown" ;
 tone-effect          = "pan" | "modulation" | "doppler" | "shift" ;

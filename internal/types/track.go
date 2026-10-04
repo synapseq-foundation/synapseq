@@ -74,6 +74,8 @@ type Track struct {
 	Carrier float64
 	// Resonance frequency
 	Resonance float64
+	// Tone-specific configuration; nil uses the default behavior.
+	ToneModifier ToneModifier
 	// Waveform shape
 	Waveform WaveformName
 	// Named audio source
@@ -107,6 +109,18 @@ func (tr *Track) Validate() error {
 	}
 	if !effectSupportedByTrack(tr.Type, effect.Type) {
 		return fmt.Errorf("effect %q is not supported by %s tracks", effect.Type.String(), tr.Type.String())
+	}
+	switch modifier := tr.ToneModifier.(type) {
+	case nil:
+	case BinauralModifier:
+		if tr.Type != TrackBinauralBeat {
+			return fmt.Errorf("binaural modifier is not supported by %s tracks", tr.Type.String())
+		}
+		if modifier.Mode != BinauralLeftRight && modifier.Mode != BinauralRightLeft {
+			return fmt.Errorf("invalid binaural mode: %d", modifier.Mode)
+		}
+	default:
+		return fmt.Errorf("unsupported tone modifier type: %T (use a modifier value)", modifier)
 	}
 	// Track-type specific validation
 	switch tr.Type {
@@ -164,9 +178,9 @@ func (tr *Track) String() string {
 		}
 	case TrackBinauralBeat, TrackMonauralBeat, TrackIsochronicBeat:
 		if tr.Effect.Type == EffectOff {
-			return fmt.Sprintf("%s %s %s %.2f %s %.2f %s %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordAmplitude, KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent())
+			return fmt.Sprintf("%s %s %s %.2f %s %.2f %s %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, tr.toneKindString(), tr.Resonance, KeywordAmplitude, KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent())
 		} else {
-			return fmt.Sprintf("%s %s %s %.2f %s %.2f %s %s %.2f %s %.2f %s %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent())
+			return fmt.Sprintf("%s %s %s %.2f %s %.2f %s %s %.2f %s %.2f %s %s %.2f %s %.2f", KeywordWaveform, tr.Waveform.String(), KeywordTone, tr.Carrier, tr.toneKindString(), tr.Resonance, KeywordEffect, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordAmplitude, KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent())
 		}
 	case TrackWhiteNoise, TrackPinkNoise, TrackBrownNoise:
 		if tr.Effect.Type == EffectOff {
@@ -197,10 +211,14 @@ func (tr *Track) ShortString() string {
 			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f %s:%.2f %s:%.2f)", KeywordTone, tr.Carrier, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent())
 		}
 	case TrackBinauralBeat, TrackMonauralBeat, TrackIsochronicBeat:
+		mode := tr.ToneModifierString()
+		if mode == "" {
+			mode = "none"
+		}
 		if tr.Effect.Type == EffectOff {
-			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f %s:%.2f)", KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent())
+			return fmt.Sprintf(" (%s:%.2f %s:%.2f mode:%s %s:%.2f %s:%.2f)", KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, mode, KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent())
 		} else {
-			return fmt.Sprintf(" (%s:%.2f %s:%.2f %s:%.2f %s:%.2f %s:%.2f %s:%.2f)", KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent())
+			return fmt.Sprintf(" (%s:%.2f %s:%.2f mode:%s %s:%.2f %s:%.2f %s:%.2f %s:%.2f)", KeywordTone, tr.Carrier, tr.Type.String(), tr.Resonance, mode, tr.Effect.Type.String(), tr.Effect.Value, KeywordIntensity, tr.Effect.Intensity.ToPercent(), KeywordLeft, tr.Amplitude[0].ToPercent(), KeywordRight, tr.Amplitude[1].ToPercent())
 		}
 	case TrackWhiteNoise, TrackPinkNoise, TrackBrownNoise:
 		if tr.Effect.Type == EffectOff {
@@ -217,4 +235,12 @@ func (tr *Track) ShortString() string {
 	default:
 		return " ???"
 	}
+}
+
+func (tr Track) toneKindString() string {
+	kind := tr.Type.String()
+	if modifier := tr.ToneModifierString(); modifier != "" {
+		kind += " " + modifier
+	}
+	return kind
 }

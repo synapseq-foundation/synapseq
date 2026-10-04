@@ -26,6 +26,7 @@ func AdjustPeriods(last, next *t.Period) error {
 			tr0.Type = tr2.Type
 			tr0.Carrier = tr2.Carrier
 			tr0.Resonance = tr2.Resonance
+			tr0.ToneModifier = tr2.ToneModifier
 			tr0.Amplitude = [2]t.AmplitudeType{}
 			tr0.NoiseSmooth = tr2.NoiseSmooth
 			tr0.Waveform = tr2.Waveform
@@ -38,6 +39,7 @@ func AdjustPeriods(last, next *t.Period) error {
 		if tr2.Type == t.TrackSilence {
 			tr2.Carrier = tr1.Carrier
 			tr2.Resonance = tr1.Resonance
+			tr2.ToneModifier = tr1.ToneModifier
 			tr2.NoiseSmooth = tr1.NoiseSmooth
 			tr2.Effect.Intensity = tr1.Effect.Intensity
 			tr2.Effect.Value = tr1.Effect.Value
@@ -65,6 +67,7 @@ func AdjustPeriods(last, next *t.Period) error {
 		tr1.Effect.Value = tr2.Effect.Value
 		tr1.Carrier = tr2.Carrier
 		tr1.Resonance = tr2.Resonance
+		tr1.ToneModifier = tr2.ToneModifier
 		tr1.Amplitude = tr2.Amplitude
 		tr1.NoiseSmooth = tr2.NoiseSmooth
 		tr1.Effect.Intensity = tr2.Effect.Intensity
@@ -83,6 +86,9 @@ func requiresBoundaryCrossfade(last, next t.Track) bool {
 	}
 	if !isActiveTrack(last) || !isActiveTrack(next) {
 		return false
+	}
+	if last.Type == t.TrackBinauralBeat && next.Type == t.TrackBinauralBeat && last.BinauralMode() != next.BinauralMode() {
+		return true
 	}
 	if isEffectOnOffTransition(last, next) {
 		return false
@@ -111,7 +117,7 @@ func isEffectOnOffTransition(last, next t.Track) bool {
 	if !isActiveTrack(last) || !isActiveTrack(next) {
 		return false
 	}
-	if last.Type != next.Type || last.SourceName != next.SourceName {
+	if last.Type != next.Type || last.SourceName != next.SourceName || last.BinauralMode() != next.BinauralMode() {
 		return false
 	}
 	return (last.Effect.Type == t.EffectOff && next.Effect.Type != t.EffectOff) ||

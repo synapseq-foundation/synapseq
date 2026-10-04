@@ -24,7 +24,7 @@ func TestConvertedContentPreservesOrder(t *testing.T) {
 		"# Presets\nbeta\n" +
 		"  noise pink smooth 0.00 amplitude left 40.00 right 40.00\n" +
 		"  waveform sine tone 200.00 amplitude left 5.00 right 5.00\n" +
-		"  waveform sine tone 300.00 binaural 10.00 amplitude left 20.00 right 20.00\n" +
+		"  waveform sine tone 300.00 binaural right-left 10.00 amplitude left 20.00 right 20.00\n" +
 		"  noise pink smooth 0.00 effect pan 4.20 intensity 100.00 amplitude left 10.00 right 10.00\n" +
 		"  waveform sine music music amplitude left 25.00 right 25.00\n" +
 		"alpha\n  waveform sine tone 400.00 amplitude left 10.00 right 10.00\n\n" +

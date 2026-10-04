@@ -48,6 +48,8 @@ var syntaxKeywords = map[string]struct{}{
 	t.KeywordTriangle:                           {},
 	t.KeywordSawtooth:                           {},
 	t.KeywordTone:                               {},
+	t.KeywordBinauralLeftRight:                  {},
+	t.KeywordBinauralRightLeft:                  {},
 	t.KeywordBinaural:                           {},
 	t.KeywordMonaural:                           {},
 	t.KeywordIsochronic:                         {},

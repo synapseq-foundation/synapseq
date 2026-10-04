@@ -16,9 +16,10 @@ func buildTrackFromDeclaration(sourceFile string, lineNumber int, lineText strin
 	}
 
 	track := &t.Track{
-		Type:      decl.Type,
-		Carrier:   decl.Carrier,
-		Resonance: decl.Resonance,
+		Type:         decl.Type,
+		ToneModifier: decl.ToneModifier,
+		Carrier:      decl.Carrier,
+		Resonance:    decl.Resonance,
 		Amplitude: [2]t.AmplitudeType{
 			t.AmplitudePercentToRawChannel(decl.AmplitudePercent),
 			t.AmplitudePercentToRawChannel(rightAmplitude),

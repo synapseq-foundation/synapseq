@@ -190,7 +190,8 @@ func (rp renderPlan) interpolationProgress(window renderWindow, currentTimeMs in
 
 func interpolateTrack(start, end t.Track, alpha float64) t.Track {
 	return t.Track{
-		Type: start.Type,
+		Type:         start.Type,
+		ToneModifier: start.ToneModifier,
 		Amplitude: [2]t.AmplitudeType{
 			t.AmplitudeType(lerpFloat64(float64(start.Amplitude[0]), float64(end.Amplitude[0]), alpha)),
 			t.AmplitudeType(lerpFloat64(float64(start.Amplitude[1]), float64(end.Amplitude[1]), alpha)),
@@ -249,6 +250,9 @@ func compileSignalState(state planTrackState) compiledSignalState {
 	case t.TrackBinauralBeat:
 		freq1 := state.track.Carrier + state.track.Resonance/2
 		freq2 := state.track.Carrier - state.track.Resonance/2
+		if state.track.BinauralMode() == t.BinauralRightLeft {
+			freq1, freq2 = freq2, freq1
+		}
 		compiled.Amplitude = amplitude
 		compiled.Increment[0] = frequencyToIncrement(state.sampleRate, freq1)
 		compiled.Increment[1] = frequencyToIncrement(state.sampleRate, freq2)

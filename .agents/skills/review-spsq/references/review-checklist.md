@@ -205,3 +205,13 @@ Check:
 - Amplitude is a control percentage, not dB SPL.
 - Compatible waveform changes, including custom-to-built-in changes, morph by phase-aligned table interpolation rather than boundary crossfade.
 - A syntactically valid combination can still be dense, masked, abrupt, or artistically incoherent.
+
+### Binaural modifiers
+
+Syntax: `tone 220 binaural [left-right|right-left] 10 amplitude 15`. The optional modifier precedes the non-negative beat value. Omitted/left-right gives 225 Hz left and 215 Hz right; right-left swaps them. Only binaural declarations accept modifiers. Numeric inherited overrides preserve the mode. Different modes use boundary crossfades; silence fades preserve the active mode. Effects process the resulting pair normally.
+
+Verbose track descriptions (`String`) and builder-generated SPSQ include the effective binaural modifier, including the implicit `left-right` default. Other tone types have no modifier text.
+
+The Go builder supports `preset.Tone(220).Binaural(10).RightLeft().Amplitude(10)` and `LeftRight()` for the default. These fluent methods affect only the last binaural track and otherwise do nothing. Last mode wins; updating Binaural preserves it, converting to Monaural/Isochronic clears it, and new tracks do not inherit it.
+
+Compact track descriptions (`ShortString`) include `mode:left-right` or `mode:right-left` for binaural tracks, and `mode:none` for monaural and isochronic tracks.

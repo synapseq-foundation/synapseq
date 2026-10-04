@@ -63,18 +63,18 @@ func TestTrackAmplitudeStringsAlwaysIncludeChannels(t *testing.T) {
 		Waveform: WaveformSine,
 	}
 
-	if got, want := track.String(), "waveform sine tone 300.00 binaural 10.00 amplitude left 50.00 right 25.00"; got != want {
+	if got, want := track.String(), "waveform sine tone 300.00 binaural left-right 10.00 amplitude left 50.00 right 25.00"; got != want {
 		t.Fatalf("String() = %q, want %q", got, want)
 	}
-	if got, want := track.ShortString(), " (tone:300.00 binaural:10.00 left:50.00 right:25.00)"; got != want {
+	if got, want := track.ShortString(), " (tone:300.00 binaural:10.00 mode:left-right left:50.00 right:25.00)"; got != want {
 		t.Fatalf("ShortString() = %q, want %q", got, want)
 	}
 
 	track.Amplitude = AmplitudePercentToRaw(50)
-	if got, want := track.String(), "waveform sine tone 300.00 binaural 10.00 amplitude left 50.00 right 50.00"; got != want {
+	if got, want := track.String(), "waveform sine tone 300.00 binaural left-right 10.00 amplitude left 50.00 right 50.00"; got != want {
 		t.Fatalf("String() = %q, want %q", got, want)
 	}
-	if got, want := track.ShortString(), " (tone:300.00 binaural:10.00 left:50.00 right:50.00)"; got != want {
+	if got, want := track.ShortString(), " (tone:300.00 binaural:10.00 mode:left-right left:50.00 right:50.00)"; got != want {
 		t.Fatalf("ShortString() = %q, want %q", got, want)
 	}
 }
