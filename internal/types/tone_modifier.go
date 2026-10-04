@@ -74,6 +74,8 @@ const (
 	IsochronicStandard IsochronicMode = iota
 	// IsochronicShort compresses the envelope to half a cycle at 75 percent gain.
 	IsochronicShort
+	// IsochronicWide uses a fixed envelope over 75 percent of each cycle.
+	IsochronicWide
 )
 
 // IsochronicModifier configures an isochronic tone; store it as a value.
@@ -84,6 +86,8 @@ func (modifier IsochronicModifier) String() string {
 	switch modifier.Mode {
 	case IsochronicStandard:
 		return KeywordIsochronicStandard
+	case IsochronicWide:
+		return KeywordIsochronicWide
 	case IsochronicShort:
 		return KeywordIsochronicShort
 	default:

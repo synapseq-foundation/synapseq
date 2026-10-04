@@ -120,11 +120,14 @@ func (ctx *TextParser) ParseTrackDeclaration() (*ParsedTrackDeclaration, error) 
 				}
 			}
 			if decl.Type == t.TrackIsochronicBeat {
-				if token, ok := ctx.Line.Peek(); ok && (token == t.KeywordIsochronicStandard || token == t.KeywordIsochronicShort) {
+				if token, ok := ctx.Line.Peek(); ok && (token == t.KeywordIsochronicStandard || token == t.KeywordIsochronicShort || token == t.KeywordIsochronicWide) {
 					ctx.Line.NextToken()
 					mode := t.IsochronicStandard
 					if token == t.KeywordIsochronicShort {
 						mode = t.IsochronicShort
+					}
+					if token == t.KeywordIsochronicWide {
+						mode = t.IsochronicWide
 					}
 					decl.ToneModifier = t.IsochronicModifier{Mode: mode}
 				}

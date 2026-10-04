@@ -123,7 +123,7 @@ func (tr *Track) Validate() error {
 		if tr.Type != TrackIsochronicBeat {
 			return fmt.Errorf("isochronic modifier is not supported by %s tracks", tr.Type.String())
 		}
-		if modifier.Mode != IsochronicStandard && modifier.Mode != IsochronicShort {
+		if modifier.Mode != IsochronicStandard && modifier.Mode != IsochronicShort && modifier.Mode != IsochronicWide {
 			return fmt.Errorf("invalid isochronic mode: %d", modifier.Mode)
 		}
 	default:

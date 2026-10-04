@@ -295,3 +295,33 @@ func TestIsochronicModesFluent(t *testing.T) {
 	empty := b.NewPreset("empty")
 	empty.Standard().Short()
 }
+
+func TestWideIsochronicFluent(t *testing.T) {
+	b, _ := New(synapseq.NewAppContext())
+	p := b.NewPreset("focus")
+	p.Tone(220).Isochronic(10)
+	if p.Wide() != p {
+		t.Fatal("changed receiver")
+	}
+	p.Short().Standard().Wide().Isochronic(12).Amplitude(10, 15)
+	loaded, err := b.PresetAt(0, p).PresetAt(time.Minute, p).Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(loaded.RawContent()), "isochronic wide 12.00 amplitude left 10.00 right 15.00") {
+		t.Fatal("lost mode")
+	}
+	p.Binaural(10).Wide()
+	if p.lastTrack().ToneModifier != nil {
+		t.Fatal("incompatible modifier")
+	}
+	p.Isochronic(10).Wide().Tone(300).Isochronic(8)
+	if p.lastTrack().ToneModifier != nil {
+		t.Fatal("new track inherited mode")
+	}
+	var absent *Preset
+	if absent.Wide() != nil {
+		t.Fatal("nil receiver")
+	}
+	b.NewPreset("empty").Wide()
+}

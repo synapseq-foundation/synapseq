@@ -285,3 +285,17 @@ func TestIsochronicModeCrossfade(ts *testing.T) {
 		ts.Fatal("missing mode crossfade")
 	}
 }
+
+func TestWideIsochronicTransitions(ts *testing.T) {
+	wide := t.Track{Type: t.TrackIsochronicBeat, Carrier: 220, Resonance: 10, Amplitude: t.AmplitudePercentToRaw(10), ToneModifier: t.IsochronicModifier{Mode: t.IsochronicWide}}
+	if requiresBoundaryCrossfade(wide, wide) {
+		ts.Fatal("same mode crossfades")
+	}
+	for _, mode := range []t.IsochronicMode{t.IsochronicStandard, t.IsochronicShort} {
+		other := wide
+		other.ToneModifier = t.IsochronicModifier{Mode: mode}
+		if !requiresBoundaryCrossfade(wide, other) || !requiresBoundaryCrossfade(other, wide) {
+			ts.Fatal("missing mode crossfade")
+		}
+	}
+}

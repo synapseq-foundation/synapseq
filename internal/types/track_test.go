@@ -121,7 +121,7 @@ func TestExternalTrackStringsAlwaysIncludeWaveform(t *testing.T) {
 }
 
 func TestIsochronicModifierValidation(t *testing.T) {
-	for _, mode := range []IsochronicMode{IsochronicStandard, IsochronicShort} {
+	for _, mode := range []IsochronicMode{IsochronicStandard, IsochronicShort, IsochronicWide} {
 		tr := Track{Type: TrackIsochronicBeat, Carrier: 220, Resonance: 10, ToneModifier: IsochronicModifier{Mode: mode}}
 		if err := tr.Validate(); err != nil {
 			t.Fatal(err)
@@ -131,7 +131,7 @@ func TestIsochronicModifierValidation(t *testing.T) {
 		}
 	}
 	for _, tr := range []Track{
-		{Type: TrackIsochronicBeat, ToneModifier: IsochronicModifier{Mode: 2}},
+		{Type: TrackIsochronicBeat, ToneModifier: IsochronicModifier{Mode: 3}},
 		{Type: TrackIsochronicBeat, ToneModifier: &IsochronicModifier{}},
 		{Type: TrackMonauralBeat, Carrier: 220, ToneModifier: IsochronicModifier{}},
 	} {
@@ -142,7 +142,7 @@ func TestIsochronicModifierValidation(t *testing.T) {
 }
 
 func TestIsochronicModeStrings(t *testing.T) {
-	for _, mode := range []IsochronicMode{IsochronicStandard, IsochronicShort} {
+	for _, mode := range []IsochronicMode{IsochronicStandard, IsochronicShort, IsochronicWide} {
 		tr := Track{Type: TrackIsochronicBeat, Carrier: 220, Resonance: 10, ToneModifier: IsochronicModifier{Mode: mode}}
 		keyword := tr.ToneModifierString()
 		if got, want := tr.String(), "waveform sine tone 220.00 isochronic "+keyword+" 10.00 amplitude left 0.00 right 0.00"; got != want {

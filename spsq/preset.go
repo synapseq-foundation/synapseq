@@ -287,3 +287,7 @@ func (p *Preset) setIsochronicMode(mode t.IsochronicMode) *Preset {
 	track.ToneModifier = t.IsochronicModifier{Mode: mode}
 	return p
 }
+
+// Wide selects a fixed envelope over 75 percent of each cycle at full gain.
+// Missing or incompatible tracks are left unchanged.
+func (p *Preset) Wide() *Preset { return p.setIsochronicMode(t.IsochronicWide) }

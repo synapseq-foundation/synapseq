@@ -1119,3 +1119,15 @@ func TestIsochronicModeInheritanceAndFades(ts *testing.T) {
 		ts.Fatal("override lost")
 	}
 }
+
+func TestWideIsochronicInheritanceAndFades(ts *testing.T) {
+	result, err := loadTextSequenceFile(ts, writeSeqFile(ts, "base as template\n  tone 220 isochronic wide 10 amplitude 10\nfocus from base\n  track 1 isochronic +2\n00:00:00 silence\n00:00:05 focus\n00:00:10 silence\n"))
+	if err != nil {
+		ts.Fatal(err)
+	}
+	for _, track := range []t.Track{result.Periods[0].TrackStart[0], result.Periods[1].TrackStart[0], result.Periods[1].TrackEnd[0]} {
+		if track.IsochronicMode() != t.IsochronicWide {
+			ts.Fatal("mode lost")
+		}
+	}
+}

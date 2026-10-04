@@ -399,7 +399,7 @@ func TestParseTrack_TypoDiagnostic(ts *testing.T) {
 }
 
 func TestIsochronicModifierSyntax(ts *testing.T) {
-	for _, mode := range []string{"", "standard ", "short "} {
+	for _, mode := range []string{"", "standard ", "short ", "wide "} {
 		decl, err := NewTextParser("tone 220 isochronic " + mode + "10 amplitude 10").ParseTrackDeclaration()
 		if err != nil {
 			ts.Fatal(err)
@@ -409,11 +409,14 @@ func TestIsochronicModifierSyntax(ts *testing.T) {
 		if mode == "short " {
 			want = t.IsochronicShort
 		}
+		if mode == "wide " {
+			want = t.IsochronicWide
+		}
 		if track.IsochronicMode() != want {
 			ts.Fatal("wrong mode")
 		}
 	}
-	for _, input := range []string{"tone 220 isochronic short standard 10 amplitude 10", "tone 220 isochronic 10 short amplitude 10", "tone 220 isochronic unknown 10 amplitude 10", "tone 220 isochronic short amplitude 10", "tone 220 binaural short 10 amplitude 10"} {
+	for _, input := range []string{"tone 220 isochronic short standard 10 amplitude 10", "tone 220 isochronic 10 short amplitude 10", "tone 220 isochronic unknown 10 amplitude 10", "tone 220 isochronic short amplitude 10", "tone 220 binaural short 10 amplitude 10", "tone 220 isochronic wide short 10 amplitude 10", "tone 220 isochronic 10 wide amplitude 10", "tone 220 isochronic wide amplitude 10"} {
 		if _, err := NewTextParser(input).ParseTrackDeclaration(); err == nil {
 			ts.Fatal(input)
 		}
