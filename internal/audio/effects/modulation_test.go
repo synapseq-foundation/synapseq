@@ -68,3 +68,95 @@ func phaseOffset(cycleFraction float64) int {
 func nearlyEqual(got, want float64) bool {
 	return math.Abs(got-want) < 1e-12
 }
+
+func TestIsochronicEnvelopeModes(ts *testing.T) {
+	p := newTestProcessor()
+	for _, id := range []wt.ID{wt.SineID, wt.SquareID, wt.TriangleID, wt.SawtoothID} {
+		waveform := WaveformMorph{Start: id, End: id}
+		for _, fraction := range []float64{0, 0.01, 0.125, 0.25, 0.49, 0.5, 0.75, 1.125} {
+			offset := phaseOffset(fraction) & (t.SineTableSize*t.PhasePrecision - 1)
+			if got, want := p.CalcIsochronicFactor(waveform, offset, t.IsochronicStandard), p.CalcModulationFactorForMorph(waveform, offset); got != want {
+				ts.Fatal("standard changed")
+			}
+			got := p.CalcIsochronicFactor(waveform, offset, t.IsochronicShort)
+			normalized := fraction - math.Floor(fraction)
+			if normalized >= 0.5 {
+				if got != 0 {
+					ts.Fatal("second half not silent")
+				}
+				continue
+			}
+			position := float64(offset&(t.SineTableSize*t.PhasePrecision-1)) / float64(t.SineTableSize*t.PhasePrecision/2)
+			want := 0.75 * smoothstep(position/0.08) * smoothstep((1-position)/0.08) * p.CalcModulationFactorForMorph(waveform, (offset&(t.SineTableSize*t.PhasePrecision-1))*2)
+			if !nearlyEqual(got, want) {
+				ts.Fatalf("got %f want %f", got, want)
+			}
+		}
+	}
+	square := WaveformMorph{Start: wt.SquareID, End: wt.SquareID}
+	if p.CalcIsochronicFactor(square, phaseOffset(0.125), t.IsochronicShort) != 0.75 {
+		ts.Fatal("wrong peak gain")
+	}
+	if p.CalcIsochronicFactor(square, 0, t.IsochronicShort) != 0 {
+		ts.Fatal("edge not zero")
+	}
+	if p.CalcIsochronicFactor(square, 1, t.IsochronicShort) > 0.001 {
+		ts.Fatal("edge discontinuity")
+	}
+}
+
+func TestShortIsochronicCustomEnvelopeEdges(ts *testing.T) {
+	tables := wt.Init()
+	flat := make([]int, t.SineTableSize)
+	for i := range flat {
+		flat[i] = t.WaveTableAmplitude
+	}
+	id := wt.ID(len(tables))
+	tables = append(tables, flat)
+	p := NewProcessor(44100, tables)
+	waveform := WaveformMorph{Start: id, End: id}
+	if got := p.CalcIsochronicFactor(waveform, phaseOffset(0.25), t.IsochronicShort); got != 0.75 {
+		ts.Fatalf("flat peak %f", got)
+	}
+	for _, offset := range []int{0, phaseOffset(0.5)} {
+		if p.CalcIsochronicFactor(waveform, offset, t.IsochronicShort) != 0 {
+			ts.Fatal("edge not silent")
+		}
+	}
+	for _, offset := range []int{1, phaseOffset(0.5) - 1} {
+		if p.CalcIsochronicFactor(waveform, offset, t.IsochronicShort) > 0.001 {
+			ts.Fatal("custom edge discontinuity")
+		}
+	}
+	if p.CalcModulationFactorForMorph(waveform, phaseOffset(0.75)) != 1 {
+		ts.Fatal("shared modulation changed")
+	}
+}
+
+func TestWideIsochronicEnvelope(ts *testing.T) {
+	p := newTestProcessor()
+	for _, waveform := range []WaveformMorph{{Start: wt.SineID, End: wt.SineID}, {Start: wt.SquareID, End: wt.TriangleID, Alpha: 0.5}, {Start: wt.ID(999), End: wt.ID(999)}} {
+		for _, fraction := range []float64{0, 0.03, 0.125, 0.375, 0.72, 0.75, 0.9, 1.375} {
+			offset := phaseOffset(fraction)
+			phase := float64(offset&(t.SineTableSize*t.PhasePrecision-1)) / float64(t.SineTableSize*t.PhasePrecision)
+			want := 0.0
+			if phase < 0.75 {
+				u := phase / 0.75
+				want = smoothstep(u/0.08) * smoothstep((1-u)/0.08)
+			}
+			got := p.CalcIsochronicFactor(waveform, offset, t.IsochronicWide)
+			if !nearlyEqual(got, want) {
+				ts.Fatalf("phase %f: got %f want %f", phase, got, want)
+			}
+		}
+	}
+	waveform := WaveformMorph{Start: wt.SineID, End: wt.SineID}
+	if p.CalcIsochronicFactor(waveform, phaseOffset(0.375), t.IsochronicWide) != 1 {
+		ts.Fatal("peak not full gain")
+	}
+	for _, offset := range []int{1, phaseOffset(0.75) - 1} {
+		if p.CalcIsochronicFactor(waveform, offset, t.IsochronicWide) > 0.001 {
+			ts.Fatal("discontinuous edge")
+		}
+	}
+}

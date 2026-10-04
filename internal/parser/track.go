@@ -11,6 +11,7 @@ import (
 )
 
 type ParsedTrackDeclaration struct {
+	ToneModifier           t.ToneModifier
 	Type                   t.TrackType
 	Carrier                float64
 	Resonance              float64
@@ -108,6 +109,29 @@ func (ctx *TextParser) ParseTrackDeclaration() (*ParsedTrackDeclaration, error) 
 		if decl.Type == t.TrackBinauralBeat ||
 			decl.Type == t.TrackMonauralBeat ||
 			decl.Type == t.TrackIsochronicBeat {
+			if decl.Type == t.TrackBinauralBeat {
+				if token, ok := ctx.Line.Peek(); ok && (token == t.KeywordBinauralLeftRight || token == t.KeywordBinauralRightLeft) {
+					ctx.Line.NextToken()
+					mode := t.BinauralLeftRight
+					if token == t.KeywordBinauralRightLeft {
+						mode = t.BinauralRightLeft
+					}
+					decl.ToneModifier = t.BinauralModifier{Mode: mode}
+				}
+			}
+			if decl.Type == t.TrackIsochronicBeat {
+				if token, ok := ctx.Line.Peek(); ok && (token == t.KeywordIsochronicStandard || token == t.KeywordIsochronicShort || token == t.KeywordIsochronicWide) {
+					ctx.Line.NextToken()
+					mode := t.IsochronicStandard
+					if token == t.KeywordIsochronicShort {
+						mode = t.IsochronicShort
+					}
+					if token == t.KeywordIsochronicWide {
+						mode = t.IsochronicWide
+					}
+					decl.ToneModifier = t.IsochronicModifier{Mode: mode}
+				}
+			}
 			if decl.Resonance, err = ctx.Line.NextFloat64Strict(); err != nil {
 				return nil, err
 			}

@@ -37,9 +37,9 @@ track-line           = indent2 tone-track
 
 tone-track           = [waveform-prefix] "tone" float tone-tail ;
 tone-tail            = "amplitude" amplitude-value
-                     | beat-kind float "amplitude" amplitude-value
+                     | beat-spec float "amplitude" amplitude-value
                      | "effect" tone-effect float "intensity" float "amplitude" amplitude-value
-                     | beat-kind float "effect" tone-effect float "intensity" float "amplitude" amplitude-value ;
+                     | beat-spec float "effect" tone-effect float "intensity" float "amplitude" amplitude-value ;
 
 noise-track          = "noise" noise-kind noise-tail ;
 noise-tail           = "amplitude" amplitude-value
@@ -60,6 +60,7 @@ waveform             = name ;
 waveform-point       = float ;  (* 0 through 100; 2 through 16384 points *)
 transition-point     = float ;  (* non-decreasing 0 through 100; 2 through 256 points; first 0, last 100 *)
 amplitude-value      = float | "left" float "right" float ;  (* each 0 through 100 *)
+beat-spec            = "binaural" [ "left-right" | "right-left" ] | "monaural" | "isochronic" [ "standard" | "short" | "wide" ] ;
 beat-kind            = "binaural" | "monaural" | "isochronic" ;
 noise-kind           = "white" | "pink" | "brown" ;
 tone-effect          = "pan" | "modulation" | "doppler" | "shift" ;
@@ -100,3 +101,9 @@ path-or-url          = local path without extension | remote URL ;
 ```
 
 Use this grammar as a compact map of accepted line shapes. For semantic rules, timeline behavior, inheritance restrictions, path normalization, and complete validation guidance, see the [SPSQ documentation](https://synapseq.org/docs/spsq).
+
+## Isochronic wide
+
+`tone 220 isochronic wide 10 amplitude 15` uses a fixed envelope independent of the waveform: sound occupies 75% of each cycle and the remaining 25% is silent. Each edge uses a smoothstep fade over 8% of the sound window, with a full-gain plateau between them. Waveform still defines the carrier, including custom waveforms; carrier pitch, pulse rate, and duration stay unchanged. There is no loudness compensation. Standard remains the default; standard, short and effect modulation are unchanged.
+
+The Go builder supports `preset.Tone(220).Isochronic(10).Wide().Amplitude(15)`. It returns the same preset and affects only its last isochronic track. Last mode wins, updating the beat preserves it, conversions between tone types clear it, and new tracks do not inherit it. Missing or incompatible tracks are unchanged. String includes `isochronic wide` and ShortString includes `mode:wide`. Inherited numeric overrides and silence fades retain the mode; changing modes uses the existing boundary crossfade. The modifier is optional, belongs before the beat, and is rejected if misplaced, repeated, unknown, or missing its beat value.

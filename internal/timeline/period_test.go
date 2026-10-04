@@ -271,3 +271,31 @@ func assertAlmostEqual(ts *testing.T, got, want, tolerance float64) {
 		ts.Fatalf("unexpected value: got %.6f want %.6f", got, want)
 	}
 }
+
+func TestIsochronicModeCrossfade(ts *testing.T) {
+	standard := t.Track{Type: t.TrackIsochronicBeat, Carrier: 220, Resonance: 10, Amplitude: t.AmplitudePercentToRaw(10)}
+	explicit := standard
+	explicit.ToneModifier = t.IsochronicModifier{}
+	short := standard
+	short.ToneModifier = t.IsochronicModifier{Mode: t.IsochronicShort}
+	if requiresBoundaryCrossfade(standard, explicit) {
+		ts.Fatal("implicit standard differs")
+	}
+	if !requiresBoundaryCrossfade(standard, short) {
+		ts.Fatal("missing mode crossfade")
+	}
+}
+
+func TestWideIsochronicTransitions(ts *testing.T) {
+	wide := t.Track{Type: t.TrackIsochronicBeat, Carrier: 220, Resonance: 10, Amplitude: t.AmplitudePercentToRaw(10), ToneModifier: t.IsochronicModifier{Mode: t.IsochronicWide}}
+	if requiresBoundaryCrossfade(wide, wide) {
+		ts.Fatal("same mode crossfades")
+	}
+	for _, mode := range []t.IsochronicMode{t.IsochronicStandard, t.IsochronicShort} {
+		other := wide
+		other.ToneModifier = t.IsochronicModifier{Mode: mode}
+		if !requiresBoundaryCrossfade(wide, other) || !requiresBoundaryCrossfade(other, wide) {
+			ts.Fatal("missing mode crossfade")
+		}
+	}
+}

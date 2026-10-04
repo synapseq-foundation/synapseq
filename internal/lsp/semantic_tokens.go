@@ -33,8 +33,11 @@ var semanticTokenLegend = []string{
 }
 
 var syntaxKeywords = map[string]struct{}{
-	t.KeywordOff:     {},
-	t.KeywordSilence: {},
+	t.KeywordIsochronicWide:                     {},
+	t.KeywordIsochronicStandard:                 {},
+	t.KeywordIsochronicShort:                    {},
+	t.KeywordOff:                                {},
+	t.KeywordSilence:                            {},
 	t.KeywordOption + t.KeywordOptionSampleRate: {},
 	t.KeywordOption + t.KeywordOptionVolume:     {},
 	t.KeywordOption + t.KeywordOptionAmbiance:   {},
@@ -48,6 +51,8 @@ var syntaxKeywords = map[string]struct{}{
 	t.KeywordTriangle:                           {},
 	t.KeywordSawtooth:                           {},
 	t.KeywordTone:                               {},
+	t.KeywordBinauralLeftRight:                  {},
+	t.KeywordBinauralRightLeft:                  {},
 	t.KeywordBinaural:                           {},
 	t.KeywordMonaural:                           {},
 	t.KeywordIsochronic:                         {},

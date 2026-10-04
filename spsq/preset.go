@@ -107,8 +107,32 @@ func (p *Preset) Binaural(beat float64) *Preset {
 		return p
 	}
 
+	if track.Type != t.TrackBinauralBeat {
+		track.ToneModifier = nil
+	}
 	track.Type = t.TrackBinauralBeat
 	track.Resonance = beat
+	return p
+}
+
+// LeftRight places the higher binaural frequency on the left (the default).
+// It leaves the preset unchanged unless its last track is binaural.
+func (p *Preset) LeftRight() *Preset {
+	return p.setBinauralMode(t.BinauralLeftRight)
+}
+
+// RightLeft places the higher binaural frequency on the right.
+// It leaves the preset unchanged unless its last track is binaural.
+func (p *Preset) RightLeft() *Preset {
+	return p.setBinauralMode(t.BinauralRightLeft)
+}
+
+func (p *Preset) setBinauralMode(mode t.BinauralMode) *Preset {
+	track := p.lastTrack()
+	if track == nil || track.Type != t.TrackBinauralBeat {
+		return p
+	}
+	track.ToneModifier = t.BinauralModifier{Mode: mode}
 	return p
 }
 
@@ -120,6 +144,7 @@ func (p *Preset) Monaural(beat float64) *Preset {
 	}
 
 	track.Type = t.TrackMonauralBeat
+	track.ToneModifier = nil
 	track.Resonance = beat
 	return p
 }
@@ -131,6 +156,9 @@ func (p *Preset) Isochronic(beat float64) *Preset {
 		return p
 	}
 
+	if track.Type != t.TrackIsochronicBeat {
+		track.ToneModifier = nil
+	}
 	track.Type = t.TrackIsochronicBeat
 	track.Resonance = beat
 	return p
@@ -243,3 +271,23 @@ func (b *Builder) presetIndex(name string) int {
 
 	return -1
 }
+
+// Standard selects the original envelope on the last isochronic track.
+// Missing or incompatible tracks are left unchanged.
+func (p *Preset) Standard() *Preset { return p.setIsochronicMode(t.IsochronicStandard) }
+
+// Short selects half-width pulses at 75 percent envelope gain.
+// Missing or incompatible tracks are left unchanged.
+func (p *Preset) Short() *Preset { return p.setIsochronicMode(t.IsochronicShort) }
+func (p *Preset) setIsochronicMode(mode t.IsochronicMode) *Preset {
+	track := p.lastTrack()
+	if track == nil || track.Type != t.TrackIsochronicBeat {
+		return p
+	}
+	track.ToneModifier = t.IsochronicModifier{Mode: mode}
+	return p
+}
+
+// Wide selects a fixed envelope over 75 percent of each cycle at full gain.
+// Missing or incompatible tracks are left unchanged.
+func (p *Preset) Wide() *Preset { return p.setIsochronicMode(t.IsochronicWide) }

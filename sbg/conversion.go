@@ -79,7 +79,13 @@ func convertDefinitions(
 			case voiceTone:
 				preset.Tone(voice.carrier).Amplitude(voice.amplitude)
 			case voiceBinaural:
-				preset.Tone(voice.carrier).Binaural(voice.beat).Amplitude(voice.amplitude)
+				preset.Tone(voice.carrier).Binaural(voice.beat)
+				if voice.reverse {
+					preset.RightLeft()
+				} else {
+					preset.LeftRight()
+				}
+				preset.Amplitude(voice.amplitude)
 			case voiceSpin:
 				preset.Pink(0).Pan(voice.beat).Intensity(100).Amplitude(voice.amplitude)
 			case voiceMix:

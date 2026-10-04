@@ -85,7 +85,7 @@ func TestLoadFileUsesSPSQBuilder(t *testing.T) {
 		"alpha-long-name",
 		"music background amplitude left 25.00 right 25.00",
 		"noise pink smooth 0.00 amplitude left 40.00 right 40.00",
-		"tone 300.00 binaural 10.00 amplitude left 20.00 right 20.00",
+		"tone 300.00 binaural left-right 10.00 amplitude left 20.00 right 20.00",
 		"noise pink smooth 0.00 effect pan 4.20 intensity 100.00 amplitude left 10.00 right 10.00",
 		"00:00:00 silence steady 0",
 		"00:00:15 alpha-long-name steady 0",

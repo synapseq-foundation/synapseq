@@ -80,6 +80,24 @@ func trackCompletions(fields []string, index symbols) []string {
 	if fields[0] == t.KeywordNoise && len(fields) <= 2 {
 		return []string{t.KeywordWhite, t.KeywordPink, t.KeywordBrown}
 	}
+	toneFields := fields
+	if fields[0] == t.KeywordWaveform && len(fields) > 2 {
+		toneFields = fields[2:]
+	}
+	if len(toneFields) >= 3 && toneFields[0] == t.KeywordTone && toneFields[2] == t.KeywordBinaural {
+		if len(toneFields) == 3 {
+			return []string{t.KeywordBinauralLeftRight, t.KeywordBinauralRightLeft}
+		}
+		if len(toneFields) > 3 {
+			return []string{t.KeywordEffect, t.KeywordAmplitude}
+		}
+	}
+	if len(toneFields) >= 3 && toneFields[0] == t.KeywordTone && toneFields[2] == t.KeywordIsochronic {
+		if len(toneFields) == 3 {
+			return []string{t.KeywordIsochronicStandard, t.KeywordIsochronicShort, t.KeywordIsochronicWide}
+		}
+		return []string{t.KeywordEffect, t.KeywordAmplitude}
+	}
 	if fields[0] == t.KeywordTone && len(fields) >= 2 {
 		return []string{t.KeywordBinaural, t.KeywordMonaural, t.KeywordIsochronic, t.KeywordEffect, t.KeywordAmplitude}
 	}

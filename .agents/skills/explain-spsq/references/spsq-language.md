@@ -97,14 +97,19 @@ Normal presets must contain tracks, directly or through inheritance. Preset name
 
 ## Tracks and perceptual meaning
 
-### Tone
+### Tones
 
 ```spsq
   tone 220 amplitude 15
   tone 220 amplitude left 15 right 10
   tone 220 binaural 10 amplitude 15
+  tone 220 binaural left-right 10 amplitude 15
+  tone 220 binaural right-left 10 amplitude 15
   tone 220 monaural 10 amplitude 15
   tone 220 isochronic 10 amplitude 15
+  tone 220 isochronic standard 10 amplitude 15
+  tone 220 isochronic short 10 amplitude 15
+  tone 220 isochronic wide 10 amplitude 15
   waveform triangle tone 220 binaural 10 amplitude 15
   tone 220 effect shift 10 intensity 25 amplitude 15
   tone 220 binaural 10 effect shift 4 intensity 20 amplitude 15
@@ -116,10 +121,24 @@ Normal presets must contain tracks, directly or through inheritance. Preset name
 - `isochronic` gates a tone on and off at the stated rate, creating a pronounced pulse.
 - Built-in waveforms are `sine` (default), `square`, `triangle`, and `sawtooth`. A custom name may be used after a valid `@waveform` definition.
 - Custom values map `0 -> -1`, `50 -> 0`, and `100 -> +1`. Points are equally spaced and linearly joined around the cycle, including final-to-first interpolation.
-- The waveform shapes pure, binaural, and monaural oscillators. Isochronic tracks use it for both carrier and gate. Pan, modulation, and doppler also use it for their motion. Shift still processes the resulting waveform, but its quadrature oscillator is always sine/cosine.
+- The waveform shapes pure, binaural, and monaural oscillators. Isochronic tracks use it for both carrier and gate in `standard`/`short`; `wide` uses it only for the carrier. Pan, modulation, and doppler also use it for their motion. Shift still processes the resulting waveform, but its quadrature oscillator is always sine/cosine.
 - Compatible transitions morph normally between any custom or built-in pair while preserving phase. Sharp segments may add harmonics or aliasing; avoid claiming an exact subjective effect.
 
 Carrier and beat values must be non-negative. Binaural and monaural values must remain below twice the carrier so their lower component stays positive.
+
+**Binaural modifiers**
+
+Syntax: `tone 220 binaural [left-right|right-left] 10 amplitude 15`. The optional modifier precedes the non-negative beat value. Omitted/left-right gives 225 Hz left and 215 Hz right; right-left swaps them. These orientation modifiers are accepted only in binaural declarations. Numeric inherited overrides preserve the mode. Different modes use boundary crossfades; silence fades preserve the active mode. Effects process the resulting pair normally.
+
+**Isochronic modes**
+
+Syntax: `tone 220 isochronic [standard|short|wide] 10 amplitude 15`. The optional modifier precedes the non-negative beat rate. Omitted and `standard` preserve the existing audio exactly. `short` compresses one entire standard envelope cycle into the first half of each beat cycle, multiplies its gain by 0.75, and is silent during the second half. A smoothstep window fades each boundary over 8% of the compressed interval. Carrier waveform/frequency, beat rate and session duration are unchanged. No loudness compensation is applied; perceived subtlety depends on waveform and composition. Effects continue to process the generated signal; `effect modulation` is unchanged.
+
+Modifiers are exclusive to isochronic declarations, including `.spsc`; unknown, repeated or misplaced tokens and missing beat values are errors. Numeric inherited overrides preserve the mode and do not accept modifier tokens. Matching modes interpolate normally, mode changes use existing boundary crossfades (up to 30 seconds on each available side), and silence fades preserve the active mode. Monaural declarations do not accept tone modifiers.
+
+**Isochronic wide**
+
+`tone 220 isochronic wide 10 amplitude 15` uses a fixed envelope independent of the waveform: sound occupies 75% of each cycle and the remaining 25% is silent. Each edge uses a smoothstep fade over 8% of the sound window, with a full-gain plateau between them. Waveform still defines the carrier, including custom waveforms; carrier pitch, pulse rate, and duration stay unchanged. There is no loudness compensation. Standard remains the default; standard, short and effect modulation are unchanged.
 
 ### Noise
 

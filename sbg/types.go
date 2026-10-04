@@ -23,6 +23,7 @@ type voice struct {
 	kind      voiceKind
 	carrier   float64
 	beat      float64
+	reverse   bool
 	amplitude float64
 }
 

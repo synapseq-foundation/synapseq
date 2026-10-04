@@ -47,10 +47,19 @@ const (
 	KeywordTone = "tone"
 	// Represents a binaural tone
 	KeywordBinaural = "binaural"
+	// Represents the default binaural frequency ordering
+	KeywordBinauralLeftRight = "left-right"
+	// Represents reversed binaural frequency ordering
+	KeywordBinauralRightLeft = "right-left"
 	// Represents a monaural tone
 	KeywordMonaural = "monaural"
 	// Represents an isochronic tone
 	KeywordIsochronic = "isochronic"
+	// Represents a standard isochronic tone
+	KeywordIsochronicStandard = "standard"
+	// Represents a short isochronic tone
+	KeywordIsochronicShort = "short"
+	KeywordIsochronicWide  = "wide"
 	// Represents an amplitude
 	KeywordAmplitude = "amplitude"
 	// Represents the left channel

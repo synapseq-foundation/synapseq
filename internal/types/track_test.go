@@ -63,18 +63,18 @@ func TestTrackAmplitudeStringsAlwaysIncludeChannels(t *testing.T) {
 		Waveform: WaveformSine,
 	}
 
-	if got, want := track.String(), "waveform sine tone 300.00 binaural 10.00 amplitude left 50.00 right 25.00"; got != want {
+	if got, want := track.String(), "waveform sine tone 300.00 binaural left-right 10.00 amplitude left 50.00 right 25.00"; got != want {
 		t.Fatalf("String() = %q, want %q", got, want)
 	}
-	if got, want := track.ShortString(), " (tone:300.00 binaural:10.00 left:50.00 right:25.00)"; got != want {
+	if got, want := track.ShortString(), " (tone:300.00 binaural:10.00 mode:left-right left:50.00 right:25.00)"; got != want {
 		t.Fatalf("ShortString() = %q, want %q", got, want)
 	}
 
 	track.Amplitude = AmplitudePercentToRaw(50)
-	if got, want := track.String(), "waveform sine tone 300.00 binaural 10.00 amplitude left 50.00 right 50.00"; got != want {
+	if got, want := track.String(), "waveform sine tone 300.00 binaural left-right 10.00 amplitude left 50.00 right 50.00"; got != want {
 		t.Fatalf("String() = %q, want %q", got, want)
 	}
-	if got, want := track.ShortString(), " (tone:300.00 binaural:10.00 left:50.00 right:50.00)"; got != want {
+	if got, want := track.ShortString(), " (tone:300.00 binaural:10.00 mode:left-right left:50.00 right:50.00)"; got != want {
 		t.Fatalf("ShortString() = %q, want %q", got, want)
 	}
 }
@@ -117,5 +117,39 @@ func TestExternalTrackStringsAlwaysIncludeWaveform(t *testing.T) {
 				t.Fatalf("String() = %q, want %q", got, test.want)
 			}
 		})
+	}
+}
+
+func TestIsochronicModifierValidation(t *testing.T) {
+	for _, mode := range []IsochronicMode{IsochronicStandard, IsochronicShort, IsochronicWide} {
+		tr := Track{Type: TrackIsochronicBeat, Carrier: 220, Resonance: 10, ToneModifier: IsochronicModifier{Mode: mode}}
+		if err := tr.Validate(); err != nil {
+			t.Fatal(err)
+		}
+		if tr.ToneModifierString() == "" {
+			t.Fatal("missing mode")
+		}
+	}
+	for _, tr := range []Track{
+		{Type: TrackIsochronicBeat, ToneModifier: IsochronicModifier{Mode: 3}},
+		{Type: TrackIsochronicBeat, ToneModifier: &IsochronicModifier{}},
+		{Type: TrackMonauralBeat, Carrier: 220, ToneModifier: IsochronicModifier{}},
+	} {
+		if tr.Validate() == nil {
+			t.Fatal("invalid modifier accepted")
+		}
+	}
+}
+
+func TestIsochronicModeStrings(t *testing.T) {
+	for _, mode := range []IsochronicMode{IsochronicStandard, IsochronicShort, IsochronicWide} {
+		tr := Track{Type: TrackIsochronicBeat, Carrier: 220, Resonance: 10, ToneModifier: IsochronicModifier{Mode: mode}}
+		keyword := tr.ToneModifierString()
+		if got, want := tr.String(), "waveform sine tone 220.00 isochronic "+keyword+" 10.00 amplitude left 0.00 right 0.00"; got != want {
+			t.Fatalf("got %q want %q", got, want)
+		}
+		if got, want := tr.ShortString(), " (tone:220.00 isochronic:10.00 mode:"+keyword+" left:0.00 right:0.00)"; got != want {
+			t.Fatalf("got %q want %q", got, want)
+		}
 	}
 }

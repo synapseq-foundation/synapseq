@@ -16,6 +16,7 @@ type parsedTone struct {
 	carrier   float64
 	hasBeat   bool
 	beat      float64
+	reverse   bool
 	amplitude float64
 }
 
@@ -50,6 +51,7 @@ func parseVoice(token string) (voice, error) {
 		}
 		return voice{
 			kind:      kind,
+			reverse:   kind == voiceBinaural && tone.reverse,
 			carrier:   tone.carrier,
 			beat:      tone.beat,
 			amplitude: tone.amplitude,
@@ -99,6 +101,7 @@ func parseTone(token string, requireBeat bool) (parsedTone, error) {
 	return parsedTone{
 		carrier:   carrier,
 		hasBeat:   true,
+		reverse:   toneText[signIndex] == '-',
 		beat:      beat,
 		amplitude: amplitude,
 	}, nil

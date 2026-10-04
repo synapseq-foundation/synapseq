@@ -35,7 +35,9 @@ Full-line SBaGen comments are copied below this warning in their original
 order, preserving their # or ## prefixes.
 
 Supported SBaGen voices are mapped to the corresponding SPSQ tracks. Binaural
-sign orientation is not represented by SPSQ. Spin voices are approximated with
+sign orientation is preserved: + maps to left-right (higher frequency on the
+left), and - maps to right-left (higher frequency on the right). The beat
+magnitude remains non-negative, including signed zero. Spin voices are approximated with
 pink noise and a pan effect. An SBaGen -m source becomes an SPSQ music source
 named after its file base, and each mix voice becomes a music track. Music
 paths must remain within the current directory and cannot contain parent
