@@ -44,6 +44,8 @@ Please read the [CONTRIBUTING](CONTRIBUTING.md) file for guidelines on how to co
 
 SynapSeq is distributed under the GPL v3 or later license. See the [COPYING](COPYING.txt) file for details.
 
+For commercial projects, see [docs/COMMERCIAL_LICENSE.md](docs/COMMERCIAL_LICENSE.md).
+
 ### Third-Party Licenses
 
 See [Third-Party Licenses](docs/THIRD_PARTY_LICENSES.md) for the licenses of
