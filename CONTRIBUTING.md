@@ -119,9 +119,21 @@ We'll be happy to discuss your idea before you start coding, saving you time and
 
 ## License
 
-By contributing to SynapSeq, you agree that your contributions will be licensed under the same license as the project.
+By contributing to SynapSeq, you agree that your contributions will be licensed under the same license as the project (GPL v3 or later).
 
 Please ensure you have the right to submit your code or content under these terms.
+
+### Dual Licensing
+
+SynapSeq is offered under dual licensing: the GPL v3 or later for free and open
+source use, and a separate commercial license for closed-source commercial
+products. By contributing, you acknowledge that your contribution may be
+included in that commercial licensing by the copyright holder.
+
+Future contributions from other people may require a Contributor License
+Agreement (CLA) or copyright assignment before the project as a whole can be
+licensed commercially. See [docs/CLA.md](docs/CLA.md) and
+[docs/COMMERCIAL_LICENSE.md](docs/COMMERCIAL_LICENSE.md) for details.
 
 ---
 
