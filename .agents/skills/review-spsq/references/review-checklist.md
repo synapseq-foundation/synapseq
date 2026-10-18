@@ -168,6 +168,7 @@ Check:
 - a non-sine waveform with `doppler` intentionally shapes tone pitch or external playback-speed movement;
 - waveform prefixes on ambiance/music affect pan, modulation, or Doppler playback-speed motion, not the external PCM itself; Doppler preserves source stereo, uses a cursor independent from other tracks, and resumes position when returning to fixed speed, while `shift` uses a fixed quadrature oscillator;
 - `shift` values are total Hz separation, intensity is dry/wet, and higher wet levels progressively replace the original stereo image with a mono-derived shifted pair;
+- `pan` intensity is dry/wet: zero preserves the original stereo signal and full intensity applies the waveform-driven pan;
 - pure sine shift can resemble a pair at full wet, while non-sine harmonics, beat tracks, and noise produce more complex or subtle results;
 - binaural plus shift preserves the original binaural pair only in the dry portion and may create multiple wet spectral components;
 - `shift` is not classified as a generated binaural beat, and claims of guaranteed entrainment or perceptual response are unsupported.

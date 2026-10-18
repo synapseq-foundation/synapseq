@@ -28,7 +28,7 @@ func (p *Processor) ApplyPanForMorph(channel *t.Channel, effect t.Effect, wavefo
 		intensity = 1
 	}
 
-	targetX := (p.WaveformValueForMorph(waveform, channel.Effect.Offset) / float64(t.WaveTableAmplitude)) * intensity
+	targetX := p.WaveformValueForMorph(waveform, channel.Effect.Offset) / float64(t.WaveTableAmplitude)
 	x := p.smoothedPanPosition(channel, targetX)
 
 	pos := int(math.Round((x + 1.0) * 32768.0))
@@ -42,7 +42,9 @@ func (p *Processor) ApplyPanForMorph(channel *t.Channel, effect t.Effect, wavefo
 	lGain := 65536 - pos
 	rGain := pos
 
-	outL = int((int64(inL) * int64(lGain)) >> 16)
-	outR = int((int64(inR) * int64(rGain)) >> 16)
+	panL := int((int64(inL) * int64(lGain)) >> 16)
+	panR := int((int64(inR) * int64(rGain)) >> 16)
+	outL = int(math.Round(float64(inL) + (float64(panL)-float64(inL))*intensity))
+	outR = int(math.Round(float64(inR) + (float64(panR)-float64(inR))*intensity))
 	return outL, outR
 }
