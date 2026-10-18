@@ -40,3 +40,26 @@ func TestApplyEffectToMonoPanRoutesSignal(ts *testing.T) {
 		ts.Fatalf("unexpected pan phase advance: got %d, want %d", channel.Effect.Offset, step)
 	}
 }
+
+func TestApplyEffectToStereoPanIntensityZeroPreservesDrySignal(ts *testing.T) {
+	processor := newTestProcessor()
+	channel := &t.Channel{Effect: t.EffectState{Offset: 0}}
+	waveform := WaveformMorph{Start: wt.SineID, End: wt.SineID, Alpha: 0}
+
+	left, right := processor.ApplyEffectToStereo(channel, t.Effect{Type: t.EffectPan}, waveform, 1000, 600)
+	if left != 1000 || right != 600 {
+		ts.Fatalf("zero-intensity pan should preserve dry stereo signal: got [%d %d], want [1000 600]", left, right)
+	}
+}
+
+func TestApplyEffectToStereoPanIntensityBlendsDryAndPannedSignal(ts *testing.T) {
+	processor := newTestProcessor()
+	step := int(t.SineTableSize/4) * t.PhasePrecision
+	channel := &t.Channel{Effect: t.EffectState{Offset: 0, Increment: step}}
+	waveform := WaveformMorph{Start: wt.SineID, End: wt.SineID, Alpha: 0}
+
+	left, right := processor.ApplyEffectToStereo(channel, t.Effect{Type: t.EffectPan, Intensity: 0.5}, waveform, 1000, 1000)
+	if left != 500 || right != 1000 {
+		ts.Fatalf("half-intensity pan should blend dry and hard-right signals: got [%d %d], want [500 1000]", left, right)
+	}
+}

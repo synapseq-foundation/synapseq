@@ -74,7 +74,7 @@ Review whether noise stabilizes, masks, or overwhelms tonal detail. A high noise
 
 Effects:
 
-- `pan` moves stereo position;
+- `pan` moves stereo position, with intensity controlling the dry/wet blend;
 - `modulation` varies amplitude;
 - `doppler` adds pitch motion to tone tracks and subtle stereo-preserving playback-speed motion to ambiance and music tracks; it is not available on noise.
 - `shift` gives any supported source opposing frequency offsets from a mono-derived wet signal.

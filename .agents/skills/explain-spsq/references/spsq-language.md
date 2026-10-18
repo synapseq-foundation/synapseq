@@ -168,7 +168,7 @@ These tracks play declared external resources. Ambiance loops; music is finite. 
 
 ### Effects and levels
 
-- `pan` moves stereo position.
+- `pan` moves stereo position; intensity is the dry/wet percentage, so `0` preserves the original stereo signal and `100` applies the full waveform-driven pan.
 - `modulation` varies amplitude.
 - `doppler` adds pitch motion on tones and waveform-shaped playback-speed motion on ambiance and music. It is not supported for noise.
 - `shift` supports tone, noise, ambiance, and music. It derives a mono wet signal, shifts wet left by `+value/2` Hz and wet right by `-value/2` Hz, and uses intensity as dry/wet mix. Pure sine shift can resemble a pair with the declared separation; non-sine harmonics move by fixed Hz offsets. Monaural and isochronic tracks shift their complete signal. A binaural track preserves its original pair only in the dry portion and may produce several wet components. Shifted white noise may be heard mainly as stereo decorrelation. It is spectral stereo motion, not a guaranteed binaural beat.
