@@ -19,7 +19,7 @@
   &nbsp;&middot;&nbsp;
   <a href="https://synapseq.org/docs" target="_blank" rel="noopener noreferrer">Docs</a>
   &nbsp;&middot;&nbsp;
-  <a href="https://synapseq.org/ai" target="_blank" rel="noopener noreferrer">AI</a>
+  <a href="https://synapseq.org/products" target="_blank" rel="noopener noreferrer">Products</a>
   &nbsp;&middot;&nbsp;
   <a href="https://synapseq.org/library" target="_blank" rel="noopener noreferrer">Curated Library</a>
   &nbsp;&middot;&nbsp;
